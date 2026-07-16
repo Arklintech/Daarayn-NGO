@@ -161,21 +161,45 @@ export default function AIDashboard() {
   const [loading, setLoading] = useState(true);
   const [processingAction, setProcessingAction] = useState<string | null>(null);
   
-  // Data lists
-  const [drafts, setDrafts] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
-  const [donors, setDonors] = useState<any[]>([]);
-  const [donations, setDonations] = useState<any[]>([]);
-  const [programs, setPrograms] = useState<any[]>([]);
-  const [communications, setCommunications] = useState<any[]>([]);
+  // Data lists — typed as generic records since Firestore schemas are flexible
+  type FirestoreRecord = Record<string, unknown>;
+  const [drafts, setDrafts] = useState<FirestoreRecord[]>([]);
+  const [stats, setStats] = useState<FirestoreRecord | null>(null);
+  const [donors, setDonors] = useState<FirestoreRecord[]>([]);
+  const [donations, setDonations] = useState<FirestoreRecord[]>([]);
+  const [programs, setPrograms] = useState<FirestoreRecord[]>([]);
+  const [communications, setCommunications] = useState<FirestoreRecord[]>([]);
 
   // Selected Draft for inline editor
   const [selectedDraftId, setSelectedDraftId] = useState<string | null>(null);
-  const [editingContent, setEditingContent] = useState<any | null>(null);
+  const [editingContent, setEditingContent] = useState<FirestoreRecord | null>(null);
   const [editSuccess, setEditSuccess] = useState(false);
 
+  // Chat message type
+  interface MessageMetadata {
+    responseMode?: "INFORMATION" | "CREATION" | "WORKFLOW" | "AUDIT" | string;
+    responseDepth?: string;
+    allowedComponents?: string[];
+    requestId?: string;
+    status?: string;
+    confidence?: number;
+    certification?: string;
+    developerDiagnostics?: { responseTimeMs?: string | number };
+    [key: string]: unknown; // allow additional fields from API
+  }
+
+  interface CopilotMessage {
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+    references?: Array<{ source: string; content: string }>;
+    metadata?: MessageMetadata;
+    actionPlan?: { planName: string; reasoning: string; isPlanValid?: boolean; actions: Array<{ type: string; description: string }> };
+    workflowPlan?: { workflowId?: string; tasks: Array<{ name: string; status?: string }> };
+  }
+
   // Copilot Chat States
-  const [copilotMessages, setCopilotMessages] = useState<any[]>([
+  const [copilotMessages, setCopilotMessages] = useState<CopilotMessage[]>([
     { 
       id: "welcome", 
       role: "assistant", 
@@ -188,7 +212,7 @@ export default function AIDashboard() {
   const [copilotSessionId, setCopilotSessionId] = useState("");
   
   // Track active action plans and workflow plans
-  const [activeActionPlan, setActiveActionPlan] = useState<any | null>(null);
+  const [activeActionPlan, setActiveActionPlan] = useState<CopilotMessage["actionPlan"] | null>(null);
   const [executingPlan, setExecutingPlan] = useState(false);
 
   // Expanded sections state per message id: Record<messageId, Record<sectionName, boolean>>
@@ -217,25 +241,25 @@ export default function AIDashboard() {
 
       // 3. Fetch databases
       const donorSnap = await getDocs(collection(db, "donors"));
-      const donorsList: any[] = [];
+      const donorsList: FirestoreRecord[] = [];
       donorSnap.forEach(d => donorsList.push({ id: d.id, ...d.data() }));
       setDonors(donorsList);
 
       const donationSnap = await getDocs(collection(db, "donations"));
-      const donationsList: any[] = [];
+      const donationsList: FirestoreRecord[] = [];
       donationSnap.forEach(d => donationsList.push({ id: d.id, ...d.data() }));
       setDonations(donationsList);
 
 
 
       const progSnap = await getDocs(collection(db, "programs"));
-      const progsList: any[] = [];
+      const progsList: FirestoreRecord[] = [];
       progSnap.forEach(d => progsList.push({ id: d.id, ...d.data() }));
       setPrograms(progsList);
 
       try {
         const commSnap = await getDocs(collection(db, "communications"));
-        const commsList: any[] = [];
+        const commsList: FirestoreRecord[] = [];
         commSnap.forEach(d => commsList.push({ id: d.id, ...d.data() }));
         setCommunications(commsList);
       } catch (commErr) {
@@ -302,7 +326,7 @@ export default function AIDashboard() {
   const handleSendCopilot = async (text: string) => {
     if (!text.trim() || copilotLoading) return;
 
-    const userMsg = { id: `msg-${Date.now()}-user`, role: "user", content: text };
+    const userMsg: CopilotMessage = { id: `msg-${Date.now()}-user`, role: "user", content: text };
     setCopilotMessages(prev => [...prev, userMsg]);
     setCopilotInput("");
     setCopilotLoading(true);
@@ -326,7 +350,7 @@ export default function AIDashboard() {
 
       const data = await response.json();
       if (data.success) {
-        const newMsg: any = {
+        const newMsg: CopilotMessage = {
           id: `msg-${Date.now()}-assistant`,
           role: "assistant",
           content: data.reply,
@@ -499,15 +523,11 @@ export default function AIDashboard() {
     }
   };
 
-  // UI calculations
-  const todayDonationsCount = donations.filter((d: any) => {
-    const date = d.createdAt?.seconds ? new Date(d.createdAt.seconds * 1000) : new Date(d.date || d.createdAt);
-    return date.toDateString() === new Date().toDateString();
-  }).length;
 
-  const complianceHealth = donations.filter(d => !d.receiptUrl).length === 0 ? "100% Verified" : `${donations.filter(d => !d.receiptUrl).length} Pending`;
+  const complianceHealth = donations.filter((d: { receiptUrl?: string }) => !d.receiptUrl).length === 0 ? "100% Verified" : `${donations.filter((d: { receiptUrl?: string }) => !d.receiptUrl).length} Pending`;
 
-  const formattedStats = stats || {
+  interface StatsRecord { todayDrafts?: number; pendingApproval?: number; approved?: number; rejected?: number; averageScore?: number; }
+  const formattedStats: StatsRecord = (stats as StatsRecord) || {
     todayDrafts: 0,
     pendingApproval: 0,
     approved: 0,
@@ -602,8 +622,8 @@ export default function AIDashboard() {
               const isAssistant = msg.role === "assistant";
               const isWelcome = msg.id === "welcome";
               const msgSecs = expandedSections[msg.id] || {};
-              const metadata = msg.metadata || {};
-              const allowedComponents = metadata.allowedComponents || [];
+              const metadata: MessageMetadata = (msg.metadata as MessageMetadata) || {};
+              const allowedComponents: string[] = metadata.allowedComponents || [];
 
               // Toggle switches based on blueprint availability
               const hasReferences = isAssistant && msg.references && msg.references.length > 0;
@@ -781,11 +801,11 @@ export default function AIDashboard() {
                   <div className="max-w-[90%] space-y-2">
                     
                     {/* 1. REFERENCES GRID */}
-                    {isAssistant && msgSecs.references && msg.references.length > 0 && (
+                    {isAssistant && msgSecs.references && (msg.references?.length ?? 0) > 0 && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="p-3 bg-white/[0.01] border border-white/[0.04] rounded-xl space-y-2">
                         <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Certified Reference Records</div>
                         <div className="grid sm:grid-cols-2 gap-2">
-                          {msg.references.map((ref: any, idx: number) => (
+                          {(msg.references ?? []).map((ref: { source: string; content: string }, idx: number) => (
                             <div key={idx} className="p-2 rounded bg-white/[0.02] border border-white/[0.04] text-[11px]">
                               <div className="font-bold text-white/80">{ref.source}</div>
                               <div className="text-gray-500 line-clamp-2 mt-0.5">{ref.content}</div>
@@ -806,7 +826,7 @@ export default function AIDashboard() {
                         </div>
                         <p className="text-[11px] text-gray-400">{msg.actionPlan.reasoning}</p>
                         <div className="space-y-1.5">
-                          {(msg.actionPlan.actions || []).map((act: any, idx: number) => (
+                          {(msg.actionPlan.actions || []).map((act: { type: string; description: string }, idx: number) => (
                             <div key={idx} className="flex items-start gap-2 text-[11px] text-gray-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                               <span><span className="font-mono text-emerald-400 mr-1">[{act.type}]</span>{act.description}</span>
@@ -834,7 +854,7 @@ export default function AIDashboard() {
                           Workflow Blueprint: {msg.workflowPlan.workflowId || "MOMIN-PLAN"}
                         </div>
                         <div className="space-y-2">
-                          {(msg.workflowPlan.tasks || []).map((t: any, idx: number) => (
+                          {(msg.workflowPlan.tasks || []).map((t: { name: string; status?: string }, idx: number) => (
                             <div key={idx} className="flex items-center justify-between p-2 rounded bg-white/[0.02]">
                               <span className="text-xs text-gray-300">{t.name}</span>
                               <span className={`text-[9px] px-2 py-0.5 rounded font-mono ${
@@ -911,12 +931,12 @@ export default function AIDashboard() {
                           Trust Program Allocations & progress
                         </div>
                         <div className="space-y-3.5">
-                          {programs.slice(0, 4).map((p: any, idx: number) => {
-                            const pct = Math.round((p.amountCollected / p.amountRequired) * 100) || 0;
+                          {programs.slice(0, 4).map((p: FirestoreRecord, idx: number) => {
+                            const pct = Math.round(((p.amountCollected as number) / (p.amountRequired as number)) * 100) || 0;
                             return (
                               <div key={idx} className="space-y-1.5">
                                 <div className="flex justify-between items-center text-xs">
-                                  <span className="text-gray-300 font-semibold">{p.title}</span>
+                                  <span className="text-gray-300 font-semibold">{p.title as string}</span>
                                   <span className="text-luxury-ivory font-mono">{pct}%</span>
                                 </div>
                                 <div className="h-1 bg-white/[0.05] rounded-full overflow-hidden">
@@ -941,7 +961,7 @@ export default function AIDashboard() {
                             <label className="text-[9px] text-gray-500 uppercase font-bold block mb-1">Subject Line</label>
                             <input
                               type="text"
-                              value={editingContent.subject || ""}
+                              value={String(editingContent?.subject ?? "")}
                               onChange={(e) => setEditingContent({ ...editingContent, subject: e.target.value })}
                               className="w-full px-3 py-2 bg-[#070908] border border-white/[0.08] focus:border-luxury-ivory/40 rounded-lg text-xs text-white focus:outline-none"
                             />
@@ -949,7 +969,7 @@ export default function AIDashboard() {
                           <div>
                             <label className="text-[9px] text-gray-500 uppercase font-bold block mb-1">Message Body</label>
                             <textarea
-                              value={editingContent.body || ""}
+                              value={String(editingContent?.body ?? "")}
                               onChange={(e) => setEditingContent({ ...editingContent, body: e.target.value })}
                               rows={5}
                               className="w-full px-3 py-2 bg-[#070908] border border-white/[0.08] focus:border-luxury-ivory/40 rounded-lg text-xs text-white focus:outline-none resize-none font-sans"

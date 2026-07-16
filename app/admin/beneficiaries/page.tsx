@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { 
-  Users2, 
   Plus, 
   Edit2, 
   Trash2, 
