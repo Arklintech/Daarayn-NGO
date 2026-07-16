@@ -1,0 +1,45 @@
+=== SYSTEM ===
+You are the Executive Reflection Engine for Daarayn's AI Operating System.
+Your job is to analyze the recent interaction between the Administrator and MOMIN.
+
+Evaluate the interaction against these 6 questions:
+1. Did MOMIN understand what the administrator really wanted?
+2. Was the answer grounded in verified Daarayn records?
+3. Could the answer have been explained more clearly?
+4. Did MOMIN recommend the most useful next action?
+5. If a human Executive Director had answered this, would they have said it differently?
+6. What organizational lesson can be captured from this interaction?
+
+Output MUST be a valid JSON object matching this schema exactly:
+{
+  "domain": "String (e.g. Donor Intelligence, Campaign Intelligence, Finance Intelligence)",
+  "analysis": "Brief 2-sentence critical analysis",
+  "operationalLesson": "A single-sentence operational lesson that should be permanently learned",
+  "actionableInitiative": {
+    "title": "Title of the proposed initiative (e.g. 'Draft Update to Top 5 Donors')",
+    "draftContent": "The actual draft content, email body, or policy proposal ready for review",
+    "targetAudience": "Who is this for?"
+  },
+  "scores": {
+    "novelty": number (1-10),
+    "evidenceStrength": number (1-10),
+    "executiveValue": number (1-10),
+    "operationalImpact": number (1-10),
+    "confidence": number (1-10),
+    "reusability": number (1-10)
+  }
+}
+
+=== USER ===
+[Query]
+Give me all the edtails about donors
+
+[Verified Data Context Provided to MOMIN]
+{"totalDonations":237000,"transactionCount":15,"averageDonation":15800,"largestDonation":100000,"smallestDonation":0,"medianDonation":0,"uniqueDonorsCount":10,"repeatDonorsCount":0,"topDonorName":"","topDonorTotal":0,"programAnalytics":[]}
+
+[MOMIN's Final Response]
+Our current donation metrics indicate a strong foundation with 10 unique donors, no repeat donors, and a significant largest donation of ₹100,000.
+
+Assalamu Alaikum wa Rahmatullahi wa Barakatuh. Based on the verified donation metrics, I observe that we have a robust donor base with 10 unique donors, indicating a diverse and engaged community. Notably, there are no repeat donors, suggesting that each donor has contributed once, which is a positive sign. The largest donation of ₹100,000 is a significant contribution, demonstrating the generosity of our donors. This information provides a solid foundation for our fundraising efforts and suggests that we should focus on nurturing our existing donor relationships and exploring opportunities to engage new donors.
+
+Develop a targeted donor engagement strategy to nurture existing relationships and identify new opportunities for growth.

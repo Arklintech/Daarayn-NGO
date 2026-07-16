@@ -1,0 +1,41 @@
+[
+  {
+    "id": "MECP-PH5-001",
+    "query": "Who is the top doner?",
+    "role": "super_admin",
+    "expectedMetrics": {
+      "uniqueDonorsCount": 11,
+      "repeatDonorsCount": 3,
+      "topDonorName": "Ahmed Khan",
+      "topDonorTotal": 100000
+    },
+    "expectedContract": "DonorSummary",
+    "tags": ["phase5", "nlu", "misspelling"]
+  },
+  {
+    "id": "MECP-PH5-002",
+    "query": "how much did ahmwd donat",
+    "role": "super_admin",
+    "expectedMetrics": {
+      "transactionCount": 5
+    },
+    "expectedContract": "DonorSummary",
+    "tags": ["phase5", "nlu", "heavy-misspelling"]
+  },
+  {
+    "id": "MECP-PH5-003",
+    "query": "what is the progress of the water camapign",
+    "role": "super_admin",
+    "expectedMetrics": {},
+    "expectedContract": "ProjectSummary",
+    "tags": ["phase5", "nlu", "misspelling"]
+  },
+  {
+    "id": "MECP-PH5-004",
+    "query": "write a thnk u mail for sara",
+    "role": "super_admin",
+    "expectedMetrics": {},
+    "expectedContract": "CommunicationDraft",
+    "tags": ["phase5", "nlu", "colloquial"]
+  }
+]

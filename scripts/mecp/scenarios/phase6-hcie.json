@@ -1,0 +1,50 @@
+[
+  {
+    "scenarioId": "HCIE-spelling",
+    "query": "pls show doner info",
+    "role": "editor",
+    "expectedIntent": "donorIntelligence"
+  },
+  {
+    "scenarioId": "HCIE-shorthand",
+    "query": "compain report",
+    "role": "editor",
+    "expectedIntent": "projectIntelligence"
+  },
+  {
+    "scenarioId": "HCIE-context",
+    "query": "how much did he donate?",
+    "role": "editor",
+    "expectedIntent": "donationSearch"
+  },
+  {
+    "scenarioId": "HCIE-ambiguous",
+    "query": "education",
+    "role": "editor",
+    "expectedIntent": "projectIntelligence"
+  },
+  {
+    "scenarioId": "HCIE-alias",
+    "query": "what did abdul give?",
+    "role": "editor",
+    "expectedIntent": "donationSearch"
+  },
+  {
+    "scenarioId": "HCIE-time",
+    "query": "donations yesterday",
+    "role": "editor",
+    "expectedIntent": "donationSearch"
+  },
+  {
+    "scenarioId": "HCIE-urgent",
+    "query": "quickly show pending donors",
+    "role": "editor",
+    "expectedIntent": "donorIntelligence"
+  },
+  {
+    "scenarioId": "HCIE-investigation",
+    "query": "why did funds drop last week?",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence"
+  }
+]

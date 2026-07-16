@@ -1,0 +1,22 @@
+[
+  {
+    "query": "Give me the morning briefing",
+    "expectedIntent": "executiveBriefing",
+    "role": "superadmin"
+  },
+  {
+    "query": "What is the status of the organization?",
+    "expectedIntent": "executiveBriefing",
+    "role": "editor"
+  },
+  {
+    "query": "Brief me on today's strategic priorities",
+    "expectedIntent": "executiveBriefing",
+    "role": "finance"
+  },
+  {
+    "query": "Good morning MOMIN, what should I focus on?",
+    "expectedIntent": "executiveBriefing",
+    "role": "compliance"
+  }
+]

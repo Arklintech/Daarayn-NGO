@@ -1,0 +1,802 @@
+[
+  {
+    "id": "TC-001",
+    "query": "Verify total donations received today.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000, "transactionCount": 3 }
+  },
+  {
+    "id": "TC-002",
+    "query": "What is today's donation total?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000, "transactionCount": 3 }
+  },
+  {
+    "id": "TC-003",
+    "query": "Show today's donations.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000, "transactionCount": 3 }
+  },
+  {
+    "id": "TC-004",
+    "query": "Check today's donation history.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000, "transactionCount": 3 }
+  },
+  {
+    "id": "TC-005",
+    "query": "How much was donated today?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000, "transactionCount": 3 }
+  },
+  {
+    "id": "TC-006",
+    "query": "Show yesterday's donations.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0, "transactionCount": 0 }
+  },
+  {
+    "id": "TC-007",
+    "query": "How much did we collect yesterday?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-008",
+    "query": "Yesterday's donation sum",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-009",
+    "query": "List yesterday's contributions.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-010",
+    "query": "What is the total of yesterday's donations?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-011",
+    "query": "Largest donation this month",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-012",
+    "query": "What is the max donation amount?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-013",
+    "query": "Show the biggest contribution.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-014",
+    "query": "Largest donation",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-015",
+    "query": "Show the maximum donation received.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-016",
+    "query": "Who is the top donor?",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan", "topDonorTotal": 120000 }
+  },
+  {
+    "id": "TC-017",
+    "query": "Show top donor details.",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan", "topDonorTotal": 120000 }
+  },
+  {
+    "id": "TC-018",
+    "query": "Top donor total contribution",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan", "topDonorTotal": 120000 }
+  },
+  {
+    "id": "TC-019",
+    "query": "Who donated the most?",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan", "topDonorTotal": 120000 }
+  },
+  {
+    "id": "TC-020",
+    "query": "Find our top donor.",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan", "topDonorTotal": 120000 }
+  },
+  {
+    "id": "TC-021",
+    "query": "Monthly totals",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-022",
+    "query": "Show sum of contributions this month.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-023",
+    "query": "This month's total donations",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-024",
+    "query": "How much funds raised this month?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-025",
+    "query": "Total monthly donations",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-026",
+    "query": "Pending allocations",
+    "role": "super_admin",
+    "expectedIntent": "complianceIntelligence",
+    "expectedContract": "CampaignSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-027",
+    "query": "List allocations pending sign-off.",
+    "role": "super_admin",
+    "expectedIntent": "complianceIntelligence",
+    "expectedContract": "CampaignSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-028",
+    "query": "Show allocations that are not completed.",
+    "role": "super_admin",
+    "expectedIntent": "complianceIntelligence",
+    "expectedContract": "CampaignSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-029",
+    "query": "Pending transactions",
+    "role": "super_admin",
+    "expectedIntent": "complianceIntelligence",
+    "expectedContract": "CampaignSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-030",
+    "query": "Check pending donor allocations.",
+    "role": "super_admin",
+    "expectedIntent": "complianceIntelligence",
+    "expectedContract": "CampaignSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-031",
+    "query": "Verify project funding progress.",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence",
+    "expectedContract": "ProjectSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-032",
+    "query": "Show progress of Water Wells project.",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence",
+    "expectedContract": "ProjectSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-033",
+    "query": "What is the funding gap for Water Wells?",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence",
+    "expectedContract": "ProjectSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-034",
+    "query": "Project progress for Water Wells",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence",
+    "expectedContract": "ProjectSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-035",
+    "query": "Show funding gap for projects.",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence",
+    "expectedContract": "ProjectSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-036",
+    "query": "Show donation communications history.",
+    "role": "super_admin",
+    "expectedIntent": "communicationIntelligence",
+    "expectedContract": "CommunicationDraft",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-037",
+    "query": "Draft a thank you email for DON-001.",
+    "role": "super_admin",
+    "expectedIntent": "communicationIntelligence",
+    "expectedContract": "CommunicationDraft",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-038",
+    "query": "Write acknowledgement email.",
+    "role": "super_admin",
+    "expectedIntent": "communicationIntelligence",
+    "expectedContract": "CommunicationDraft",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-039",
+    "query": "Create thank you draft.",
+    "role": "super_admin",
+    "expectedIntent": "communicationIntelligence",
+    "expectedContract": "CommunicationDraft",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-040",
+    "query": "Draft a letter to Ahmed Khan.",
+    "role": "super_admin",
+    "expectedIntent": "communicationIntelligence",
+    "expectedContract": "CommunicationDraft",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-041",
+    "query": "Show general donation trends of this month.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-042",
+    "query": "Sum of donations received today.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-043",
+    "query": "Show all donations for today.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-044",
+    "query": "Check today's transaction count.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "transactionCount": 3 }
+  },
+  {
+    "id": "TC-045",
+    "query": "Number of donations today.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "transactionCount": 3 }
+  },
+  {
+    "id": "TC-046",
+    "query": "Yesterday's total donation amount",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-047",
+    "query": "How much contribution yesterday?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-048",
+    "query": "Show yesterday's sum.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-049",
+    "query": "Yesterday's transaction count",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "transactionCount": 0 }
+  },
+  {
+    "id": "TC-050",
+    "query": "Count yesterday's donations.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "transactionCount": 0 }
+  },
+  {
+    "id": "TC-051",
+    "query": "Largest contribution received this month",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-052",
+    "query": "Show top donation size.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-053",
+    "query": "What is the biggest donation received?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-054",
+    "query": "Highest donation received.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-055",
+    "query": "Find largest transaction.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-056",
+    "query": "Who is the primary donor?",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan" }
+  },
+  {
+    "id": "TC-057",
+    "query": "Show primary donor details.",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan" }
+  },
+  {
+    "id": "TC-058",
+    "query": "Primary donor total contribution",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan" }
+  },
+  {
+    "id": "TC-059",
+    "query": "Who is our most generous donor?",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan" }
+  },
+  {
+    "id": "TC-060",
+    "query": "Find the highest contributing donor.",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan" }
+  },
+  {
+    "id": "TC-061",
+    "query": "Total monthly contributions sum",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-062",
+    "query": "Show total raised this month.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-063",
+    "query": "Total funds raised in July 2026",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-064",
+    "query": "How much did we raise this month?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-065",
+    "query": "Total donation sum of this month.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-066",
+    "query": "Are there pending allocations?",
+    "role": "super_admin",
+    "expectedIntent": "complianceIntelligence",
+    "expectedContract": "CampaignSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-067",
+    "query": "Show pending allocation entries.",
+    "role": "super_admin",
+    "expectedIntent": "complianceIntelligence",
+    "expectedContract": "CampaignSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-068",
+    "query": "Show unallocated donation logs.",
+    "role": "super_admin",
+    "expectedIntent": "complianceIntelligence",
+    "expectedContract": "CampaignSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-069",
+    "query": "Check status of allocations.",
+    "role": "super_admin",
+    "expectedIntent": "complianceIntelligence",
+    "expectedContract": "CampaignSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-070",
+    "query": "Is there any pending allocation sign-off?",
+    "role": "super_admin",
+    "expectedIntent": "complianceIntelligence",
+    "expectedContract": "CampaignSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-071",
+    "query": "Show progress of programs.",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence",
+    "expectedContract": "ProjectSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-072",
+    "query": "What is the funding gap for programs?",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence",
+    "expectedContract": "ProjectSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-073",
+    "query": "Show campaign goals for programs.",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence",
+    "expectedContract": "ProjectSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-074",
+    "query": "Verify Water Wells funding.",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence",
+    "expectedContract": "ProjectSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-075",
+    "query": "Water Wells remaining gap",
+    "role": "super_admin",
+    "expectedIntent": "projectIntelligence",
+    "expectedContract": "ProjectSummary",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-076",
+    "query": "Draft email message.",
+    "role": "super_admin",
+    "expectedIntent": "communicationIntelligence",
+    "expectedContract": "CommunicationDraft",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-077",
+    "query": "Create thank you note.",
+    "role": "super_admin",
+    "expectedIntent": "communicationIntelligence",
+    "expectedContract": "CommunicationDraft",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-078",
+    "query": "Draft a confirmation message.",
+    "role": "super_admin",
+    "expectedIntent": "communicationIntelligence",
+    "expectedContract": "CommunicationDraft",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-079",
+    "query": "Write acknowledgement draft.",
+    "role": "super_admin",
+    "expectedIntent": "communicationIntelligence",
+    "expectedContract": "CommunicationDraft",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-080",
+    "query": "Compose thank you letter.",
+    "role": "super_admin",
+    "expectedIntent": "communicationIntelligence",
+    "expectedContract": "CommunicationDraft",
+    "expectedMetrics": {}
+  },
+  {
+    "id": "TC-081",
+    "query": "Calculate donation statistics today.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-082",
+    "query": "What are today's contributions?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-083",
+    "query": "Check today's donation sums.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 170000 }
+  },
+  {
+    "id": "TC-084",
+    "query": "Count of donation records today.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "transactionCount": 3 }
+  },
+  {
+    "id": "TC-085",
+    "query": "Total transaction count for today.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "transactionCount": 3 }
+  },
+  {
+    "id": "TC-086",
+    "query": "Yesterday's contribution stats.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-087",
+    "query": "Check yesterday's transaction volume.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-088",
+    "query": "Show donation counts for yesterday.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-089",
+    "query": "Yesterday's contribution amount",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "totalDonations": 0 }
+  },
+  {
+    "id": "TC-090",
+    "query": "Count total donations yesterday.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "transactionCount": 0 }
+  },
+  {
+    "id": "TC-091",
+    "query": "Show largest monthly donation.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-092",
+    "query": "Check max contribution received.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-093",
+    "query": "Find largest contribution amount.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-094",
+    "query": "Max donation received this month.",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-095",
+    "query": "What is the largest donor transaction?",
+    "role": "super_admin",
+    "expectedIntent": "donationSearch",
+    "expectedContract": "DonationSummary",
+    "expectedMetrics": { "largestDonation": 70000 }
+  },
+  {
+    "id": "TC-096",
+    "query": "Find top donor contribution total.",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan", "topDonorTotal": 120000 }
+  },
+  {
+    "id": "TC-097",
+    "query": "Who has donated the most this month?",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan", "topDonorTotal": 120000 }
+  },
+  {
+    "id": "TC-098",
+    "query": "Find the highest active donor.",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan", "topDonorTotal": 120000 }
+  },
+  {
+    "id": "TC-099",
+    "query": "Who is our top contributing partner?",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan", "topDonorTotal": 120000 }
+  },
+  {
+    "id": "TC-100",
+    "query": "Top donor portfolio sum.",
+    "role": "super_admin",
+    "expectedIntent": "donorIntelligence",
+    "expectedContract": "DonorSummary",
+    "expectedMetrics": { "topDonorName": "Ahmed Khan", "topDonorTotal": 120000 }
+  }
+]

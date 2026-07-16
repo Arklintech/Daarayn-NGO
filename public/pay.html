@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Daarayn Aid – Payment</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* small page-specific styling using your theme */
+    .daarayn-navbar-container { position: absolute; top: 0; left: 0; width: 100%; padding: 24px 32px; z-index: 50; display: flex; justify-content: center; }
+    .daarayn-navbar { width: 100%; max-width: 1400px; height: 72px; background: rgba(10, 20, 38, 0.65); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; display: flex; align-items: center; justify-content: space-between; padding: 0 24px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3); transition: all 0.3s ease; }
+    .daarayn-logo-container { display: flex; align-items: center; gap: 12px; }
+    .daarayn-logo-icon { width: 56px; height: 56px; object-fit: contain; }
+    .daarayn-logo-text { display: flex; flex-direction: column; }
+    .daarayn-logo-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; letter-spacing: 0.5px; color: #fff; line-height: 1.1; }
+    .daarayn-logo-subtitle { font-size: 10px; font-weight: 300; letter-spacing: 1.5px; color: rgba(255, 255, 255, 0.7); text-transform: uppercase; }
+    .daarayn-nav-links { display: flex; align-items: center; gap: 32px; }
+    .daarayn-nav-link { font-size: 14px; font-weight: 400; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 6px; transition: opacity 0.2s ease; white-space: nowrap; }
+    .daarayn-nav-link:hover { opacity: 0.8; }
+    .daarayn-nav-actions { display: flex; align-items: center; gap: 20px; }
+    .daarayn-quick-donate-btn { background: #D4AF37; color: #050E1D; font-size: 14px; font-weight: 500; padding: 10px 24px; border-radius: 8px; border: none; cursor: pointer; transition: transform 0.2s, background 0.2s; white-space: nowrap; text-decoration: none; display: flex; align-items: center; justify-content: center;}
+    .daarayn-quick-donate-btn:hover { background: #F3CA45; transform: translateY(-2px); }
+    .pay-wrap { padding: 4.2rem 0; margin-top: 60px; }
+    .pay-card {
+      max-width: 720px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-radius: 18px;
+      padding: 1.6rem;
+    }
+    .pay-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 1rem;
+    }
+    .pay-title { color: var(--gold-light); font-size: 1.8rem; }
+    .pay-meta { color: rgba(245,245,245,0.75); font-size: 0.92rem; }
+    .pay-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-top: 1.25rem;
+    }
+    .pay-box {
+      border: 1px solid rgba(216,181,133,0.22);
+      border-radius: 16px;
+      padding: 1rem;
+      background: rgba(0,0,0,0.35);
+    }
+    .qr {
+      width: 100%;
+      max-width: 260px;
+      margin: 0.75rem auto 0;
+      border-radius: 16px;
+      border: 1px solid rgba(216,181,133,0.35);
+      overflow: hidden;
+      background: rgba(255,255,255,0.03);
+      padding: 10px;
+    }
+    .qr canvas, .qr img { width: 100%; height: auto; display: block; }
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.9rem;
+      word-break: break-all;
+      color: rgba(245,245,245,0.88);
+    }
+    .pay-actions { margin-top: 1.1rem; display:flex; gap:0.8rem; flex-wrap:wrap; }
+    .hint { margin-top: 0.7rem; color: rgba(245,245,245,0.65); font-size: 0.82rem; }
+    
+    /* Form Custom CSS Styles */
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      margin-bottom: 1.2rem;
+    }
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.85);
+    }
+    .form-group input[type="text"] {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 0.7rem 0.9rem;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.88rem;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .form-group input[type="text"]:focus {
+      border-color: var(--gold-light);
+    }
+    .form-group input[type="file"] {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 0.85rem;
+    }
+    .success-box {
+      text-align: center;
+      padding: 2rem 1rem;
+    }
+    .success-icon {
+      font-size: 3rem;
+      color: #10b981;
+      margin-bottom: 0.8rem;
+    }
+    .tracking-badge {
+      background: rgba(216, 181, 133, 0.08);
+      border: 1px solid rgba(216, 181, 133, 0.25);
+      padding: 0.8rem 1.2rem;
+      border-radius: 8px;
+      display: inline-block;
+      margin: 1rem 0;
+    }
+    .tracking-badge span {
+      display: block;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.6);
+      text-transform: uppercase;
+      margin-bottom: 0.15rem;
+    }
+    .tracking-badge strong {
+      font-size: 1.5rem;
+      color: #fbbf24;
+      letter-spacing: 0.05em;
+    }
+
+    @media (max-width: 860px){ .pay-grid{ grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+
+    <div class="daarayn-navbar-container">
+    <nav class="daarayn-navbar">
+      
+      <!-- Left: Logo -->
+      <a href="/" class="daarayn-logo-container" style="text-decoration: none;">
+        <img src="./brand logo1.png" alt="Daarayn Aid Logo" class="daarayn-logo-icon" />
+        <div class="daarayn-logo-text">
+          <span class="daarayn-logo-title">DAARAYN</span>
+          <span class="daarayn-logo-subtitle">FOUNDATION</span>
+        </div>
+      </a>
+
+      <!-- Middle: Links -->
+      <div class="daarayn-nav-links">
+        <a href="/#home" class="daarayn-nav-link">Home</a>
+        <div class="daarayn-nav-dropdown">
+          <a href="/#programs" class="daarayn-nav-link">Programs</a>
+        </div>
+        <a href="/#family" class="daarayn-nav-link">Family Relief</a>
+        <a href="/#quran" class="daarayn-nav-link">Qur'an Endowment</a>
+        <a href="/#masjid" class="daarayn-nav-link">Masjid Fund</a>
+        <a href="/#ledger" class="daarayn-nav-link">Public Ledger</a>
+        <div class="daarayn-nav-dropdown">
+          <a href="/#about" class="daarayn-nav-link">About Us</a>
+        </div>
+      </div>
+
+      <!-- Right: Actions -->
+      <div class="daarayn-nav-actions">
+        <a href="/" class="daarayn-quick-donate-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">← Back</a>
+      </div>
+    </nav>
+  </div>
+
+  <section class="section pay-wrap">
+    <div class="container">
+      <div class="pay-card">
+        <div class="pay-top">
+          <div>
+            <h1 class="pay-title">Complete Your Contribution</h1>
+            <p class="pay-meta" id="paySummary">Loading…</p>
+          </div>
+          <div class="pay-actions">
+            <a class="btn btn-outline" href="/#ledger">View Ledger</a>
+            <a class="btn btn-gold" href="#proofFormCard">Submit Proof Form</a>
+          </div>
+        </div>
+
+        <div class="pay-grid">
+          <!-- INR/UPI -->
+          <div class="pay-box" id="upiBox">
+            <h2 style="color: var(--gold-light); font-size: 1.2rem;">Pay via UPI (India)</h2>
+            <p class="muted">Scan the QR in PhonePe / GPay / Paytm. Amount is auto-filled.</p>
+
+            <div class="qr" id="qrWrap"></div>
+
+            <p class="hint"><strong>UPI ID:</strong> <span class="mono" id="upiIdText">mujju2028@okicici</span></p>
+            <p class="hint"><strong>Note:</strong> <span class="mono" id="upiNoteText">Daarayn Aid Donation</span></p>
+
+            <div class="pay-actions">
+              <button class="btn btn-outline" id="copyUpi">Copy UPI ID</button>
+              <button class="btn btn-outline" id="copyIntent">Copy UPI Link</button>
+            </div>
+          </div>
+
+          <!-- International -->
+          <div class="pay-box" id="intlBox">
+            <h2 style="color: var(--gold-light); font-size: 1.2rem;">Outside India?</h2>
+            <p class="muted">
+              UPI works only in India. For international contributions (free setup):
+            </p>
+
+            <ul class="list-check">
+              <li>PayPal.me link (fast)</li>
+              <li>Bank transfer (wire)</li>
+              <li>Wise transfer (optional)</li>
+            </ul>
+
+            <!-- Replace these with your real links/details -->
+            <div class="pay-actions">
+              <a class="btn btn-gold" href="https://paypal.me/YOURPAYPAL" target="_blank" rel="noopener">Pay with PayPal</a>
+              <a class="btn btn-outline" href="#" onclick="alert('Add your bank details here'); return false;">Bank Transfer Details</a>
+            </div>
+
+            <p class="hint">Tip: Add a short reference like <span class="mono">DAARAYN</span> so you can match payments.</p>
+          </div>
+        </div>
+
+        <p class="tiny-note" style="margin-top: 1rem;">
+          After payment, submit the form with your screenshot to receive a tracking ID.
+        </p>
+      </div>
+
+      <!-- ================= CUSTOM DIRECT PROOF FORM ================= -->
+      <div class="pay-card" id="proofFormCard" style="margin-top: 2rem;">
+        <div id="formSection">
+          <h2 style="color: var(--gold-light); font-size: 1.3rem; margin-bottom: 0.5rem;">Register Contribution Proof</h2>
+          <p class="muted" style="font-size: 0.85rem; margin-bottom: 1.2rem; line-height: 1.5;">
+            Register your donation in our local ledger. Submit your payment reference and transfer screenshot below to help us check the bank records and issue your unique Tracking ID.
+          </p>
+
+          <form id="proofForm" enctype="multipart/form-data">
+            <div class="form-group">
+              <label for="donorName">Your Name (Leave blank to remain Anonymous)</label>
+              <input type="text" id="donorName" name="donorName" placeholder="E.g., M. Sabir or Anonymous" />
+            </div>
+
+            <div class="form-group">
+              <label for="donorContact">WhatsApp / Email (For receiving updates - kept private) *</label>
+              <input type="text" id="donorContact" name="donorContact" required placeholder="E.g., sabir@example.com or +9198765..." />
+            </div>
+
+            <div class="form-group">
+              <label for="upiRef">12-Digit UPI Ref / Bank Transaction ID *</label>
+              <input type="text" id="upiRef" name="upiRef" required placeholder="E.g., 617283940182" />
+            </div>
+
+            <div class="form-group">
+              <label for="screenshot">Payment Screenshot (Optional)</label>
+              <input type="file" id="screenshot" name="screenshot" accept="image/*" />
+            </div>
+
+            <button type="submit" class="btn btn-gold btn-full" style="width: 100%; font-weight: 600;">Register Donation</button>
+          </form>
+        </div>
+
+        <!-- Success Animation state -->
+        <div id="successBox" class="success-box" style="display: none;">
+          <div class="success-icon">✓</div>
+          <h3 style="color: var(--gold-light); font-size: 1.4rem;">Donation Registered!</h3>
+          <p class="muted" style="font-size: 0.88rem; margin-top: 0.2rem;">May Allah grant you barakah and accept your sadaqah.</p>
+          
+          <div class="tracking-badge">
+            <span>Your Public Tracking ID:</span>
+            <strong id="assignedId">DA006</strong>
+          </div>
+
+          <p class="muted" style="font-size: 0.82rem; line-height: 1.5; max-width: 500px; margin: 0 auto 1.5rem;">
+            Your transaction reference <strong id="successRef" style="color: #fff;">617283940182</strong> has been logged. Our auditors will match it against bank statements. You will receive progress reports on your contact path.
+          </p>
+
+          <a href="/#ledger" class="btn btn-gold">View Public Ledger</a>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- QR library (free) -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
+  <script src="pay.js"></script>
+</body>
+</html>

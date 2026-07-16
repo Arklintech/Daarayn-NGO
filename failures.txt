@@ -1,0 +1,12 @@
+node.exe : Γ¥î Case TC-019 Metric Mismatch: "topDonorName" expected Ahmed Khan (String: Ahmed Khan) but response lacks
+Γ¥î Case TC-019 Metric Mismatch: "topDonorTotal" expected 120000 (String: 120,000) but response lacks it.
+Γ¥î Case TC-021 Metric Mismatch: "totalDonations" expected 170000 (String: 170,000) but response lacks it.
+Γ¥î Case TC-035 Failed: Response was rejected by ERCE governance.
+  
+Γ¥î Case TC-055 Metric Mismatch: "largestDonation" expected 70000 (String: 70,000) but response lacks it.
+Γ¥î Case TC-064 Metric Mismatch: "totalDonations" expected 170000 (String: 170,000) but response lacks it.
+Γ¥î Case TC-072 Failed: Response was rejected by ERCE governance.
+  
+Γ¥î Case TC-073 Failed: Response was rejected by ERCE governance.
+  
+Γ¥î Case TC-095 Metric Mismatch: "largestDonation" expected 70000 (String: 70,000) but response lacks it.

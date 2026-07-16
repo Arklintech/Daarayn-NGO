@@ -1,0 +1,1534 @@
+[
+  {
+    "id": "MECP-PH5-001",
+    "query": "What is the total amount of donations received?",
+    "role": "compliance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-002",
+    "query": "Show me the latest transaction splits.",
+    "role": "compliance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-003",
+    "query": "Give me the average donation size.",
+    "role": "finance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-004",
+    "query": "How is the water project progressing?",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-005",
+    "query": "Tell me the gap for the family relief campaign.",
+    "role": "super_admin",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-006",
+    "query": "Which campaign is struggling the most?",
+    "role": "compliance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-007",
+    "query": "Who is our top donor?",
+    "role": "compliance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-008",
+    "query": "Give me a summary of Ahmed's contributions.",
+    "role": "finance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-009",
+    "query": "How many unique donors do we have?",
+    "role": "finance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-010",
+    "query": "Draft a thank you email for the last donor.",
+    "role": "compliance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-011",
+    "query": "Write an update for the water campaign.",
+    "role": "compliance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-012",
+    "query": "Create a receipt confirmation message.",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-013",
+    "query": "Are there any compliance risks with the latest zakat allocations?",
+    "role": "super_admin",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-014",
+    "query": "Check for duplicate refunds.",
+    "role": "finance",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-015",
+    "query": "Verify the vendor payment rules.",
+    "role": "finance",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-016",
+    "query": "Compile a board summary report for Q3.",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-017",
+    "query": "Generate a financial overview of all active campaigns.",
+    "role": "compliance",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-018",
+    "query": "Give me the monthly impact summary.",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "baseline"
+    ]
+  },
+  {
+    "id": "MECP-PH5-019",
+    "query": "what is the total amount of dnnations received?",
+    "role": "super_admin",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-020",
+    "query": "what is the total amount of donats received?",
+    "role": "super_admin",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-021",
+    "query": "what is the total amount of donatons received?",
+    "role": "finance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-022",
+    "query": "what is the total amount of dnnations received?",
+    "role": "finance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-023",
+    "query": "show me the latest transaction splits.",
+    "role": "super_admin",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-024",
+    "query": "show me the latest transaction splits.",
+    "role": "compliance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-025",
+    "query": "show me the latest transaction splits.",
+    "role": "super_admin",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-026",
+    "query": "show me the latest transaction splits.",
+    "role": "finance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-027",
+    "query": "give me the average dmnation size.",
+    "role": "super_admin",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-028",
+    "query": "give me the average donaton size.",
+    "role": "super_admin",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-029",
+    "query": "give me the average dmnation size.",
+    "role": "finance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-030",
+    "query": "give me the average donat size.",
+    "role": "finance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-031",
+    "query": "how is the water prject progressing?",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-032",
+    "query": "how is the water projt progressing?",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-033",
+    "query": "how is the water prject progressing?",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-034",
+    "query": "how is the water projt progressing?",
+    "role": "super_admin",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-035",
+    "query": "tell me the gap for the family relief camapign.",
+    "role": "super_admin",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-036",
+    "query": "tell me the gap for the family relief camapign.",
+    "role": "super_admin",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-037",
+    "query": "tell me the gap for the family relief campain.",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-038",
+    "query": "tell me the gap for the family relief cmpgn.",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-039",
+    "query": "which camapign is struggling the most?",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-040",
+    "query": "which campain is struggling the most?",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-041",
+    "query": "which cmpgn is struggling the most?",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-042",
+    "query": "which campain is struggling the most?",
+    "role": "super_admin",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-043",
+    "query": "who is our top doner?",
+    "role": "super_admin",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-044",
+    "query": "who is our top doner?",
+    "role": "finance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-045",
+    "query": "who is our top donar?",
+    "role": "compliance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-046",
+    "query": "who is our top donar?",
+    "role": "compliance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-047",
+    "query": "give me a sumary of ahmwd's contributions.",
+    "role": "compliance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-048",
+    "query": "give me a sumary of ahmd's contributions.",
+    "role": "super_admin",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-049",
+    "query": "give me a smry of ahmwd's contributions.",
+    "role": "finance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-050",
+    "query": "give me a sumary of amed's contributions.",
+    "role": "finance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-051",
+    "query": "how many unique dnrs do we have?",
+    "role": "super_admin",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-052",
+    "query": "how many unique doners do we have?",
+    "role": "super_admin",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-053",
+    "query": "how many unique donars do we have?",
+    "role": "compliance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-054",
+    "query": "how many unique dnrs do we have?",
+    "role": "finance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-055",
+    "query": "draft a thx eml for the last dnr.",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-056",
+    "query": "draft a ty mail for the last donar.",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-057",
+    "query": "draft a ty mail for the last dnr.",
+    "role": "compliance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-058",
+    "query": "draft a thnk u mail for the last dnr.",
+    "role": "finance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-059",
+    "query": "write an update for the water campagin.",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-060",
+    "query": "write an update for the water cmpgn.",
+    "role": "finance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-061",
+    "query": "write an update for the water cmpgn.",
+    "role": "compliance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-062",
+    "query": "write an update for the water camapign.",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-063",
+    "query": "create a receipt confirmation message.",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-064",
+    "query": "create a receipt confirmation message.",
+    "role": "finance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-065",
+    "query": "create a receipt confirmation message.",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-066",
+    "query": "create a receipt confirmation message.",
+    "role": "compliance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-067",
+    "query": "are there any complince risks with the latest zukat allocations?",
+    "role": "finance",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-068",
+    "query": "are there any complianc risks with the latest zkat allocations?",
+    "role": "super_admin",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-069",
+    "query": "are there any cmplnc risks with the latest zakatt allocations?",
+    "role": "super_admin",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-070",
+    "query": "are there any complince risks with the latest zkat allocations?",
+    "role": "compliance",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-071",
+    "query": "check for duplicate refunds.",
+    "role": "super_admin",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-072",
+    "query": "check for duplicate refunds.",
+    "role": "super_admin",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-073",
+    "query": "check for duplicate refunds.",
+    "role": "super_admin",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-074",
+    "query": "check for duplicate refunds.",
+    "role": "compliance",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-075",
+    "query": "verify the vendor payment rules.",
+    "role": "compliance",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-076",
+    "query": "verify the vendor payment rules.",
+    "role": "compliance",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-077",
+    "query": "verify the vendor payment rules.",
+    "role": "finance",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-078",
+    "query": "verify the vendor payment rules.",
+    "role": "compliance",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-079",
+    "query": "compile a board summ reprot for q3.",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-080",
+    "query": "compile a board smry reprot for q3.",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-081",
+    "query": "compile a board summ rept for q3.",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-082",
+    "query": "compile a board sumary rept for q3.",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-083",
+    "query": "generate a financial overview of all active campains.",
+    "role": "compliance",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-084",
+    "query": "generate a financial overview of all active campains.",
+    "role": "finance",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-085",
+    "query": "generate a financial overview of all active cmpgns.",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-086",
+    "query": "generate a financial overview of all active camapigns.",
+    "role": "compliance",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-087",
+    "query": "give me the monthly impact summry.",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-088",
+    "query": "give me the monthly impact summ.",
+    "role": "compliance",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-089",
+    "query": "give me the monthly impact smry.",
+    "role": "finance",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-090",
+    "query": "give me the monthly impact smry.",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "misspelling"
+    ]
+  },
+  {
+    "id": "MECP-PH5-091",
+    "query": "q3 rept pls",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-092",
+    "query": "q3 rept pls",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-093",
+    "query": "q3 rept pls",
+    "role": "super_admin",
+    "expectedContract": "ReportSummary",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-094",
+    "query": "top doner stat",
+    "role": "super_admin",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-095",
+    "query": "top doner stat",
+    "role": "super_admin",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-096",
+    "query": "top doner stat",
+    "role": "super_admin",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-097",
+    "query": "zkat cmplnc check",
+    "role": "super_admin",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-098",
+    "query": "zkat cmplnc check",
+    "role": "super_admin",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-099",
+    "query": "zkat cmplnc check",
+    "role": "super_admin",
+    "expectedContract": "ActionPlan",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-100",
+    "query": "wtr campain gap",
+    "role": "super_admin",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-101",
+    "query": "wtr campain gap",
+    "role": "super_admin",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-102",
+    "query": "wtr campain gap",
+    "role": "super_admin",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-103",
+    "query": "thx eml 4 ahmd",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-104",
+    "query": "thx eml 4 ahmd",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-105",
+    "query": "thx eml 4 ahmd",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "shorthand"
+    ]
+  },
+  {
+    "id": "MECP-PH5-106",
+    "query": "what about his last donation?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-107",
+    "query": "what about his last donation?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-108",
+    "query": "what about his last donation?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-109",
+    "query": "what about his last donation?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-110",
+    "query": "what about his last donation?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-111",
+    "query": "how much did she give?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-112",
+    "query": "how much did she give?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-113",
+    "query": "how much did she give?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-114",
+    "query": "how much did she give?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-115",
+    "query": "how much did she give?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-116",
+    "query": "draft an email for them.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-117",
+    "query": "draft an email for them.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-118",
+    "query": "draft an email for them.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-119",
+    "query": "draft an email for them.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-120",
+    "query": "draft an email for them.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-121",
+    "query": "send that to the board.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-122",
+    "query": "send that to the board.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-123",
+    "query": "send that to the board.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-124",
+    "query": "send that to the board.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-125",
+    "query": "send that to the board.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-126",
+    "query": "what's the gap for that one?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-127",
+    "query": "what's the gap for that one?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-128",
+    "query": "what's the gap for that one?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-129",
+    "query": "what's the gap for that one?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-130",
+    "query": "what's the gap for that one?",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-131",
+    "query": "show me the record for him.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-132",
+    "query": "show me the record for him.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-133",
+    "query": "show me the record for him.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-134",
+    "query": "show me the record for him.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-135",
+    "query": "show me the record for him.",
+    "role": "super_admin",
+    "expectedContract": "ContextDependent",
+    "tags": [
+      "nlu",
+      "contextual"
+    ]
+  },
+  {
+    "id": "MECP-PH5-136",
+    "query": "who give most money trust",
+    "role": "super_admin",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-137",
+    "query": "who give most money trust",
+    "role": "finance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-138",
+    "query": "who give most money trust",
+    "role": "finance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-139",
+    "query": "who give most money trust",
+    "role": "super_admin",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-140",
+    "query": "who give most money trust",
+    "role": "finance",
+    "expectedContract": "DonorSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-141",
+    "query": "water project how much finish",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-142",
+    "query": "water project how much finish",
+    "role": "super_admin",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-143",
+    "query": "water project how much finish",
+    "role": "super_admin",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-144",
+    "query": "water project how much finish",
+    "role": "finance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-145",
+    "query": "water project how much finish",
+    "role": "compliance",
+    "expectedContract": "ProjectSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-146",
+    "query": "make email say thank you",
+    "role": "finance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-147",
+    "query": "make email say thank you",
+    "role": "compliance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-148",
+    "query": "make email say thank you",
+    "role": "finance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-149",
+    "query": "make email say thank you",
+    "role": "finance",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-150",
+    "query": "make email say thank you",
+    "role": "super_admin",
+    "expectedContract": "CommunicationDraft",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-151",
+    "query": "report give me all money",
+    "role": "finance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-152",
+    "query": "report give me all money",
+    "role": "compliance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-153",
+    "query": "report give me all money",
+    "role": "finance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-154",
+    "query": "report give me all money",
+    "role": "compliance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  },
+  {
+    "id": "MECP-PH5-155",
+    "query": "report give me all money",
+    "role": "compliance",
+    "expectedContract": "DonationSummary",
+    "tags": [
+      "nlu",
+      "grammar"
+    ]
+  }
+]
