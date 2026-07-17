@@ -58,6 +58,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => unsub();
   }, [user]);
 
+  // Inject PWA Manifest for Admin
+  React.useEffect(() => {
+    let link = document.querySelector("link[rel~='manifest']") as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'manifest';
+      document.head.appendChild(link);
+    }
+    link.href = '/api/manifest/admin';
+  }, []);
+
   // If this is the login page, bypass layout entirely
   if (pathname === "/admin/login") {
     return <>{children}</>;
@@ -236,7 +247,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#05110a] via-[#020704] to-[#030906] flex text-gray-200">
+    <div className="bg-[#020704] min-h-screen">
+      <div className="min-h-screen bg-gradient-to-br from-[#05110a] via-[#020704] to-[#030906] flex text-gray-200 max-w-enterprise mx-auto shadow-2xl overflow-hidden relative">
       
       {/* Desktop Sidebar */}
       <aside className="hidden lg:block w-64 border-r border-white/[0.06] bg-luxury-bg-deep/40 backdrop-blur-xl shrink-0 h-screen sticky top-0">
@@ -324,6 +336,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         )}
       </AnimatePresence>
 
+      </div>
     </div>
   );
 }

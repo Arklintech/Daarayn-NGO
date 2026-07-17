@@ -42,8 +42,9 @@ export default function AgentLogin() {
   const [error, setError]             = useState("");
   const [loading, setLoading]         = useState(false);
   const [mounted, setMounted]         = useState(false);
+  const [showBypass, setShowBypass]   = useState(!auth);
   const router = useRouter();
-  const { user, agentData, loading: authLoading } = useFieldAgentAuth();
+  const { user, agentData, loading: authLoading, loginAsMock } = useFieldAgentAuth();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -275,6 +276,22 @@ export default function AgentLogin() {
                 <><ShieldCheck className="w-4 h-4" /> Secure Login</>
               )}
             </button>
+
+            {/* Developer Bypass Option */}
+            {showBypass && (
+              <div className="mt-5 pt-5 border-t border-white/[0.06] text-center">
+                <p className="text-[10px] text-amber-300/80 font-medium leading-normal mb-3">
+                  Developer option: You can temporarily bypass Firebase Authentication setup to test field features locally.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => loginAsMock(email || "agent@daarayn.org", "Demo Agent")}
+                  className="w-full py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-semibold text-xs tracking-wider transition active:scale-[0.98]"
+                >
+                  Bypass Auth (Developer Mode)
+                </button>
+              </div>
+            )}
 
             {/* OR */}
             <div className="flex items-center gap-3">

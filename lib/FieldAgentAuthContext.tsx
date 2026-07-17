@@ -11,6 +11,7 @@ interface FieldAgentAuthContextType {
   agentData: FieldAgent | null;
   loading: boolean;
   logout: () => Promise<void>;
+  loginAsMock: (email: string, name: string) => void;
 }
 
 const FieldAgentAuthContext = createContext<FieldAgentAuthContextType>({
@@ -18,6 +19,7 @@ const FieldAgentAuthContext = createContext<FieldAgentAuthContextType>({
   agentData: null,
   loading: true,
   logout: async () => {},
+  loginAsMock: () => {},
 });
 
 export function FieldAgentAuthProvider({ children }: { children: React.ReactNode }) {
@@ -39,6 +41,12 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
       } catch (e) {
         console.error("Failed to parse demo agent", e);
       }
+    }
+
+    if (!auth) {
+      console.warn("Auth module not initialized. FieldAgentAuthContext falling back.");
+      setLoading(false);
+      return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -66,6 +74,25 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
     return () => unsubscribe();
   }, []);
 
+  const loginAsMock = (email: string, name: string) => {
+    const mockUser = { email, uid: "mock-agent-123" } as User;
+    const mockAgent: FieldAgent = {
+      id: "mock-agent-123",
+      firebaseUid: "mock-agent-123",
+      name,
+      email,
+      phone: "+1234567890",
+      region: "Global",
+      status: "active",
+      joinedAt: new Date().toISOString()
+    };
+    if (typeof window !== "undefined") {
+      localStorage.setItem("demoAgent", JSON.stringify(mockAgent));
+    }
+    setUser(mockUser);
+    setAgentData(mockAgent);
+  };
+
   const logout = async () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('demoAgent');
@@ -77,7 +104,7 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
   };
 
   return (
-    <FieldAgentAuthContext.Provider value={{ user, agentData, loading, logout }}>
+    <FieldAgentAuthContext.Provider value={{ user, agentData, loading, logout, loginAsMock }}>
       {children}
     </FieldAgentAuthContext.Provider>
   );

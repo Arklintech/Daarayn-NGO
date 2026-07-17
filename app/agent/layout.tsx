@@ -80,8 +80,9 @@ function AgentNavigation({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="flex min-h-screen bg-[#020704] text-gray-200 font-sans">
-      {/* ─── Desktop Sidebar (lg+) ──────────────────────── */}
+    <div className="bg-[#020704] min-h-screen">
+      <div className="flex min-h-screen bg-[#020704] text-gray-200 font-sans max-w-enterprise mx-auto relative shadow-2xl">
+        {/* ─── Desktop Sidebar (lg+) ──────────────────────── */}
       <aside className="hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-[#020704] border-r border-luxury-border z-40">
         <div className="flex items-center gap-3 p-6 pb-4 border-b border-white/[0.06]">
           <img src="/daarayn-logo-transparent.png" alt="Daarayn" className="w-14 h-14 object-contain filter brightness-110" />
@@ -227,6 +228,7 @@ function AgentNavigation({ children }: { children: React.ReactNode }) {
           })}
         </div>
       </nav>
+      </div>
     </div>
   );
 }
@@ -234,6 +236,17 @@ function AgentNavigation({ children }: { children: React.ReactNode }) {
 export default function AgentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isLoginPage = pathname === "/agent/login" || pathname === "/agent";
+
+  // Inject PWA Manifest for Agent
+  useEffect(() => {
+    let link = document.querySelector("link[rel~='manifest']") as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'manifest';
+      document.head.appendChild(link);
+    }
+    link.href = '/api/manifest/agent';
+  }, []);
 
   if (isLoginPage) {
     return (

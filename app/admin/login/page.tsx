@@ -13,7 +13,7 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [isRegisterMode, setIsRegisterMode] = useState(false); // Enable easy registration of first admin
-  const [showBypass, setShowBypass] = useState(false);
+  const [showBypass, setShowBypass] = useState(!auth);
 
   const router = useRouter();
   const { user, loading: authLoading, loginAsMock } = useAuth();

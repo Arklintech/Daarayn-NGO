@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@utility max-w-enterprise {
+  max-width: 1920px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
 @theme {
   --color-luxury-bg: #030a06;
   --color-luxury-bg-deep: #020704;
@@ -59,6 +65,34 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #ffffff;
+}
+
+/* 
+  ===========================================
+  Foldable Cover Screen Support (280px - 340px)
+  ===========================================
+*/
+@media (max-width: 340px) {
+  /* Ensure text scales down on extremely narrow viewports */
+  html {
+    font-size: 13px; 
+  }
+  
+  /* Prevent horizontal scrolling by aggressive wrapping */
+  .flex-row, .flex {
+    flex-wrap: wrap !important;
+  }
+  
+  /* Exception: Keep icons aligned */
+  .flex-nowrap, .sidebar-link, .nav-item {
+    flex-wrap: nowrap !important;
+  }
+
+  /* Shrink padding globally on tiny devices */
+  main, section, div, p {
+    padding-left: max(4px, 2%) !important;
+    padding-right: max(4px, 2%) !important;
+  }
 }
 
 /* Animations */
