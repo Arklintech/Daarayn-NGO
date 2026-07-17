@@ -1,7 +1,7 @@
 /**
  * lib/ai/gate/AIWriteGate.ts
  *
- * MOMIN AI Write Gate — Production Hardening
+ * KHIDR AI Write Gate — Production Hardening
  *
  * CRITICAL SECURITY CONTROL (Audit Finding #13):
  * Every AI-triggered write to financial/ledger/PII Firestore collections

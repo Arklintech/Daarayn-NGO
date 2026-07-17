@@ -1,7 +1,7 @@
 /**
  * lib/ai/knowledge/validator.ts
  *
- * Response Validator for MOMIN Knowledge Intelligence Engine (MKIE).
+ * Response Validator for KHIDR Knowledge Intelligence Engine (MKIE).
  * Audits AI output responses against input context logs to block estimations or hallucinations.
  * Processes the structured JSON schema.
  */

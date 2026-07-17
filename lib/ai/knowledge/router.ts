@@ -1,13 +1,13 @@
 /**
  * lib/ai/knowledge/router.ts
  *
- * AI Specialist Router for MOMIN Knowledge Intelligence Engine.
+ * AI Specialist Router for KHIDR Knowledge Intelligence Engine.
  * Directs parsed query intents to target specialist departments.
  */
 
-import type { MominIntent } from "./intentEngine";
+import type { KhidrIntent } from "./intentEngine";
 
-export type MominDepartment =
+export type KhidrDepartment =
   | "executive"
   | "donation"
   | "project"
@@ -21,7 +21,7 @@ export type MominDepartment =
   | "analytics";
 
 export interface RoutingDecision {
-  department: MominDepartment;
+  department: KhidrDepartment;
   reason: string;
   collectionsRequired: string[];
 }
@@ -30,7 +30,7 @@ export interface RoutingDecision {
  * Routes classified intent to the appropriate intelligence department
  * and identifies the Firestore collections required to answer the query.
  */
-export function routeToSpecialist(intent: MominIntent, query: string): RoutingDecision {
+export function routeToSpecialist(intent: KhidrIntent, query: string): RoutingDecision {
   const queryLower = query.toLowerCase();
 
   switch (intent) {

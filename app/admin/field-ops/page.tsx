@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import { db } from "@/lib/firebase";
 import { collection, query, onSnapshot, doc, updateDoc, setDoc, where, addDoc } from "firebase/firestore";
 import { 
@@ -10,8 +10,14 @@ import {
 } from "lucide-react";
 import { FieldAgent, FieldReport, FieldMessage, FieldConversation } from "@/lib/db-field-ops";
 import { notifyFieldReport, notifyConversation } from "@/lib/notifications";
+import { useSearchParams } from "next/navigation";
 
-export default function FieldOperationsCenter() {
+function FieldOperationsCenterContent() {
+  const searchParams = useSearchParams();
+  const paramAgentId = searchParams.get("agentId");
+  const paramReportId = searchParams.get("reportId");
+  const paramConvId = searchParams.get("convId");
+
   const [agents, setAgents] = useState<FieldAgent[]>([]);
   const [allReports, setAllReports] = useState<FieldReport[]>([]);
   const [conversations, setConversations] = useState<FieldConversation[]>([]);
@@ -29,6 +35,15 @@ export default function FieldOperationsCenter() {
   const [isUploading, setIsUploading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+
+  // Quick Action modal state
+  const [showRejectModal, setShowRejectModal] = useState(false);
+  const [rejectReason, setRejectReason] = useState('');
+  const [showRequestInfoModal, setShowRequestInfoModal] = useState(false);
+  const [requestInfoText, setRequestInfoText] = useState('');
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [assignTo, setAssignTo] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Global Listeners
   useEffect(() => {
@@ -52,21 +67,55 @@ export default function FieldOperationsCenter() {
     return () => { unsubA(); unsubR(); unsubC(); };
   }, []);
 
-  // When active Agent changes, auto-select their most recent conversation
+  // Select active agent and conversation from query params (notifications action URL)
+  useEffect(() => {
+    if (paramAgentId) {
+      setActiveAgentId(paramAgentId);
+    }
+    if (paramConvId) {
+      setActiveConvId(paramConvId);
+    } else if (paramReportId && conversations.length > 0) {
+      const matchedConv = conversations.find(c => c.reportId === paramReportId);
+      if (matchedConv) {
+        setActiveConvId(matchedConv.id);
+      }
+    }
+  }, [paramAgentId, paramReportId, paramConvId, conversations]);
+
+  // When active Agent changes, auto-select their most recent conversation (unless overridden by query param)
   useEffect(() => {
     if (!activeAgentId) { setActiveConvId(null); return; }
     
     // If the currently selected conv belongs to this agent, keep it.
     const currentConv = conversations.find(c => c.id === activeConvId);
     if (currentConv && currentConv.agentId === activeAgentId) return;
+
+    // Check if query params specify a reportId or convId matching this agent
+    if (paramConvId) {
+      const matched = conversations.find(c => c.id === paramConvId && c.agentId === activeAgentId);
+      if (matched) {
+        setActiveConvId(paramConvId);
+        return;
+      }
+    }
+    if (paramReportId) {
+      const matched = conversations.find(c => c.reportId === paramReportId && c.agentId === activeAgentId);
+      if (matched) {
+        setActiveConvId(matched.id);
+        return;
+      }
+    }
     
     const agentConvs = conversations.filter(c => c.agentId === activeAgentId);
-    if (agentConvs.length > 0) {
+    const reportConvs = agentConvs.filter(c => c.type === 'Report');
+    if (reportConvs.length > 0) {
+      setActiveConvId(reportConvs[0].id);
+    } else if (agentConvs.length > 0) {
       setActiveConvId(agentConvs[0].id);
     } else {
       setActiveConvId(null);
     }
-  }, [activeAgentId, conversations]);
+  }, [activeAgentId, conversations, paramConvId, paramReportId]);
 
   // Load Messages for active conversation
   useEffect(() => {
@@ -86,7 +135,9 @@ export default function FieldOperationsCenter() {
 
   const activeAgent = agents.find(a => a.id === activeAgentId);
   const activeConv = conversations.find(c => c.id === activeConvId);
-  const activeReport = activeConv?.reportId ? allReports.find(r => r.id === activeConv?.reportId) : null;
+  const activeReport = activeConv?.reportId 
+    ? allReports.find(r => r.id === activeConv?.reportId) 
+    : (activeAgentId ? allReports.find(r => r.agentId === activeAgentId) : null);
   
   const filteredAgents = agents.filter(a =>
     a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -141,12 +192,30 @@ export default function FieldOperationsCenter() {
     setIsUploading(true);
 
     try {
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      let fileUrl = "";
+      try {
+        const formData = new FormData();
+        formData.append("files", file);
+        const uploadRes = await fetch("/api/admin/upload", {
+          method: "POST",
+          body: formData
+        });
+        const uploadResult = await uploadRes.json();
+        if (uploadResult.success && uploadResult.urls && uploadResult.urls.length > 0) {
+          fileUrl = uploadResult.urls[0];
+        }
+      } catch (uploadErr) {
+        console.warn("API upload failed, falling back to base64", uploadErr);
+      }
+
+      if (!fileUrl) {
+        fileUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
 
       const isImage = file.type.startsWith("image/");
 
@@ -157,7 +226,7 @@ export default function FieldOperationsCenter() {
         senderName: "Ahmed Khan",
         text: `📎 ${file.name}`,
         isMedia: true,
-        mediaBase64: base64,
+        mediaBase64: fileUrl,
         mediaType: file.type,
         mediaName: file.name,
         isImage,
@@ -210,37 +279,57 @@ export default function FieldOperationsCenter() {
         stream.getTracks().forEach(track => track.stop());
 
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = async () => {
-          const base64data = reader.result as string;
-
-          const msg: any = {
-            conversationId: activeConvId,
-            senderId: "Admin_1",
-            senderRole: "Admin",
-            senderName: "Ahmed Khan",
-            text: "🎤 Voice Note",
-            isMedia: true,
-            mediaBase64: base64data,
-            mediaType: "audio/webm",
-            mediaName: "VoiceNote.webm",
-            timestamp: new Date().toISOString()
-          };
-
-          await addDoc(collection(db, "field_messages"), msg);
-
-          await updateDoc(doc(db, "field_conversations", activeConvId), {
-            lastMessage: {
-              text: "🎤 Voice Note",
-              timestamp: new Date().toISOString(),
-              senderRole: "Admin"
-            },
-            unreadCountAgent: 1,
-            updatedAt: new Date().toISOString(),
-            status: "Waiting For Field Agent"
+        let audioUrl = "";
+        try {
+          const audioFile = new File([audioBlob], "VoiceNote.webm", { type: "audio/webm" });
+          const formData = new FormData();
+          formData.append("files", audioFile);
+          const uploadRes = await fetch("/api/admin/upload", {
+            method: "POST",
+            body: formData
           });
+          const uploadResult = await uploadRes.json();
+          if (uploadResult.success && uploadResult.urls && uploadResult.urls.length > 0) {
+            audioUrl = uploadResult.urls[0];
+          }
+        } catch (uploadErr) {
+          console.warn("Voice note upload failed, falling back to base64", uploadErr);
+        }
+
+        if (!audioUrl) {
+          audioUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(audioBlob);
+          });
+        }
+
+        const msg: any = {
+          conversationId: activeConvId,
+          senderId: "Admin_1",
+          senderRole: "Admin",
+          senderName: "Ahmed Khan",
+          text: "🎤 Voice Note",
+          isMedia: true,
+          mediaBase64: audioUrl,
+          mediaType: "audio/webm",
+          mediaName: "VoiceNote.webm",
+          timestamp: new Date().toISOString()
         };
+
+        await addDoc(collection(db, "field_messages"), msg);
+
+        await updateDoc(doc(db, "field_conversations", activeConvId), {
+          lastMessage: {
+            text: "🎤 Voice Note",
+            timestamp: new Date().toISOString(),
+            senderRole: "Admin"
+          },
+          unreadCountAgent: 1,
+          updatedAt: new Date().toISOString(),
+          status: "Waiting For Field Agent"
+        });
       };
 
       recorder.start();
@@ -254,8 +343,100 @@ export default function FieldOperationsCenter() {
 
   const handleApprove = async () => {
     if (!activeReport) return;
-    await updateDoc(doc(db, "field_reports", activeReport.id), { status: "Approved" });
-    await notifyFieldReport.approved(activeReport.id, activeReport.title);
+    setActionLoading(true);
+    try {
+      await updateDoc(doc(db, "field_reports", activeReport.id), {
+        status: "Approved",
+        updatedAt: new Date().toISOString(),
+      });
+      await notifyFieldReport.approved(activeReport.id, activeReport.agentId, activeReport.title);
+      // Post system message to agent's conversation
+      const conv = conversations.find(c => c.reportId === activeReport.id);
+      if (conv) {
+        await addDoc(collection(db, "field_messages"), {
+          conversationId: conv.id, senderId: "System", senderRole: "System",
+          senderName: "System", text: `✅ Your report "${activeReport.title}" has been approved.`,
+          timestamp: new Date().toISOString(), readByAgent: false, readByAdmin: true,
+        });
+        await updateDoc(doc(db, "field_conversations", conv.id), {
+          lastMessage: { text: `✅ Report Approved`, timestamp: new Date().toISOString(), senderRole: "System" },
+          unreadCountAgent: 1, updatedAt: new Date().toISOString(),
+        });
+      }
+    } finally { setActionLoading(false); }
+  };
+
+  const handleReject = async () => {
+    if (!activeReport || !rejectReason.trim()) return;
+    setActionLoading(true);
+    try {
+      await updateDoc(doc(db, "field_reports", activeReport.id), {
+        status: "Rejected", adminNotes: rejectReason.trim(),
+        updatedAt: new Date().toISOString(),
+      });
+      await notifyFieldReport.rejected(activeReport.id, activeReport.agentId, activeReport.title);
+      const conv = conversations.find(c => c.reportId === activeReport.id);
+      if (conv) {
+        await addDoc(collection(db, "field_messages"), {
+          conversationId: conv.id, senderId: "System", senderRole: "System",
+          senderName: "System",
+          text: `❌ Your report "${activeReport.title}" was not approved.\n\nReason: ${rejectReason.trim()}`,
+          timestamp: new Date().toISOString(), readByAgent: false, readByAdmin: true,
+        });
+        await updateDoc(doc(db, "field_conversations", conv.id), {
+          lastMessage: { text: `❌ Report Rejected`, timestamp: new Date().toISOString(), senderRole: "System" },
+          unreadCountAgent: 1, updatedAt: new Date().toISOString(),
+        });
+      }
+      setShowRejectModal(false);
+      setRejectReason('');
+    } finally { setActionLoading(false); }
+  };
+
+  const handleRequestInfo = async () => {
+    if (!activeReport || !requestInfoText.trim()) return;
+    setActionLoading(true);
+    try {
+      await updateDoc(doc(db, "field_reports", activeReport.id), {
+        status: "Needs Info", adminNotes: requestInfoText.trim(),
+        updatedAt: new Date().toISOString(),
+      });
+      const conv = conversations.find(c => c.reportId === activeReport.id);
+      if (conv) {
+        await addDoc(collection(db, "field_messages"), {
+          conversationId: conv.id, senderId: "Admin_1", senderRole: "Admin",
+          senderName: "Ahmed Khan",
+          text: `ℹ️ Additional information needed for your report "${activeReport.title}":\n\n${requestInfoText.trim()}`,
+          timestamp: new Date().toISOString(), readByAgent: false, readByAdmin: true,
+        });
+        await updateDoc(doc(db, "field_conversations", conv.id), {
+          lastMessage: { text: `ℹ️ Info Requested`, timestamp: new Date().toISOString(), senderRole: "Admin" },
+          unreadCountAgent: 1, status: "Waiting For Field Agent", updatedAt: new Date().toISOString(),
+        });
+      }
+      setShowRequestInfoModal(false);
+      setRequestInfoText('');
+    } finally { setActionLoading(false); }
+  };
+
+  const handleAssign = async () => {
+    if (!activeReport || !assignTo.trim()) return;
+    setActionLoading(true);
+    try {
+      await updateDoc(doc(db, "field_reports", activeReport.id), {
+        assignedAdminId: assignTo.trim(),
+        status: activeReport.status === "Pending Review" ? "Under Review" : activeReport.status,
+        updatedAt: new Date().toISOString(),
+      });
+      const conv = conversations.find(c => c.reportId === activeReport.id);
+      if (conv) {
+        await updateDoc(doc(db, "field_conversations", conv.id), {
+          assignedAdminId: assignTo.trim(), updatedAt: new Date().toISOString(),
+        });
+      }
+      setShowAssignModal(false);
+      setAssignTo('');
+    } finally { setActionLoading(false); }
   };
 
   const handleConvert = async () => {
@@ -269,7 +450,7 @@ export default function FieldOperationsCenter() {
       originAgentId: activeReport.agentId, location: `${activeReport.location.village}, ${activeReport.location.district}`,
       beneficiariesCount: activeReport.beneficiaries?.families || 0, createdAt: new Date().toISOString()
     });
-    await updateDoc(doc(db, "field_reports", activeReport.id), { status: "Converted", convertedCauseId: causeId });
+    await updateDoc(doc(db, "field_reports", activeReport.id), { status: "Converted", convertedCauseId: causeId, updatedAt: new Date().toISOString() });
     await notifyFieldReport.converted(activeReport.id, causeId, activeReport.title);
     alert(`✅ Cause Draft created! ID: ${causeId}`);
   };
@@ -674,17 +855,47 @@ export default function FieldOperationsCenter() {
         </div>
 
         {/* RIGHT: Report Details + Quick Actions (Only shown if Report Conversation active) */}
-        {activeConv?.type === 'Report' && activeReport ? (
+        {activeReport ? (
           <div className="w-[300px] flex-shrink-0 flex flex-col gap-3">
             {/* Report Details Card */}
             <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-y-auto no-scrollbar flex-1">
-              <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between flex-shrink-0">
-                <h3 className="text-[13px] font-bold text-white">Report Details</h3>
-                {activeReport.urgency === 'High' && (
-                  <button className="flex items-center gap-1 text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">
-                    High Priority <ChevronDown className="w-3 h-3" />
-                  </button>
-                )}
+              <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between gap-2 flex-shrink-0">
+                <h3 className="text-[13px] font-bold text-white flex-shrink-0">Report Details</h3>
+                {/* Report Selector — switch between agent's reports */}
+                {(() => {
+                  const agentReports = allReports.filter(r => r.agentId === activeAgentId);
+                  if (agentReports.length <= 1) {
+                    // Only one report — just show urgency badge
+                    return activeReport.urgency === 'High' ? (
+                      <span className="text-[9px] font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg flex-shrink-0">
+                        High Priority
+                      </span>
+                    ) : null;
+                  }
+                  return (
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[9px] text-gray-500 flex-shrink-0">Viewing:</span>
+                      <select
+                        value={activeReport.id}
+                        onChange={e => {
+                          const chosen = allReports.find(r => r.id === e.target.value);
+                          if (!chosen) return;
+                          // Find or create conversation link for this report
+                          const conv = conversations.find(c => c.reportId === chosen.id);
+                          if (conv) setActiveConvId(conv.id);
+                        }}
+                        className="bg-[#0d1410] border border-white/[0.1] text-white text-[10px] rounded-lg px-2 py-1 focus:outline-none focus:border-emerald-500/40 max-w-[140px] truncate cursor-pointer"
+                        style={{ colorScheme: 'dark' }}
+                      >
+                        {agentReports.map(r => (
+                          <option key={r.id} value={r.id} className="bg-[#0a0d0b] text-white">
+                            {r.id} — {r.category} {r.urgency === 'High' ? '🔴' : r.urgency === 'Medium' ? '🟡' : '🟢'}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="p-5 space-y-4 text-[11px]">
@@ -757,13 +968,7 @@ export default function FieldOperationsCenter() {
                 </div>
               </div>
 
-              <div className="px-5 pb-5">
-                <button onClick={handleApprove}
-                  disabled={['Approved','Converted'].includes(activeReport.status)}
-                  className="w-full py-2.5 bg-emerald-950/60 hover:bg-emerald-950/80 text-emerald-400 border border-emerald-900/60 font-bold rounded-xl transition flex items-center justify-center gap-2 text-[12px] disabled:opacity-30 disabled:cursor-not-allowed">
-                  Take Action <ChevronDown className="w-4 h-4" />
-                </button>
-              </div>
+              {/* (Timeline moved below Quick Actions) */}
             </div>
 
             {/* Quick Actions */}
@@ -771,21 +976,127 @@ export default function FieldOperationsCenter() {
               <p className="text-[12px] font-bold text-white mb-4">Quick Actions</p>
               <div className="flex justify-between">
                 {([
-                  { label:'Approve', Icon:CheckCircle, hc:'emerald', fn:handleApprove },
-                  { label:'Request Info', Icon:HelpCircle, hc:'amber', fn:undefined },
-                  { label:'Reject', Icon:X, hc:'red', fn:undefined },
-                  { label:'Assign', Icon:UserPlus, hc:'blue', fn:undefined },
-                  { label:'Convert to Cause', Icon:Briefcase, hc:'purple', fn:handleConvert },
-                ] as const).map(({ label, Icon, hc, fn }) => (
-                  <button key={label} onClick={fn}
-                    className="flex flex-col items-center gap-1.5 cursor-pointer group p-1">
+                  {
+                    label: 'Approve', Icon: CheckCircle, hc: 'emerald',
+                    fn: handleApprove,
+                    disabled: ['Approved','Converted'].includes(activeReport.status),
+                  },
+                  {
+                    label: 'Request Info', Icon: HelpCircle, hc: 'amber',
+                    fn: () => { setRequestInfoText(''); setShowRequestInfoModal(true); },
+                    disabled: ['Approved','Converted','Rejected'].includes(activeReport.status),
+                  },
+                  {
+                    label: 'Reject', Icon: X, hc: 'red',
+                    fn: () => { setRejectReason(''); setShowRejectModal(true); },
+                    disabled: ['Approved','Converted','Rejected'].includes(activeReport.status),
+                  },
+                  {
+                    label: 'Assign', Icon: UserPlus, hc: 'blue',
+                    fn: () => { setAssignTo(activeReport.assignedAdminId || ''); setShowAssignModal(true); },
+                    disabled: ['Converted'].includes(activeReport.status),
+                  },
+                  {
+                    label: 'Convert', Icon: Briefcase, hc: 'purple',
+                    fn: handleConvert,
+                    disabled: activeReport.status !== 'Approved',
+                  },
+                ] as { label:string; Icon:any; hc:string; fn:()=>void; disabled:boolean }[]).map(({ label, Icon, hc, fn, disabled }) => (
+                  <button key={label} onClick={disabled ? undefined : fn} disabled={disabled}
+                    className={`flex flex-col items-center gap-1.5 group p-1 transition-all ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}>
                     <div className={`w-9 h-9 rounded-full border border-white/[0.1] bg-white/[0.02] flex items-center justify-center text-gray-400 transition
-                      group-hover:bg-${hc}-500/10 group-hover:text-${hc}-400 group-hover:border-${hc}-500/30`}>
+                      ${!disabled ? `group-hover:bg-${hc}-500/10 group-hover:text-${hc}-400 group-hover:border-${hc}-500/30` : ''}`}>
                       <Icon className="w-4 h-4" />
                     </div>
                     <span className="text-[9px] text-gray-500 group-hover:text-gray-300 text-center leading-tight max-w-[44px]">{label}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Interactive Report Timeline */}
+            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl p-4 flex-shrink-0">
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-[12px] font-bold text-white">Report Timeline</p>
+                <span className="text-[9px] text-gray-500">Click stage to mark complete</span>
+              </div>
+              <div className="space-y-0">
+                {(() => {
+                  const TIMELINE_STAGES = [
+                    "Submitted",
+                    "Assigned to Reviewer",
+                    "Under Review",
+                    "Verification Visit",
+                    "Approval",
+                    "Published on Website",
+                  ];
+                  const savedStages: Record<string, string> = (activeReport as any).timelineStages || {};
+                  const handleStageClick = async (stage: string) => {
+                    if (!activeReport || stage === "Submitted") return;
+                    const alreadyDone = !!savedStages[stage];
+                    const updated = { ...savedStages };
+                    if (alreadyDone) {
+                      delete updated[stage];
+                    } else {
+                      updated[stage] = new Date().toISOString();
+                    }
+                    await updateDoc(doc(db, "field_reports", activeReport.id), {
+                      timelineStages: updated,
+                      updatedAt: new Date().toISOString(),
+                      hasAgentUnreadUpdate: true,
+                    });
+                  };
+
+                  return TIMELINE_STAGES.map((stage, i) => {
+                    const isSubmitted = stage === "Submitted";
+                    const completedAt = isSubmitted ? activeReport.createdAt : savedStages[stage];
+                    const isDone = !!completedAt;
+                    // All stages except Submitted are freely clickable by admin
+                    const isClickable = !isSubmitted;
+
+                    return (
+                      <div key={stage} className="flex gap-2.5">
+                        <div className="flex flex-col items-center">
+                          <button
+                            onClick={() => isClickable && handleStageClick(stage)}
+                            title={isSubmitted ? "Auto-set on submission" : (isDone ? "Click to undo this stage" : "Click to mark as complete")}
+                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                              isSubmitted
+                                ? "border-emerald-400 bg-emerald-400/20 cursor-default"
+                                : isDone
+                                ? "border-emerald-400 bg-emerald-400/20 cursor-pointer hover:bg-red-400/10 hover:border-red-400/50"
+                                : "border-[#b8860b] bg-[#b8860b]/10 cursor-pointer hover:bg-[#b8860b]/20"
+                            }`}
+                          >
+                            {isDone && (
+                              <svg className="w-2.5 h-2.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                            {!isDone && isClickable && (
+                              <div className="w-1.5 h-1.5 rounded-full bg-[#b8860b]" />
+                            )}
+                          </button>
+                          {i < TIMELINE_STAGES.length - 1 && (
+                            <div className={`w-0.5 flex-1 my-1 min-h-[16px] ${isDone ? "bg-emerald-400/30" : "bg-white/[0.07]"}`} />
+                          )}
+                        </div>
+                        <div className="pb-3">
+                          <p className={`text-[11px] font-semibold leading-tight ${
+                            isDone ? "text-white" : isClickable ? "text-[#b8860b]" : "text-gray-500"
+                          }`}>{stage}</p>
+                          {completedAt ? (
+                            <p className="text-[9px] text-emerald-400/70 mt-0.5">
+                              {new Date(completedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                            </p>
+                          ) : (
+                            <p className="text-[9px] text-[#b8860b]/70 mt-0.5">Click to advance</p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
@@ -874,6 +1185,167 @@ export default function FieldOperationsCenter() {
         </div>
       </div>
     )}
+
+    {/* ── REJECT MODAL ── */}
+    {showRejectModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="bg-[#0a0f0c] border border-red-500/20 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-red-900/20">
+            <div className="flex items-center gap-2.5">
+              <X className="w-5 h-5 text-red-400" />
+              <div>
+                <h3 className="text-[14px] font-bold text-white">Reject Report</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">Provide a clear reason for the agent</p>
+              </div>
+            </div>
+            <button onClick={() => setShowRejectModal(false)} className="p-1.5 text-gray-500 hover:text-white hover:bg-white/[0.05] rounded-lg transition">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="text-[11px] text-gray-400 uppercase tracking-wider font-semibold mb-2 block">Rejection Reason *</label>
+              <textarea
+                value={rejectReason}
+                onChange={e => setRejectReason(e.target.value)}
+                rows={4}
+                placeholder="Explain why this report is being rejected and what the agent can do to resubmit..."
+                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-[12px] text-white placeholder:text-gray-600 focus:outline-none focus:border-red-500/40 resize-none"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowRejectModal(false)} className="flex-1 py-2.5 text-[12px] font-bold text-gray-400 border border-white/[0.08] rounded-xl hover:bg-white/[0.03] transition">
+                Cancel
+              </button>
+              <button onClick={handleReject} disabled={!rejectReason.trim() || actionLoading}
+                className="flex-1 py-2.5 text-[12px] font-bold text-white bg-red-600/80 hover:bg-red-600 border border-red-500/30 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {actionLoading && <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />}
+                Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── REQUEST INFO MODAL ── */}
+    {showRequestInfoModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="bg-[#0a0f0c] border border-amber-500/20 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-amber-900/20">
+            <div className="flex items-center gap-2.5">
+              <HelpCircle className="w-5 h-5 text-amber-400" />
+              <div>
+                <h3 className="text-[14px] font-bold text-white">Request More Information</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">Agent will be notified via conversation</p>
+              </div>
+            </div>
+            <button onClick={() => setShowRequestInfoModal(false)} className="p-1.5 text-gray-500 hover:text-white hover:bg-white/[0.05] rounded-lg transition">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="text-[11px] text-gray-400 uppercase tracking-wider font-semibold mb-2 block">What information is needed? *</label>
+              <textarea
+                value={requestInfoText}
+                onChange={e => setRequestInfoText(e.target.value)}
+                rows={4}
+                placeholder="Describe what additional information, documents, or photos you need from the agent..."
+                className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-[12px] text-white placeholder:text-gray-600 focus:outline-none focus:border-amber-500/40 resize-none"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowRequestInfoModal(false)} className="flex-1 py-2.5 text-[12px] font-bold text-gray-400 border border-white/[0.08] rounded-xl hover:bg-white/[0.03] transition">
+                Cancel
+              </button>
+              <button onClick={handleRequestInfo} disabled={!requestInfoText.trim() || actionLoading}
+                className="flex-1 py-2.5 text-[12px] font-bold text-black bg-amber-400 hover:bg-amber-300 border border-amber-400/30 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {actionLoading && <div className="w-3.5 h-3.5 rounded-full border-2 border-black border-t-transparent animate-spin" />}
+                Send Request
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* ── ASSIGN MODAL ── */}
+    {showAssignModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+        <div className="bg-[#0a0f0c] border border-blue-500/20 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-blue-900/20">
+            <div className="flex items-center gap-2.5">
+              <UserPlus className="w-5 h-5 text-blue-400" />
+              <div>
+                <h3 className="text-[14px] font-bold text-white">Assign Reviewer</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">Report will move to "Under Review"</p>
+              </div>
+            </div>
+            <button onClick={() => setShowAssignModal(false)} className="p-1.5 text-gray-500 hover:text-white hover:bg-white/[0.05] rounded-lg transition">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="text-[11px] text-gray-400 uppercase tracking-wider font-semibold mb-2 block">Assign To *</label>
+              <div className="space-y-2">
+                {([
+                  { id: 'Admin_1', name: 'Ahmed Khan', role: 'Field Supervisor' },
+                  { id: 'Admin_2', name: 'Fatima Malik', role: 'Regional Coordinator' },
+                  { id: 'Admin_3', name: 'Omar Rashid', role: 'Senior Reviewer' },
+                ] as { id: string; name: string; role: string }[]).map(admin => (
+                  <button key={admin.id} onClick={() => setAssignTo(admin.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-xl border transition text-left ${
+                      assignTo === admin.id
+                        ? 'border-blue-500/40 bg-blue-500/10'
+                        : 'border-white/[0.07] bg-white/[0.02] hover:border-white/20'
+                    }`}>
+                    <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-[11px] font-bold text-blue-300 flex-shrink-0">
+                      {admin.name.split(' ').map((n: string) => n[0]).join('')}
+                    </div>
+                    <div>
+                      <p className="text-[12px] font-semibold text-white">{admin.name}</p>
+                      <p className="text-[10px] text-gray-500">{admin.role}</p>
+                    </div>
+                    {assignTo === admin.id && <CheckCircle className="w-4 h-4 text-blue-400 ml-auto" />}
+                  </button>
+                ))}
+                <input
+                  type="text"
+                  value={assignTo}
+                  onChange={e => setAssignTo(e.target.value)}
+                  placeholder="Or type Admin ID manually..."
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-[12px] text-white placeholder:text-gray-600 focus:outline-none focus:border-blue-500/40"
+                />
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowAssignModal(false)} className="flex-1 py-2.5 text-[12px] font-bold text-gray-400 border border-white/[0.08] rounded-xl hover:bg-white/[0.03] transition">
+                Cancel
+              </button>
+              <button onClick={handleAssign} disabled={!assignTo.trim() || actionLoading}
+                className="flex-1 py-2.5 text-[12px] font-bold text-white bg-blue-600/80 hover:bg-blue-600 border border-blue-500/30 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                {actionLoading && <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />}
+                Assign Reviewer
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     </>
+  );
+}
+
+export default function FieldOperationsCenter() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 max-w-7xl mx-auto flex items-center justify-center min-h-[50vh]">
+        <div className="w-8 h-8 rounded-full border-2 border-emerald-500/30 border-t-emerald-500 animate-spin" />
+      </div>
+    }>
+      <FieldOperationsCenterContent />
+    </Suspense>
   );
 }

@@ -1,7 +1,7 @@
 /**
  * lib/ai/knowledge/retriever.ts
  *
- * Retriever Engine for MOMIN Knowledge Intelligence Engine (MKIE).
+ * Retriever Engine for KHIDR Knowledge Intelligence Engine (MKIE).
  * Formulates narrow, targeted queries to Firestore collections instead of scanning full datasets.
  * Employs knowledge caching to reduce database read overhead.
  */

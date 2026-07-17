@@ -2,13 +2,13 @@
  * lib/ai/roleNormalizer.ts
  *
  * Single source of truth for mapping UI / Firebase admin roles
- * to MOMIN AI-TOS RBAC roles.
+ * to KHIDR AI-TOS RBAC roles.
  */
 
-import type { MominRole } from "./knowledge/permissionEngine";
+import type { KhidrRole } from "./knowledge/permissionEngine";
 import type { UserRole } from "./permissions";
 
-const UI_ROLE_MAP: Record<string, MominRole> = {
+const UI_ROLE_MAP: Record<string, KhidrRole> = {
   super_admin: "super_admin",
   superadmin: "super_admin",
   admin: "editor",
@@ -22,9 +22,9 @@ const UI_ROLE_MAP: Record<string, MominRole> = {
 
 /**
  * Normalizes any role string from the UI, API body, or Firebase
- * into a canonical MOMIN RBAC role.
+ * into a canonical KHIDR RBAC role.
  */
-export function normalizeMominRole(role?: string | null): MominRole {
+export function normalizeKhidrRole(role?: string | null): KhidrRole {
   if (!role) return "public";
 
   const normalized = role.toLowerCase().trim().replace(/\s+/g, "_");
@@ -33,10 +33,10 @@ export function normalizeMominRole(role?: string | null): MominRole {
     return UI_ROLE_MAP[normalized];
   }
 
-  // Already a valid MominRole
-  const valid: MominRole[] = ["super_admin", "editor", "inspector", "public"];
-  if (valid.includes(normalized as MominRole)) {
-    return normalized as MominRole;
+  // Already a valid KhidrRole
+  const valid: KhidrRole[] = ["super_admin", "editor", "inspector", "public"];
+  if (valid.includes(normalized as KhidrRole)) {
+    return normalized as KhidrRole;
   }
 
   return "public";
@@ -46,9 +46,9 @@ export function normalizeMominRole(role?: string | null): MominRole {
  * Normalizes to the broader UserRole set used by BusinessRulesEngine.
  */
 export function normalizeUserRole(role?: string | null): UserRole {
-  const momin = normalizeMominRole(role);
-  if (momin === "super_admin" || momin === "editor" || momin === "inspector" || momin === "public") {
-    return momin;
+  const khidr = normalizeKhidrRole(role);
+  if (khidr === "super_admin" || khidr === "editor" || khidr === "inspector" || khidr === "public") {
+    return khidr;
   }
   return "public";
 }

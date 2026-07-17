@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, ArrowRight, CheckCircle, MapPin, Users, FileText, Camera, Upload, ShieldCheck
@@ -77,6 +77,38 @@ export default function NewReportWizard() {
 
       await setDoc(doc(db, "field_reports", reportId), report);
 
+      // Create a corresponding conversation for this report so the admin can discuss it with the agent
+      const convId = `CONV-REPORT-${reportId}`;
+      const reportConv: any = {
+        id: convId,
+        type: "Report",
+        reportId: reportId,
+        agentId: agentId,
+        unreadCountAdmin: 1,
+        unreadCountAgent: 0,
+        status: "Waiting For Admin",
+        isUrgent: formData.urgency === "High",
+        lastMessage: {
+          text: `🚨 Submitted Report: ${formData.title}`,
+          timestamp: new Date().toISOString(),
+          senderRole: "Agent"
+        },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      await setDoc(doc(db, "field_conversations", convId), reportConv);
+
+      // Create an initial message in field_messages to start the discussion thread
+      const initialMessage = {
+        conversationId: convId,
+        senderId: agentId,
+        senderRole: "Agent",
+        senderName: agentName,
+        text: `Assalamu Alaikum. I have submitted the report: "${formData.title}". Please review it.\n\nDescription: ${formData.description}\n\nUrgency: ${formData.urgency}\nEstimated Budget: ${formData.estimatedBudget}`,
+        timestamp: new Date().toISOString()
+      };
+      await addDoc(collection(db, "field_messages"), initialMessage);
+
       // Log activity
       const actId = `ACT-${Date.now()}`;
       await setDoc(doc(db, "field_activities", actId), {
@@ -89,7 +121,7 @@ export default function NewReportWizard() {
       });
 
       // Notify admin
-      await notifyFieldReport.newSubmission(reportId, formData.title, agentName, formData.urgency);
+      await notifyFieldReport.newSubmission(reportId, agentId, formData.title, agentName, formData.urgency);
 
       setStep(6); // Success screen
     } catch (err) {

@@ -1,7 +1,7 @@
 /**
  * lib/ai/mibf/BehaviorLibrary.ts
  * 
- * Defines core behavioral rules and constraints for MOMIN.
+ * Defines core behavioral rules and constraints for KHIDR.
  */
 
 export const BehaviorRules = [

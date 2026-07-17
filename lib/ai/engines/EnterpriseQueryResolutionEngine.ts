@@ -1,7 +1,7 @@
 /**
  * lib/ai/engines/EnterpriseQueryResolutionEngine.ts
  *
- * Enterprise Query Resolution Engine (EQRE) for MOMIN Intelligence Orchestrator.
+ * Enterprise Query Resolution Engine (EQRE) for KHIDR Intelligence Orchestrator.
  */
 
 import { ICEAnalysis } from "./IntentClassificationEngine";

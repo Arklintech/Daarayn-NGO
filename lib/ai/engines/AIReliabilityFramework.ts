@@ -24,7 +24,7 @@ export class AIReliabilityFramework {
     const now = new Date();
     const datePart = now.toISOString().slice(0, 10).replace(/-/g, "");
     const seq = String(now.getTime()).slice(-6);
-    return `MOMIN-${datePart}-${seq}`;
+    return `KHIDR-${datePart}-${seq}`;
   }
 
   /**

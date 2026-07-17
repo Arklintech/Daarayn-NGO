@@ -18,9 +18,9 @@ import DocumentsTab from './tabs/DocumentsTab';
 import LedgerTab from './tabs/LedgerTab';
 import AnalyticsTab from './tabs/AnalyticsTab';
 import AdminNotesTab from './tabs/AdminNotesTab';
-import MominTab from './tabs/MominTab';
+import KhidrTab from './tabs/KhidrTab';
 
-type TabId = 'overview' | 'donations' | 'communications' | 'documents' | 'ledger' | 'analytics' | 'notes' | 'momin';
+type TabId = 'overview' | 'donations' | 'communications' | 'documents' | 'ledger' | 'analytics' | 'notes' | 'khidr';
 
 const TABS: { id: TabId; label: string; icon?: any }[] = [
   { id: 'overview',        label: 'Overview' },
@@ -30,7 +30,7 @@ const TABS: { id: TabId; label: string; icon?: any }[] = [
   { id: 'ledger',          label: 'Ledger' },
   { id: 'notes',           label: 'Notes' },
   { id: 'analytics',       label: 'Analytics' },
-  { id: 'momin',           label: 'MOMIN Summary' },
+  { id: 'khidr',           label: 'Khidr Summary' },
 ];
 
 export default function DonorWorkspace() {
@@ -334,7 +334,7 @@ export default function DonorWorkspace() {
             {activeTab === 'ledger'         && <LedgerTab         {...tabProps} />}
             {activeTab === 'analytics'      && <AnalyticsTab      {...tabProps} />}
             {activeTab === 'notes'          && <AdminNotesTab     {...tabProps} />}
-            {activeTab === 'momin'          && <MominTab          {...tabProps} />}
+            {activeTab === 'khidr'          && <KhidrTab          {...tabProps} />}
           </motion.div>
         </AnimatePresence>
       </div>

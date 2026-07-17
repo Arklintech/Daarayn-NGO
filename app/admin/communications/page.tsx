@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
-import { Send, Users, Activity, CheckCircle, ChevronDown } from "lucide-react";
+import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle } from "lucide-react";
 import { Donation } from "@/lib/db";
 
 export default function CommunicationsHub() {
@@ -19,6 +19,10 @@ export default function CommunicationsHub() {
   const [uploading, setUploading] = useState(false);
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [originalValues, setOriginalValues] = useState({ heading: "", notes: "" });
 
   useEffect(() => {
     async function fetchData() {
@@ -148,6 +152,48 @@ export default function CommunicationsHub() {
       alert("An error occurred while sending.");
     } finally {
       setSending(false);
+    }
+  };
+  const handleGenerate = async (overwriteOverride?: boolean) => {
+    const headingEdited = heading !== originalValues.heading;
+    const notesEdited = notes !== originalValues.notes;
+    
+    if ((headingEdited || notesEdited) && !overwriteOverride && (heading || notes)) {
+      setShowConfirmModal(true);
+      return;
+    }
+
+    setGenerating(true);
+    setVerificationError("");
+    setShowConfirmModal(false);
+
+    try {
+      const response = await fetch("/api/admin/communications/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          causeId: selectedCauseId,
+          type,
+          media: uploadedFiles.filter(f => f.uploaded)
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setHeading(result.heading || "");
+        setNotes(result.body || "");
+        setOriginalValues({
+          heading: result.heading || "",
+          notes: result.body || ""
+        });
+      } else {
+        setVerificationError(result.error || "Generation failed.");
+      }
+    } catch (err) {
+      console.error(err);
+      setVerificationError("Failed to connect to Khidr service. Please check network configurations.");
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -341,6 +387,23 @@ export default function CommunicationsHub() {
                 </label>
               </div>
 
+              {/* Verification Error */}
+              {verificationError && (
+                <div className="p-3.5 rounded-xl border border-red-500/20 bg-red-500/5 text-red-200 text-xs leading-relaxed mb-3">
+                  {verificationError}
+                </div>
+              )}
+
+              {/* Generate with Khidr (Above) */}
+              <button
+                onClick={() => handleGenerate(false)}
+                disabled={generating}
+                className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-gray-100 active:scale-[0.99] mb-3"
+                style={{ background: '#ffffff' }}
+              >
+                {generating ? <Activity className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Generate with Khidr</>}
+              </button>
+
               {/* Send Button */}
               <button
                 onClick={handleSend}
@@ -350,8 +413,9 @@ export default function CommunicationsHub() {
               >
                 {sending ? <Activity className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Dispatch to {uniqueDonors.length} Donors</>}
               </button>
+
               {uniqueDonors.length === 0 && (
-                <p className="text-xs text-red-400/80 text-center -mt-3">No verified donors found for this cause.</p>
+                <p className="text-xs text-red-400/80 text-center mt-3">No verified donors found for this cause.</p>
               )}
             </div>
 
@@ -438,6 +502,34 @@ export default function CommunicationsHub() {
           >
             Draft Another Communication
           </button>
+        </div>
+      )}
+      {/* Confirmation Overwrite Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="bg-[#101726] border border-white/10 rounded-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center gap-3 text-amber-400">
+              <AlertTriangle className="w-6 h-6 flex-shrink-0" />
+              <h2 className="text-lg font-bold text-white">Manual Edits Detected</h2>
+            </div>
+            <p className="text-xs text-gray-400 leading-relaxed font-sans">
+              You have made manual edits to the composer text fields. Regenerating will discard your edits. How would you like to continue?
+            </p>
+            <div className="pt-2 flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => handleGenerate(true)}
+                className="w-full py-3 rounded-xl bg-amber-500 text-black text-xs font-bold transition hover:bg-amber-600"
+              >
+                Discard edits & Overwrite
+              </button>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="w-full py-3 rounded-xl bg-white/10 text-white text-xs font-semibold hover:bg-white/15 transition"
+              >
+                Cancel / Keep Editing
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

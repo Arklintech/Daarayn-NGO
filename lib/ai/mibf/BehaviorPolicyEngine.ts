@@ -1,7 +1,7 @@
 /**
  * lib/ai/mibf/BehaviorPolicyEngine.ts
  * 
- * Central orchestrator for the MOMIN Intelligence & Behavior Framework (MIBF).
+ * Central orchestrator for the KHIDR Intelligence & Behavior Framework (MIBF).
  * Compiles directives from all 10 enterprise libraries into a single MibfDirectives object.
  */
 
@@ -19,7 +19,7 @@ import { ExecutiveExperienceLibrary } from "./ExecutiveExperienceLibrary";
 
 import type { ICEAnalysis } from "../engines/IntentClassificationEngine";
 import type { EQREResolution } from "../engines/EnterpriseQueryResolutionEngine";
-import type { MominRole } from "../knowledge/permissionEngine";
+import type { KhidrRole } from "../knowledge/permissionEngine";
 
 export interface MibfDirectives {
   identity: string;
@@ -40,7 +40,7 @@ export class BehaviorPolicyEngine {
     query: string,
     ice: ICEAnalysis,
     eqre: EQREResolution,
-    userRole: MominRole
+    userRole: KhidrRole
   ): MibfDirectives {
     
     // Base static identities and rules

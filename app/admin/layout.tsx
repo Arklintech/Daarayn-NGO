@@ -92,7 +92,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     {
       title: "Intelligence",
       items: [
-        { name: "MOMIN AI", href: "/admin/ai", icon: Sparkles },
+        { name: "KHIDR AI", href: "/admin/ai", icon: Sparkles },
       ]
     },
     {

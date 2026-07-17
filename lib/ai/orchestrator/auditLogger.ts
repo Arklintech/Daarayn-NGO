@@ -2,7 +2,7 @@
  * lib/ai/orchestrator/auditLogger.ts
  *
  * MIO Audit Logger.
- * Writes detailed execution steps log records to the momin_workflows_audit collection.
+ * Writes detailed execution steps log records to the khidr_workflows_audit collection.
  */
 
 import { db } from "../../firebase";
@@ -62,7 +62,7 @@ export async function logWorkflowAudit(
   };
 
   try {
-    await setDoc(doc(db, "momin_workflows_audit", auditId), record);
+    await setDoc(doc(db, "khidr_workflows_audit", auditId), record);
     console.log(`[MIO Audit] Successfully logged execution audit row: "${auditId}"`);
   } catch (error) {
     console.error("[MIO Audit] Failed to write workflow audit log record:", error);

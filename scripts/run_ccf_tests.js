@@ -13,7 +13,7 @@ async function runTests() {
   ];
 
   let output = "# CCF Behavioural Assessment\n\n";
-  output += "> The following responses were generated live by the MOMIN Cognitive Orchestrator after CCF implementation.\n\n";
+  output += "> The following responses were generated live by the KHIDR Cognitive Orchestrator after CCF implementation.\n\n";
 
   for (const t of tests) {
     try {
@@ -25,10 +25,10 @@ async function runTests() {
       });
       const data = await res.json();
       
-      output += `## ${t.name}\n**Administrator:** ${t.q}\n\n**MOMIN:**\n${data.reply || "*(No response generated)*"}\n\n---\n\n`;
+      output += `## ${t.name}\n**Administrator:** ${t.q}\n\n**KHIDR:**\n${data.reply || "*(No response generated)*"}\n\n---\n\n`;
     } catch (e) {
       console.error(`Error on ${t.name}:`, e);
-      output += `## ${t.name}\n**Administrator:** ${t.q}\n\n**MOMIN Error:**\n${e.message}\n\n---\n\n`;
+      output += `## ${t.name}\n**Administrator:** ${t.q}\n\n**KHIDR Error:**\n${e.message}\n\n---\n\n`;
     }
   }
 

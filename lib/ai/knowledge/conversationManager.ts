@@ -1,36 +1,36 @@
 /**
  * lib/ai/knowledge/conversationManager.ts
  *
- * MOMIN Conversation Manager — Thin Dispatcher
+ * KHIDR Conversation Manager — Thin Dispatcher
  *
  * This file is now a thin entry point that:
  *   1. Accepts the raw administrator request
  *   2. Runs HCIE normalization (Phase 6.0)
- *   3. Hands off to the MOMIN Cognitive Orchestrator (MCO)
+ *   3. Hands off to the KHIDR Cognitive Orchestrator (MCO)
  *
  * All intelligence, reasoning, tool orchestration, governance, and response
  * generation lives inside the MCO pipeline. This file does not contain any
  * pipeline logic.
  */
 
-import type { MominRole } from "./permissionEngine";
-import { normalizeMominRole } from "../roleNormalizer";
-import { MominSessionMemory } from "./memory";
+import type { KhidrRole } from "./permissionEngine";
+import { normalizeKhidrRole } from "../roleNormalizer";
+import { KhidrSessionMemory } from "./memory";
 import { AIReliabilityFramework } from "../engines/AIReliabilityFramework";
 import { HumanCommunicationIntelligenceEngine } from "../hcie/HumanCommunicationIntelligenceEngine";
-import { MominCognitiveOrchestrator } from "../mco/MominCognitiveOrchestrator";
+import { KhidrCognitiveOrchestrator } from "../mco/KhidrCognitiveOrchestrator";
 import type { WorkflowPlan } from "../orchestrator/executionPlanner";
 import type { ActionPlan } from "../planner";
 
-export interface MominChatRequest {
+export interface KhidrChatRequest {
   sessionId: string;
   userId: string;
-  userRole: MominRole;
+  userRole: KhidrRole;
   message: string;
   history: Array<{ role: "user" | "assistant"; content: string }>;
 }
 
-export interface MominChatResponse {
+export interface KhidrChatResponse {
   success: boolean;
   reply: string;
   actionPlan: ActionPlan | null;
@@ -60,13 +60,13 @@ export interface MominChatResponse {
 }
 
 /**
- * Main entry point for all MOMIN administrator interactions.
- * Delegates immediately to the MOMIN Cognitive Orchestrator (MCO)
+ * Main entry point for all KHIDR administrator interactions.
+ * Delegates immediately to the KHIDR Cognitive Orchestrator (MCO)
  * after HCIE normalization.
  */
-export async function processMominChatMessage(
-  req: MominChatRequest
-): Promise<MominChatResponse> {
+export async function processKhidrChatMessage(
+  req: KhidrChatRequest
+): Promise<KhidrChatResponse> {
   const { sessionId, userId, userRole, message, history } = req;
 
   // Generate correlation ID and pipeline clock
@@ -74,16 +74,16 @@ export async function processMominChatMessage(
   const pipelineStart = Date.now();
   const stages: Array<{ stage: string; status: string; durationMs: number; error?: string }> = [];
 
-  const normalizedRole = normalizeMominRole(userRole);
+  const normalizedRole = normalizeKhidrRole(userRole);
 
   AIReliabilityFramework.logDiagnostic(
     requestId,
     "info",
-    `MOMIN MCO Pipeline Started | Query: "${message}" | Session: ${sessionId} | Role: ${normalizedRole}`
+    `KHIDR MCO Pipeline Started | Query: "${message}" | Session: ${sessionId} | Role: ${normalizedRole}`
   );
 
   // Build session history context
-  const sessionMemory = new MominSessionMemory(
+  const sessionMemory = new KhidrSessionMemory(
     history.map(h => ({ role: h.role, content: h.content, timestamp: new Date().toISOString() }))
   );
   const historyText = sessionMemory.formatHistory();
@@ -96,7 +96,7 @@ export async function processMominChatMessage(
   AIReliabilityFramework.logDiagnostic(requestId, "info", `HCIE: "${message}" → "${hcieAnalysis.normalizedMessage}" (${hcieDuration}ms)`);
 
   // Delegate entirely to MCO — the cognitive mind
-  return MominCognitiveOrchestrator.process(
+  return KhidrCognitiveOrchestrator.process(
     { ...req, userRole: normalizedRole },
     hcieAnalysis,
     historyText,

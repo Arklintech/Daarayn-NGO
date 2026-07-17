@@ -1,7 +1,7 @@
 /**
  * lib/ai/mibf/CommunicationLibrary.ts
  *
- * Defines how MOMIN communicates: tone, style, and CXL Response Laws.
+ * Defines how KHIDR communicates: tone, style, and CXL Response Laws.
  */
 
 export const CommunicationDirectives = {

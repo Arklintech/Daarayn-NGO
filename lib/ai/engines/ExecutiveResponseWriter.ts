@@ -3,7 +3,7 @@
  *
  * Conversation Experience Layer (CXL) — Executive Response Writer
  *
- * This engine is the final step of the MOMIN response pipeline.
+ * This engine is the final step of the KHIDR response pipeline.
  * It takes the ERCE-certified, Blueprint-enforced structured intelligence
  * and converts it into natural executive-quality conversation.
  *
@@ -43,17 +43,17 @@ const PROHIBITED_PATTERNS: RegExp[] = [
   /\bCertification Level\b/gi,
   /\bGovernance Status\b/gi,
   /\bConfidence Level\b/gi,
-  /Request ID[:\s]+`?MOMIN-[A-Z0-9-]+`?/gi,
+  /Request ID[:\s]+`?KHIDR-[A-Z0-9-]+`?/gi,
   /Timestamp[:\s]+[0-9T:.Z-]+/gi,
   /\bSelf-Healing Actions Applied\b/gi,
   /\bGovernance Advisories[^]*?(?=\n\n|\z)/gi,
   /\bCertified Reference Records\b/gi,
   /\bVerified Potential Actions\b/gi,
   /\bERCE Operations Certification Report\b/gi,
-  /\bMOMIN ERCE Certified[^)]*\)/gi,
+  /\bKHIDR ERCE Certified[^)]*\)/gi,
   /---\s*\n### ERCE Operations Certification Report[\s\S]*/,
   /\[object Object\]/g,
-  /> \[!IMPORTANT\]\s*\n> \*\*MOMIN ERCE Certified[^\n]*\n/gi,
+  /> \[!IMPORTANT\]\s*\n> \*\*KHIDR ERCE Certified[^\n]*\n/gi,
 ];
 
 /**

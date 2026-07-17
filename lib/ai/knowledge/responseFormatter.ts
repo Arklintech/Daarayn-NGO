@@ -1,7 +1,7 @@
 /**
  * lib/ai/knowledge/responseFormatter.ts
  *
- * Response Formatter for MOMIN Knowledge Intelligence Engine (MKIE).
+ * Response Formatter for KHIDR Knowledge Intelligence Engine (MKIE).
  * Enforces executive layout style, formats the validated JSON into Markdown,
  * and builds strict Verification Metadata attributions without duplication.
  */
@@ -11,7 +11,7 @@ import type { RetrievedFact } from "./retriever";
 /**
  * Decorates generated Grok JSON response with deterministic Markdown and Verification Metadata.
  */
-export function formatMominResponse(
+export function formatKhidrResponse(
   jsonResponse: any,
   facts: RetrievedFact[],
   validationStatus: string,
@@ -22,7 +22,7 @@ export function formatMominResponse(
 
   if (validationStatus === "Partial") {
     formatted += "> [!WARNING]\n";
-    formatted += "> **Compliance Engine Advisory**: This response contained unverified claims that were automatically filtered by the MOMIN Compliance Engine. Inspect details before authorizing decisions.\n\n";
+    formatted += "> **Compliance Engine Advisory**: This response contained unverified claims that were automatically filtered by the KHIDR Compliance Engine. Inspect details before authorizing decisions.\n\n";
   } else if (validationStatus === "Failed") {
     formatted += "> [!CAUTION]\n";
     formatted += "> **Critical Engine Failure**: The AI intelligence pipeline is currently unavailable. Displaying raw ledger data only.\n\n";

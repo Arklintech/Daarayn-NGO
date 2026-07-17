@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Bell,
   Search,
@@ -16,15 +16,18 @@ import {
   Star,
   MoreVertical,
   ChevronRight,
-  ArrowRight
+  ArrowRight,
+  Trash2,
+  MailOpen,
+  X
 } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { collection, query, orderBy, limit, onSnapshot, doc, updateDoc, writeBatch } from "firebase/firestore";
+import { collection, query, orderBy, limit, onSnapshot, doc, updateDoc, writeBatch, deleteDoc } from "firebase/firestore";
 import { AdminNotification, NotificationCategory, CATEGORY_META } from "@/lib/notifications";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 
-type FilterType = "all" | "unread" | "today" | "week";
+type FilterType = "all" | "unread" | "starred" | "today" | "week";
 
 function isToday(iso: string) {
   const d = new Date(iso);
@@ -65,7 +68,7 @@ const CATEGORY_COLORS: Record<NotificationCategory, { bg: string, border: string
 };
 
 export default function NotificationCenterPage() {
-  const [notifications, setNotifications] = useState<(AdminNotification & { id: string })[]>([]);
+  const [notifications, setNotifications] = useState<(AdminNotification & { id: string, isStarred?: boolean })[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -74,12 +77,25 @@ export default function NotificationCenterPage() {
   useEffect(() => {
     const q = query(collection(db, "admin_notifications"), orderBy("createdAt", "desc"), limit(200));
     const unsub = onSnapshot(q, (snap) => {
-      const list: (AdminNotification & { id: string })[] = [];
-      snap.forEach((d) => list.push({ id: d.id, ...(d.data() as AdminNotification) }));
+      const list: (AdminNotification & { id: string, isStarred?: boolean })[] = [];
+      snap.forEach((d) => list.push({ id: d.id, ...(d.data() as AdminNotification), isStarred: (d.data() as any).isStarred }));
       setNotifications(list);
-      // Auto-select first item if nothing selected
+      
+      // Auto-select first item if nothing selected, and mark it read
       if (list.length > 0) {
-        setSelectedId((prev) => prev || list[0].id);
+        setSelectedId((prev) => {
+          if (!prev) {
+            const first = list[0];
+            if (!first.isRead) {
+              updateDoc(doc(db, "admin_notifications", first.id), {
+                isRead: true,
+                readAt: new Date().toISOString(),
+              }).catch(() => {});
+            }
+            return first.id;
+          }
+          return prev;
+        });
       }
     });
     return () => unsub();
@@ -87,6 +103,7 @@ export default function NotificationCenterPage() {
 
   const filtered = notifications.filter((n) => {
     if (filter === "unread") return !n.isRead;
+    if (filter === "starred") return n.isStarred;
     if (filter === "today") return isToday(n.createdAt);
     if (filter === "week") return isThisWeek(n.createdAt);
     return true;
@@ -99,6 +116,7 @@ export default function NotificationCenterPage() {
   });
 
   const totalUnread = notifications.filter((n) => !n.isRead).length;
+  const totalStarred = notifications.filter((n) => n.isStarred).length;
 
   const markRead = async (id: string) => {
     try {
@@ -126,6 +144,28 @@ export default function NotificationCenterPage() {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const markUnread = async (id: string) => {
+    try {
+      await updateDoc(doc(db, "admin_notifications", id), {
+        isRead: false,
+        readAt: null,
+      });
+    } catch (e) { console.error(e); }
+  };
+
+  const toggleStar = async (id: string, current: boolean) => {
+    try {
+      await updateDoc(doc(db, "admin_notifications", id), { isStarred: !current });
+    } catch (e) { console.error(e); }
+  };
+
+  const deleteNotif = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "admin_notifications", id));
+      if (selectedId === id) setSelectedId(null);
+    } catch (e) { console.error(e); }
   };
 
   const categories = Object.entries(CATEGORY_META) as [NotificationCategory, typeof CATEGORY_META[NotificationCategory]][];
@@ -202,19 +242,27 @@ export default function NotificationCenterPage() {
       <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
         <div className="text-sm font-medium text-gray-300">
           Total Unread: <span className="text-luxury-ivory font-bold">{totalUnread}</span>
+          <span className="mx-2 text-gray-600">|</span>
+          Starred: <span className="text-amber-400 font-bold">{totalStarred}</span>
         </div>
         <div className="flex items-center gap-2">
-          {(['all', 'unread', 'today', 'week'] as FilterType[]).map((f) => (
+          {([
+            { key: "all", label: "All" },
+            { key: "unread", label: "Unread" },
+            { key: "starred", label: "Starred" },
+            { key: "today", label: "Today" },
+            { key: "week", label: "This Week" }
+          ] as { key: FilterType, label: string }[]).map((f) => (
             <button
-              key={f}
-              onClick={() => setFilter(f)}
+              key={f.key}
+              onClick={() => setFilter(f.key)}
               className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                filter === f 
+                filter === f.key 
                   ? "bg-luxury-ivory/20 text-luxury-ivory border border-luxury-ivory/30" 
                   : "bg-transparent text-gray-400 hover:text-white border border-transparent"
               }`}
             >
-              {f.charAt(0).toUpperCase() + f.slice(1).replace('Week', 'This Week')}
+              {f.label}
             </button>
           ))}
         </div>
@@ -287,8 +335,18 @@ export default function NotificationCenterPage() {
                       <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Unread
                     </div>
                   )}
-                  <button className="p-2 rounded-lg hover:bg-white/[0.04] text-gray-400 transition-colors"><Star className="w-4 h-4" /></button>
-                  <button className="p-2 rounded-lg hover:bg-white/[0.04] text-gray-400 transition-colors"><MoreVertical className="w-4 h-4" /></button>
+                  <button
+                    onClick={() => toggleStar(selectedItem.id, !!selectedItem.isStarred)}
+                    title={selectedItem.isStarred ? "Remove star" : "Star this notification"}
+                    className="p-2 rounded-lg hover:bg-white/[0.04] transition-colors"
+                  >
+                    <Star className={`w-4 h-4 ${selectedItem.isStarred ? "fill-amber-400 text-amber-400" : "text-gray-500 hover:text-amber-400"}`} />
+                  </button>
+                  <MoreMenu
+                    onMarkUnread={() => markUnread(selectedItem.id)}
+                    onDelete={() => deleteNotif(selectedItem.id)}
+                    isRead={selectedItem.isRead}
+                  />
                 </div>
               </div>
 
@@ -328,15 +386,25 @@ export default function NotificationCenterPage() {
               </div>
 
               {/* Actions Footer */}
-              <div className="flex items-center gap-3 pt-6">
+              <div className="flex items-center gap-3 pt-6 border-t border-white/[0.06]">
                 <Link href={selectedItem.actionUrl} className="px-5 py-2.5 rounded-xl bg-luxury-ivory text-[#030906] text-sm font-semibold hover:bg-luxury-ivory/90 transition flex items-center gap-2">
                   View Record <ArrowRight className="w-4 h-4" />
                 </Link>
-                {!selectedItem.isRead && (
+                {selectedItem.isRead ? (
+                  <button onClick={() => markUnread(selectedItem.id)} className="px-5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-white text-sm font-medium transition flex items-center gap-2">
+                    <MailOpen className="w-4 h-4" /> Mark Unread
+                  </button>
+                ) : (
                   <button onClick={() => markRead(selectedItem.id)} className="px-5 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.08] text-white text-sm font-medium transition flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4" /> Mark as Read
                   </button>
                 )}
+                <button
+                  onClick={() => deleteNotif(selectedItem.id)}
+                  className="ml-auto px-4 py-2.5 rounded-xl bg-red-500/5 border border-red-500/10 hover:bg-red-500/10 text-red-500 text-sm font-medium transition flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" /> Delete
+                </button>
               </div>
 
             </div>
@@ -357,7 +425,7 @@ export default function NotificationCenterPage() {
   );
 }
 
-function NotificationRow({ notification, isSelected, onSelect }: { notification: AdminNotification & { id: string }, isSelected: boolean, onSelect: () => void }) {
+function NotificationRow({ notification, isSelected, onSelect }: { notification: AdminNotification & { id: string, isStarred?: boolean }, isSelected: boolean, onSelect: () => void }) {
   const Icon = CATEGORY_ICONS[notification.category];
   const colorClass = CATEGORY_COLORS[notification.category];
 
@@ -366,7 +434,7 @@ function NotificationRow({ notification, isSelected, onSelect }: { notification:
       onClick={onSelect}
       className={`p-4 rounded-2xl cursor-pointer transition-all border flex items-start gap-4 ${
         isSelected 
-          ? `bg-white/[0.04] border-[${colorClass.border.replace('border-','')}] border-opacity-30` 
+          ? "bg-white/[0.05] border-white/[0.12]" 
           : "bg-transparent border-transparent hover:bg-white/[0.02] hover:border-white/[0.04]"
       }`}
     >
@@ -389,8 +457,49 @@ function NotificationRow({ notification, isSelected, onSelect }: { notification:
           {notification.description}
         </p>
       </div>
-      {isSelected && notification.isRead && (
-        <CheckCircle2 className="w-4 h-4 text-gray-600 flex-shrink-0 mt-3" />
+      {notification.isStarred && (
+        <Star className="w-3 h-3 fill-amber-400 text-amber-400 flex-shrink-0 mt-3" />
+      )}
+    </div>
+  );
+}
+
+function MoreMenu({ onMarkUnread, onDelete, isRead }: { onMarkUnread: () => void; onDelete: () => void; isRead: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="p-2 rounded-lg hover:bg-white/[0.04] text-gray-500 hover:text-white transition-colors"
+      >
+        <MoreVertical className="w-4 h-4" />
+      </button>
+      {open && (
+        <div className="absolute right-0 top-10 z-50 w-44 bg-[#0d1410] border border-white/[0.08] rounded-xl shadow-xl overflow-hidden">
+          <button
+            onClick={() => { onMarkUnread(); setOpen(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[12px] text-gray-300 hover:bg-white/[0.05] hover:text-white transition text-left"
+          >
+            <MailOpen className="w-3.5 h-3.5 text-gray-400" />
+            {isRead ? "Mark as Unread" : "Mark as Read"}
+          </button>
+          <div className="border-t border-white/[0.06]" />
+          <button
+            onClick={() => { onDelete(); setOpen(false); }}
+            className="w-full flex items-center gap-3 px-4 py-3 text-[12px] text-red-400 hover:bg-red-500/10 transition text-left"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete
+          </button>
+        </div>
       )}
     </div>
   );

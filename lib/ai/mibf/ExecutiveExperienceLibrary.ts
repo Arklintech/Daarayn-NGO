@@ -2,7 +2,7 @@
  * lib/ai/mibf/ExecutiveExperienceLibrary.ts
  * 
  * Executive Experience Engine (EEE) organizational wisdom and decision patterns.
- * This library teaches MOMIN experience, not just knowledge.
+ * This library teaches KHIDR experience, not just knowledge.
  */
 
 import { db } from "../../firebase";
@@ -49,7 +49,7 @@ export class ExecutiveExperienceLibrary {
    */
   static async preloadExperienceCache() {
     try {
-      const q = query(collection(db, "momin_experience"), where("status", "==", "active"));
+      const q = query(collection(db, "khidr_experience"), where("status", "==", "active"));
       const snap = await getDocs(q);
       const wisdom: ApprovedExperience[] = [];
       snap.forEach(doc => {

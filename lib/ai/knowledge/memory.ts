@@ -5,17 +5,17 @@
  * Stores conversation threads in sliding window arrays during active sessions.
  */
 
-export interface MominMemoryMessage {
+export interface KhidrMemoryMessage {
   role: "user" | "assistant" | "system";
   content: string;
   timestamp: string;
 }
 
-export class MominSessionMemory {
-  private messages: MominMemoryMessage[] = [];
+export class KhidrSessionMemory {
+  private messages: KhidrMemoryMessage[] = [];
   private maxHistory = 10; // sliding window size (keep last 10 turns)
 
-  constructor(initialMessages?: MominMemoryMessage[]) {
+  constructor(initialMessages?: KhidrMemoryMessage[]) {
     if (initialMessages) {
       this.messages = initialMessages;
     }
@@ -33,7 +33,7 @@ export class MominSessionMemory {
     }
   }
 
-  public getHistory(): MominMemoryMessage[] {
+  public getHistory(): KhidrMemoryMessage[] {
     return this.messages;
   }
 

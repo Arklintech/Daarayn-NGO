@@ -84,7 +84,7 @@ function generateSummary(donor: any, donations: any[], communications: any[]): s
   return lines.join('\n');
 }
 
-export default function MominTab({ donor, donations, communications }: any) {
+export default function KhidrTab({ donor, donations, communications }: any) {
   const [generated, setGenerated] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -103,7 +103,7 @@ export default function MominTab({ donor, donations, communications }: any) {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Cpu className="w-4 h-4 text-luxury-ivory/60" />
-            <h2 className="text-base font-semibold text-white">MOMIN Executive Summary</h2>
+            <h2 className="text-base font-semibold text-white">Khidr Executive Summary</h2>
           </div>
           <p className="text-sm text-gray-400">AI-generated relationship summary. Visible to administrators only.</p>
         </div>
@@ -122,7 +122,7 @@ export default function MominTab({ donor, donations, communications }: any) {
           <Cpu className="w-12 h-12 mx-auto text-gray-700" />
           <p className="text-gray-400 text-sm">Click "Generate Summary" to create an AI executive brief for this donor.</p>
           <p className="text-gray-600 text-xs max-w-md mx-auto">
-            MOMIN analyses contribution patterns, communication history, and cause alignment to produce a concise relationship summary.
+            Khidr analyses contribution patterns, communication history, and cause alignment to produce a concise relationship summary.
           </p>
         </div>
       )}
@@ -141,7 +141,7 @@ export default function MominTab({ donor, donations, communications }: any) {
           <div className="flex items-center gap-3 px-5 py-3 border-b"
             style={{ borderColor: 'rgba(255,249,221,0.08)', background: 'rgba(255,249,221,0.03)' }}>
             <Sparkles className="w-3.5 h-3.5 text-luxury-ivory/50" />
-            <span className="text-[10px] uppercase tracking-widest text-luxury-ivory/50 font-semibold">MOMIN — AI Executive Brief</span>
+            <span className="text-[10px] uppercase tracking-widest text-luxury-ivory/50 font-semibold">Khidr — AI Executive Brief</span>
           </div>
           <pre className="p-6 text-sm text-gray-200 leading-relaxed whitespace-pre-wrap font-sans overflow-x-auto">
             {summary}

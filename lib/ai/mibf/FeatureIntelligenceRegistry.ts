@@ -2,7 +2,7 @@
  * lib/ai/mibf/FeatureIntelligenceRegistry.ts
  * 
  * Defines Daarayn's enterprise features, capabilities, and recommendation conditions.
- * Teaches MOMIN the business value and context of every organizational module.
+ * Teaches KHIDR the business value and context of every organizational module.
  */
 
 export interface DaaraynFeature {

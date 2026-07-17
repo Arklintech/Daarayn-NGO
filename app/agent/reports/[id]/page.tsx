@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import { ArrowLeft, MapPin, Users, FileText, Clock, CheckCircle, XCircle, AlertCircle, MessageSquare, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -22,24 +22,25 @@ export default function ReportDetailPage() {
   const { agentData } = useFieldAgentAuth();
   const params = useParams();
   const reportId = params?.id as string;
-  const [report, setReport] = useState<FieldReport | null>(null);
+  const [report, setReport] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!reportId) return;
-    const fetchReport = async () => {
-      try {
-        const snap = await getDoc(doc(db, "field_reports", reportId));
-        if (snap.exists()) {
-          setReport(snap.data() as FieldReport);
+    // Real-time listener — admin timeline updates reflect instantly
+    const unsub = onSnapshot(doc(db, "field_reports", reportId), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setReport({ id: snap.id, ...data });
+        
+        // Clear unread flag if it was set by admin updates
+        if (data.hasAgentUnreadUpdate) {
+          updateDoc(doc(db, "field_reports", reportId), { hasAgentUnreadUpdate: false }).catch(console.error);
         }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchReport();
+      setLoading(false);
+    });
+    return () => unsub();
   }, [reportId]);
 
   if (loading) {
@@ -58,14 +59,22 @@ export default function ReportDetailPage() {
   const statusCfg = statusConfig[report.status] || { color: "text-gray-400 bg-white/5 border-white/10", icon: FileText, label: report.status };
   const StatusIcon = statusCfg.icon;
 
-  const timelineSteps = [
-    { label: "Submitted", done: true, date: report.createdAt },
-    { label: "Assigned to Reviewer", done: ["Under Review", "Needs Info", "Approved", "Converted", "Rejected"].includes(report.status) },
-    { label: "Under Review", done: ["Needs Info", "Approved", "Converted", "Rejected"].includes(report.status) },
-    { label: "Verification Visit", done: ["Approved", "Converted"].includes(report.status) },
-    { label: "Approval", done: ["Approved", "Converted"].includes(report.status) },
-    { label: "Published on Website", done: report.status === "Converted" },
+  const TIMELINE_STAGE_KEYS = [
+    "Submitted",
+    "Assigned to Reviewer",
+    "Under Review",
+    "Verification Visit",
+    "Approval",
+    "Published on Website",
   ];
+
+  const savedStages: Record<string, string> = report.timelineStages || {};
+
+  const timelineSteps = TIMELINE_STAGE_KEYS.map((label, i) => {
+    const isSubmitted = label === "Submitted";
+    const completedAt = isSubmitted ? report.createdAt : savedStages[label];
+    return { label, done: !!completedAt, date: completedAt };
+  });
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -156,27 +165,49 @@ export default function ReportDetailPage() {
 
       {/* Timeline */}
       <div className="admin-glass border border-luxury-border rounded-2xl p-4">
-        <h3 className="text-xs text-gray-400 uppercase tracking-wider mb-4 font-semibold">Timeline</h3>
+        <h3 className="text-xs text-gray-400 uppercase tracking-wider mb-4 font-semibold">Report Timeline</h3>
         <div className="space-y-0">
-          {timelineSteps.map((step, i) => (
-            <div key={i} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 ${step.done ? "border-luxury-ivory bg-luxury-ivory/20" : "border-white/20 bg-transparent"}`}>
-                  {step.done && <CheckCircle className="w-3 h-3 text-luxury-ivory" />}
+          {timelineSteps.map((step, i) => {
+            const isCurrent = !step.done && (
+              (step.label === "Assigned to Reviewer" && report.status === "Pending Review") ||
+              (step.label === "Under Review" && report.status === "Under Review") ||
+              (step.label === "Verification Visit" && report.status === "Scheduled") ||
+              (step.label === "Approval" && report.status === "Approved")
+            );
+            return (
+              <div key={i} className="flex gap-3">
+                <div className="flex flex-col items-center">
+                  <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
+                    step.done
+                      ? "border-luxury-ivory bg-luxury-ivory/20"
+                      : isCurrent
+                      ? "border-[#b8860b] bg-[#b8860b]/10 animate-pulse"
+                      : "border-white/20 bg-transparent"
+                  }`}>
+                    {step.done && <CheckCircle className="w-3 h-3 text-luxury-ivory" />}
+                    {isCurrent && !step.done && <div className="w-1.5 h-1.5 rounded-full bg-[#b8860b]" />}
+                  </div>
+                  {i < timelineSteps.length - 1 && (
+                    <div className={`w-0.5 flex-1 my-1 min-h-[20px] ${step.done ? "bg-luxury-ivory/30" : "bg-white/10"}`} />
+                  )}
                 </div>
-                {i < timelineSteps.length - 1 && (
-                  <div className={`w-0.5 flex-1 my-1 ${step.done ? "bg-luxury-ivory/30" : "bg-white/10"}`} style={{ minHeight: "20px" }} />
-                )}
+                <div className="pb-4">
+                  <p className={`text-sm font-medium ${
+                    step.done ? "text-white" : isCurrent ? "text-[#b8860b]" : "text-gray-500"
+                  }`}>{step.label}</p>
+                  {step.done && step.date ? (
+                    <p className="text-[10px] text-gray-500 mt-0.5">
+                      {new Date(step.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                    </p>
+                  ) : isCurrent ? (
+                    <p className="text-[10px] text-[#b8860b]/70 mt-0.5">In Progress</p>
+                  ) : (
+                    <p className="text-[10px] text-gray-600 mt-0.5">Upcoming</p>
+                  )}
+                </div>
               </div>
-              <div className="pb-4">
-                <p className={`text-sm font-medium ${step.done ? "text-white" : "text-gray-500"}`}>{step.label}</p>
-                {step.done && step.date && (
-                  <p className="text-[10px] text-gray-500 mt-0.5">{new Date(step.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
-                )}
-                {!step.done && <p className="text-[10px] text-gray-600 mt-0.5">Upcoming</p>}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

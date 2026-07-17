@@ -15,7 +15,7 @@
     "role": "finance"
   },
   {
-    "query": "Good morning MOMIN, what should I focus on?",
+    "query": "Good morning KHIDR, what should I focus on?",
     "expectedIntent": "executiveBriefing",
     "role": "compliance"
   }

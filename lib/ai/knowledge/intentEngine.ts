@@ -1,11 +1,11 @@
 /**
  * lib/ai/knowledge/intentEngine.ts
  *
- * Intent Detection Engine for MOMIN Knowledge Intelligence Engine (MKIE).
+ * Intent Detection Engine for KHIDR Knowledge Intelligence Engine (MKIE).
  * Classifies natural language prompts into target intelligence search categories.
  */
 
-export type MominIntent =
+export type KhidrIntent =
   | "donationSearch"
   | "projectIntelligence"
   | "communicationIntelligence"
@@ -18,7 +18,7 @@ export type MominIntent =
   | "executiveBriefing";
 
 export interface IntentAnalysis {
-  intent: MominIntent;
+  intent: KhidrIntent;
   confidence: number;
   entities: {
     donorName?: string;
@@ -37,7 +37,7 @@ export async function detectIntent(message: string): Promise<IntentAnalysis> {
   const queryLower = message.toLowerCase();
   
   // Default fallback values
-  let intent: MominIntent = "globalSearch";
+  let intent: KhidrIntent = "globalSearch";
   let confidence = 0.7;
   const entities: IntentAnalysis["entities"] = {};
 

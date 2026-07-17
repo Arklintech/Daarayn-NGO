@@ -90,7 +90,7 @@ export default function AgentMessagesPage() {
         status: "Waiting For Admin"
       });
 
-      await notifyConversation.newMessage(activeConvId, agentData.name, newMessage);
+      await notifyConversation.newMessage(activeConvId, agentData.id, agentData.name, newMessage);
 
       
       setNewMessage("");
@@ -114,14 +114,30 @@ export default function AgentMessagesPage() {
     setIsUploading(true);
 
     try {
-      // Convert file to base64 so it can be stored directly in Firestore
-      // (avoids Firebase Storage authentication/rules issues)
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result as string); // data:image/png;base64,...
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-      });
+      let fileUrl = "";
+      try {
+        const formData = new FormData();
+        formData.append("files", file);
+        const uploadRes = await fetch("/api/admin/upload", {
+          method: "POST",
+          body: formData
+        });
+        const uploadResult = await uploadRes.json();
+        if (uploadResult.success && uploadResult.urls && uploadResult.urls.length > 0) {
+          fileUrl = uploadResult.urls[0];
+        }
+      } catch (uploadErr) {
+        console.warn("API upload failed, falling back to base64", uploadErr);
+      }
+
+      if (!fileUrl) {
+        fileUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string); // data:image/png;base64,...
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
 
       const isImage = file.type.startsWith("image/");
 
@@ -132,7 +148,7 @@ export default function AgentMessagesPage() {
         senderName: agentData.name,
         text: `📎 ${file.name}`,
         isMedia: true,
-        mediaBase64: base64,
+        mediaBase64: fileUrl,
         mediaType: file.type,
         mediaName: file.name,
         isImage,
@@ -152,7 +168,7 @@ export default function AgentMessagesPage() {
         status: "Waiting For Admin"
       });
 
-      await notifyConversation.newMessage(activeConvId, agentData.name, `📎 ${file.name}`);
+      await notifyConversation.newMessage(activeConvId, agentData.id, agentData.name, `📎 ${file.name}`);
 
 
     } catch (err) {
@@ -188,23 +204,44 @@ export default function AgentMessagesPage() {
         stream.getTracks().forEach(track => track.stop());
 
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        const reader = new FileReader();
-        reader.readAsDataURL(audioBlob);
-        reader.onloadend = async () => {
-          const base64data = reader.result as string;
+        let audioUrl = "";
+        try {
+          const audioFile = new File([audioBlob], "VoiceNote.webm", { type: "audio/webm" });
+          const formData = new FormData();
+          formData.append("files", audioFile);
+          const uploadRes = await fetch("/api/admin/upload", {
+            method: "POST",
+            body: formData
+          });
+          const uploadResult = await uploadRes.json();
+          if (uploadResult.success && uploadResult.urls && uploadResult.urls.length > 0) {
+            audioUrl = uploadResult.urls[0];
+          }
+        } catch (uploadErr) {
+          console.warn("Voice note upload failed, falling back to base64", uploadErr);
+        }
 
-          const msg: any = {
-            conversationId: activeConvId,
-            senderId: agentData.id,
-            senderRole: "Agent",
-            senderName: agentData.name,
-            text: "🎤 Voice Note",
-            isMedia: true,
-            mediaBase64: base64data,
-            mediaType: "audio/webm",
-            mediaName: "VoiceNote.webm",
-            timestamp: new Date().toISOString()
-          };
+        if (!audioUrl) {
+          audioUrl = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(audioBlob);
+          });
+        }
+
+        const msg: any = {
+          conversationId: activeConvId,
+          senderId: agentData.id,
+          senderRole: "Agent",
+          senderName: agentData.name,
+          text: "🎤 Voice Note",
+          isMedia: true,
+          mediaBase64: audioUrl,
+          mediaType: "audio/webm",
+          mediaName: "VoiceNote.webm",
+          timestamp: new Date().toISOString()
+        };
 
           await addDoc(collection(db, "field_messages"), msg);
 
@@ -219,9 +256,8 @@ export default function AgentMessagesPage() {
             status: "Waiting For Admin"
           });
 
-          await notifyConversation.newMessage(activeConvId, agentData.name, "🎤 Voice Note");
+          await notifyConversation.newMessage(activeConvId, agentData.id, agentData.name, "🎤 Voice Note");
         };
-      };
 
       recorder.start();
       setMediaRecorder(recorder);

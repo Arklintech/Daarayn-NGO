@@ -5,10 +5,10 @@
  * Restricts query executions and database retrievals by administrator user roles.
  */
 
-import type { MominDepartment } from "./router";
-import { normalizeMominRole } from "../roleNormalizer";
+import type { KhidrDepartment } from "./router";
+import { normalizeKhidrRole } from "../roleNormalizer";
 
-export type MominRole = "super_admin" | "editor" | "inspector" | "public";
+export type KhidrRole = "super_admin" | "editor" | "inspector" | "public";
 
 export interface PermissionCheck {
   isAuthorized: boolean;
@@ -20,8 +20,8 @@ export interface PermissionCheck {
  * Validates role-based permission sets for target specialists departments
  * and returns the allowed collections filter.
  */
-export function checkRBAC(role: MominRole | string, department: MominDepartment): PermissionCheck {
-  role = normalizeMominRole(role);
+export function checkRBAC(role: KhidrRole | string, department: KhidrDepartment): PermissionCheck {
+  role = normalizeKhidrRole(role);
 
   // 1. Define allowed collections mapped to role definitions
   const publicCollections = ["publicLedger", "programs", "settings"];
@@ -46,7 +46,7 @@ export function checkRBAC(role: MominRole | string, department: MominDepartment)
 
     case "inspector":
       // Inspectors check compliance/progress but cannot view private financial records (donations details, donor profiles, communications drafts logs)
-      const restrictedInspectorDepts: MominDepartment[] = ["donation", "donor", "communication", "administration"];
+      const restrictedInspectorDepts: KhidrDepartment[] = ["donation", "donor", "communication", "administration"];
       if (restrictedInspectorDepts.includes(department)) {
         return {
           isAuthorized: false,
@@ -59,7 +59,7 @@ export function checkRBAC(role: MominRole | string, department: MominDepartment)
     case "public":
     default:
       // Public guest is restricted to public ledger totals and published programs
-      const allowedPublicDepts: MominDepartment[] = ["global", "knowledge"];
+      const allowedPublicDepts: KhidrDepartment[] = ["global", "knowledge"];
       if (!allowedPublicDepts.includes(department)) {
         return {
           isAuthorized: false,

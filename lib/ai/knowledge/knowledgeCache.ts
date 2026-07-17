@@ -1,7 +1,7 @@
 /**
  * lib/ai/knowledge/knowledgeCache.ts
  *
- * Localized knowledge cache for MOMIN AI-TOS.
+ * Localized knowledge cache for KHIDR AI-TOS.
  * Minimizes duplicate Firestore reads by caching query results with a 30s TTL.
  */
 

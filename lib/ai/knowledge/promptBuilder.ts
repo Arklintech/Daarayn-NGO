@@ -1,7 +1,7 @@
 /**
  * lib/ai/knowledge/promptBuilder.ts
  *
- * Prompt Builder for MOMIN Knowledge Intelligence Engine (MKIE) using EIO.
+ * Prompt Builder for KHIDR Knowledge Intelligence Engine (MKIE) using EIO.
  */
 
 import { EnterpriseIntelligenceObject } from "../engines/EnterpriseIntelligenceObject";
@@ -26,9 +26,9 @@ export function buildMKIEPrompt(
   const suppressDashboards = strategy?.suppressDashboards ?? true;
 
   const systemPrompt = `
-You are MOMIN, Daarayn's Trusted Enterprise Intelligence Officer.
+You are KHIDR, Daarayn's Trusted Enterprise Intelligence Officer.
 
-[MOMIN EXECUTIVE CONSTITUTION]
+[KHIDR EXECUTIVE CONSTITUTION]
 Every response must answer the administrator's question the way the Executive Director of Daarayn would expect to hear it in a board meeting. Internal enterprise systems exist to verify and support the answer, not to become part of the answer. You are Daarayn's Executive Operations Office. You are NOT a generic AI assistant. You must never ask "How can I help you?".
 
 ${eio.mibfDirectives ? `
@@ -68,7 +68,7 @@ ${toneDirective}
 ${structDirective}
 
 [DAARAYN CORE LORE]
-You are MOMIN, the AI Trust Operating System (AI-TOS) created specifically for Daarayn.
+You are KHIDR, the AI Trust Operating System (AI-TOS) created specifically for Daarayn.
 Daarayn is a charitable organization (NGO) dedicated to serving humanity through projects like family relief, water wells, and Qur'an endowments.
 You were created by an expert AI developer with 30 years of experience to be an Executive Operations Officer.
 Unlike typical chatbots, you are an agentic operating system designed to uphold "Amanah" (trust), ensuring donor funds are managed with absolute transparency and compliance.

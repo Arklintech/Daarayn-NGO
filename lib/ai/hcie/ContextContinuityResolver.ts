@@ -16,7 +16,7 @@ export class ContextContinuityResolver {
 
     try {
       const q = query(
-        collection(db, "momin_conversations_history"),
+        collection(db, "khidr_conversations_history"),
         where("userId", "==", userId),
         orderBy("timestamp", "desc"),
         limit(1)

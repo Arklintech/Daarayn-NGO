@@ -1,7 +1,7 @@
 /**
  * lib/ai/mibf/ConversationIntelligenceLibrary.ts
  * 
- * Defines how MOMIN handles conversational memory, reference resolution, and continuity.
+ * Defines how KHIDR handles conversational memory, reference resolution, and continuity.
  */
 
 export const ConversationIntelligence = {

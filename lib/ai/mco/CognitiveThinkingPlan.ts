@@ -1,14 +1,14 @@
 /**
  * lib/ai/mco/CognitiveThinkingPlan.ts
  *
- * MOMIN Cognitive Orchestrator — Stage 2: Cognitive Thinking Plan
+ * KHIDR Cognitive Orchestrator — Stage 2: Cognitive Thinking Plan
  *
  * Purpose: Before invoking any enterprise tool, MCO articulates EXACTLY
  * what it plans to do, why, and what it expects to find. This makes
- * MOMIN's reasoning transparent, auditable, and intentional.
+ * KHIDR's reasoning transparent, auditable, and intentional.
  *
  * The ThinkingPlan is logged to Firestore as part of the conversation
- * audit trail. Administrators and developers can inspect WHY MOMIN
+ * audit trail. Administrators and developers can inspect WHY KHIDR
  * chose specific tools for any given query.
  *
  * This engine is fully DETERMINISTIC. No LLM calls.
@@ -260,7 +260,7 @@ export class CognitiveThinkingPlanEngine {
     tools.push({
       capability: "ExecutiveReflectionEngine (async)",
       rationale: "After the response is delivered, evaluate the interaction to extract organizational lessons.",
-      expectedOutcome: "An evolution record stored in momin_evolution for continuous improvement.",
+      expectedOutcome: "An evolution record stored in khidr_evolution for continuous improvement.",
       priority: "supplementary"
     });
 

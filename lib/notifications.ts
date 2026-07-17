@@ -105,7 +105,7 @@ export async function publishNotification(
 
 /** Field Reports */
 export const notifyFieldReport = {
-  newSubmission: (reportId: string, title: string, agentName: string, urgency: string) =>
+  newSubmission: (reportId: string, agentId: string, title: string, agentName: string, urgency: string) =>
     publishNotification({
       category: "field_reports",
       title: urgency === "High" ? "🚨 Urgent Report Submitted" : "New Field Report Submitted",
@@ -113,11 +113,11 @@ export const notifyFieldReport = {
       entityType: "FieldReport",
       entityId: reportId,
       createdBy: agentName,
-      actionUrl: "/admin/field-ops",
+      actionUrl: `/admin/field-ops?agentId=${agentId}&reportId=${reportId}`,
       priority: urgency === "High" ? "high" : "normal",
-      metadata: { urgency },
+      metadata: { urgency, agentId },
     }),
-  approved: (reportId: string, title: string) =>
+  approved: (reportId: string, agentId: string, title: string) =>
     publishNotification({
       category: "field_reports",
       title: "Report Approved",
@@ -125,10 +125,11 @@ export const notifyFieldReport = {
       entityType: "FieldReport",
       entityId: reportId,
       createdBy: "System",
-      actionUrl: "/admin/field-ops",
+      actionUrl: `/admin/field-ops?agentId=${agentId}&reportId=${reportId}`,
       priority: "normal",
+      metadata: { agentId },
     }),
-  rejected: (reportId: string, title: string) =>
+  rejected: (reportId: string, agentId: string, title: string) =>
     publishNotification({
       category: "field_reports",
       title: "Report Rejected",
@@ -136,8 +137,9 @@ export const notifyFieldReport = {
       entityType: "FieldReport",
       entityId: reportId,
       createdBy: "System",
-      actionUrl: "/admin/field-ops",
+      actionUrl: `/admin/field-ops?agentId=${agentId}&reportId=${reportId}`,
       priority: "low",
+      metadata: { agentId },
     }),
   converted: (reportId: string, causeId: string, title: string) =>
     publishNotification({
@@ -155,7 +157,7 @@ export const notifyFieldReport = {
 
 /** Conversations */
 export const notifyConversation = {
-  newMessage: (convId: string, agentName: string, preview: string) =>
+  newMessage: (convId: string, agentId: string, agentName: string, preview: string) =>
     publishNotification({
       category: "conversations",
       title: `New Message from ${agentName}`,
@@ -163,9 +165,9 @@ export const notifyConversation = {
       entityType: "FieldConversation",
       entityId: convId,
       createdBy: agentName,
-      actionUrl: "/admin/field-ops",
+      actionUrl: `/admin/field-ops?agentId=${agentId}&convId=${convId}`,
       priority: "normal",
-      metadata: { agentName },
+      metadata: { agentName, agentId },
     }),
   urgent: (convId: string, agentName: string) =>
     publishNotification({
@@ -343,7 +345,7 @@ export const notifyExecutive = {
       description: "Your daily operations summary is available for review.",
       entityType: "ExecutiveReport",
       entityId: `BRIEF-${new Date().toISOString().split("T")[0]}`,
-      createdBy: "MOMIN AI",
+      createdBy: "KHIDR AI",
       actionUrl: "/admin/dashboard",
       priority: "normal",
     }),
