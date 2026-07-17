@@ -2,11 +2,13 @@
 import Link from 'next/link';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { Menu, X } from 'lucide-react';
 
 export default function Navbar() {
   const { scrollY } = useScroll();
   const [activeHash, setActiveHash] = useState('');
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
 
   // Dynamic Scroll Values
   const navHeight = useTransform(scrollY, [0, 100], [80, 64]);
@@ -35,7 +37,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav style={{ position: 'fixed', top: 0, left: 0, width: '100%', padding: '24px 32px', zIndex: 100, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }}>
+    <nav style={{ position: 'fixed', top: 0, left: 0, width: '100%', padding: '24px 16px', zIndex: 100, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }} className="lg:px-8">
       <motion.div 
         style={{
           width: '100%',
@@ -49,11 +51,12 @@ export default function Navbar() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: navPadding,
+          padding: '0 16px',
           boxShadow: navShadow,
           pointerEvents: 'auto',
           position: 'relative'
         }}
+        className="lg:px-[24px]"
       >
         {/* Subtle Islamic Star Background Watermark */}
         <div style={{ position: 'absolute', inset: 0, borderRadius: '16px', overflow: 'hidden', pointerEvents: 'none' }}>
@@ -67,39 +70,39 @@ export default function Navbar() {
         </div>
 
         {/* Left: Logo */}
-        <Link href="/#home" onClick={() => setActiveHash('#home')} style={{ textDecoration: 'none', zIndex: 10 }}>
+        <Link href="/#home" onClick={() => { setActiveHash('#home'); setIsOpen(false); }} style={{ textDecoration: 'none', zIndex: 10 }}>
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1, ease: 'easeOut' }}
-            style={{ display: 'flex', alignItems: 'center', gap: '16px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
           >
-            {/* Removed the CSS class that had the box, now just raw image. Using brand logo .png assuming it's the transparent one */}
             <motion.img 
               style={{ scale: logoScale, transformOrigin: 'center center', display: 'block' }}
               src="/daarayn-logo-transparent.png" 
               alt="Daarayn Logo" 
-              width={80} 
-              height={80}
+              width={60} 
+              height={60}
+              className="lg:w-[80px] lg:h-[80px]"
               onError={(e: any) => { e.currentTarget.src = '/brand logo .png' }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '24px', fontWeight: 400, letterSpacing: '2px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }}>
+              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '18px', fontWeight: 400, letterSpacing: '2px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }} className="lg:text-[24px]">
                 DAARAYN
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
-                <span style={{ display: 'block', width: '24px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
-                <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '11px', fontWeight: 300, letterSpacing: '2px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }} className="lg:gap-[8px]">
+                <span style={{ display: 'block', width: '12px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[24px]" />
+                <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '9px', fontWeight: 300, letterSpacing: '1.5px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }} className="lg:text-[11px] lg:tracking-[2px]">
                   FOUNDATION
                 </span>
-                <span style={{ display: 'block', width: '24px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
+                <span style={{ display: 'block', width: '12px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[24px]" />
               </div>
             </div>
           </motion.div>
         </Link>
 
-        {/* Center: Navigation Links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', zIndex: 10 }}>
+        {/* Center: Navigation Links (Desktop) */}
+        <div className="hidden lg:flex items-center gap-[12px] z-10" style={{ zIndex: 10 }}>
           {navItems.map((item) => {
             const isActive = activeHash === item.href.replace('/', '');
             return (
@@ -151,6 +154,35 @@ export default function Navbar() {
             );
           })}
         </div>
+
+        {/* Mobile Toggle Button */}
+        <div className="lg:hidden z-10 flex items-center pr-2">
+          <button onClick={() => setIsOpen(!isOpen)} className="text-[#FFF9DD] p-2 focus:outline-none bg-white/5 rounded-lg border border-white/10 active:scale-95 transition-transform">
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+
+        {/* Mobile Drawer */}
+        {isOpen && (
+          <div className="lg:hidden absolute top-[100%] left-0 w-full bg-[#011533]/95 backdrop-blur-xl rounded-b-xl border border-t-0 border-[#FFF9DD]/15 p-4 flex flex-col gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-50">
+            {navItems.map((item) => {
+              const isActive = activeHash === item.href.replace('/', '');
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  onClick={() => {
+                    setActiveHash(item.href.replace('/', ''));
+                    setIsOpen(false);
+                  }}
+                  className={`text-[15px] p-3 rounded-lg transition-colors border ${isActive ? 'bg-[#FFF9DD]/10 text-[#FFF9DD] border-[#FFF9DD]/20 font-medium' : 'text-gray-200 border-transparent hover:bg-white/5 hover:text-[#FFF9DD] hover:border-white/10'}`}
+                >
+                  {item.name}
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </motion.div>
     </nav>
   );

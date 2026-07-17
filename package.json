@@ -29,6 +29,7 @@
     "fuse.js": "^7.4.2",
     "googleapis": "^173.0.0",
     "gsap": "^3.12.5",
+    "idb": "^8.0.3",
     "lru-cache": "^11.5.2",
     "lucide-react": "^0.470.0",
     "multer": "^2.2.0",

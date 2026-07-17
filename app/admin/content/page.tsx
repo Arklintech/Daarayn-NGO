@@ -108,7 +108,7 @@ export default function AdminContent() {
                   : "text-gray-400 hover:text-white"
               }`}
             >
-              <Icon className="w-4 h-4 text-luxury-ivory" />
+              <Icon className="w-4 h-4 text-luxury-gold" />
               {subTab.label}
             </button>
           );
@@ -166,7 +166,7 @@ export default function AdminContent() {
             </div>
 
             <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.04]">
-              <h4 className="text-[10px] font-bold text-luxury-ivory uppercase tracking-wider mb-4">Homepage counters & indicators</h4>
+              <h4 className="text-[10px] font-bold text-luxury-gold uppercase tracking-wider mb-4">Homepage counters & indicators</h4>
               <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-gray-500 mb-1.5 uppercase text-[9px]">Active Volunteers</label>
@@ -201,7 +201,7 @@ export default function AdminContent() {
             <button 
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold tracking-wide transition flex items-center gap-1.5 shadow-lg"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold tracking-wide transition flex items-center gap-1.5 shadow-lg"
             >
               <Save className="w-4 h-4" /> 
               {loading ? "Saving config..." : "Save Homepage Content"}
@@ -252,7 +252,7 @@ export default function AdminContent() {
               </div>
               <button 
                 onClick={handleAddTestimonial}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold tracking-wide transition flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold tracking-wide transition flex items-center justify-center gap-1.5"
               >
                 <Plus className="w-4 h-4" /> Save Testimonial
               </button>
@@ -314,7 +314,7 @@ export default function AdminContent() {
               </div>
               <button 
                 onClick={handleAddFaq}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold tracking-wide transition flex items-center justify-center gap-1.5"
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold tracking-wide transition flex items-center justify-center gap-1.5"
               >
                 <Plus className="w-4 h-4" /> Save FAQ
               </button>

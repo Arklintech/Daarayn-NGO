@@ -128,7 +128,7 @@ export default function AdminDashboard() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.06 }}
-              className="p-6 rounded-3xl admin-glass border border-white/[0.06] hover:border-luxury-ivory/30 hover:shadow-[0_8px_30px_rgba(212,175,55,0.04)] transition duration-300"
+              className="p-6 rounded-3xl admin-glass border border-white/[0.06] hover:border-luxury-gold/30 hover:shadow-[0_8px_30px_rgba(212,175,55,0.04)] transition duration-300"
             >
               <div className="flex items-start justify-between">
                 <div>
@@ -241,7 +241,7 @@ export default function AdminDashboard() {
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Recent Contributions</h3>
               <p className="text-[10px] text-gray-400 mt-0.5">Verification queue from public website</p>
             </div>
-            <button className="text-[10px] text-luxury-ivory font-bold uppercase tracking-wider flex items-center hover:underline">
+            <button className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider flex items-center hover:underline">
               View All <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -263,7 +263,7 @@ export default function AdminDashboard() {
                     <td className="py-3 font-semibold text-white">{item.id}</td>
                     <td className="py-3 font-medium">{item.donor}</td>
                     <td className="py-3 text-gray-400">{item.cause}</td>
-                    <td className="py-3 font-bold text-luxury-ivory">₹{Number(item.amount).toLocaleString()}</td>
+                    <td className="py-3 font-bold text-luxury-gold">₹{Number(item.amount).toLocaleString()}</td>
                     <td className="py-3">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-semibold border ${
                         item.status === "completed" 
@@ -293,12 +293,12 @@ export default function AdminDashboard() {
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Audit Security Log</h3>
               <p className="text-[10px] text-gray-400 mt-0.5">Real-time administrator activity logs</p>
             </div>
-            <AlertCircle className="w-4 h-4 text-luxury-ivory" />
+            <AlertCircle className="w-4 h-4 text-luxury-gold" />
           </div>
 
           <div className="space-y-4">
             <div className="flex items-start gap-3 text-[11px] leading-relaxed">
-              <div className="w-2.5 h-2.5 rounded-full bg-luxury-ivory mt-1 shrink-0 animate-pulse"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-luxury-gold mt-1 shrink-0 animate-pulse"></div>
               <div>
                 <p className="text-gray-200"><span className="font-semibold text-white">Super Admin</span> enabled Firestore live database connector.</p>
                 <span className="text-[9px] text-gray-500 block mt-0.5">Just now</span>

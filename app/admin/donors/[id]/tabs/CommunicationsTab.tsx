@@ -61,7 +61,7 @@ function EmailPreviewModal({ comm, onClose }: { comm: any; onClose: () => void }
               <div className="flex flex-wrap gap-2">
                 {comm.media.map((url: string, i: number) => (
                   <a key={i} href={url} target="_blank" rel="noreferrer"
-                    className="text-xs text-luxury-ivory/70 hover:text-luxury-ivory transition underline">
+                    className="text-xs text-luxury-gold/70 hover:text-luxury-gold transition underline">
                     Media {i + 1}
                   </a>
                 ))}
@@ -98,13 +98,13 @@ export default function CommunicationsTab({ communications, donor }: any) {
         <div className="space-y-3">
           {sorted.map(c => (
             <div key={c.id} onClick={() => setSelected(c)}
-              className="group flex items-start gap-4 p-4 rounded-2xl cursor-pointer transition hover:border-luxury-ivory/20"
+              className="group flex items-start gap-4 p-4 rounded-2xl cursor-pointer transition hover:border-luxury-gold/20"
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
 
               {/* Type icon */}
               <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: 'rgba(255,249,221,0.07)', border: '1px solid rgba(255,249,221,0.12)' }}>
-                <Mail className="w-4 h-4 text-luxury-ivory/60" />
+                <Mail className="w-4 h-4 text-luxury-gold/60" />
               </div>
 
               <div className="flex-1 min-w-0">
@@ -130,7 +130,7 @@ export default function CommunicationsTab({ communications, donor }: any) {
                 )}
               </div>
 
-              <div className="text-xs text-gray-600 group-hover:text-luxury-ivory transition self-center flex-shrink-0">
+              <div className="text-xs text-gray-600 group-hover:text-luxury-gold transition self-center flex-shrink-0">
                 Preview →
               </div>
             </div>

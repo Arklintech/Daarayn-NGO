@@ -102,7 +102,7 @@ export default function KhidrTab({ donor, donations, communications }: any) {
       <div className="flex items-start justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Cpu className="w-4 h-4 text-luxury-ivory/60" />
+            <Cpu className="w-4 h-4 text-luxury-gold/60" />
             <h2 className="text-base font-semibold text-white">Khidr Executive Summary</h2>
           </div>
           <p className="text-sm text-gray-400">AI-generated relationship summary. Visible to administrators only.</p>
@@ -130,7 +130,7 @@ export default function KhidrTab({ donor, donations, communications }: any) {
       {loading && (
         <div className="text-center py-20 rounded-2xl space-y-4"
           style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,249,221,0.08)' }}>
-          <div className="w-8 h-8 border-2 border-luxury-ivory border-t-transparent rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-2 border-luxury-gold border-t-transparent rounded-full animate-spin mx-auto" />
           <p className="text-sm text-gray-400">Analysing donor relationship data…</p>
         </div>
       )}
@@ -140,8 +140,8 @@ export default function KhidrTab({ donor, donations, communications }: any) {
           style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,249,221,0.1)' }}>
           <div className="flex items-center gap-3 px-5 py-3 border-b"
             style={{ borderColor: 'rgba(255,249,221,0.08)', background: 'rgba(255,249,221,0.03)' }}>
-            <Sparkles className="w-3.5 h-3.5 text-luxury-ivory/50" />
-            <span className="text-[10px] uppercase tracking-widest text-luxury-ivory/50 font-semibold">Khidr — AI Executive Brief</span>
+            <Sparkles className="w-3.5 h-3.5 text-luxury-gold/50" />
+            <span className="text-[10px] uppercase tracking-widest text-luxury-gold/50 font-semibold">Khidr — AI Executive Brief</span>
           </div>
           <pre className="p-6 text-sm text-gray-200 leading-relaxed whitespace-pre-wrap font-sans overflow-x-auto">
             {summary}

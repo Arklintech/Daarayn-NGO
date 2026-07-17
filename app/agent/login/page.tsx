@@ -15,7 +15,7 @@ import {
 const GoldDivider = () => (
   <div className="flex items-center justify-center gap-3 my-3">
     <div className="h-px flex-1 bg-gradient-to-r from-transparent via-luxury-ivory/30 to-transparent" />
-    <div className="w-1.5 h-1.5 rotate-45 bg-luxury-ivory/60" />
+    <div className="w-1.5 h-1.5 rotate-45 bg-luxury-gold/60" />
     <div className="h-px flex-1 bg-gradient-to-l from-transparent via-luxury-ivory/30 to-transparent" />
   </div>
 );
@@ -23,8 +23,8 @@ const GoldDivider = () => (
 // ─── Feature Row ─────────────────────────────────────────────────────────────
 const Feature = ({ icon: Icon, title, desc }: { icon: React.ElementType; title: string; desc: string }) => (
   <div className="flex items-start gap-3">
-    <div className="w-8 h-8 rounded-full border border-luxury-ivory/20 bg-luxury-ivory/5 flex items-center justify-center flex-shrink-0 mt-0.5">
-      <Icon style={{ width: 15, height: 15 }} className="text-luxury-ivory" />
+    <div className="w-8 h-8 rounded-full border border-luxury-gold/20 bg-luxury-gold/5 flex items-center justify-center flex-shrink-0 mt-0.5">
+      <Icon style={{ width: 15, height: 15 }} className="text-luxury-gold" />
     </div>
     <div>
       <p className="text-xs font-semibold text-white">{title}</p>
@@ -105,7 +105,7 @@ export default function AgentLogin() {
     return (
       <div className="h-screen w-screen bg-[#080c10] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-8 h-8 rounded-full border-2 border-luxury-ivory border-t-transparent animate-spin" />
+          <div className="w-8 h-8 rounded-full border-2 border-luxury-gold border-t-transparent animate-spin" />
           <p className="text-xs text-gray-400">Verifying identity…</p>
         </div>
       </div>
@@ -146,7 +146,7 @@ export default function AgentLogin() {
             <span className="font-playfair text-[24px] font-normal tracking-[2px] text-white leading-[1.1] drop-shadow-[0_2px_10px_rgba(255,255,255,0.1)]">
               DAARAYN
             </span>
-            <span className="font-playfair text-[11px] font-light tracking-[2px] text-luxury-ivory uppercase mt-[2px]">
+            <span className="font-playfair text-[11px] font-light tracking-[2px] text-luxury-gold uppercase mt-[2px]">
               FIELD OPERATIONS PORTAL
             </span>
           </div>
@@ -155,12 +155,12 @@ export default function AgentLogin() {
         {/* Headline + features */}
         <div>
           <h1 className="font-playfair font-bold leading-snug text-3xl xl:text-4xl">
-            <span className="text-luxury-ivory">Amanah.</span><br />
+            <span className="text-luxury-gold">Amanah.</span><br />
             <span className="text-white">Transparency.</span><br />
             <span className="text-white">Accountability.</span><br />
-            <span className="text-luxury-ivory">Impact.</span>
+            <span className="text-luxury-gold">Impact.</span>
           </h1>
-          <div className="w-10 h-0.5 bg-gradient-to-r from-luxury-ivory to-transparent mt-4 mb-4" />
+          <div className="w-10 h-0.5 bg-gradient-to-r from-luxury-gold to-transparent mt-4 mb-4" />
           <p className="text-xs text-gray-300 leading-relaxed max-w-[270px]">
             Empowering our field agents to serve with integrity, compassion and dedication.
           </p>
@@ -178,14 +178,14 @@ export default function AgentLogin() {
       ══════════════════════════════════ */}
       <div className="flex-1 flex flex-col items-center justify-center px-5 relative z-10 overflow-hidden">
         {/* Subtle glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-luxury-ivory/[0.015] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-luxury-gold/[0.015] rounded-full blur-3xl pointer-events-none" />
 
         {/* Mobile brand — only on small screens */}
         <div className="lg:hidden flex items-center gap-2.5 mb-6">
           <img src="/daarayn-logo-transparent.png" alt="Daarayn" className="w-9 h-9 object-contain filter brightness-110" />
           <div className="leading-tight">
             <p className="text-[11px] font-bold text-white tracking-[0.3em] font-playfair uppercase">DAARAYN</p>
-            <p className="text-[8px] font-semibold text-luxury-ivory uppercase tracking-[0.2em]">Field Operations</p>
+            <p className="text-[8px] font-semibold text-luxury-gold uppercase tracking-[0.2em]">Field Operations</p>
           </div>
         </div>
 
@@ -196,7 +196,7 @@ export default function AgentLogin() {
           <div className="flex justify-center mb-5">
             <div className="relative flex items-center justify-center">
               {/* Glow only — no circle border */}
-              <div className="absolute w-32 h-32 rounded-full bg-luxury-ivory/10 blur-2xl" />
+              <div className="absolute w-32 h-32 rounded-full bg-luxury-gold/10 blur-2xl" />
               <img
                 src="/daarayn-logo-transparent.png"
                 alt="Daarayn"
@@ -222,11 +222,11 @@ export default function AgentLogin() {
             <div>
               <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Email Address</label>
               <div className="relative group">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 group-focus-within:text-luxury-ivory transition-colors" />
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 group-focus-within:text-luxury-gold transition-colors" />
                 <input
                   type="email" required value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="Enter your email address" disabled={loading}
-                  className="w-full bg-black/40 border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-luxury-ivory/40 focus:ring-1 focus:ring-luxury-ivory/10 transition-all"
+                  className="w-full bg-black/40 border border-white/[0.08] rounded-xl pl-9 pr-4 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-luxury-gold/40 focus:ring-1 focus:ring-luxury-ivory/10 transition-all"
                 />
               </div>
             </div>
@@ -235,14 +235,14 @@ export default function AgentLogin() {
             <div>
               <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5">Password</label>
               <div className="relative group">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 group-focus-within:text-luxury-ivory transition-colors" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500 group-focus-within:text-luxury-gold transition-colors" />
                 <input
                   type={showPassword ? "text" : "password"} required value={password} onChange={e => setPassword(e.target.value)}
                   placeholder="Enter your password" disabled={loading}
-                  className="w-full bg-black/40 border border-white/[0.08] rounded-xl pl-9 pr-10 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-luxury-ivory/40 focus:ring-1 focus:ring-luxury-ivory/10 transition-all"
+                  className="w-full bg-black/40 border border-white/[0.08] rounded-xl pl-9 pr-10 py-2.5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-luxury-gold/40 focus:ring-1 focus:ring-luxury-ivory/10 transition-all"
                 />
                 <button type="button" tabIndex={-1} onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-luxury-ivory transition-colors">
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-luxury-gold transition-colors">
                   {showPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 </button>
               </div>
@@ -251,12 +251,12 @@ export default function AgentLogin() {
             {/* Remember + Forgot */}
             <div className="flex items-center justify-between">
               <label className="flex items-center gap-2 cursor-pointer group" onClick={() => setRememberMe(v => !v)}>
-                <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-all ${rememberMe ? "bg-luxury-ivory border-luxury-ivory" : "border-white/20 hover:border-luxury-ivory/40"}`}>
+                <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center flex-shrink-0 transition-all ${rememberMe ? "bg-luxury-gold border-luxury-gold" : "border-white/20 hover:border-luxury-gold/40"}`}>
                   {rememberMe && <CheckCircle className="w-2.5 h-2.5 text-black" />}
                 </div>
                 <span className="text-[11px] text-gray-400">Remember me</span>
               </label>
-              <button type="button" className="text-[11px] text-luxury-ivory hover:text-white transition-colors">Forgot Password?</button>
+              <button type="button" className="text-[11px] text-luxury-gold hover:text-white transition-colors">Forgot Password?</button>
             </div>
 
             {/* Login Button */}
@@ -265,8 +265,8 @@ export default function AgentLogin() {
               disabled={loading || !email || !password}
               className={`w-full py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 mt-1 ${
                 loading || !email || !password
-                  ? "bg-luxury-ivory/30 text-black/40 cursor-not-allowed"
-                  : "bg-gradient-to-r from-luxury-ivory via-[#e8c84a] to-[#b8860b] text-black shadow-[0_4px_20px_rgba(212,175,55,0.25)] hover:shadow-[0_4px_30px_rgba(212,175,55,0.4)] hover:scale-[1.01]"
+                  ? "bg-luxury-gold/30 text-black/40 cursor-not-allowed"
+                  : "bg-gradient-to-r from-luxury-gold via-[#e8c84a] to-[#b8860b] text-black shadow-[0_4px_20px_rgba(212,175,55,0.25)] hover:shadow-[0_4px_30px_rgba(212,175,55,0.4)] hover:scale-[1.01]"
               }`}
             >
               {loading ? (
@@ -288,16 +288,16 @@ export default function AgentLogin() {
               type="button"
               className="w-full py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.02] text-[12px] text-gray-300 font-medium flex items-center justify-center gap-2 hover:bg-white/[0.05] hover:text-white hover:border-white/20 transition-all"
             >
-              <Headphones className="w-3.5 h-3.5 text-luxury-ivory" />
+              <Headphones className="w-3.5 h-3.5 text-luxury-gold" />
               Login with Support Code
             </button>
 
             {/* Terms */}
             <p className="text-center text-[10px] text-gray-600 leading-relaxed">
               By continuing, you agree to Daarayn's{" "}
-              <button type="button" className="text-luxury-ivory/70 hover:text-luxury-ivory transition-colors underline underline-offset-2">Data Policy</button>
+              <button type="button" className="text-luxury-gold/70 hover:text-luxury-gold transition-colors underline underline-offset-2">Data Policy</button>
               {" & "}
-              <button type="button" className="text-luxury-ivory/70 hover:text-luxury-ivory transition-colors underline underline-offset-2">Terms of Use</button>
+              <button type="button" className="text-luxury-gold/70 hover:text-luxury-gold transition-colors underline underline-offset-2">Terms of Use</button>
             </p>
           </form>
         </div>

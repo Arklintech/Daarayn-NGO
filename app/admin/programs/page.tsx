@@ -201,7 +201,7 @@ export default function AdminPrograms() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`flex items-center justify-center gap-2.5 px-4 py-2 rounded-lg text-xs font-semibold w-full sm:w-auto transition ${
                   activeTab === tab.id 
-                    ? "bg-luxury-ivory text-black shadow-md"
+                    ? "bg-luxury-gold text-black shadow-md"
                     : "text-gray-400 hover:text-white"
                 }`}
               >
@@ -214,7 +214,7 @@ export default function AdminPrograms() {
 
         <button 
           onClick={() => handleOpenEditor("create")}
-          className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold text-xs tracking-wider transition w-full sm:w-auto justify-center"
+          className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold text-xs tracking-wider transition w-full sm:w-auto justify-center"
         >
           <Plus className="w-4 h-4" /> Add Program Case
         </button>
@@ -233,7 +233,7 @@ export default function AdminPrograms() {
             <motion.div
               layoutId={item.id}
               key={item.id}
-              className="rounded-3xl admin-glass border border-white/[0.06] overflow-hidden flex flex-col hover:border-luxury-ivory/20 transition duration-300 relative group"
+              className="rounded-3xl admin-glass border border-white/[0.06] overflow-hidden flex flex-col hover:border-luxury-gold/20 transition duration-300 relative group"
             >
               {/* Image banner */}
               <div className="h-40 bg-luxury-bg-deep/40 relative overflow-hidden flex items-center justify-center border-b border-white/[0.04]">
@@ -271,7 +271,7 @@ export default function AdminPrograms() {
                       <span className="text-white">{item.progress || 0}%</span>
                     </div>
                     <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
-                      <div className="h-full bg-luxury-ivory rounded-full" style={{ width: `${item.progress || 0}%` }}></div>
+                      <div className="h-full bg-luxury-gold rounded-full" style={{ width: `${item.progress || 0}%` }}></div>
                     </div>
                   </div>
 
@@ -283,7 +283,7 @@ export default function AdminPrograms() {
                     </div>
                     <div className="p-2.5 rounded-xl bg-white/[0.01] border border-white/[0.04]">
                       <span className="text-gray-500 block uppercase text-[8px] tracking-wider">Collected</span>
-                      <span className="text-luxury-ivory font-bold block mt-0.5">₹{(item.amountCollected || 0).toLocaleString()}</span>
+                      <span className="text-luxury-gold font-bold block mt-0.5">₹{(item.amountCollected || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -333,7 +333,7 @@ export default function AdminPrograms() {
                   <h3 className="text-base font-bold text-white font-playfair uppercase tracking-wider">
                     {editMode === "create" ? "Add New Program Case" : "Modify Program Details"}
                   </h3>
-                  <span className="text-[9px] text-luxury-ivory font-bold tracking-widest uppercase block mt-0.5">
+                  <span className="text-[9px] text-luxury-gold font-bold tracking-widest uppercase block mt-0.5">
                     Category: {activeTab}
                   </span>
                 </div>
@@ -356,7 +356,7 @@ export default function AdminPrograms() {
                       value={formState.title}
                       onChange={(e) => setFormState(prev => ({ ...prev, title: e.target.value }))}
                       placeholder="e.g. Family Relief Bundle (Case DA004)"
-                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
                     />
                   </div>
 
@@ -368,7 +368,7 @@ export default function AdminPrograms() {
                       value={formState.description}
                       onChange={(e) => setFormState(prev => ({ ...prev, description: e.target.value }))}
                       placeholder="Detailed background information..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
                     />
                   </div>
 
@@ -380,7 +380,7 @@ export default function AdminPrograms() {
                         value={formState.location}
                         onChange={(e) => setFormState(prev => ({ ...prev, location: e.target.value }))}
                         placeholder="City, State"
-                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+                        className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
                       />
                     </div>
                   )}
@@ -390,7 +390,7 @@ export default function AdminPrograms() {
                     <select 
                       value={formState.status}
                       onChange={(e) => setFormState(prev => ({ ...prev, status: e.target.value }))}
-                      className="w-full px-4 py-2.5 rounded-xl bg-[#06120c] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+                      className="w-full px-4 py-2.5 rounded-xl bg-[#06120c] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
                     >
                       <option value="Active">Active</option>
                       <option value="Completed">Completed</option>
@@ -401,7 +401,7 @@ export default function AdminPrograms() {
 
                 {/* Financial Fields */}
                 <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.04] space-y-4">
-                  <h4 className="text-[10px] font-bold text-luxury-ivory uppercase tracking-wider">Financial Targets</h4>
+                  <h4 className="text-[10px] font-bold text-luxury-gold uppercase tracking-wider">Financial Targets</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
                       <label className="block text-gray-500 mb-1.5 uppercase text-[9px]">Goal Required (₹)</label>
@@ -409,7 +409,7 @@ export default function AdminPrograms() {
                         type="number" 
                         value={formState.amountRequired}
                         onChange={(e) => setFormState(prev => ({ ...prev, amountRequired: Number(e.target.value) }))}
-                        className="w-full px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory font-semibold"
+                        className="w-full px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold font-semibold"
                       />
                     </div>
                     <div>
@@ -418,7 +418,7 @@ export default function AdminPrograms() {
                         type="number" 
                         value={formState.amountCollected}
                         onChange={(e) => setFormState(prev => ({ ...prev, amountCollected: Number(e.target.value) }))}
-                        className="w-full px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory font-semibold"
+                        className="w-full px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold font-semibold"
                       />
                     </div>
                     <div>
@@ -428,7 +428,7 @@ export default function AdminPrograms() {
                         max={100}
                         value={formState.progress}
                         onChange={(e) => setFormState(prev => ({ ...prev, progress: Number(e.target.value) }))}
-                        className="w-full px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory font-semibold"
+                        className="w-full px-4 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold font-semibold"
                       />
                     </div>
                   </div>
@@ -438,7 +438,7 @@ export default function AdminPrograms() {
                 {activeTab === "family" && (
                   <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.04] grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="sm:col-span-3">
-                      <h4 className="text-[10px] font-bold text-luxury-ivory uppercase tracking-wider">Beneficiary Details</h4>
+                      <h4 className="text-[10px] font-bold text-luxury-gold uppercase tracking-wider">Beneficiary Details</h4>
                     </div>
                     <div>
                       <label className="block text-gray-500 mb-1.5 uppercase text-[9px]">Beneficiary Name</label>
@@ -473,7 +473,7 @@ export default function AdminPrograms() {
                 {activeTab === "quran" && (
                   <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.04] grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="sm:col-span-3">
-                      <h4 className="text-[10px] font-bold text-luxury-ivory uppercase tracking-wider">Student Progress Targets</h4>
+                      <h4 className="text-[10px] font-bold text-luxury-gold uppercase tracking-wider">Student Progress Targets</h4>
                     </div>
                     <div>
                       <label className="block text-gray-500 mb-1.5 uppercase text-[9px]">Student Name</label>
@@ -508,7 +508,7 @@ export default function AdminPrograms() {
                 {activeTab === "masjid" && (
                   <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.04] grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
-                      <h4 className="text-[10px] font-bold text-luxury-ivory uppercase tracking-wider">Masjid Construction Contractors</h4>
+                      <h4 className="text-[10px] font-bold text-luxury-gold uppercase tracking-wider">Masjid Construction Contractors</h4>
                     </div>
                     <div>
                       <label className="block text-gray-500 mb-1.5 uppercase text-[9px]">Contractor Company Name</label>
@@ -580,7 +580,7 @@ export default function AdminPrograms() {
                   </button>
                   <button 
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white text-black font-semibold tracking-wide transition flex items-center gap-1.5 shadow-lg"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light text-black font-semibold tracking-wide transition flex items-center gap-1.5 shadow-lg"
                   >
                     <Save className="w-4 h-4" /> Save Details
                   </button>

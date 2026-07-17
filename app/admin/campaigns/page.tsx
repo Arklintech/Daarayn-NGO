@@ -107,7 +107,7 @@ export default function AdminCampaigns() {
         </div>
         <button 
           onClick={() => handleOpenEditor("create")}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold text-xs tracking-wider transition"
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold text-xs tracking-wider transition"
         >
           <Plus className="w-4 h-4" /> New Campaign
         </button>
@@ -122,7 +122,7 @@ export default function AdminCampaigns() {
           {campaigns.map((camp) => (
             <motion.div
               key={camp.id}
-              className="rounded-3xl admin-glass border border-white/[0.06] overflow-hidden flex flex-col hover:border-luxury-ivory/20 transition duration-300 relative group"
+              className="rounded-3xl admin-glass border border-white/[0.06] overflow-hidden flex flex-col hover:border-luxury-gold/20 transition duration-300 relative group"
             >
               <div className="p-6 flex-1 flex flex-col">
                 <div className="flex justify-between items-start mb-4">
@@ -148,7 +148,7 @@ export default function AdminCampaigns() {
                       <span className="text-white">{Math.round((camp.raisedAmount / (camp.targetAmount || 1)) * 100)}%</span>
                     </div>
                     <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
-                      <div className="h-full bg-luxury-ivory rounded-full" style={{ width: `${Math.round((camp.raisedAmount / (camp.targetAmount || 1)) * 100)}%` }}></div>
+                      <div className="h-full bg-luxury-gold rounded-full" style={{ width: `${Math.round((camp.raisedAmount / (camp.targetAmount || 1)) * 100)}%` }}></div>
                     </div>
                   </div>
                   
@@ -159,7 +159,7 @@ export default function AdminCampaigns() {
                     </div>
                     <div className="p-2.5 rounded-xl bg-white/[0.01] border border-white/[0.04]">
                       <span className="text-gray-500 block uppercase text-[8px] tracking-wider">Raised</span>
-                      <span className="text-luxury-ivory font-bold block mt-0.5">₹{(camp.raisedAmount || 0).toLocaleString()}</span>
+                      <span className="text-luxury-gold font-bold block mt-0.5">₹{(camp.raisedAmount || 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -216,20 +216,20 @@ export default function AdminCampaigns() {
               <form onSubmit={handleSave} className="space-y-4">
                 <div>
                   <label className="block text-gray-400 font-bold mb-1.5 uppercase tracking-wider">Campaign Title</label>
-                  <input type="text" required value={formState.title} onChange={e => setFormState(p => ({ ...p, title: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory" />
+                  <input type="text" required value={formState.title} onChange={e => setFormState(p => ({ ...p, title: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold" />
                 </div>
                 <div>
                   <label className="block text-gray-400 font-bold mb-1.5 uppercase tracking-wider">Description</label>
-                  <textarea rows={3} required value={formState.description} onChange={e => setFormState(p => ({ ...p, description: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory" />
+                  <textarea rows={3} required value={formState.description} onChange={e => setFormState(p => ({ ...p, description: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-gray-400 font-bold mb-1.5 uppercase tracking-wider">Target (₹)</label>
-                    <input type="number" required value={formState.targetAmount} onChange={e => setFormState(p => ({ ...p, targetAmount: Number(e.target.value) }))} className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory" />
+                    <input type="number" required value={formState.targetAmount} onChange={e => setFormState(p => ({ ...p, targetAmount: Number(e.target.value) }))} className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold" />
                   </div>
                   <div>
                     <label className="block text-gray-400 font-bold mb-1.5 uppercase tracking-wider">Status</label>
-                    <select value={formState.status} onChange={e => setFormState(p => ({ ...p, status: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl bg-[#06120c] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory">
+                    <select value={formState.status} onChange={e => setFormState(p => ({ ...p, status: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl bg-[#06120c] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold">
                       <option value="Active">Active</option>
                       <option value="Completed">Completed</option>
                       <option value="Archived">Archived</option>
@@ -239,7 +239,7 @@ export default function AdminCampaigns() {
 
                 <div className="flex items-center gap-3 pt-6 border-t border-white/[0.06] justify-end">
                   <button type="button" onClick={() => setIsEditorOpen(false)} className="px-5 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] font-bold text-gray-400 hover:text-white transition">Cancel</button>
-                  <button type="submit" className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white text-black font-semibold tracking-wide transition flex items-center gap-1.5 shadow-lg">
+                  <button type="submit" className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light text-black font-semibold tracking-wide transition flex items-center gap-1.5 shadow-lg">
                     <Save className="w-4 h-4" /> Save Campaign
                   </button>
                 </div>

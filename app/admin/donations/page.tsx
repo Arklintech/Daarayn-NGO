@@ -167,7 +167,7 @@ export default function AdminDonations() {
               placeholder="Search donor name, ID, or UPI ref..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+              className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
             />
           </div>
 
@@ -206,7 +206,7 @@ export default function AdminDonations() {
           onClick={handleExportCSV}
           className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.05] border border-white/[0.08] font-bold text-white transition cursor-pointer w-full sm:w-auto justify-center"
         >
-          <Download className="w-4 h-4 text-luxury-ivory" /> Export to CSV
+          <Download className="w-4 h-4 text-luxury-gold" /> Export to CSV
         </button>
       </div>
 
@@ -230,7 +230,7 @@ export default function AdminDonations() {
               {loading && donations.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-gray-500">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-luxury-ivory border-t-transparent mx-auto mb-2"></div>
+                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-luxury-gold border-t-transparent mx-auto mb-2"></div>
                     Loading donations queue...
                   </td>
                 </tr>
@@ -246,7 +246,7 @@ export default function AdminDonations() {
                     <td className="p-4 font-semibold text-white">{item.id}</td>
                     <td className="p-4 font-medium">{item.donor}</td>
                     <td className="p-4 text-gray-400">{item.cause}</td>
-                    <td className="p-4 font-bold text-luxury-ivory">₹{Number(item.amount).toLocaleString()}</td>
+                    <td className="p-4 font-bold text-luxury-gold">₹{Number(item.amount).toLocaleString()}</td>
                     <td className="p-4 font-mono text-gray-500">{item.refCode || "—"}</td>
                     <td className="p-4">
                       <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-semibold border ${
@@ -266,7 +266,7 @@ export default function AdminDonations() {
                       {item.proofUrl ? (
                         <button 
                           onClick={() => setSelectedProofUrl(item.proofUrl)}
-                          className="flex items-center gap-1 text-luxury-ivory hover:underline font-semibold"
+                          className="flex items-center gap-1 text-luxury-gold hover:underline font-semibold"
                         >
                           <Eye className="w-3.5 h-3.5" /> View Proof
                         </button>

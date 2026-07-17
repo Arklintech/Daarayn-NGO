@@ -11,7 +11,7 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
         border: `1px solid ${accent ? 'rgba(255,249,221,0.15)' : 'rgba(255,255,255,0.06)'}`,
       }}>
       <p className="text-[10px] uppercase tracking-widest text-gray-500">{label}</p>
-      <p className={`text-xl font-bold font-mono ${accent ? 'text-luxury-ivory' : 'text-white'}`}>{value}</p>
+      <p className={`text-xl font-bold font-mono ${accent ? 'text-luxury-gold' : 'text-white'}`}>{value}</p>
       {sub && <p className="text-xs text-gray-500">{sub}</p>}
     </div>
   );
@@ -23,7 +23,7 @@ function MiniBar({ value, max, label }: { value: number; max: number; label: str
     <div className="space-y-1">
       <div className="flex justify-between text-xs">
         <span className="text-gray-400 truncate max-w-[70%]">{label}</span>
-        <span className="text-luxury-ivory font-mono">INR {value.toLocaleString()}</span>
+        <span className="text-luxury-gold font-mono">INR {value.toLocaleString()}</span>
       </div>
       <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
         <div className="h-full rounded-full transition-all duration-700"

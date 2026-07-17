@@ -300,7 +300,7 @@ export default function AgentMessagesPage() {
       <div className={`w-full sm:w-[280px] bg-black/60 border-r border-luxury-border flex flex-col ${!isMobileListVisible ? 'hidden sm:flex' : 'flex'}`}>
         <div className="p-4 border-b border-luxury-border flex items-center justify-between">
           <h2 className="text-[15px] font-bold text-white tracking-wide">Messages</h2>
-          <button onClick={handleStartOperationsConv} className="p-1.5 bg-luxury-ivory/10 text-luxury-ivory rounded-lg hover:bg-luxury-ivory/20 border border-luxury-border transition" title="Start Operations Chat">
+          <button onClick={handleStartOperationsConv} className="p-1.5 bg-luxury-gold/10 text-luxury-gold rounded-lg hover:bg-luxury-gold/20 border border-luxury-border transition" title="Start Operations Chat">
             <MessageSquare className="w-4 h-4" />
           </button>
         </div>
@@ -348,7 +348,7 @@ export default function AgentMessagesPage() {
               </button>
               <div>
                 <h3 className="text-[14px] font-bold text-white">{activeConv?.type === 'Report' ? `Report: ${activeConv.reportId}` : 'Operations Support'}</h3>
-                <p className="text-[10px] text-luxury-ivory font-medium">{activeConv?.status}</p>
+                <p className="text-[10px] text-luxury-gold font-medium">{activeConv?.status}</p>
               </div>
             </div>
 
@@ -365,7 +365,7 @@ export default function AgentMessagesPage() {
                     </div>
                     <div className={`px-4 py-2.5 max-w-[85%] text-[12px] leading-relaxed shadow-sm ${
                       isMe 
-                        ? 'bg-gradient-to-r from-luxury-ivory to-[#b8860b] text-black rounded-2xl rounded-tr-sm font-medium' 
+                        ? 'bg-gradient-to-r from-luxury-gold to-[#b8860b] text-black rounded-2xl rounded-tr-sm font-medium' 
                         : 'bg-white/[0.05] text-gray-200 rounded-2xl rounded-tl-sm border border-luxury-border'
                     }`}>
                       {msg.isMedia ? (
@@ -407,7 +407,7 @@ export default function AgentMessagesPage() {
 
             {/* Chat Input */}
             <div className="p-3 border-t border-luxury-border bg-black/40">
-              <form onSubmit={handleSendMessage} className="flex gap-2 bg-black/60 border border-luxury-border rounded-xl p-1.5 focus-within:border-luxury-ivory transition-all relative">
+              <form onSubmit={handleSendMessage} className="flex gap-2 bg-black/60 border border-luxury-border rounded-xl p-1.5 focus-within:border-luxury-gold transition-all relative">
                 <label className={`p-2 text-gray-400 hover:text-white transition cursor-pointer flex items-center justify-center ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                   {isUploading ? (
                     <div className="w-4 h-4 rounded-full border-2 border-gray-500 border-t-white animate-spin" />
@@ -435,7 +435,7 @@ export default function AgentMessagesPage() {
                   placeholder="Type a message..."
                   className="flex-1 bg-transparent text-[13px] text-white focus:outline-none placeholder:text-gray-600"
                 />
-                <button type="submit" className="p-2 bg-luxury-ivory hover:bg-[#b8860b] text-black rounded-lg transition flex-shrink-0">
+                <button type="submit" className="p-2 bg-luxury-gold hover:bg-[#b8860b] text-black rounded-lg transition flex-shrink-0">
                   <Send className="w-4 h-4" />
                 </button>
               </form>

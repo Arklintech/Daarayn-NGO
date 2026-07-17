@@ -194,7 +194,7 @@ export default function NotificationCenterPage() {
               placeholder="Search notifications..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] text-sm text-white placeholder-gray-500 focus:outline-none focus:border-luxury-ivory/50 transition-colors w-64"
+              className="pl-9 pr-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] text-sm text-white placeholder-gray-500 focus:outline-none focus:border-luxury-gold/50 transition-colors w-64"
             />
           </div>
           <button 
@@ -241,7 +241,7 @@ export default function NotificationCenterPage() {
       {/* Filters & Total */}
       <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
         <div className="text-sm font-medium text-gray-300">
-          Total Unread: <span className="text-luxury-ivory font-bold">{totalUnread}</span>
+          Total Unread: <span className="text-luxury-gold font-bold">{totalUnread}</span>
           <span className="mx-2 text-gray-600">|</span>
           Starred: <span className="text-amber-400 font-bold">{totalStarred}</span>
         </div>
@@ -258,7 +258,7 @@ export default function NotificationCenterPage() {
               onClick={() => setFilter(f.key)}
               className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
                 filter === f.key 
-                  ? "bg-luxury-ivory/20 text-luxury-ivory border border-luxury-ivory/30" 
+                  ? "bg-luxury-gold/20 text-luxury-gold border border-luxury-gold/30" 
                   : "bg-transparent text-gray-400 hover:text-white border border-transparent"
               }`}
             >
@@ -313,7 +313,7 @@ export default function NotificationCenterPage() {
         {/* Right Col: Detail Pane */}
         <div className="flex-1 rounded-2xl bg-[#0a0f0c] border border-white/[0.06] p-6 lg:p-8 flex flex-col relative overflow-hidden">
           {/* Abstract glow */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-luxury-ivory/[0.02] rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-luxury-gold/[0.02] rounded-full blur-[80px] pointer-events-none" />
 
           {selectedItem ? (
             <div className="flex flex-col h-full relative z-10">
@@ -387,7 +387,7 @@ export default function NotificationCenterPage() {
 
               {/* Actions Footer */}
               <div className="flex items-center gap-3 pt-6 border-t border-white/[0.06]">
-                <Link href={selectedItem.actionUrl} className="px-5 py-2.5 rounded-xl bg-luxury-ivory text-[#030906] text-sm font-semibold hover:bg-luxury-ivory/90 transition flex items-center gap-2">
+                <Link href={selectedItem.actionUrl} className="px-5 py-2.5 rounded-xl bg-luxury-gold text-[#030906] text-sm font-semibold hover:bg-luxury-gold/90 transition flex items-center gap-2">
                   View Record <ArrowRight className="w-4 h-4" />
                 </Link>
                 {selectedItem.isRead ? (
@@ -441,7 +441,7 @@ function NotificationRow({ notification, isSelected, onSelect }: { notification:
       <div className={`w-10 h-10 rounded-full ${colorClass.bg} flex items-center justify-center flex-shrink-0 mt-0.5 relative`}>
         <Icon className={`w-4 h-4 ${colorClass.text}`} />
         {!notification.isRead && (
-          <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-luxury-ivory border-2 border-[#030906]" />
+          <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-luxury-gold border-2 border-[#030906]" />
         )}
       </div>
       <div className="flex-1 min-w-0">

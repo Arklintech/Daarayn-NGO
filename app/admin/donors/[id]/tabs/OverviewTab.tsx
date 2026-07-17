@@ -131,7 +131,7 @@ export default function OverviewTab({ donor, donations, communications, setActiv
                     />
                     
                     <div className="w-24 flex-shrink-0 pt-0.5">
-                      <span className={`text-[12px] font-medium ${i === 0 ? 'text-luxury-ivory' : 'text-gray-400'}`}>
+                      <span className={`text-[12px] font-medium ${i === 0 ? 'text-luxury-gold' : 'text-gray-400'}`}>
                         {formatDate(d.date)}
                       </span>
                     </div>
@@ -168,7 +168,7 @@ export default function OverviewTab({ donor, donations, communications, setActiv
               </div>
             </div>
           )}
-          <button onClick={() => setActiveTab('donations')} className="w-full mt-4 py-2.5 rounded-xl text-[13px] font-medium text-luxury-ivory hover:text-white transition"
+          <button onClick={() => setActiveTab('donations')} className="w-full mt-4 py-2.5 rounded-xl text-[13px] font-medium text-luxury-gold hover:text-white transition"
             style={{ background: 'rgba(255,249,221,0.05)', border: '1px solid rgba(255,249,221,0.1)' }}>
             View All Donations
           </button>
@@ -211,7 +211,7 @@ export default function OverviewTab({ donor, donations, communications, setActiv
               <InfoRow label="Verified By" value="Super Admin" />
 
               <div className="pt-4">
-                <button onClick={() => setActiveTab('donations')} className="w-full py-2.5 rounded-xl text-[13px] font-medium text-luxury-ivory hover:text-white transition"
+                <button onClick={() => setActiveTab('donations')} className="w-full py-2.5 rounded-xl text-[13px] font-medium text-luxury-gold hover:text-white transition"
                   style={{ background: 'rgba(255,249,221,0.05)', border: '1px solid rgba(255,249,221,0.1)' }}>
                   View Full Donation Details
                 </button>
@@ -236,7 +236,7 @@ export default function OverviewTab({ donor, donations, communications, setActiv
               <div key={i} className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ background: 'rgba(255,249,221,0.1)', border: '1px solid rgba(255,249,221,0.15)' }}>
-                  <Mail className="w-3.5 h-3.5 text-luxury-ivory" />
+                  <Mail className="w-3.5 h-3.5 text-luxury-gold" />
                 </div>
                 <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
                   <span className="text-[13px] text-gray-300 truncate">{c.subject || c.type || 'Communication'}</span>
@@ -251,7 +251,7 @@ export default function OverviewTab({ donor, donations, communications, setActiv
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ background: 'rgba(255,249,221,0.1)', border: '1px solid rgba(255,249,221,0.15)' }}>
-                  <Mail className="w-3.5 h-3.5 text-luxury-ivory" />
+                  <Mail className="w-3.5 h-3.5 text-luxury-gold" />
                 </div>
                 <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
                   <span className="text-[13px] text-gray-300 truncate">Welcome & Thank You</span>

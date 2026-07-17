@@ -145,7 +145,7 @@ export default function AdminBeneficiaries() {
 
         <button 
           onClick={() => handleOpenEditor("create")}
-          className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold tracking-wider transition w-full sm:w-auto justify-center"
+          className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold tracking-wider transition w-full sm:w-auto justify-center"
         >
           <Plus className="w-4 h-4" /> Add Beneficiary
         </button>
@@ -156,11 +156,11 @@ export default function AdminBeneficiaries() {
         {filteredList.map((item) => (
           <motion.div
             key={item.id}
-            className="p-5 rounded-3xl admin-glass border border-white/[0.06] flex flex-col justify-between space-y-4 hover:border-luxury-ivory/20 transition duration-300"
+            className="p-5 rounded-3xl admin-glass border border-white/[0.06] flex flex-col justify-between space-y-4 hover:border-luxury-gold/20 transition duration-300"
           >
             <div>
               <div className="flex items-center justify-between mb-3.5">
-                <span className="text-[9px] font-bold text-luxury-ivory uppercase tracking-widest">{item.caseType}</span>
+                <span className="text-[9px] font-bold text-luxury-gold uppercase tracking-widest">{item.caseType}</span>
                 <span className={`inline-flex items-center gap-1 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full border ${
                   item.status === "Verified" 
                     ? "bg-emerald-950/40 text-emerald-300 border-emerald-500/20"
@@ -235,7 +235,7 @@ export default function AdminBeneficiaries() {
                     required
                     value={formState.name}
                     onChange={(e) => setFormState(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
                   />
                 </div>
 
@@ -246,7 +246,7 @@ export default function AdminBeneficiaries() {
                     required
                     value={formState.familyDetails}
                     onChange={(e) => setFormState(prev => ({ ...prev, familyDetails: e.target.value }))}
-                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
                   />
                 </div>
 
@@ -321,7 +321,7 @@ export default function AdminBeneficiaries() {
                   </button>
                   <button 
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white text-black font-semibold"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light text-black font-semibold"
                   >
                     Save Record
                   </button>

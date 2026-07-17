@@ -125,7 +125,7 @@ export default function AdminMedia() {
           <p className="text-[10px] text-gray-400 mt-0.5 font-medium">Assets, annual reports, and receipts</p>
         </div>
 
-        <label className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold transition cursor-pointer">
+        <label className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold transition cursor-pointer">
           <Upload className="w-4 h-4" />
           {uploading ? "Uploading file..." : "Upload New Asset"}
           <input 
@@ -149,16 +149,16 @@ export default function AdminMedia() {
             return (
               <motion.div
                 key={item.id}
-                className="rounded-3xl admin-glass border border-white/[0.06] overflow-hidden flex flex-col justify-between hover:border-luxury-ivory/20 transition duration-300 relative group"
+                className="rounded-3xl admin-glass border border-white/[0.06] overflow-hidden flex flex-col justify-between hover:border-luxury-gold/20 transition duration-300 relative group"
               >
                 {/* Visual Thumbnail */}
                 <div className="h-32 bg-luxury-bg-deep/40 relative border-b border-white/[0.04] flex items-center justify-center overflow-hidden">
                   {isImage && item.fileUrl ? (
                     <img src={item.fileUrl} alt={item.name} className="w-full h-full object-cover" />
                   ) : item.type.startsWith("video/") ? (
-                    <Video className="w-8 h-8 text-luxury-ivory opacity-50" />
+                    <Video className="w-8 h-8 text-luxury-gold opacity-50" />
                   ) : (
-                    <FileText className="w-8 h-8 text-luxury-ivory opacity-50" />
+                    <FileText className="w-8 h-8 text-luxury-gold opacity-50" />
                   )}
                 </div>
 

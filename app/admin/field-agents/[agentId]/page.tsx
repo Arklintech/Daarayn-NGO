@@ -65,7 +65,7 @@ export default function FieldAgentCRM({ params }: { params: Promise<{ agentId: s
           <ArrowLeft className="w-4 h-4 text-gray-400" />
         </Link>
         <div>
-          <h2 className="text-xl font-bold text-luxury-ivory font-playfair tracking-wide uppercase">Agent Profile</h2>
+          <h2 className="text-xl font-bold text-luxury-gold font-playfair tracking-wide uppercase">Agent Profile</h2>
           <p className="text-gray-400 mt-1">CRM ID: {agent.id}</p>
         </div>
       </div>
@@ -75,11 +75,11 @@ export default function FieldAgentCRM({ params }: { params: Promise<{ agentId: s
         <div className="col-span-1 space-y-6">
           <div className="admin-glass border border-white/[0.08] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
             <div className="flex flex-col items-center text-center">
-              <div className="w-20 h-20 rounded-full bg-luxury-ivory/10 border border-luxury-ivory/30 flex items-center justify-center text-luxury-ivory font-bold text-3xl mb-4">
+              <div className="w-20 h-20 rounded-full bg-luxury-gold/10 border border-luxury-gold/30 flex items-center justify-center text-luxury-gold font-bold text-3xl mb-4">
                 {agent.name.charAt(0)}
               </div>
               <h3 className="text-lg font-bold text-white">{agent.name}</h3>
-              <p className="text-luxury-ivory font-medium mt-1">{agent.role}</p>
+              <p className="text-luxury-gold font-medium mt-1">{agent.role}</p>
               
               <div className="flex gap-2 mt-4 w-full">
                 <span className={`flex-1 py-1.5 rounded-lg text-center font-bold text-[10px] ${agent.status === 'Active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
@@ -139,7 +139,7 @@ export default function FieldAgentCRM({ params }: { params: Promise<{ agentId: s
           <div className="admin-glass border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
             <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
               <h4 className="text-sm font-bold text-white uppercase tracking-wider font-playfair">Submitted Reports</h4>
-              <Link href={`/admin/field-ops?agent=${agent.id}`} className="text-luxury-ivory hover:underline">View in Field Ops</Link>
+              <Link href={`/admin/field-ops?agent=${agent.id}`} className="text-luxury-gold hover:underline">View in Field Ops</Link>
             </div>
             {reports.length === 0 ? (
               <div className="p-10 text-center text-gray-500">This agent hasn't submitted any reports yet.</div>
@@ -182,8 +182,8 @@ export default function FieldAgentCRM({ params }: { params: Promise<{ agentId: s
                 <div className="space-y-6 border-l-2 border-white/[0.06] ml-2 pl-6">
                   {activities.map((act) => (
                     <div key={act.id} className="relative">
-                      <div className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-luxury-ivory border-[3px] border-[#0B120F]"></div>
-                      <p className="text-[11px] font-bold text-luxury-ivory uppercase tracking-wider mb-1">{new Date(act.timestamp).toLocaleString()}</p>
+                      <div className="absolute -left-[31px] top-1 w-3 h-3 rounded-full bg-luxury-gold border-[3px] border-[#0B120F]"></div>
+                      <p className="text-[11px] font-bold text-luxury-gold uppercase tracking-wider mb-1">{new Date(act.timestamp).toLocaleString()}</p>
                       <p className="text-[13px] text-white font-medium mb-0.5">{act.action}</p>
                       {act.reportId && <p className="text-[11px] text-gray-400">Report: {act.reportId}</p>}
                     </div>

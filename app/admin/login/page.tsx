@@ -46,7 +46,7 @@ export default function AdminLogin() {
         errMsg = "Password should be at least 6 characters.";
       } else if (err.code === "auth/invalid-credential") {
         errMsg = "Invalid credentials. Please verify.";
-      } else if (err.code === "auth/configuration-not-found" || err.message?.includes("configuration-not-found")) {
+      } else if (err.code === "auth/configuration-not-found" || err.message?.includes("configuration-not-found") || err.code === "auth/operation-not-allowed") {
         errMsg = "Firebase Authentication error: Email/Password provider is not enabled in the Firebase Console. You can temporarily bypass this using the developer option below.";
         setShowBypass(true);
       }
@@ -60,7 +60,7 @@ export default function AdminLogin() {
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#020704]">
         <div className="text-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-luxury-ivory border-t-transparent mx-auto"></div>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-luxury-gold border-t-transparent mx-auto"></div>
           <p className="mt-4 text-sm text-gray-400 font-medium">Verifying login state...</p>
         </div>
       </div>
@@ -71,7 +71,7 @@ export default function AdminLogin() {
     <div className="flex min-h-screen w-screen items-center justify-center bg-gradient-to-br from-[#06140D] via-[#020704] to-[#040D09] px-4 relative overflow-hidden">
       {/* Decorative Blur Spheres */}
       <div className="absolute top-10 left-10 w-72 h-72 rounded-full bg-emerald-950/20 blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-luxury-ivory/5 blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-luxury-gold/5 blur-3xl pointer-events-none"></div>
 
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
@@ -88,7 +88,7 @@ export default function AdminLogin() {
           <h1 className="text-2xl font-semibold tracking-[0.3em] text-white font-playfair uppercase">
             DAARAYN
           </h1>
-          <p className="text-xs text-luxury-ivory font-medium tracking-widest mt-1 uppercase">
+          <p className="text-xs text-luxury-gold font-medium tracking-widest mt-1 uppercase">
             {isRegisterMode ? "Register First Admin Account" : "Secure Administrator Portal"}
           </p>
         </div>
@@ -112,7 +112,7 @@ export default function AdminLogin() {
               placeholder="admin@daarayn.org"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-gray-600 text-sm focus:outline-none focus:border-luxury-ivory transition duration-200"
+              className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-gray-600 text-sm focus:outline-none focus:border-luxury-gold transition duration-200"
             />
           </div>
 
@@ -124,14 +124,14 @@ export default function AdminLogin() {
               placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-gray-600 text-sm focus:outline-none focus:border-luxury-ivory transition duration-200"
+              className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-gray-600 text-sm focus:outline-none focus:border-luxury-gold transition duration-200"
             />
           </div>
 
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold text-sm tracking-wide transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_20px_rgba(212,175,55,0.15)]"
+            className="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold text-sm tracking-wide transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_20px_rgba(212,175,55,0.15)]"
           >
             {loading ? (
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-black border-t-transparent"></div>
@@ -149,7 +149,7 @@ export default function AdminLogin() {
               setError("");
               setShowBypass(false);
             }}
-            className="text-[11px] text-gray-400 hover:text-luxury-ivory transition font-medium tracking-wide uppercase"
+            className="text-[11px] text-gray-400 hover:text-luxury-gold transition font-medium tracking-wide uppercase"
           >
             {isRegisterMode ? "Back to secure administrator login" : "No admin user? Register initial account"}
           </button>

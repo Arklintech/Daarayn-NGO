@@ -51,7 +51,7 @@ export default function ReportDetailPage() {
       <div className="text-center py-20">
         <FileText className="w-10 h-10 text-gray-600 mx-auto mb-3" />
         <p className="text-gray-400">Report not found.</p>
-        <Link href="/agent/reports" className="text-luxury-ivory text-sm mt-2 inline-block hover:underline">← Back to Reports</Link>
+        <Link href="/agent/reports" className="text-luxury-gold text-sm mt-2 inline-block hover:underline">← Back to Reports</Link>
       </div>
     );
   }
@@ -79,7 +79,7 @@ export default function ReportDetailPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Back Button */}
-      <Link href="/agent/reports" className="flex items-center gap-2 text-sm text-gray-400 hover:text-luxury-ivory transition group">
+      <Link href="/agent/reports" className="flex items-center gap-2 text-sm text-gray-400 hover:text-luxury-gold transition group">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to My Reports
       </Link>
@@ -110,7 +110,7 @@ export default function ReportDetailPage() {
           )}
         </div>
         <div className="flex items-center gap-2 mt-2 text-sm text-gray-400">
-          <MapPin className="w-4 h-4 text-luxury-ivory" />
+          <MapPin className="w-4 h-4 text-luxury-gold" />
           <span>{[report.location.village, report.location.district, report.location.state].filter(Boolean).join(", ")}</span>
         </div>
         <p className="text-xs text-gray-500 mt-1">{report.id} · {new Date(report.createdAt).toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" })}</p>
@@ -179,16 +179,16 @@ export default function ReportDetailPage() {
                 <div className="flex flex-col items-center">
                   <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
                     step.done
-                      ? "border-luxury-ivory bg-luxury-ivory/20"
+                      ? "border-luxury-gold bg-luxury-gold/20"
                       : isCurrent
                       ? "border-[#b8860b] bg-[#b8860b]/10 animate-pulse"
                       : "border-white/20 bg-transparent"
                   }`}>
-                    {step.done && <CheckCircle className="w-3 h-3 text-luxury-ivory" />}
+                    {step.done && <CheckCircle className="w-3 h-3 text-luxury-gold" />}
                     {isCurrent && !step.done && <div className="w-1.5 h-1.5 rounded-full bg-[#b8860b]" />}
                   </div>
                   {i < timelineSteps.length - 1 && (
-                    <div className={`w-0.5 flex-1 my-1 min-h-[20px] ${step.done ? "bg-luxury-ivory/30" : "bg-white/10"}`} />
+                    <div className={`w-0.5 flex-1 my-1 min-h-[20px] ${step.done ? "bg-luxury-gold/30" : "bg-white/10"}`} />
                   )}
                 </div>
                 <div className="pb-4">
@@ -221,16 +221,16 @@ export default function ReportDetailPage() {
 
       <Link
         href="/agent/messages"
-        className="flex items-center justify-between w-full admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-ivory/30 transition group"
+        className="flex items-center justify-between w-full admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group"
       >
         <div className="flex items-center gap-3">
-          <MessageSquare className="w-5 h-5 text-luxury-ivory" />
+          <MessageSquare className="w-5 h-5 text-luxury-gold" />
           <div>
             <p className="text-sm font-bold text-white">Contact Admin</p>
             <p className="text-xs text-gray-400">Send a message about this report</p>
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-luxury-ivory transition" />
+        <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-luxury-gold transition" />
       </Link>
     </div>
   );

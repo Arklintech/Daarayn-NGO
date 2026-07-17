@@ -23,14 +23,14 @@ export default function ProfilePage() {
 
       {/* Avatar Card */}
       <div className="admin-glass border border-luxury-border rounded-2xl p-6 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-luxury-ivory/5 to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-luxury-gold/5 to-transparent pointer-events-none" />
         
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-luxury-ivory to-[#b8860b] flex items-center justify-center text-2xl font-bold text-black mx-auto mb-4 shadow-[0_0_20px_rgba(212,175,55,0.3)]">
+        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-luxury-gold to-[#b8860b] flex items-center justify-center text-2xl font-bold text-black mx-auto mb-4 shadow-[0_0_20px_rgba(212,175,55,0.3)]">
           {initials}
         </div>
         
         <h2 className="text-xl font-bold text-white font-playfair">{agentData.name}</h2>
-        <p className="text-sm text-luxury-ivory mt-1">{agentData.role}</p>
+        <p className="text-sm text-luxury-gold mt-1">{agentData.role}</p>
         
         <div className={`inline-flex items-center gap-2 mt-3 px-3 py-1 rounded-full border text-[11px] font-bold ${
           agentData.status === "Active"
@@ -56,7 +56,7 @@ export default function ProfilePage() {
         ].map(item => (
           <div key={item.label} className="flex items-center gap-3">
             <div className="w-8 h-8 bg-white/[0.03] border border-white/[0.06] rounded-lg flex items-center justify-center flex-shrink-0">
-              <item.icon className="w-4 h-4 text-luxury-ivory" />
+              <item.icon className="w-4 h-4 text-luxury-gold" />
             </div>
             <div>
               <p className="text-[9px] text-gray-500 uppercase tracking-wider">{item.label}</p>

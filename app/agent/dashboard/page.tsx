@@ -42,7 +42,7 @@ export default function AgentDashboard() {
     attention: reports.filter(r => r.status === 'Needs Info').length,
   };
 
-  if (authLoading) return <div className="min-h-screen flex items-center justify-center text-luxury-ivory text-sm font-bold">Loading Workspace...</div>;
+  if (authLoading) return <div className="min-h-screen flex items-center justify-center text-luxury-gold text-sm font-bold">Loading Workspace...</div>;
   if (!agentData) return <div className="min-h-screen flex items-center justify-center text-red-500 text-sm font-bold">Unauthorized. Please log in.</div>;
 
   return (
@@ -112,7 +112,7 @@ export default function AgentDashboard() {
       <div>
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-bold text-white uppercase tracking-wider">Recent Reports</h2>
-          <Link href="/agent/reports" className="text-xs text-luxury-ivory font-medium hover:underline">View All</Link>
+          <Link href="/agent/reports" className="text-xs text-luxury-gold font-medium hover:underline">View All</Link>
         </div>
         
         <div className="space-y-3">
@@ -122,22 +122,22 @@ export default function AgentDashboard() {
             <div className="admin-glass border border-luxury-border rounded-2xl p-8 text-center flex flex-col items-center">
               <FileText className="w-8 h-8 text-gray-600 mb-3" />
               <p className="text-sm text-gray-400">You haven't submitted any reports yet.</p>
-              <Link href="/agent/reports/new" className="mt-4 text-xs font-bold text-luxury-ivory bg-white/5 px-4 py-2 rounded-lg border border-luxury-border">
+              <Link href="/agent/reports/new" className="mt-4 text-xs font-bold text-luxury-gold bg-white/5 px-4 py-2 rounded-lg border border-luxury-border">
                 Start First Report
               </Link>
             </div>
           ) : (
             reports.map((report) => (
-              <Link key={report.id} href={`/agent/reports/${report.id}`} className="block admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-ivory/30 transition group">
+              <Link key={report.id} href={`/agent/reports/${report.id}`} className="block admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-sm font-bold text-white mb-1 group-hover:text-luxury-ivory transition">{report.title}</h3>
+                    <h3 className="text-sm font-bold text-white mb-1 group-hover:text-luxury-gold transition">{report.title}</h3>
                     <div className="flex items-center gap-1 text-[10px] text-gray-400">
                       <MapPin className="w-3 h-3" />
                       <span>{report.location.village || report.location.district}, {report.location.state}</span>
                     </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-luxury-ivory transition" />
+                  <ChevronRight className="w-5 h-5 text-gray-500 group-hover:text-luxury-gold transition" />
                 </div>
                 
                 <div className="flex items-center justify-between mt-4">

@@ -98,12 +98,12 @@ export default function FieldAgentManagement() {
     <div className="space-y-6 text-xs max-w-[1600px] mx-auto w-full">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-luxury-ivory font-playfair tracking-wide uppercase">Field Agent IAM Center</h2>
+          <h2 className="text-xl font-bold text-luxury-gold font-playfair tracking-wide uppercase">Field Agent IAM Center</h2>
           <p className="text-xs text-gray-400 mt-1">Manage Field Agent identities, access control, and operational regions.</p>
         </div>
         <button 
           onClick={() => setShowCreateModal(true)}
-          className="bg-gradient-to-r from-luxury-ivory to-[#b8860b] text-black px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition hover:scale-105 shadow-[0_0_15px_rgba(212,175,55,0.2)]"
+          className="bg-gradient-to-r from-luxury-gold to-[#b8860b] text-black px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition hover:scale-105 shadow-[0_0_15px_rgba(212,175,55,0.2)]"
         >
           <UserPlus className="w-4 h-4" />
           Create Field Agent
@@ -118,7 +118,7 @@ export default function FieldAgentManagement() {
             placeholder="Search by name, ID or region..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-black/40 border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-white focus:outline-none focus:border-luxury-ivory/50 transition-all"
+            className="w-full bg-black/40 border border-white/[0.08] rounded-xl pl-10 pr-4 py-2.5 text-white focus:outline-none focus:border-luxury-gold/50 transition-all"
           />
         </div>
       </div>
@@ -149,7 +149,7 @@ export default function FieldAgentManagement() {
                   <tr key={agent.id} className="hover:bg-white/[0.02] transition-colors">
                     <td className="p-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-luxury-ivory/10 border border-luxury-ivory/30 flex items-center justify-center text-luxury-ivory font-bold text-sm">
+                        <div className="w-10 h-10 rounded-full bg-luxury-gold/10 border border-luxury-gold/30 flex items-center justify-center text-luxury-gold font-bold text-sm">
                           {agent.name.charAt(0)}
                         </div>
                         <div>
@@ -164,7 +164,7 @@ export default function FieldAgentManagement() {
                     </td>
                     <td className="p-4">
                       <div className="text-white text-[12px] flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-gray-500"/> {agent.region}</div>
-                      <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1.5"><ShieldCheck className="w-3 h-3 text-luxury-ivory/70"/> {agent.role}</div>
+                      <div className="text-[10px] text-gray-400 mt-1 flex items-center gap-1.5"><ShieldCheck className="w-3 h-3 text-luxury-gold/70"/> {agent.role}</div>
                     </td>
                     <td className="p-4">
                        <div className="flex flex-col gap-1.5">
@@ -307,7 +307,7 @@ function CreateIAMAgentModal({ onClose, onCreated }: { onClose: () => void, onCr
       <div className="admin-glass border border-white/[0.08] rounded-2xl w-full max-w-4xl shadow-2xl relative my-auto">
         <div className="p-6 border-b border-white/[0.06] flex items-center justify-between sticky top-0 bg-black/40 backdrop-blur-md rounded-t-2xl z-10">
           <div>
-            <h3 className="text-xl font-bold text-luxury-ivory font-playfair uppercase">Provision Field Agent Identity</h3>
+            <h3 className="text-xl font-bold text-luxury-gold font-playfair uppercase">Provision Field Agent Identity</h3>
             <p className="text-[11px] text-gray-400 mt-1">This will automatically create a Portal Login, Database Record, and Sync bindings.</p>
           </div>
           <button onClick={onClose} className="p-2 bg-white/[0.05] hover:bg-white/[0.1] rounded-full transition"><X className="w-5 h-5"/></button>
@@ -323,40 +323,40 @@ function CreateIAMAgentModal({ onClose, onCreated }: { onClose: () => void, onCr
           {/* Personal Information */}
           <div>
             <h4 className="text-[13px] font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <Users className="w-4 h-4 text-luxury-ivory"/> Personal Information
+              <Users className="w-4 h-4 text-luxury-gold"/> Personal Information
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="md:col-span-3">
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Full Name</label>
-                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                <input required type="text" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
               </div>
               <div>
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Email (Username)</label>
-                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
               </div>
               <div>
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Phone</label>
-                <input required type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                <input required type="text" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
               </div>
               <div>
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Country</label>
-                <input required type="text" value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                <input required type="text" value={formData.country} onChange={e => setFormData({...formData, country: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
               </div>
               <div>
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">State</label>
-                <input required type="text" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                <input required type="text" value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
               </div>
               <div>
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">District</label>
-                <input required type="text" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                <input required type="text" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
               </div>
               <div>
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">City</label>
-                <input required type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                <input required type="text" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
               </div>
               <div className="md:col-span-3">
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Full Address</label>
-                <input required type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                <input required type="text" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
               </div>
             </div>
           </div>
@@ -364,12 +364,12 @@ function CreateIAMAgentModal({ onClose, onCreated }: { onClose: () => void, onCr
           {/* Organizational Information */}
           <div className="pt-6 border-t border-white/[0.06]">
             <h4 className="text-[13px] font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-luxury-ivory"/> Organizational Scope
+              <ShieldCheck className="w-4 h-4 text-luxury-gold"/> Organizational Scope
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Role</label>
-                <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50">
+                <select value={formData.role} onChange={e => setFormData({...formData, role: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50">
                   <option>Field Officer</option>
                   <option>Regional Coordinator</option>
                   <option>Community Leader</option>
@@ -377,15 +377,15 @@ function CreateIAMAgentModal({ onClose, onCreated }: { onClose: () => void, onCr
               </div>
               <div>
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Assigned Region</label>
-                <input required type="text" value={formData.region} onChange={e => setFormData({...formData, region: e.target.value})} placeholder="e.g. Hyderabad South" className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                <input required type="text" value={formData.region} onChange={e => setFormData({...formData, region: e.target.value})} placeholder="e.g. Hyderabad South" className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
               </div>
               <div>
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Assigned Supervisor</label>
-                <input type="text" value={formData.assignedSupervisor} onChange={e => setFormData({...formData, assignedSupervisor: e.target.value})} placeholder="Supervisor ID/Name" className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                <input type="text" value={formData.assignedSupervisor} onChange={e => setFormData({...formData, assignedSupervisor: e.target.value})} placeholder="Supervisor ID/Name" className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
               </div>
               <div>
                 <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Status</label>
-                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50">
+                <select value={formData.status} onChange={e => setFormData({...formData, status: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50">
                   <option>Active</option>
                   <option>Suspended</option>
                 </select>
@@ -397,16 +397,16 @@ function CreateIAMAgentModal({ onClose, onCreated }: { onClose: () => void, onCr
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-white/[0.06]">
             <div>
               <h4 className="text-[13px] font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-luxury-ivory"/> Login Credentials
+                <ShieldCheck className="w-4 h-4 text-luxury-gold"/> Login Credentials
               </h4>
               <div className="space-y-4">
                 <div>
                   <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Temporary Password</label>
-                  <input required type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                  <input required type="password" value={formData.password} onChange={e => setFormData({...formData, password: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
                 </div>
                 <div>
                   <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Confirm Password</label>
-                  <input required type="password" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-ivory/50" />
+                  <input required type="password" value={formData.confirmPassword} onChange={e => setFormData({...formData, confirmPassword: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:border-luxury-gold/50" />
                 </div>
                 <label className="flex items-center gap-3 p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl cursor-pointer hover:bg-white/[0.04] transition">
                   <input type="checkbox" checked={formData.requirePasswordChange} onChange={e => setFormData({...formData, requirePasswordChange: e.target.checked})} className="w-4 h-4 rounded border-gray-600 bg-black/50 accent-luxury-ivory" />
@@ -417,7 +417,7 @@ function CreateIAMAgentModal({ onClose, onCreated }: { onClose: () => void, onCr
             
             <div>
               <h4 className="text-[13px] font-bold text-white uppercase tracking-wider mb-4 flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-luxury-ivory"/> Permissions Matrix
+                <ShieldCheck className="w-4 h-4 text-luxury-gold"/> Permissions Matrix
               </h4>
               <div className="space-y-2">
                 {[
@@ -443,7 +443,7 @@ function CreateIAMAgentModal({ onClose, onCreated }: { onClose: () => void, onCr
 
           <div className="flex justify-end gap-3 pt-6 border-t border-white/[0.06] sticky bottom-0 bg-black/40 backdrop-blur-md p-4 rounded-b-2xl z-10 -mx-6 -mb-6 mt-0">
             <button type="button" onClick={onClose} className="px-6 py-2.5 rounded-xl border border-white/[0.08] hover:bg-white/[0.04] text-white transition">Cancel</button>
-            <button type="submit" disabled={loading} className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-[#b8860b] text-black font-bold transition hover:scale-105 disabled:opacity-50">
+            <button type="submit" disabled={loading} className="px-8 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-[#b8860b] text-black font-bold transition hover:scale-105 disabled:opacity-50">
               {loading ? "Provisioning Identity..." : "Create IAM Identity"}
             </button>
           </div>

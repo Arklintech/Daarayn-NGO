@@ -565,4 +565,74 @@
     top: 0;
     margin-top: 20px;
   }
+  
+  /* Disable sticky ribbon on mobile to avoid overcrowding */
+  .daarayn-quick-donation-section.scrolled {
+    position: relative;
+    top: 0;
+    z-index: 40;
+  }
+  
+  .daarayn-quick-donation-section.scrolled .daarayn-quick-donation-ribbon {
+    height: auto;
+    background: #081222;
+  }
+}
+
+@media (max-width: 768px) {
+  .daarayn-quick-donation-ribbon {
+    flex-direction: column;
+    height: auto;
+    gap: 12px;
+    padding: 20px;
+    border-radius: 16px;
+  }
+  
+  .daarayn-ribbon-currency-wrapper,
+  .daarayn-ribbon-cause-wrapper {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px 0;
+    justify-content: space-between;
+  }
+  
+  .daarayn-ribbon-input-group {
+    width: 100%;
+    margin: 8px 0;
+  }
+  
+  .daarayn-ribbon-input {
+    padding: 16px;
+  }
+  
+  .daarayn-ribbon-presets {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  
+  .daarayn-preset-btn {
+    flex: 1 1 calc(50% - 8px);
+    padding: 12px 0;
+  }
+  
+  .daarayn-ribbon-donate-btn {
+    width: 100%;
+    padding: 16px;
+    margin-top: 8px;
+  }
+  
+  .daarayn-hero-title {
+    font-size: 36px;
+  }
+  
+  .daarayn-hero-subtitle {
+    font-size: 16px;
+  }
+  
+  .trust-cards-grid {
+    flex-direction: column;
+  }
 }

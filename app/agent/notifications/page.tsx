@@ -18,7 +18,7 @@ const colorMap: Record<string, string> = {
   Alert: "text-red-400 bg-red-500/10 border-red-500/20",
   Info: "text-blue-400 bg-blue-500/10 border-blue-500/20",
   Success: "text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
-  Assignment: "text-luxury-ivory bg-luxury-ivory/10 border-luxury-border",
+  Assignment: "text-luxury-gold bg-luxury-gold/10 border-luxury-border",
 };
 
 export default function NotificationsPage() {
@@ -69,7 +69,7 @@ export default function NotificationsPage() {
           <p className="text-sm text-gray-400 mt-1">Your notifications and assignments</p>
         </div>
         {unreadCount > 0 && (
-          <span className="bg-luxury-ivory text-black text-[11px] font-bold px-2.5 py-1 rounded-full">
+          <span className="bg-luxury-gold text-black text-[11px] font-bold px-2.5 py-1 rounded-full">
             {unreadCount} new
           </span>
         )}
@@ -108,7 +108,7 @@ export default function NotificationsPage() {
                       {!notif.isRead && (
                         <button
                           onClick={() => markAsRead(notif.id)}
-                          className="p-1 text-gray-500 hover:text-luxury-ivory transition flex-shrink-0"
+                          className="p-1 text-gray-500 hover:text-luxury-gold transition flex-shrink-0"
                           title="Mark as read"
                         >
                           <Check className="w-3.5 h-3.5" />

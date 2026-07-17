@@ -27,7 +27,7 @@ export default function LedgerTab({ donor, donations, donorId }: any) {
   }, [donorId, donations]);
 
   if (loading) {
-    return <div className="py-20 text-center"><div className="w-8 h-8 border-2 border-luxury-ivory border-t-transparent rounded-full animate-spin mx-auto" /></div>;
+    return <div className="py-20 text-center"><div className="w-8 h-8 border-2 border-luxury-gold border-t-transparent rounded-full animate-spin mx-auto" /></div>;
   }
 
   return (
@@ -56,12 +56,12 @@ export default function LedgerTab({ donor, donations, donorId }: any) {
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-mono text-xs text-luxury-ivory/70 mb-1">{e.id}</p>
+                  <p className="font-mono text-xs text-luxury-gold/70 mb-1">{e.id}</p>
                   <p className="text-sm font-medium text-white">{e.targetTitle || e.donationType || 'Donation Allocation'}</p>
                   <p className="text-xs text-gray-500 mt-0.5">{e.allocationDate || e.date || '—'}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="font-mono font-semibold text-luxury-ivory">
+                  <p className="font-mono font-semibold text-luxury-gold">
                     INR {(e.allocatedAmount || e.amount || 0).toLocaleString()}
                   </p>
                   <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border mt-1 inline-block ${

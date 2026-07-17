@@ -80,7 +80,9 @@ onDOMReady(() => {
   const amountInput = document.getElementById("qdAmountHome");
   const prefixEl = document.querySelector(".qd-prefix-home");
 
-  if (!currencyBtns.length) return;
+  const prefixEl = document.querySelector(".qd-prefix-home");
+
+  // Removed early return to allow ledger fetching on pages where currencyBtns are missing
 
   const SYMBOL = {
     INR: "₹",
@@ -103,41 +105,47 @@ onDOMReady(() => {
   /* ========================
      Currency Switch
      ======================== */
-  currencyBtns.forEach(btn => {
-    btn.addEventListener("click", () => {
-      activeCurrency = btn.dataset.currency;
+  if (currencyBtns.length && prefixEl) {
+    currencyBtns.forEach(btn => {
+      btn.addEventListener("click", () => {
+        activeCurrency = btn.dataset.currency;
 
-      currencyBtns.forEach(b => {
-        b.classList.remove("is-active");
-        b.setAttribute("aria-pressed", "false");
+        currencyBtns.forEach(b => {
+          b.classList.remove("is-active");
+          b.setAttribute("aria-pressed", "false");
+        });
+
+        btn.classList.add("is-active");
+        btn.setAttribute("aria-pressed", "true");
+
+        prefixEl.textContent = SYMBOL[activeCurrency];
       });
-
-      btn.classList.add("is-active");
-      btn.setAttribute("aria-pressed", "true");
-
-      prefixEl.textContent = SYMBOL[activeCurrency];
     });
-  });
+  }
 
   /* ========================
      Fixed Buttons Click
      ======================== */
-  fixedBtns.forEach(btn => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault(); // stop anchor behavior
-      const amount = parseInt(btn.dataset.amount, 10);
-      goToPay(amount);
+  if (fixedBtns.length) {
+    fixedBtns.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault(); // stop anchor behavior
+        const amount = parseInt(btn.dataset.amount, 10);
+        goToPay(amount);
+      });
     });
-  });
+  }
 
   /* ========================
      Custom Amount Submit
      ======================== */
-  customForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const amount = parseInt(amountInput.value, 10);
-    goToPay(amount);
-  });
+  if (customForm) {
+    customForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const amount = parseInt(amountInput.value, 10);
+      goToPay(amount);
+    });
+  }
 
   /* ========================
      Dynamic Ledger Rendering
@@ -236,10 +244,12 @@ onDOMReady(() => {
   // Navbar scroll effect
   const navbar = document.querySelector('.site-header');
   window.addEventListener('scroll', () => {
-    if (window.scrollY > 50) {
-      navbar.classList.add('scrolled');
-    } else {
-      navbar.classList.remove('scrolled');
+    if (navbar) {
+      if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
     }
   });
 

@@ -65,7 +65,7 @@ export default function MyReportsPage() {
             onClick={() => setFilter(tab)}
             className={`px-3 py-1.5 rounded-full text-[11px] font-bold whitespace-nowrap border transition ${
               filter === tab
-                ? "bg-luxury-ivory text-black border-luxury-ivory"
+                ? "bg-luxury-gold text-black border-luxury-gold"
                 : "border-white/10 text-gray-400 hover:text-white hover:border-white/20"
             }`}
           >
@@ -90,7 +90,7 @@ export default function MyReportsPage() {
           </p>
           <Link
             href="/agent/reports/new"
-            className="px-5 py-2 bg-gradient-to-r from-luxury-ivory to-[#b8860b] text-black text-sm font-bold rounded-xl"
+            className="px-5 py-2 bg-gradient-to-r from-luxury-gold to-[#b8860b] text-black text-sm font-bold rounded-xl"
           >
             Submit First Report
           </Link>
@@ -103,7 +103,7 @@ export default function MyReportsPage() {
               <Link
                 key={report.id}
                 href={`/agent/reports/${report.id}`}
-                className="block admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-ivory/30 transition group"
+                className="block admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group"
               >
                 <div className="flex items-start gap-4">
                   {report.media && report.media.length > 0 ? (
@@ -120,8 +120,8 @@ export default function MyReportsPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <h3 className="text-sm font-bold text-white truncate group-hover:text-luxury-ivory transition">{report.title}</h3>
-                      <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5 group-hover:text-luxury-ivory" />
+                      <h3 className="text-sm font-bold text-white truncate group-hover:text-luxury-gold transition">{report.title}</h3>
+                      <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5 group-hover:text-luxury-gold" />
                     </div>
 
                     <div className="flex items-center gap-1 mt-1 text-[10px] text-gray-400">

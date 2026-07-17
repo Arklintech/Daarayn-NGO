@@ -145,14 +145,14 @@ export default function NewReportWizard() {
         <Link href="/agent/dashboard" className="p-2 admin-glass border border-white/[0.08] rounded-xl hover:bg-white/[0.04]">
           <ArrowLeft className="w-4 h-4 text-gray-400" />
         </Link>
-        <h2 className="text-lg font-bold text-luxury-ivory font-playfair uppercase">New Assessment</h2>
+        <h2 className="text-lg font-bold text-luxury-gold font-playfair uppercase">New Assessment</h2>
       </div>
 
       {/* Progress Bar */}
       {step < 6 && (
         <div className="flex items-center gap-1.5 mb-8">
           {[1,2,3,4,5].map(i => (
-            <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= step ? 'bg-luxury-ivory' : 'bg-white/[0.08]'}`}></div>
+            <div key={i} className={`h-1.5 flex-1 rounded-full ${i <= step ? 'bg-luxury-gold' : 'bg-white/[0.08]'}`}></div>
           ))}
         </div>
       )}
@@ -160,14 +160,14 @@ export default function NewReportWizard() {
       {/* Step 1: Basic Information */}
       {step === 1 && (
         <div className="space-y-5 animate-in slide-in-from-right-4">
-          <div className="flex items-center gap-3 text-luxury-ivory mb-2">
+          <div className="flex items-center gap-3 text-luxury-gold mb-2">
             <FileText className="w-5 h-5" />
             <h3 className="font-bold uppercase tracking-wider text-sm">Basic Info</h3>
           </div>
 
           <div>
             <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Need Category</label>
-            <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50">
+            <select value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50">
               <option>Masjid Repair</option>
               <option>Medical Emergency</option>
               <option>Water Well</option>
@@ -178,19 +178,19 @@ export default function NewReportWizard() {
 
           <div>
             <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Descriptive Title</label>
-            <input placeholder="e.g. Roof Collapse at Al-Huda Masjid" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50" />
+            <input placeholder="e.g. Roof Collapse at Al-Huda Masjid" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50" />
           </div>
 
           <div>
             <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Estimated Budget Needed</label>
-            <input placeholder="e.g. ₹50,000" value={formData.estimatedBudget} onChange={e => setFormData({...formData, estimatedBudget: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50" />
+            <input placeholder="e.g. ₹50,000" value={formData.estimatedBudget} onChange={e => setFormData({...formData, estimatedBudget: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50" />
           </div>
 
           <div>
             <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Urgency</label>
             <div className="grid grid-cols-3 gap-2">
               {['Low', 'Medium', 'High'].map(u => (
-                <button key={u} onClick={() => setFormData({...formData, urgency: u})} className={`py-2.5 rounded-xl text-xs font-bold transition ${formData.urgency === u ? 'bg-luxury-ivory text-black shadow-[0_0_10px_rgba(212,175,55,0.3)]' : 'bg-black/40 border border-white/[0.08] text-gray-400 hover:text-white'}`}>
+                <button key={u} onClick={() => setFormData({...formData, urgency: u})} className={`py-2.5 rounded-xl text-xs font-bold transition ${formData.urgency === u ? 'bg-luxury-gold text-black shadow-[0_0_10px_rgba(212,175,55,0.3)]' : 'bg-black/40 border border-white/[0.08] text-gray-400 hover:text-white'}`}>
                   {u}
                 </button>
               ))}
@@ -202,7 +202,7 @@ export default function NewReportWizard() {
       {/* Step 2: Location */}
       {step === 2 && (
         <div className="space-y-5 animate-in slide-in-from-right-4">
-          <div className="flex items-center gap-3 text-luxury-ivory mb-2">
+          <div className="flex items-center gap-3 text-luxury-gold mb-2">
             <MapPin className="w-5 h-5" />
             <h3 className="font-bold uppercase tracking-wider text-sm">Location Details</h3>
           </div>
@@ -210,16 +210,16 @@ export default function NewReportWizard() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">State</label>
-              <input value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50" />
+              <input value={formData.state} onChange={e => setFormData({...formData, state: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50" />
             </div>
             <div>
               <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">District</label>
-              <input placeholder="District Name" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50" />
+              <input placeholder="District Name" value={formData.district} onChange={e => setFormData({...formData, district: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50" />
             </div>
           </div>
           <div>
             <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Village / Town / Area</label>
-            <input placeholder="Local village name" value={formData.village} onChange={e => setFormData({...formData, village: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50" />
+            <input placeholder="Local village name" value={formData.village} onChange={e => setFormData({...formData, village: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50" />
           </div>
           
           <button className="w-full py-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 font-medium text-sm flex items-center justify-center gap-2 mt-4">
@@ -231,7 +231,7 @@ export default function NewReportWizard() {
       {/* Step 3: Beneficiaries */}
       {step === 3 && (
         <div className="space-y-5 animate-in slide-in-from-right-4">
-          <div className="flex items-center gap-3 text-luxury-ivory mb-2">
+          <div className="flex items-center gap-3 text-luxury-gold mb-2">
             <Users className="w-5 h-5" />
             <h3 className="font-bold uppercase tracking-wider text-sm">Beneficiaries</h3>
           </div>
@@ -239,25 +239,25 @@ export default function NewReportWizard() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Families</label>
-              <input type="number" value={formData.families} onChange={e => setFormData({...formData, families: Number(e.target.value)})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50" />
+              <input type="number" value={formData.families} onChange={e => setFormData({...formData, families: Number(e.target.value)})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50" />
             </div>
             <div>
               <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Children</label>
-              <input type="number" value={formData.children} onChange={e => setFormData({...formData, children: Number(e.target.value)})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50" />
+              <input type="number" value={formData.children} onChange={e => setFormData({...formData, children: Number(e.target.value)})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50" />
             </div>
             <div>
               <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Women</label>
-              <input type="number" value={formData.women} onChange={e => setFormData({...formData, women: Number(e.target.value)})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50" />
+              <input type="number" value={formData.women} onChange={e => setFormData({...formData, women: Number(e.target.value)})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50" />
             </div>
             <div>
               <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Elderly</label>
-              <input type="number" value={formData.elderly} onChange={e => setFormData({...formData, elderly: Number(e.target.value)})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50" />
+              <input type="number" value={formData.elderly} onChange={e => setFormData({...formData, elderly: Number(e.target.value)})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50" />
             </div>
           </div>
           
           <div>
             <label className="block text-[11px] text-gray-400 uppercase tracking-wider mb-1.5">Detailed Description</label>
-            <textarea rows={4} placeholder="Describe the situation in detail..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-ivory/50 resize-none"></textarea>
+            <textarea rows={4} placeholder="Describe the situation in detail..." value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-luxury-gold/50 resize-none"></textarea>
           </div>
         </div>
       )}
@@ -265,14 +265,14 @@ export default function NewReportWizard() {
       {/* Step 4: Evidence */}
       {step === 4 && (
         <div className="space-y-5 animate-in slide-in-from-right-4">
-          <div className="flex items-center gap-3 text-luxury-ivory mb-2">
+          <div className="flex items-center gap-3 text-luxury-gold mb-2">
             <Camera className="w-5 h-5" />
             <h3 className="font-bold uppercase tracking-wider text-sm">Evidence & Media</h3>
           </div>
 
           <div className="admin-glass border border-dashed border-white/[0.2] rounded-2xl p-8 flex flex-col items-center justify-center text-center">
             <div className="w-16 h-16 rounded-full bg-white/[0.05] flex items-center justify-center mb-4">
-              <Upload className="w-8 h-8 text-luxury-ivory" />
+              <Upload className="w-8 h-8 text-luxury-gold" />
             </div>
             <h4 className="text-white font-bold mb-1">Upload Photos & Videos</h4>
             <p className="text-xs text-gray-400 mb-6 max-w-[200px]">Take photos of the site, damage, or required proof directly from your camera.</p>
@@ -294,7 +294,7 @@ export default function NewReportWizard() {
       {/* Step 5: Review */}
       {step === 5 && (
         <div className="space-y-5 animate-in slide-in-from-right-4">
-          <div className="flex items-center gap-3 text-luxury-ivory mb-2">
+          <div className="flex items-center gap-3 text-luxury-gold mb-2">
             <ShieldCheck className="w-5 h-5" />
             <h3 className="font-bold uppercase tracking-wider text-sm">Review & Submit</h3>
           </div>
@@ -310,7 +310,7 @@ export default function NewReportWizard() {
             </div>
             <div className="flex justify-between border-b border-white/[0.06] pb-3">
               <span className="text-gray-400 text-xs">Budget</span>
-              <span className="text-luxury-ivory text-xs font-bold text-right">{formData.estimatedBudget || "TBD"}</span>
+              <span className="text-luxury-gold text-xs font-bold text-right">{formData.estimatedBudget || "TBD"}</span>
             </div>
             <div className="flex justify-between pb-1">
               <span className="text-gray-400 text-xs">Evidence</span>
@@ -333,7 +333,7 @@ export default function NewReportWizard() {
             </button>
           )}
           {step < 5 ? (
-            <button onClick={nextStep} disabled={step === 1 && !formData.title} className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-[#b8860b] text-black text-sm font-bold shadow-lg transition hover:scale-[1.02] disabled:opacity-50 flex justify-center items-center gap-2">
+            <button onClick={nextStep} disabled={step === 1 && !formData.title} className="flex-1 py-3.5 rounded-xl bg-gradient-to-r from-luxury-gold to-[#b8860b] text-black text-sm font-bold shadow-lg transition hover:scale-[1.02] disabled:opacity-50 flex justify-center items-center gap-2">
               Next Step <ArrowRight className="w-4 h-4" />
             </button>
           ) : (

@@ -117,7 +117,7 @@ export default function PublicAssistant() {
     <div className="min-h-screen bg-gradient-to-br from-[#06140D] via-[#020704] to-[#040D09] text-gray-200 flex flex-col font-sans relative overflow-hidden">
       {/* Background blurs */}
       <div className="absolute top-0 left-0 w-80 h-80 rounded-full bg-emerald-900/10 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-luxury-ivory/5 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-luxury-gold/5 blur-3xl pointer-events-none" />
 
       {/* Header */}
       <header className="border-b border-white/[0.06] bg-black/30 backdrop-blur-md sticky top-0 z-50">
@@ -126,7 +126,7 @@ export default function PublicAssistant() {
             <img src="/brand logo1.png" alt="Daarayn Logo" className="w-8 h-8 object-contain" />
             <div>
               <h1 className="text-sm font-semibold tracking-[0.25em] font-playfair text-white">DAARAYN</h1>
-              <span className="text-[8px] font-semibold text-luxury-ivory uppercase tracking-widest block -mt-0.5">Foundation Portal</span>
+              <span className="text-[8px] font-semibold text-luxury-gold uppercase tracking-widest block -mt-0.5">Foundation Portal</span>
             </div>
           </Link>
           
@@ -155,7 +155,7 @@ export default function PublicAssistant() {
                   className={`flex gap-4 ${isAssistant ? "justify-start" : "justify-end"}`}
                 >
                   {isAssistant && (
-                    <div className="w-8 h-8 rounded-xl bg-luxury-ivory/10 border border-luxury-ivory/20 flex items-center justify-center text-luxury-ivory font-bold text-xs shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-luxury-gold/10 border border-luxury-gold/20 flex items-center justify-center text-luxury-gold font-bold text-xs shrink-0">
                       D
                     </div>
                   )}
@@ -164,7 +164,7 @@ export default function PublicAssistant() {
                     <div className={`p-4 rounded-2xl text-xs leading-relaxed ${
                       isAssistant 
                         ? "bg-white/[0.03] border border-white/[0.06] text-gray-300 rounded-tl-sm"
-                        : "bg-gradient-to-r from-luxury-ivory to-white text-black font-semibold rounded-tr-sm"
+                        : "bg-gradient-to-r from-luxury-gold to-luxury-gold-light text-black font-semibold rounded-tr-sm"
                     }`}>
                       <p className="whitespace-pre-wrap">{msg.content}</p>
                     </div>
@@ -176,7 +176,7 @@ export default function PublicAssistant() {
                           <div 
                             key={idx}
                             title={ref.content}
-                            className="px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-[8px] font-bold text-luxury-ivory uppercase tracking-wider cursor-help"
+                            className="px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.08] text-[8px] font-bold text-luxury-gold uppercase tracking-wider cursor-help"
                           >
                             {ref.source}
                           </div>
@@ -191,7 +191,7 @@ export default function PublicAssistant() {
 
           {loading && (
             <div className="flex gap-4 justify-start">
-              <div className="w-8 h-8 rounded-xl bg-luxury-ivory/10 border border-luxury-ivory/20 flex items-center justify-center text-luxury-ivory font-bold text-xs shrink-0 animate-pulse">
+              <div className="w-8 h-8 rounded-xl bg-luxury-gold/10 border border-luxury-gold/20 flex items-center justify-center text-luxury-gold font-bold text-xs shrink-0 animate-pulse">
                 D
               </div>
               <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] text-gray-500 text-xs rounded-tl-sm flex items-center gap-1.5">
@@ -216,7 +216,7 @@ export default function PublicAssistant() {
                   className="p-3 text-left bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] rounded-xl text-xs text-gray-300 hover:text-white transition flex items-center justify-between"
                 >
                   {p}
-                  <ArrowRight className="w-3.5 h-3.5 text-luxury-ivory" />
+                  <ArrowRight className="w-3.5 h-3.5 text-luxury-gold" />
                 </button>
               ))}
             </div>
@@ -224,7 +224,7 @@ export default function PublicAssistant() {
         )}
 
         {/* Input box */}
-        <form onSubmit={handleFormSubmit} className="flex gap-3 bg-white/[0.02] border border-white/[0.06] p-2 rounded-2xl focus-within:border-luxury-ivory/50 transition">
+        <form onSubmit={handleFormSubmit} className="flex gap-3 bg-white/[0.02] border border-white/[0.06] p-2 rounded-2xl focus-within:border-luxury-gold/50 transition">
           <input
             type="text"
             value={inputValue}
@@ -235,7 +235,7 @@ export default function PublicAssistant() {
           <button
             type="submit"
             disabled={!inputValue.trim() || loading}
-            className="px-4 py-2 bg-gradient-to-r from-luxury-ivory to-white text-black hover:opacity-90 disabled:opacity-30 rounded-xl transition text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
+            className="px-4 py-2 bg-gradient-to-r from-luxury-gold to-luxury-gold-light text-black hover:opacity-90 disabled:opacity-30 rounded-xl transition text-xs font-bold uppercase tracking-wider flex items-center gap-1.5"
           >
             <Send className="w-3.5 h-3.5" />
             Send

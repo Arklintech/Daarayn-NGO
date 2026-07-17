@@ -114,7 +114,7 @@ export default function DonorAccessGate() {
     <div className="flex min-h-screen w-screen items-center justify-center bg-gradient-to-br from-[#06140D] via-[#020704] to-[#040D09] px-4 relative overflow-hidden">
       {/* Decorative Blur Spheres */}
       <div className="absolute top-10 left-10 w-72 h-72 rounded-full bg-emerald-950/20 blur-3xl pointer-events-none"></div>
-      <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-luxury-ivory/5 blur-3xl pointer-events-none"></div>
+      <div className="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-luxury-gold/5 blur-3xl pointer-events-none"></div>
 
       <motion.div 
         initial={{ opacity: 0, y: 30 }}
@@ -132,7 +132,7 @@ export default function DonorAccessGate() {
           <h1 className="text-2xl font-semibold tracking-[0.3em] text-white font-playfair uppercase">
             DAARAYN
           </h1>
-          <p className="text-xs text-luxury-ivory font-medium tracking-widest mt-1 uppercase">
+          <p className="text-xs text-luxury-gold font-medium tracking-widest mt-1 uppercase">
             Transparent Impact & Giving History
           </p>
         </div>
@@ -152,14 +152,14 @@ export default function DonorAccessGate() {
               placeholder="e.g. ahmed.khan@example.com"
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-gray-600 text-sm focus:outline-none focus:border-luxury-ivory transition duration-200"
+              className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-gray-600 text-sm focus:outline-none focus:border-luxury-gold transition duration-200"
             />
           </div>
 
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold text-sm tracking-wide transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_20px_rgba(212,175,55,0.15)] font-mono"
+            className="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold text-sm tracking-wide transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_20px_rgba(212,175,55,0.15)] font-mono"
           >
             {loading ? (
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-black border-t-transparent"></div>
@@ -186,13 +186,13 @@ export default function DonorAccessGate() {
                 key={donor.id}
                 type="button"
                 onClick={() => handleLaunchMock(donor.id)}
-                className="w-full p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-luxury-ivory/5 hover:border-luxury-ivory flex justify-between items-center text-xs text-gray-300 font-medium transition"
+                className="w-full p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-luxury-gold/5 hover:border-luxury-gold flex justify-between items-center text-xs text-gray-300 font-medium transition"
               >
                 <div>
                   <span className="text-white block font-semibold">{donor.name}</span>
                   <span className="font-mono text-[9px] text-gray-500">{donor.id}</span>
                 </div>
-                <span className="flex items-center gap-1 text-[10px] text-luxury-ivory font-bold font-mono">
+                <span className="flex items-center gap-1 text-[10px] text-luxury-gold font-bold font-mono">
                   PREVIEW <UserCheck className="w-3.5 h-3.5" />
                 </span>
               </button>

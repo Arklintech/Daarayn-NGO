@@ -190,13 +190,13 @@ export default function AdminLedger() {
             placeholder="Search public ledger records..." 
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
           />
         </div>
 
         <button 
           onClick={() => handleOpenEditor("create")}
-          className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold text-xs tracking-wider transition w-full sm:w-auto justify-center"
+          className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold text-xs tracking-wider transition w-full sm:w-auto justify-center"
         >
           <Plus className="w-4 h-4" /> Create Ledger Entry
         </button>
@@ -242,7 +242,7 @@ export default function AdminLedger() {
                         <div className="flex flex-col gap-1">
                           {item.selectedCauses.map((c: any, i: number) => (
                             <span key={i} className="text-[10px] leading-tight">
-                              <span className="text-luxury-ivory font-medium">₹{c.allocatedAmount}</span> - {c.causeName}
+                              <span className="text-luxury-gold font-medium">₹{c.allocatedAmount}</span> - {c.causeName}
                             </span>
                           ))}
                         </div>
@@ -252,7 +252,7 @@ export default function AdminLedger() {
                     </td>
                     <td className="p-4 text-emerald-400 font-semibold">₹{(item.directAid || Math.floor(item.amount * 0.9)).toLocaleString()}</td>
                     <td className="p-4 text-gray-500">₹{(item.opsCost || Math.floor(item.amount * 0.1)).toLocaleString()}</td>
-                    <td className="p-4 font-bold text-luxury-ivory">₹{Number(item.amount).toLocaleString()}</td>
+                    <td className="p-4 font-bold text-luxury-gold">₹{Number(item.amount).toLocaleString()}</td>
                     <td className="p-4 font-mono text-gray-400">{item.date}</td>
                     <td className="p-4">
                       {item.proofUrl ? (
@@ -260,7 +260,7 @@ export default function AdminLedger() {
                           href={item.proofUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-luxury-ivory hover:underline font-semibold"
+                          className="inline-flex items-center gap-1.5 text-luxury-gold hover:underline font-semibold"
                         >
                           <FileCheck className="w-3.5 h-3.5 text-emerald-500" /> View Document
                         </a>
@@ -317,7 +317,7 @@ export default function AdminLedger() {
                   <h3 className="text-sm font-bold text-white font-playfair uppercase tracking-wider">
                     {editMode === "create" ? "Add Ledger Transaction" : "Modify Ledger Record"}
                   </h3>
-                  <span className="text-[9px] text-luxury-ivory font-bold tracking-widest uppercase block mt-0.5">
+                  <span className="text-[9px] text-luxury-gold font-bold tracking-widest uppercase block mt-0.5">
                     Manual Ledger Override
                   </span>
                 </div>
@@ -339,7 +339,7 @@ export default function AdminLedger() {
                       value={formState.donor}
                       onChange={(e) => setFormState(prev => ({ ...prev, donor: e.target.value }))}
                       placeholder="e.g. Sabir Test (UPI) or Direct Cash Aid"
-                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
                     />
                   </div>
 
@@ -351,7 +351,7 @@ export default function AdminLedger() {
                       value={formState.cause}
                       onChange={(e) => setFormState(prev => ({ ...prev, cause: e.target.value }))}
                       placeholder="e.g. Qur’an Endowment"
-                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
                     />
                   </div>
 
@@ -363,7 +363,7 @@ export default function AdminLedger() {
                       value={formState.date}
                       onChange={(e) => setFormState(prev => ({ ...prev, date: e.target.value }))}
                       placeholder="DD/MM/YYYY"
-                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory font-mono"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold font-mono"
                     />
                   </div>
 
@@ -374,7 +374,7 @@ export default function AdminLedger() {
                       required
                       value={formState.amount}
                       onChange={(e) => setFormState(prev => ({ ...prev, amount: Number(e.target.value) }))}
-                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory font-bold text-luxury-ivory"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold font-bold text-luxury-gold"
                     />
                   </div>
 
@@ -385,7 +385,7 @@ export default function AdminLedger() {
                       value={formState.refCode}
                       onChange={(e) => setFormState(prev => ({ ...prev, refCode: e.target.value }))}
                       placeholder="e.g. UPI54321..."
-                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory font-mono"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold font-mono"
                     />
                   </div>
 
@@ -396,7 +396,7 @@ export default function AdminLedger() {
                       value={formState.proof}
                       onChange={(e) => setFormState(prev => ({ ...prev, proof: e.target.value }))}
                       placeholder="e.g. ✅ Verified Ledger Entry"
-                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+                      className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
                     />
                   </div>
                 </div>
@@ -425,7 +425,7 @@ export default function AdminLedger() {
 
                 {/* Alert warning */}
                 <div className="p-3 rounded-xl bg-amber-950/20 border border-amber-500/10 text-[10px] text-amber-300/80 leading-relaxed flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-luxury-ivory shrink-0 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 text-luxury-gold shrink-0 mt-0.5" />
                   <p>Caution: Ledger records represent direct public statements. Re-verify bank statement logs before marking entries as complete.</p>
                 </div>
 
@@ -440,7 +440,7 @@ export default function AdminLedger() {
                   </button>
                   <button 
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white text-black font-semibold tracking-wide transition flex items-center gap-1.5 shadow-lg"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light text-black font-semibold tracking-wide transition flex items-center gap-1.5 shadow-lg"
                   >
                     <Save className="w-4 h-4" /> Save Record
                   </button>

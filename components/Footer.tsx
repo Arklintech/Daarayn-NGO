@@ -28,22 +28,23 @@ export default function Footer() {
         .ft-link:hover { color: rgba(255,249,221,0.9); }
         .ft-small-link { color: rgba(255,255,255,0.28); text-decoration: none; font-size: 0.72rem; letter-spacing: 0.03em; transition: color 0.2s; }
         .ft-small-link:hover { color: rgba(255,255,255,0.6); }
+        .footer-grid { display: grid; grid-template-columns: minmax(220px,1.7fr) 1fr 1fr 1fr; gap: 3rem; align-items: flex-start; }
+        @media (max-width: 768px) {
+          .footer-grid { grid-template-columns: 1fr; gap: 2rem; text-align: center; }
+          .footer-grid > div { align-items: center; }
+          .brand-logo-row { justify-content: center; }
+        }
       `}</style>
 
       <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '6rem 2rem 2.5rem' }}>
 
         {/* ── TOP GRID ── */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(220px,1.7fr) 1fr 1fr 1fr',
-          gap: '3rem',
-          alignItems: 'flex-start',
-        }}>
+        <div className="footer-grid">
 
           {/* Brand */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }} className="footer-brand-col">
             {/* Logo row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div className="brand-logo-row" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
               <img
                 src="/email logo/daarayn-emblem.png.png"
                 alt="Daarayn Logo"

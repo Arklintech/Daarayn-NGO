@@ -122,7 +122,7 @@ export default function AdminBlog() {
         </div>
         <button 
           onClick={() => handleOpenEditor("create")}
-          className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold transition"
+          className="flex items-center gap-2 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold transition"
         >
           <Plus className="w-4 h-4" /> Compose Article
         </button>
@@ -133,11 +133,11 @@ export default function AdminBlog() {
         {blogs.map((item) => (
           <motion.div
             key={item.id}
-            className="p-5 rounded-3xl admin-glass border border-white/[0.06] flex flex-col justify-between space-y-4 hover:border-luxury-ivory/20 transition duration-300"
+            className="p-5 rounded-3xl admin-glass border border-white/[0.06] flex flex-col justify-between space-y-4 hover:border-luxury-gold/20 transition duration-300"
           >
             <div>
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[9px] font-bold text-luxury-ivory uppercase tracking-widest">{item.tags || "Editorial"}</span>
+                <span className="text-[9px] font-bold text-luxury-gold uppercase tracking-widest">{item.tags || "Editorial"}</span>
                 <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase border ${
                   item.status === "Published" 
                     ? "bg-emerald-950/40 text-emerald-300 border-emerald-500/20"
@@ -208,7 +208,7 @@ export default function AdminBlog() {
                     value={formState.title}
                     onChange={(e) => setFormState(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Transparency in Charity..."
-                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-ivory"
+                    className="w-full px-4 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white focus:outline-none focus:border-luxury-gold"
                   />
                 </div>
 
@@ -269,7 +269,7 @@ export default function AdminBlog() {
                   </button>
                   <button 
                     type="submit"
-                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white text-black font-semibold"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light text-black font-semibold"
                   >
                     Save Article
                   </button>

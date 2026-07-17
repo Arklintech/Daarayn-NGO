@@ -44,7 +44,7 @@ type AlertType = 'NOTE' | 'TIP' | 'IMPORTANT' | 'WARNING' | 'CAUTION';
 const ALERT_STYLES: Record<AlertType, string> = {
   NOTE:      'bg-blue-900/20 border-blue-500/30 text-blue-200',
   TIP:       'bg-emerald-900/20 border-emerald-500/30 text-emerald-200',
-  IMPORTANT: 'bg-luxury-ivory/10 border-luxury-ivory/30 text-luxury-ivory shadow-[0_0_15px_rgba(212,175,55,0.05)]',
+  IMPORTANT: 'bg-luxury-gold/10 border-luxury-gold/30 text-luxury-gold shadow-[0_0_15px_rgba(212,175,55,0.05)]',
   WARNING:   'bg-amber-900/20 border-amber-500/30 text-amber-200',
   CAUTION:   'bg-red-900/20 border-red-500/30 text-red-200 shadow-[0_0_15px_rgba(239,68,68,0.1)]',
 };
@@ -109,7 +109,7 @@ function KhidrMarkdown({ content }: { content: string }) {
           );
         } else {
           return (
-            <div key={idx} className="prose prose-invert max-w-none prose-p:leading-relaxed prose-headings:text-luxury-ivory prose-headings:font-bold prose-a:text-blue-400 prose-ul:list-disc prose-ol:list-decimal prose-li:text-gray-300 prose-strong:text-white prose-code:text-emerald-300 prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-hr:border-white/10">
+            <div key={idx} className="prose prose-invert max-w-none prose-p:leading-relaxed prose-headings:text-luxury-gold prose-headings:font-bold prose-a:text-blue-400 prose-ul:list-disc prose-ol:list-decimal prose-li:text-gray-300 prose-strong:text-white prose-code:text-emerald-300 prose-code:bg-white/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-hr:border-white/10">
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -117,13 +117,13 @@ function KhidrMarkdown({ content }: { content: string }) {
                     return <div className="overflow-x-auto my-4 rounded-lg border border-white/10"><table className="w-full text-left border-collapse bg-white/[0.01]" {...props} /></div>;
                   },
                   th({node, ...props}) {
-                    return <th className="border-b border-white/10 p-3 text-luxury-ivory font-bold text-[10px] uppercase tracking-widest bg-black/40" {...props} />;
+                    return <th className="border-b border-white/10 p-3 text-luxury-gold font-bold text-[10px] uppercase tracking-widest bg-black/40" {...props} />;
                   },
                   td({node, ...props}) {
                     return <td className="border-b border-white/5 p-3 text-gray-300 text-[12px]" {...props} />;
                   },
                   h3({node, ...props}) {
-                    return <h3 className="text-[13px] font-bold text-luxury-ivory uppercase tracking-widest mt-4 mb-2 border-b border-white/5 pb-1" {...props} />;
+                    return <h3 className="text-[13px] font-bold text-luxury-gold uppercase tracking-widest mt-4 mb-2 border-b border-white/5 pb-1" {...props} />;
                   },
                   h4({node, ...props}) {
                     return <h4 className="text-[12px] font-bold text-white/80 mt-3 mb-1.5" {...props} />;
@@ -542,12 +542,12 @@ export default function AIDashboard() {
       {/* ═══════════════════════════ HEADER ═══════════════════════════ */}
       <header className="shrink-0 h-14 bg-[#070908]/90 border-b border-white/[0.04] flex items-center justify-between px-6 z-20 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-luxury-ivory/80 to-white flex items-center justify-center shadow-[0_0_10px_rgba(212,175,55,0.15)]">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-luxury-gold/80 to-white flex items-center justify-center shadow-[0_0_10px_rgba(212,175,55,0.15)]">
             <Sparkles className="w-3.5 h-3.5 text-black" />
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-bold text-white tracking-wider font-playfair uppercase">KHIDR OS</span>
-            <span className="text-[9px] font-bold text-luxury-ivory uppercase tracking-[0.25em] px-1.5 py-0.5 rounded border border-luxury-ivory/20 bg-luxury-ivory/5">ACTIVE</span>
+            <span className="text-[9px] font-bold text-luxury-gold uppercase tracking-[0.25em] px-1.5 py-0.5 rounded border border-luxury-gold/20 bg-luxury-gold/5">ACTIVE</span>
           </div>
         </div>
 
@@ -578,8 +578,8 @@ export default function AIDashboard() {
               animate={{ opacity: 1, y: 0 }}
               className="pt-16 text-center space-y-6"
             >
-              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-luxury-ivory/20 to-white/10 border border-luxury-ivory/20 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.05)]">
-                <Sparkles className="w-7 h-7 text-luxury-ivory animate-pulse" />
+              <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-tr from-luxury-gold/20 to-white/10 border border-luxury-gold/20 flex items-center justify-center shadow-[0_0_15px_rgba(212,175,55,0.05)]">
+                <Sparkles className="w-7 h-7 text-luxury-gold animate-pulse" />
               </div>
               <div className="space-y-2">
                 <h2 className="text-xl font-bold text-white font-playfair tracking-wide">Assalamu Alaikum, {adminName}</h2>
@@ -589,7 +589,7 @@ export default function AIDashboard() {
               {/* Single Quiet Status Line */}
               {drafts.filter(d => d.status === "pending").length > 0 && (
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.02] border border-white/[0.06] text-[10px] text-gray-500 font-mono">
-                  <span className="w-1.5 h-1.5 rounded-full bg-luxury-ivory" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-luxury-gold" />
                   <span>{drafts.filter(d => d.status === "pending").length} pending draft communications awaiting review</span>
                 </div>
               )}
@@ -646,11 +646,11 @@ export default function AIDashboard() {
                 >
                   <div className={`flex flex-col w-full px-6 py-4 rounded-xl transition-all duration-200 ${
                     isAssistant
-                      ? 'bg-[#0a0d0b] border-l-4 border-luxury-ivory/50 shadow-md'
+                      ? 'bg-[#0a0d0b] border-l-4 border-luxury-gold/50 shadow-md'
                       : 'bg-white/[0.02] border border-white/[0.04]'
                   }`}>
                     {isAssistant && (
-                      <div className="flex items-center gap-2 mb-3 text-[10px] font-bold text-luxury-ivory/60 uppercase tracking-widest font-mono">
+                      <div className="flex items-center gap-2 mb-3 text-[10px] font-bold text-luxury-gold/60 uppercase tracking-widest font-mono">
                         <Sparkles className="w-3 h-3" />
                         KHIDR
                       </div>
@@ -725,7 +725,7 @@ export default function AIDashboard() {
                               onClick={() => toggleSection(msg.id, "analytics")}
                               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wide transition border ${
                                 msgSecs.analytics 
-                                  ? 'bg-luxury-ivory/20 text-white border-luxury-ivory/30' 
+                                  ? 'bg-luxury-gold/20 text-white border-luxury-gold/30' 
                                   : 'bg-white/[0.02] text-gray-400 border-white/[0.04] hover:bg-white/[0.04]'
                               }`}
                             >
@@ -770,7 +770,7 @@ export default function AIDashboard() {
                               onClick={() => toggleSection(msg.id, "drafts")}
                               className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold tracking-wide transition border ${
                                 msgSecs.drafts 
-                                  ? 'bg-luxury-ivory/20 text-white border-luxury-ivory/30' 
+                                  ? 'bg-luxury-gold/20 text-white border-luxury-gold/30' 
                                   : 'bg-white/[0.02] text-gray-400 border-white/[0.04] hover:bg-white/[0.04]'
                               }`}
                             >
@@ -878,7 +878,7 @@ export default function AIDashboard() {
                           </div>
                           <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] text-center">
                             <div className="text-[9px] text-gray-500 uppercase">Average Score</div>
-                            <div className="text-base font-bold text-luxury-ivory mt-1">{(formattedStats.averageScore || 9.5).toFixed(1)}</div>
+                            <div className="text-base font-bold text-luxury-gold mt-1">{(formattedStats.averageScore || 9.5).toFixed(1)}</div>
                           </div>
                           <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] text-center">
                             <div className="text-[9px] text-gray-500 uppercase">Compliance</div>
@@ -938,10 +938,10 @@ export default function AIDashboard() {
                               <div key={idx} className="space-y-1.5">
                                 <div className="flex justify-between items-center text-xs">
                                   <span className="text-gray-300 font-semibold">{p.title as string}</span>
-                                  <span className="text-luxury-ivory font-mono">{pct}%</span>
+                                  <span className="text-luxury-gold font-mono">{pct}%</span>
                                 </div>
                                 <div className="h-1 bg-white/[0.05] rounded-full overflow-hidden">
-                                  <div className="h-full bg-gradient-to-r from-luxury-ivory to-white transition-all" style={{ width: `${Math.min(pct, 100)}%` }} />
+                                  <div className="h-full bg-gradient-to-r from-luxury-gold to-luxury-gold-light transition-all" style={{ width: `${Math.min(pct, 100)}%` }} />
                                 </div>
                               </div>
                             );
@@ -964,7 +964,7 @@ export default function AIDashboard() {
                               type="text"
                               value={String(editingContent?.subject ?? "")}
                               onChange={(e) => setEditingContent({ ...editingContent, subject: e.target.value })}
-                              className="w-full px-3 py-2 bg-[#070908] border border-white/[0.08] focus:border-luxury-ivory/40 rounded-lg text-xs text-white focus:outline-none"
+                              className="w-full px-3 py-2 bg-[#070908] border border-white/[0.08] focus:border-luxury-gold/40 rounded-lg text-xs text-white focus:outline-none"
                             />
                           </div>
                           <div>
@@ -973,7 +973,7 @@ export default function AIDashboard() {
                               value={String(editingContent?.body ?? "")}
                               onChange={(e) => setEditingContent({ ...editingContent, body: e.target.value })}
                               rows={5}
-                              className="w-full px-3 py-2 bg-[#070908] border border-white/[0.08] focus:border-luxury-ivory/40 rounded-lg text-xs text-white focus:outline-none resize-none font-sans"
+                              className="w-full px-3 py-2 bg-[#070908] border border-white/[0.08] focus:border-luxury-gold/40 rounded-lg text-xs text-white focus:outline-none resize-none font-sans"
                             />
                           </div>
                         </div>
@@ -987,7 +987,7 @@ export default function AIDashboard() {
                             type="button"
                             onClick={() => handleApprove(selectedDraftId)}
                             disabled={processingAction === "approve"}
-                            className="px-3.5 py-1.5 bg-gradient-to-r from-luxury-ivory to-white hover:opacity-90 disabled:opacity-55 text-black rounded-lg text-[10px] font-bold transition uppercase tracking-wider"
+                            className="px-3.5 py-1.5 bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:opacity-90 disabled:opacity-55 text-black rounded-lg text-[10px] font-bold transition uppercase tracking-wider"
                           >
                             Approve & Dispatch
                           </button>
@@ -1014,14 +1014,14 @@ export default function AIDashboard() {
                     {/* 8. COMPLIANCE AUDIT TRACE */}
                     {isAssistant && msgSecs.audit && metadata.responseMode === "AUDIT" && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="p-4 bg-white/[0.01] border border-[#d4af37]/20 rounded-xl space-y-3 font-mono text-[10px]">
-                        <div className="text-[10px] font-bold text-luxury-ivory uppercase tracking-wider flex items-center gap-1.5">
+                        <div className="text-[10px] font-bold text-luxury-gold uppercase tracking-wider flex items-center gap-1.5">
                           <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                           Governance & Compliance Audit Trace
                         </div>
                         <div className="space-y-1 text-gray-400">
                           <div>Request ID: <span className="text-white">{metadata.requestId || "N/A"}</span></div>
                           <div>Validation Status: <span className="text-emerald-400">{metadata.status || "Verified"}</span></div>
-                          <div>Confidence Level: <span className="text-luxury-ivory">{metadata.confidence || 100}%</span></div>
+                          <div>Confidence Level: <span className="text-luxury-gold">{metadata.confidence || 100}%</span></div>
                           <div>Response Time: <span className="text-white">{metadata.developerDiagnostics?.responseTimeMs || "N/A"}ms</span></div>
                           <div>Certification Gate: <span className="text-white">{metadata.certification || "Level 4 (Deterministic Bypass)"}</span></div>
                         </div>
@@ -1039,14 +1039,14 @@ export default function AIDashboard() {
           {copilotLoading && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-3">
               <div className="space-y-1">
-                <div className="flex items-center gap-2 mb-1.5 text-[9px] font-bold text-luxury-ivory/70 uppercase tracking-widest font-mono">
+                <div className="flex items-center gap-2 mb-1.5 text-[9px] font-bold text-luxury-gold/70 uppercase tracking-widest font-mono">
                   <Sparkles className="w-2.5 h-2.5 animate-spin" />
                   KHIDR SYSTEM
                 </div>
                 <div className="flex gap-1.5 p-3 rounded-2xl bg-white/[0.02]">
-                  <span className="w-1.5 h-1.5 rounded-full bg-luxury-ivory/60 animate-bounce [animation-delay:0ms]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-luxury-ivory/60 animate-bounce [animation-delay:150ms]" />
-                  <span className="w-1.5 h-1.5 rounded-full bg-luxury-ivory/60 animate-bounce [animation-delay:300ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-luxury-gold/60 animate-bounce [animation-delay:0ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-luxury-gold/60 animate-bounce [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-luxury-gold/60 animate-bounce [animation-delay:300ms]" />
                 </div>
               </div>
             </motion.div>
@@ -1086,7 +1086,7 @@ export default function AIDashboard() {
               e.preventDefault();
               if (copilotInput.trim()) handleSendCopilot(copilotInput);
             }}
-            className="flex items-end gap-3 bg-[#0a0c0b] border border-white/[0.08] focus-within:border-luxury-ivory/40 rounded-2xl p-3 shadow-2xl transition duration-150"
+            className="flex items-end gap-3 bg-[#0a0c0b] border border-white/[0.08] focus-within:border-luxury-gold/40 rounded-2xl p-3 shadow-2xl transition duration-150"
           >
             <textarea
               value={copilotInput}
@@ -1109,7 +1109,7 @@ export default function AIDashboard() {
             <button
               type="submit"
               disabled={copilotLoading || !copilotInput.trim()}
-              className="shrink-0 p-2 bg-gradient-to-r from-luxury-ivory to-white hover:opacity-95 disabled:opacity-30 rounded-xl transition text-black"
+              className="shrink-0 p-2 bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:opacity-95 disabled:opacity-30 rounded-xl transition text-black"
             >
               <Send className="w-3.5 h-3.5" />
             </button>

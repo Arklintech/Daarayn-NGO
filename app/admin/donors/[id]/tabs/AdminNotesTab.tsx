@@ -133,7 +133,7 @@ export default function AdminNotesTab({ donorId }: any) {
 
       {/* Notes list */}
       {loading ? (
-        <div className="py-10 text-center"><div className="w-6 h-6 border-2 border-luxury-ivory border-t-transparent rounded-full animate-spin mx-auto" /></div>
+        <div className="py-10 text-center"><div className="w-6 h-6 border-2 border-luxury-gold border-t-transparent rounded-full animate-spin mx-auto" /></div>
       ) : notes.length === 0 ? (
         <div className="text-center py-16 text-gray-500 rounded-2xl"
           style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>

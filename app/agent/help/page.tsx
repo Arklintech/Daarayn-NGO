@@ -44,14 +44,14 @@ export default function HelpPage() {
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Link href="/agent/messages" className="admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-ivory/30 transition group">
-          <MessageSquare className="w-6 h-6 text-luxury-ivory mb-2" />
-          <p className="text-sm font-bold text-white group-hover:text-luxury-ivory transition">Message Admin</p>
+        <Link href="/agent/messages" className="admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group">
+          <MessageSquare className="w-6 h-6 text-luxury-gold mb-2" />
+          <p className="text-sm font-bold text-white group-hover:text-luxury-gold transition">Message Admin</p>
           <p className="text-[10px] text-gray-500 mt-0.5">Get direct support</p>
         </Link>
-        <Link href="/agent/reports/new" className="admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-ivory/30 transition group">
-          <Book className="w-6 h-6 text-luxury-ivory mb-2" />
-          <p className="text-sm font-bold text-white group-hover:text-luxury-ivory transition">Submit Report</p>
+        <Link href="/agent/reports/new" className="admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group">
+          <Book className="w-6 h-6 text-luxury-gold mb-2" />
+          <p className="text-sm font-bold text-white group-hover:text-luxury-gold transition">Submit Report</p>
           <p className="text-[10px] text-gray-500 mt-0.5">Report a new need</p>
         </Link>
       </div>
@@ -60,7 +60,7 @@ export default function HelpPage() {
       <div className="admin-glass border border-luxury-border rounded-2xl overflow-hidden">
         <div className="p-4 border-b border-white/[0.06]">
           <h2 className="text-sm font-bold text-white flex items-center gap-2">
-            <HelpCircle className="w-4 h-4 text-luxury-ivory" />
+            <HelpCircle className="w-4 h-4 text-luxury-gold" />
             Frequently Asked Questions
           </h2>
         </div>
@@ -73,7 +73,7 @@ export default function HelpPage() {
               >
                 <span className="text-sm font-medium text-white">{faq.q}</span>
                 {openFaq === i
-                  ? <ChevronUp className="w-4 h-4 text-luxury-ivory flex-shrink-0" />
+                  ? <ChevronUp className="w-4 h-4 text-luxury-gold flex-shrink-0" />
                   : <ChevronDown className="w-4 h-4 text-gray-500 flex-shrink-0" />
                 }
               </button>
@@ -96,7 +96,7 @@ export default function HelpPage() {
         ].map(c => (
           <div key={c.label} className="flex items-center gap-3">
             <div className="w-8 h-8 bg-white/[0.03] border border-white/[0.06] rounded-lg flex items-center justify-center">
-              <c.icon className="w-4 h-4 text-luxury-ivory" />
+              <c.icon className="w-4 h-4 text-luxury-gold" />
             </div>
             <div>
               <p className="text-[9px] text-gray-500 uppercase tracking-wider">{c.label}</p>

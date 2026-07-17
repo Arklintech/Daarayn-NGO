@@ -29,7 +29,7 @@ function ContributionDrawer({ donation, onClose }: { donation: any; onClose: () 
 
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
           <div>
-            <p className="font-mono text-xs text-luxury-ivory/70">{donation.id}</p>
+            <p className="font-mono text-xs text-luxury-gold/70">{donation.id}</p>
             <h3 className="text-lg font-bold text-white mt-0.5">Contribution Details</h3>
           </div>
           <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 text-gray-400 hover:text-white transition">
@@ -67,7 +67,7 @@ function ContributionDrawer({ donation, onClose }: { donation: any; onClose: () 
                       <p className="text-xs text-gray-500 font-mono">{c.causeId}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-mono text-luxury-ivory font-semibold">INR {(c.allocatedAmount || 0).toLocaleString()}</p>
+                      <p className="font-mono text-luxury-gold font-semibold">INR {(c.allocatedAmount || 0).toLocaleString()}</p>
                       <p className="text-xs text-gray-500">{c.percentage || 0}%</p>
                     </div>
                   </div>
@@ -165,12 +165,12 @@ export default function DonationsTab({ donations }: any) {
               {sorted.map(d => (
                 <tr key={d.id} onClick={() => setSelected(d)}
                   className="hover:bg-white/[0.025] cursor-pointer transition group">
-                  <td className="px-5 py-4 font-mono text-xs text-luxury-ivory/80">{d.id}</td>
+                  <td className="px-5 py-4 font-mono text-xs text-luxury-gold/80">{d.id}</td>
                   <td className="px-5 py-4 text-gray-300">{d.date || '—'}</td>
                   <td className="px-5 py-4 text-gray-300 max-w-[150px] truncate">
                     {d.selectedCauses?.[0]?.causeName || d.donationType || '—'}
                   </td>
-                  <td className="px-5 py-4 text-right font-mono font-semibold text-luxury-ivory">
+                  <td className="px-5 py-4 text-right font-mono font-semibold text-luxury-gold">
                     INR {(d.amount || 0).toLocaleString()}
                   </td>
                   <td className="px-5 py-4 text-gray-400 capitalize">{d.paymentMethod || '—'}</td>
@@ -180,7 +180,7 @@ export default function DonationsTab({ donations }: any) {
                     </span>
                   </td>
                   <td className="px-5 py-4 text-right">
-                    <ExternalLink className="w-3.5 h-3.5 text-gray-600 group-hover:text-luxury-ivory transition ml-auto" />
+                    <ExternalLink className="w-3.5 h-3.5 text-gray-600 group-hover:text-luxury-gold transition ml-auto" />
                   </td>
                 </tr>
               ))}

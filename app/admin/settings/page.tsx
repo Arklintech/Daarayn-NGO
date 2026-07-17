@@ -92,7 +92,7 @@ export default function AdminSettings() {
           className="p-6 rounded-3xl admin-glass border border-white/[0.06] h-fit"
         >
           <div className="flex items-center gap-2 mb-6 border-b border-white/[0.06] pb-3">
-            <Settings2 className="w-5 h-5 text-luxury-ivory" />
+            <Settings2 className="w-5 h-5 text-luxury-gold" />
             <div>
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Website SEO Parameters</h3>
               <p className="text-[10px] text-gray-400 mt-0.5">Control search ranking metadata</p>
@@ -136,7 +136,7 @@ export default function AdminSettings() {
             <button 
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-ivory to-white hover:brightness-105 active:scale-[0.98] text-black font-semibold tracking-wide transition flex items-center gap-1.5 shadow-lg"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold tracking-wide transition flex items-center gap-1.5 shadow-lg"
             >
               <Save className="w-4 h-4" /> Save Metadata
             </button>
@@ -151,7 +151,7 @@ export default function AdminSettings() {
           className="p-6 rounded-3xl admin-glass border border-white/[0.06] h-fit"
         >
           <div className="flex items-center gap-2 mb-6 border-b border-white/[0.06] pb-3">
-            <Database className="w-5 h-5 text-luxury-ivory" />
+            <Database className="w-5 h-5 text-luxury-gold" />
             <div>
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Firebase Cloud Settings</h3>
               <p className="text-[10px] text-gray-400 mt-0.5">Primary database config (Read-Only)</p>
@@ -194,7 +194,7 @@ export default function AdminSettings() {
             <h3 className="text-sm font-bold text-white uppercase tracking-wider">Administrator Accounts Directory</h3>
             <p className="text-[10px] text-gray-400 mt-0.5">View and update RBAC permissions</p>
           </div>
-          <span className="text-[10px] text-luxury-ivory font-bold uppercase tracking-wider">Super Admin control active</span>
+          <span className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider">Super Admin control active</span>
         </div>
 
         <div className="overflow-x-auto">

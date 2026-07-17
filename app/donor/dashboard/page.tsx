@@ -144,7 +144,7 @@ This document is digitally validated and verified on the public blockchain/ledge
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#020704]">
         <div className="text-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-luxury-ivory border-t-transparent mx-auto"></div>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-luxury-gold border-t-transparent mx-auto"></div>
           <p className="mt-4 text-xs text-gray-400 font-medium">Decrypting personalized donor history...</p>
         </div>
       </div>
@@ -162,7 +162,7 @@ This document is digitally validated and verified on the public blockchain/ledge
             <img src="/brand logo1.png" alt="Daarayn Logo" className="w-8 h-8 object-contain" />
             <div>
               <h1 className="text-sm font-semibold tracking-[0.3em] font-playfair text-white">DAARAYN</h1>
-              <span className="text-[8px] font-semibold text-luxury-ivory uppercase tracking-widest block mt-0.5">Verified Amanah Tracking</span>
+              <span className="text-[8px] font-semibold text-luxury-gold uppercase tracking-widest block mt-0.5">Verified Amanah Tracking</span>
             </div>
           </div>
           <button 
@@ -180,15 +180,15 @@ This document is digitally validated and verified on the public blockchain/ledge
         {/* Left Side Info Panel */}
         <div className="lg:col-span-1 space-y-6">
           <div className="admin-glass border border-white/[0.06] rounded-3xl p-6 text-center space-y-4 relative overflow-hidden">
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-luxury-ivory to-white"></div>
+            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-luxury-gold to-luxury-gold-light"></div>
             
-            <div className="w-20 h-20 rounded-3xl bg-luxury-ivory/10 border border-luxury-ivory/20 flex items-center justify-center text-luxury-ivory font-bold text-3xl mx-auto shadow-inner">
+            <div className="w-20 h-20 rounded-3xl bg-luxury-gold/10 border border-luxury-gold/20 flex items-center justify-center text-luxury-gold font-bold text-3xl mx-auto shadow-inner">
               {donor.name[0].toUpperCase()}
             </div>
             
             <div>
               <h2 className="text-lg font-bold text-white font-playfair">{donor.name}</h2>
-              <span className="font-mono text-xs text-luxury-ivory">{donor.id}</span>
+              <span className="font-mono text-xs text-luxury-gold">{donor.id}</span>
             </div>
 
             <div className="pt-4 border-t border-white/[0.06] space-y-2.5 text-xs text-left">
@@ -198,7 +198,7 @@ This document is digitally validated and verified on the public blockchain/ledge
               </div>
               <div className="flex justify-between items-center text-gray-400">
                 <span>Location:</span>
-                <span className="text-white font-medium flex items-center gap-0.5"><MapPin className="w-3 h-3 text-luxury-ivory" /> {donor.city}, {donor.country}</span>
+                <span className="text-white font-medium flex items-center gap-0.5"><MapPin className="w-3 h-3 text-luxury-gold" /> {donor.city}, {donor.country}</span>
               </div>
               <div className="flex justify-between items-center text-gray-400">
                 <span>Email:</span>
@@ -209,13 +209,13 @@ This document is digitally validated and verified on the public blockchain/ledge
             <div className="pt-4 border-t border-white/[0.06] space-y-2">
               <button 
                 onClick={() => downloadReport("tax")}
-                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-luxury-ivory text-xs font-semibold text-gray-300 hover:text-luxury-ivory transition"
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-luxury-gold text-xs font-semibold text-gray-300 hover:text-luxury-gold transition"
               >
                 <Download className="w-3.5 h-3.5" /> Tax Exempt Receipt
               </button>
               <button 
                 onClick={() => downloadReport("impact")}
-                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-luxury-ivory text-xs font-semibold text-gray-300 hover:text-luxury-ivory transition"
+                className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:border-luxury-gold text-xs font-semibold text-gray-300 hover:text-luxury-gold transition"
               >
                 <FileText className="w-3.5 h-3.5" /> Verified Impact PDF
               </button>
@@ -230,9 +230,9 @@ This document is digitally validated and verified on the public blockchain/ledge
             <div className="admin-glass border border-white/[0.06] rounded-2xl p-5 relative overflow-hidden flex items-center justify-between">
               <div className="space-y-1">
                 <span className="text-[10px] text-gray-500 uppercase tracking-wider block font-bold">Total Contribution</span>
-                <span className="font-mono text-xl text-luxury-ivory font-bold">INR {donor.totalAmountDonated.toLocaleString()}</span>
+                <span className="font-mono text-xl text-luxury-gold font-bold">INR {donor.totalAmountDonated.toLocaleString()}</span>
               </div>
-              <Coins className="w-10 h-10 text-luxury-ivory/15" />
+              <Coins className="w-10 h-10 text-luxury-gold/15" />
             </div>
 
             <div className="admin-glass border border-white/[0.06] rounded-2xl p-5 relative overflow-hidden flex items-center justify-between">
@@ -256,19 +256,19 @@ This document is digitally validated and verified on the public blockchain/ledge
           <div className="flex border-b border-white/[0.06] text-xs font-semibold">
             <button 
               onClick={() => setActiveSection("overview")}
-              className={`pb-3 px-4 border-b-2 transition ${activeSection === "overview" ? "border-luxury-ivory text-luxury-ivory" : "border-transparent text-gray-400 hover:text-white"}`}
+              className={`pb-3 px-4 border-b-2 transition ${activeSection === "overview" ? "border-luxury-gold text-luxury-gold" : "border-transparent text-gray-400 hover:text-white"}`}
             >
               Donations & Ledger Match
             </button>
             <button 
               onClick={() => setActiveSection("allocations")}
-              className={`pb-3 px-4 border-b-2 transition ${activeSection === "allocations" ? "border-luxury-ivory text-luxury-ivory" : "border-transparent text-gray-400 hover:text-white"}`}
+              className={`pb-3 px-4 border-b-2 transition ${activeSection === "allocations" ? "border-luxury-gold text-luxury-gold" : "border-transparent text-gray-400 hover:text-white"}`}
             >
               Split Allocations
             </button>
             <button 
               onClick={() => setActiveSection("communications")}
-              className={`pb-3 px-4 border-b-2 transition ${activeSection === "communications" ? "border-luxury-ivory text-luxury-ivory" : "border-transparent text-gray-400 hover:text-white"}`}
+              className={`pb-3 px-4 border-b-2 transition ${activeSection === "communications" ? "border-luxury-gold text-luxury-gold" : "border-transparent text-gray-400 hover:text-white"}`}
             >
               AI Impact Reports Feed
             </button>
@@ -284,7 +284,7 @@ This document is digitally validated and verified on the public blockchain/ledge
                     <div key={don.id} className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.04] text-xs flex justify-between items-center">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-luxury-ivory font-semibold">{don.id}</span>
+                          <span className="font-mono text-luxury-gold font-semibold">{don.id}</span>
                           <span className="text-gray-500">• {don.date}</span>
                         </div>
                         <span className="text-gray-300 block font-medium">Ref: {don.transactionReference || 'UPI Verification'}</span>
@@ -310,14 +310,14 @@ This document is digitally validated and verified on the public blockchain/ledge
                     <div key={alloc.id} className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.04] text-xs flex justify-between items-center">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="font-mono text-luxury-ivory font-semibold">{alloc.id}</span>
+                          <span className="font-mono text-luxury-gold font-semibold">{alloc.id}</span>
                           <span className="text-gray-500">• Allocated {alloc.allocationDate}</span>
                         </div>
                         <span className="text-white text-sm font-semibold block">{alloc.targetTitle}</span>
                         <span className="text-gray-500 block">Complying with 90/10 direct aid metrics</span>
                       </div>
                       <div className="text-right">
-                        <span className="font-mono font-bold text-luxury-ivory text-sm block">INR {alloc.allocatedAmount.toLocaleString()}</span>
+                        <span className="font-mono font-bold text-luxury-gold text-sm block">INR {alloc.allocatedAmount.toLocaleString()}</span>
                         <span className="text-[10px] text-gray-500">Funded Portion</span>
                       </div>
                     </div>
@@ -336,7 +336,7 @@ This document is digitally validated and verified on the public blockchain/ledge
                         <div className="flex justify-between items-start border-b border-white/[0.04] pb-2.5">
                           <div>
                             <span className="font-semibold text-white block text-sm">{log.subject}</span>
-                            <span className="text-[10px] text-luxury-ivory font-bold uppercase tracking-wider font-mono">🤖 Evidence-bound AI Summary</span>
+                            <span className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider font-mono">🤖 Evidence-bound AI Summary</span>
                           </div>
                           <span className="font-mono text-[9px] text-gray-500">{log.sentDate}</span>
                         </div>

@@ -401,7 +401,7 @@ export default function AdminDonors() {
               </thead>
               <tbody className="divide-y divide-white/10">
                 {loading ? (
-                  <tr><td colSpan={10} className="py-20 text-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-luxury-ivory border-t-transparent mx-auto" /></td></tr>
+                  <tr><td colSpan={10} className="py-20 text-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-luxury-gold border-t-transparent mx-auto" /></td></tr>
                 ) : filteredDonors.length === 0 ? (
                   <tr><td colSpan={10} className="py-20 text-center text-gray-500 text-sm">No donor records found matching filters.</td></tr>
                 ) : (

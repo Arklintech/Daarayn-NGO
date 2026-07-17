@@ -109,7 +109,7 @@ export default function FieldReportWorkspace() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-10 h-10 border-2 border-luxury-ivory border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-luxury-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -139,7 +139,7 @@ export default function FieldReportWorkspace() {
           <div className="flex flex-1 gap-6">
             {/* Avatar/Icon */}
             <div className="relative flex-shrink-0">
-              <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl text-luxury-ivory"
+              <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl text-luxury-gold"
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,249,221,0.2)' }}>
                 <FileText className="w-10 h-10 text-luxury-gold" />
               </div>

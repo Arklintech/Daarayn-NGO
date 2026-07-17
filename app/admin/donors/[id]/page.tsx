@@ -136,7 +136,7 @@ export default function DonorWorkspace() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="w-10 h-10 border-2 border-luxury-ivory border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-2 border-luxury-gold border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -173,7 +173,7 @@ export default function DonorWorkspace() {
           <div className="flex flex-1 gap-6">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
-              <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold text-luxury-ivory"
+              <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold text-luxury-gold"
                 style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,249,221,0.2)' }}>
                 {initials}
               </div>
@@ -259,7 +259,7 @@ export default function DonorWorkspace() {
               </div>
               <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ background: 'rgba(255,249,221,0.05)', border: '1px solid rgba(255,249,221,0.15)' }}>
-                <Heart className="w-4 h-4 text-luxury-ivory" />
+                <Heart className="w-4 h-4 text-luxury-gold" />
               </div>
             </div>
 
@@ -271,7 +271,7 @@ export default function DonorWorkspace() {
               </div>
               <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ background: 'rgba(255,249,221,0.05)', border: '1px solid rgba(255,249,221,0.15)' }}>
-                <Gift className="w-4 h-4 text-luxury-ivory" />
+                <Gift className="w-4 h-4 text-luxury-gold" />
               </div>
             </div>
 
@@ -283,7 +283,7 @@ export default function DonorWorkspace() {
               </div>
               <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ background: 'rgba(255,249,221,0.05)', border: '1px solid rgba(255,249,221,0.15)' }}>
-                <Landmark className="w-4 h-4 text-luxury-ivory" />
+                <Landmark className="w-4 h-4 text-luxury-gold" />
               </div>
             </div>
           </div>
@@ -300,7 +300,7 @@ export default function DonorWorkspace() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`pb-4 text-sm font-medium whitespace-nowrap transition-colors relative ${
-                  active ? 'text-luxury-ivory' : 'text-gray-400 hover:text-gray-200'
+                  active ? 'text-luxury-gold' : 'text-gray-400 hover:text-gray-200'
                 }`}
               >
                 {tab.label}

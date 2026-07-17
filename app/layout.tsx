@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Playfair_Display, Poppins, Cinzel } from "next/font/google";
 import "./globals.css";
 import { AuthContextProvider } from "@/lib/AuthContext";
+import { PWAProvider } from "@/components/providers/PWAProvider";
+import { RoleBootstrapProvider } from "@/app/providers/RoleBootstrap";
 
 const poppins = Poppins({
   variable: "--font-poppins",
@@ -33,10 +35,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${poppins.variable} ${playfair.variable} ${cinzel.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-luxury-bg text-gray-100 selection:bg-luxury-ivory selection:text-black">
-        <AuthContextProvider>
-          {children}
-        </AuthContextProvider>
+      <body className="min-h-full flex flex-col bg-luxury-bg text-gray-100 selection:bg-luxury-gold selection:text-black">
+        <PWAProvider>
+          <RoleBootstrapProvider>
+            <AuthContextProvider>
+              {children}
+            </AuthContextProvider>
+          </RoleBootstrapProvider>
+        </PWAProvider>
       </body>
     </html>
   );

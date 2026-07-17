@@ -74,13 +74,13 @@ export default function AdminContacts() {
         {messages.map((item) => (
           <motion.div
             key={item.id}
-            className="p-5 rounded-3xl admin-glass border border-white/[0.06] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-luxury-ivory/20 transition duration-300"
+            className="p-5 rounded-3xl admin-glass border border-white/[0.06] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-luxury-gold/20 transition duration-300"
           >
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase border ${
                   item.status === "New" 
-                    ? "bg-luxury-ivory/15 text-luxury-ivory border-luxury-ivory/20 animate-pulse"
+                    ? "bg-luxury-gold/15 text-luxury-gold border-luxury-gold/20 animate-pulse"
                     : "bg-gray-800 text-gray-400 border-white/[0.08]"
                 }`}>
                   {item.status}
@@ -101,7 +101,7 @@ export default function AdminContacts() {
                   className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] text-white font-bold transition"
                   title="Archive Message"
                 >
-                  <Archive className="w-3.5 h-3.5 text-luxury-ivory" /> Archive
+                  <Archive className="w-3.5 h-3.5 text-luxury-gold" /> Archive
                 </button>
               )}
               <button 

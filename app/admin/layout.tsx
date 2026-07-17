@@ -38,6 +38,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [totalUnread, setTotalUnread] = useState(0);
 
+  // Guard: if no user is signed in, redirect to login
+  React.useEffect(() => {
+    if (!loading && !user && pathname !== "/admin/login") {
+      router.replace("/admin/login");
+    }
+  }, [user, loading, pathname, router]);
+
   // Real-time unread count
   React.useEffect(() => {
     if (!user) return;
@@ -61,18 +68,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="flex h-screen w-screen items-center justify-center bg-[#020704]">
         <div className="text-center">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-luxury-ivory border-t-transparent mx-auto"></div>
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-luxury-gold border-t-transparent mx-auto"></div>
           <p className="mt-4 text-sm text-gray-400 font-medium">Authorizing administrator session...</p>
         </div>
       </div>
     );
   }
 
-  // Guard: if no user is signed in, redirect to login
+  // Guard: if no user is signed in, wait for redirect
   if (!user) {
-    if (typeof window !== "undefined") {
-      router.replace("/admin/login");
-    }
     return null;
   }
 
@@ -162,18 +166,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <img src="/brand logo1.png" alt="Daarayn Logo" className="w-9 h-9 object-contain filter brightness-110 drop-shadow-[0_0_4px_rgba(212,175,55,0.25)]" />
         <div>
           <h2 className="text-xs font-semibold tracking-[0.4em] font-playfair text-white">DAARAYN</h2>
-          <span className="text-[9px] font-semibold text-luxury-ivory uppercase tracking-widest block mt-0.5">Control Center</span>
+          <span className="text-[9px] font-semibold text-luxury-gold uppercase tracking-widest block mt-0.5">Control Center</span>
         </div>
       </div>
 
       {/* Admin Quick Profile */}
       <div className="p-4 mx-4 my-3 rounded-2xl bg-white/[0.02] border border-white/[0.04] flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-luxury-ivory/10 border border-luxury-ivory/25 flex items-center justify-center text-luxury-ivory font-bold text-sm">
+        <div className="w-9 h-9 rounded-full bg-luxury-gold/10 border border-luxury-gold/25 flex items-center justify-center text-luxury-gold font-bold text-sm">
           {adminName[0].toUpperCase()}
         </div>
         <div className="overflow-hidden">
           <h4 className="text-xs font-semibold text-white truncate">{adminName}</h4>
-          <span className="text-[9px] font-medium text-luxury-ivory/80 block mt-0.5 flex items-center gap-1">
+          <span className="text-[9px] font-medium text-luxury-gold/80 block mt-0.5 flex items-center gap-1">
             <ShieldCheck className="w-2.5 h-2.5 inline" /> {currentRole}
           </span>
         </div>
@@ -198,12 +202,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   onClick={() => setMobileSidebarOpen(false)}
                   className={`flex items-center justify-between px-4 py-2.5 rounded-xl text-xs font-medium transition duration-200 ${
                     isActive 
-                      ? "bg-gradient-to-r from-luxury-ivory/15 to-transparent border-l-2 border-luxury-ivory text-white font-semibold"
+                      ? "bg-gradient-to-r from-luxury-gold/15 to-transparent border-l-2 border-luxury-gold text-white font-semibold"
                       : "text-gray-400 hover:bg-white/[0.02] hover:text-white"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className={`w-4 h-4 ${isActive ? "text-luxury-ivory" : "text-gray-400"}`} />
+                    <Icon className={`w-4 h-4 ${isActive ? "text-luxury-gold" : "text-gray-400"}`} />
                     {item.name}
                   </div>
                   {item.name === "Notification Center" && totalUnread > 0 && (
@@ -261,6 +265,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Quick Portal Switch */}
+            <div className="hidden md:flex items-center gap-2 pr-3">
+              <Link href="/agent/login" target="_blank" className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
+                Agent View
+              </Link>
+              <Link href="/donor" target="_blank" className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
+                Donor View
+              </Link>
+            </div>
 
             {/* Profile trigger */}
             <Link 
