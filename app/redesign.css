@@ -544,6 +544,47 @@
   display: none;
 }
 
+/* Responsive Fixes for Ribbon */
+@media (max-width: 768px) {
+  .daarayn-quick-donation-ribbon {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+    padding: 1rem !important;
+    height: auto !important;
+    border-radius: 12px !important;
+  }
+  .daarayn-quick-donation-ribbon > div, 
+  .daarayn-quick-donation-ribbon > button {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
+
+/* Bulletproof Responsive Classes for Navbar (Bypassing Tailwind if it fails to purge) */
+@media (min-width: 1025px) {
+  .mobile-toggle {
+    display: none !important;
+  }
+  .desktop-nav {
+    display: flex !important;
+  }
+  .mobile-drawer {
+    display: none !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .desktop-nav {
+    display: none !important;
+  }
+  .mobile-toggle {
+    display: flex !important;
+  }
+  .mobile-drawer {
+    display: flex !important;
+  }
+}
+
 /* Responsive adjustments */
 @media (max-width: 1024px) {
   .daarayn-hero-content {

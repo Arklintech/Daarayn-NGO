@@ -102,7 +102,7 @@ export default function Navbar() {
         </Link>
 
         {/* Center: Navigation Links (Desktop) */}
-        <div className="hidden lg:flex items-center gap-[12px] z-10" style={{ zIndex: 10 }}>
+        <div className="desktop-nav items-center gap-[12px] z-10" style={{ zIndex: 10 }}>
           {navItems.map((item) => {
             const isActive = activeHash === item.href.replace('/', '');
             return (
@@ -156,7 +156,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Toggle Button */}
-        <div className="lg:hidden z-10 flex items-center pr-2">
+        <div className="mobile-toggle z-10 items-center pr-2">
           <button onClick={() => setIsOpen(!isOpen)} className="text-[#FFF9DD] p-2 focus:outline-none bg-white/5 rounded-lg border border-white/10 active:scale-95 transition-transform">
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
@@ -164,7 +164,7 @@ export default function Navbar() {
 
         {/* Mobile Drawer */}
         {isOpen && (
-          <div className="lg:hidden absolute top-[100%] left-0 w-full bg-[#011533]/95 backdrop-blur-xl rounded-b-xl border border-t-0 border-[#FFF9DD]/15 p-4 flex flex-col gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-50">
+          <div className="mobile-drawer absolute top-[100%] left-0 w-full bg-[#011533]/95 backdrop-blur-xl rounded-b-xl border border-t-0 border-[#FFF9DD]/15 p-4 flex flex-col gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-50">
             {navItems.map((item) => {
               const isActive = activeHash === item.href.replace('/', '');
               return (
