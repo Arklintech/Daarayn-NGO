@@ -6,7 +6,7 @@ import { collection, query, onSnapshot, doc, updateDoc, setDoc, where, addDoc } 
 import { 
   Search, FileText, CheckCircle, Clock, AlertCircle, MessageSquare, 
   Briefcase, X, HelpCircle, Sparkles, UserPlus, Send, Paperclip, 
-  MoreHorizontal, Filter, ArrowLeft, Bell, Users, Smile, Mic, ChevronDown, Settings
+  MoreHorizontal, Filter, ArrowLeft, Bell, Users, Mic, ChevronDown, Settings
 } from "lucide-react";
 import { FieldAgent, FieldReport, FieldMessage, FieldConversation } from "@/lib/db-field-ops";
 import { notifyFieldReport, notifyConversation } from "@/lib/notifications";
@@ -27,6 +27,8 @@ export default function FieldOperationsCenter() {
   const [aiInsights, setAiInsights] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
   // Global Listeners
   useEffect(() => {
@@ -181,6 +183,72 @@ export default function FieldOperationsCenter() {
       alert("Failed to upload file.");
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleToggleRecord = async () => {
+    if (!activeConvId) return;
+
+    if (isRecording && mediaRecorder) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64data = reader.result as string;
+
+          const msg: any = {
+            conversationId: activeConvId,
+            senderId: "Admin_1",
+            senderRole: "Admin",
+            senderName: "Ahmed Khan",
+            text: "🎤 Voice Note",
+            isMedia: true,
+            mediaBase64: base64data,
+            mediaType: "audio/webm",
+            mediaName: "VoiceNote.webm",
+            timestamp: new Date().toISOString()
+          };
+
+          await addDoc(collection(db, "field_messages"), msg);
+
+          await updateDoc(doc(db, "field_conversations", activeConvId), {
+            lastMessage: {
+              text: "🎤 Voice Note",
+              timestamp: new Date().toISOString(),
+              senderRole: "Admin"
+            },
+            unreadCountAgent: 1,
+            updatedAt: new Date().toISOString(),
+            status: "Waiting For Field Agent"
+          });
+        };
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Failed to start voice recording:", err);
+      alert("Could not access microphone. Please check permissions.");
     }
   };
 
@@ -532,6 +600,12 @@ export default function FieldOperationsCenter() {
                                 className="max-w-full max-h-64 rounded-xl object-cover border border-white/10 cursor-pointer"
                                 onClick={() => window.open((msg as any).mediaBase64, '_blank')}
                               />
+                            ) : (msg as any).mediaType?.startsWith("audio/") ? (
+                              <audio
+                                src={(msg as any).mediaBase64}
+                                controls
+                                className="max-w-full rounded-lg outline-none"
+                              />
                             ) : (msg as any).mediaBase64 ? (
                               <a
                                 href={(msg as any).mediaBase64}
@@ -577,8 +651,18 @@ export default function FieldOperationsCenter() {
                       )}
                       <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*,.pdf,.doc,.docx" disabled={isUploading} />
                     </label>
-                    <button type="button" className="p-1.5 hover:text-white rounded-lg hover:bg-white/[0.05] transition"><Smile className="w-4 h-4" /></button>
-                    <button type="button" className="p-1.5 hover:text-white rounded-lg hover:bg-white/[0.05] transition"><Mic className="w-4 h-4" /></button>
+                    <button 
+                      type="button" 
+                      onClick={handleToggleRecord} 
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        isRecording 
+                          ? 'text-red-500 bg-red-500/10 hover:bg-red-500/20 animate-pulse' 
+                          : 'hover:text-white hover:bg-white/[0.05] text-gray-500'
+                      }`}
+                      title={isRecording ? "Stop Recording" : "Record Voice Note"}
+                    >
+                      <Mic className="w-4 h-4" />
+                    </button>
                   </div>
                   <button type="submit" className="p-2 bg-emerald-500 hover:bg-emerald-400 text-black rounded-lg transition flex-shrink-0">
                     <Send className="w-3.5 h-3.5" />

@@ -6,7 +6,7 @@ import { collection, query, where, onSnapshot, doc, addDoc, updateDoc, setDoc } 
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 import { FieldConversation, FieldMessage } from "@/lib/db-field-ops";
 import { notifyConversation } from "@/lib/notifications";
-import { Search, Send, FileText, Settings, Paperclip, MessageSquare, ArrowLeft } from "lucide-react";
+import { Search, Send, FileText, Settings, Paperclip, MessageSquare, ArrowLeft, Mic } from "lucide-react";
 
 export default function AgentMessagesPage() {
   const { agentData, loading } = useFieldAgentAuth();
@@ -17,6 +17,8 @@ export default function AgentMessagesPage() {
   const [newMessage, setNewMessage] = useState("");
   const [isMobileListVisible, setIsMobileListVisible] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
   useEffect(() => {
     if (!agentData?.id) return;
@@ -162,6 +164,74 @@ export default function AgentMessagesPage() {
     }
   };
 
+  const handleToggleRecord = async () => {
+    if (!activeConvId || !agentData) return;
+
+    if (isRecording && mediaRecorder) {
+      mediaRecorder.stop();
+      setIsRecording(false);
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          chunks.push(e.data);
+        }
+      };
+
+      recorder.onstop = async () => {
+        stream.getTracks().forEach(track => track.stop());
+
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64data = reader.result as string;
+
+          const msg: any = {
+            conversationId: activeConvId,
+            senderId: agentData.id,
+            senderRole: "Agent",
+            senderName: agentData.name,
+            text: "🎤 Voice Note",
+            isMedia: true,
+            mediaBase64: base64data,
+            mediaType: "audio/webm",
+            mediaName: "VoiceNote.webm",
+            timestamp: new Date().toISOString()
+          };
+
+          await addDoc(collection(db, "field_messages"), msg);
+
+          await updateDoc(doc(db, "field_conversations", activeConvId), {
+            lastMessage: {
+              text: "🎤 Voice Note",
+              timestamp: new Date().toISOString(),
+              senderRole: "Agent"
+            },
+            unreadCountAdmin: 1,
+            updatedAt: new Date().toISOString(),
+            status: "Waiting For Admin"
+          });
+
+          await notifyConversation.newMessage(activeConvId, agentData.name, "🎤 Voice Note");
+        };
+      };
+
+      recorder.start();
+      setMediaRecorder(recorder);
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Failed to start voice recording:", err);
+      alert("Could not access microphone. Please check permissions.");
+    }
+  };
+
   const handleStartOperationsConv = async () => {
     if (!agentData) return;
     const convId = `CONV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random()*900000)}`;
@@ -266,6 +336,8 @@ export default function AgentMessagesPage() {
                         <div className="flex flex-col gap-2">
                           {msg.isImage && msg.mediaBase64 ? (
                             <img src={msg.mediaBase64} alt={msg.mediaName || "Attachment"} className="max-w-full rounded-lg max-h-48 object-cover border border-black/10" />
+                          ) : msg.mediaType?.startsWith("audio/") ? (
+                            <audio src={msg.mediaBase64} controls className="max-w-full rounded-lg outline-none" />
                           ) : msg.mediaBase64 ? (
                             <a
                               href={msg.mediaBase64}
@@ -308,6 +380,18 @@ export default function AgentMessagesPage() {
                   )}
                   <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*,.pdf,.doc,.docx" disabled={isUploading} />
                 </label>
+                <button
+                  type="button"
+                  onClick={handleToggleRecord}
+                  className={`p-2 transition-colors rounded-lg flex items-center justify-center ${
+                    isRecording 
+                      ? 'text-red-500 bg-red-500/10 hover:bg-red-500/20 animate-pulse' 
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                  title={isRecording ? "Stop Recording" : "Record Voice Note"}
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
                 <input 
                   type="text" 
                   value={newMessage} 
@@ -315,7 +399,7 @@ export default function AgentMessagesPage() {
                   placeholder="Type a message..."
                   className="flex-1 bg-transparent text-[13px] text-white focus:outline-none placeholder:text-gray-600"
                 />
-                <button type="submit" className="p-2 bg-luxury-ivory hover:bg-[#b8860b] text-black rounded-lg transition">
+                <button type="submit" className="p-2 bg-luxury-ivory hover:bg-[#b8860b] text-black rounded-lg transition flex-shrink-0">
                   <Send className="w-4 h-4" />
                 </button>
               </form>
