@@ -70,6 +70,12 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
       }
     }
 
+    if (!auth) {
+      console.warn("Auth module not initialized. Falling back to unauthenticated state.");
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {

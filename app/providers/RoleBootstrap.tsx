@@ -22,6 +22,12 @@ export const RoleBootstrapProvider: React.FC<{ children: React.ReactNode }> = ({
   const router = useRouter();
 
   useEffect(() => {
+    if (!auth) {
+      console.warn("Auth module not initialized. RoleBootstrapProvider falling back.");
+      setIsReady(true);
+      return;
+    }
+
     // Sole unified observer for auth validation and claims propagation
     const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
       setIsReady(false);
