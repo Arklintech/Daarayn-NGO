@@ -26,6 +26,7 @@ export default function FieldOperationsCenter() {
   const [showAIInsights, setShowAIInsights] = useState(false);
   const [aiInsights, setAiInsights] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Global Listeners
   useEffect(() => {
@@ -121,6 +122,66 @@ export default function FieldOperationsCenter() {
       });
       setNewMessage("");
     } catch (err) { console.error(err); }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0 || !activeConvId || !activeAgent) return;
+    const file = e.target.files[0];
+
+    // Cap file size at 4MB
+    const MAX_SIZE = 4 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      alert("File too large. Please send files smaller than 4MB.");
+      e.target.value = '';
+      return;
+    }
+
+    setIsUploading(true);
+
+    try {
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const isImage = file.type.startsWith("image/");
+
+      const msg: any = {
+        conversationId: activeConvId,
+        senderId: "Admin_1",
+        senderRole: "Admin",
+        senderName: "Ahmed Khan",
+        text: `📎 ${file.name}`,
+        isMedia: true,
+        mediaBase64: base64,
+        mediaType: file.type,
+        mediaName: file.name,
+        isImage,
+        timestamp: new Date().toISOString()
+      };
+
+      await addDoc(collection(db, "field_messages"), msg);
+
+      await updateDoc(doc(db, "field_conversations", activeConvId), {
+        lastMessage: {
+          text: `📎 ${file.name}`,
+          timestamp: new Date().toISOString(),
+          senderRole: "Admin"
+        },
+        unreadCountAgent: 1,
+        updatedAt: new Date().toISOString(),
+        status: "Waiting For Field Agent"
+      });
+
+      e.target.value = '';
+    } catch (err) {
+      console.error("File upload error:", err);
+      alert("Failed to upload file.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleApprove = async () => {
@@ -508,7 +569,14 @@ export default function FieldOperationsCenter() {
                     placeholder={`Reply in ${activeConv?.type === 'Report' ? activeConv.reportId : 'Operations'}...`}
                     className="flex-1 bg-transparent text-[12px] text-white focus:outline-none placeholder:text-gray-600 py-1.5" />
                   <div className="flex items-center gap-0.5 text-gray-500">
-                    <button type="button" className="p-1.5 hover:text-white rounded-lg hover:bg-white/[0.05] transition"><Paperclip className="w-4 h-4" /></button>
+                    <label className={`p-1.5 hover:text-white rounded-lg hover:bg-white/[0.05] transition cursor-pointer flex items-center justify-center ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                      {isUploading ? (
+                        <div className="w-4 h-4 rounded-full border-2 border-gray-500 border-t-white animate-spin" />
+                      ) : (
+                        <Paperclip className="w-4 h-4" />
+                      )}
+                      <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*,.pdf,.doc,.docx" disabled={isUploading} />
+                    </label>
                     <button type="button" className="p-1.5 hover:text-white rounded-lg hover:bg-white/[0.05] transition"><Smile className="w-4 h-4" /></button>
                     <button type="button" className="p-1.5 hover:text-white rounded-lg hover:bg-white/[0.05] transition"><Mic className="w-4 h-4" /></button>
                   </div>
