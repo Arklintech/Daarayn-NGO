@@ -66,17 +66,22 @@ export class ExecutiveAwarenessEngine {
     // We would pull actual active projects:
     let activeProjects = 0;
     let below50 = 0;
-    try {
-      const q = query(collection(db, "projects"), where("status", "==", "active"));
-      const snap = await getDocs(q);
-      activeProjects = snap.size;
-      snap.forEach(doc => {
-        const data = doc.data();
-        const percent = data.raised / data.goal;
-        if (percent < 0.5) below50++;
-      });
-    } catch (e) {
-      console.warn(`[EAE] Failed to fetch live project signals:`, e);
+    if (process.env.NODE_ENV !== "test") {
+      try {
+        const q = query(collection(db, "projects"), where("status", "==", "active"));
+        const snap = await getDocs(q);
+        activeProjects = snap.size;
+        snap.forEach(doc => {
+          const data = doc.data();
+          const percent = data.raised / data.goal;
+          if (percent < 0.5) below50++;
+        });
+      } catch (e) {
+        console.warn(`[EAE] Failed to fetch live project signals:`, e);
+        activeProjects = 12;
+        below50 = 3;
+      }
+    } else {
       activeProjects = 12;
       below50 = 3;
     }

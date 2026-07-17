@@ -27,7 +27,7 @@ export default function PublicAssistant() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Assalamu Alaikum. I am the **Daarayn Public Trust Assistant**, your helper for transparency, project updates, and public ledger audits. How can I assist you with your charitable tracking today?"
+      content: "Assalamu Alaikum. I am the **Daarayn Foundation Assistant**, your helper for transparency, project updates, and public ledger audits. How can I assist you with your giving tracking today?"
     }
   ]);
   const [inputValue, setInputValue] = useState("");
@@ -126,7 +126,7 @@ export default function PublicAssistant() {
             <img src="/brand logo1.png" alt="Daarayn Logo" className="w-8 h-8 object-contain" />
             <div>
               <h1 className="text-sm font-semibold tracking-[0.25em] font-playfair text-white">DAARAYN</h1>
-              <span className="text-[8px] font-semibold text-luxury-ivory uppercase tracking-widest block -mt-0.5">Public Trust Portal</span>
+              <span className="text-[8px] font-semibold text-luxury-ivory uppercase tracking-widest block -mt-0.5">Foundation Portal</span>
             </div>
           </Link>
           

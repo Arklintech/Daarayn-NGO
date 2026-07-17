@@ -1,7 +1,7 @@
 {
   "name": "ngo",
   "version": "1.0.0",
-  "description": "Daarayn Public Foundation Trust",
+  "description": "Daarayn Foundation",
   "main": "server.js",
   "scripts": {
     "dev": "next dev",

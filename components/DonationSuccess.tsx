@@ -315,15 +315,15 @@ export default function DonationSuccess({ trackingId, amount, selectedCauses }: 
             "O Allah, accept this charity, place barakah in our wealth, forgive our shortcomings, and make this contribution a source of continuous reward in this life and the Hereafter. Āmīn."
           </div>
 
-          <a href="/#ledger" className="ds-cta">
+          <Link href="/#ledger" className="ds-cta">
             Track contribution
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1A1406" strokeWidth="2.2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-          </a>
+          </Link>
         </div>
       </motion.div>
 
       <motion.div variants={itemVariants}>
-        <a href="/" className="ds-home-link">Return to home</a>
+        <Link href="/" className="ds-home-link">Return to home</Link>
 
         <div className="ds-footer">
           Thank you for placing your trust in <strong className="ds-strong">Daarayn Foundation</strong>.<br/>

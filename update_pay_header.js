@@ -11,7 +11,7 @@ const newHeader = `  <div class="daarayn-navbar-container" style="position: rela
         <img src="./brand logo1.png" alt="Daarayn Aid Logo" class="daarayn-logo-icon" style="width: 56px; height: 56px; object-fit: contain;" />
         <div class="daarayn-logo-text" style="display: flex; flex-direction: column;">
           <span class="daarayn-logo-title" style="font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 600; letter-spacing: 0.5px; color: #fff; line-height: 1.1;">DAARAYN</span>
-          <span class="daarayn-logo-subtitle" style="font-size: 10px; font-weight: 300; letter-spacing: 1.5px; color: rgba(255, 255, 255, 0.7); text-transform: uppercase;">PUBLIC FOUNDATION TRUST</span>
+          <span class="daarayn-logo-subtitle" style="font-size: 10px; font-weight: 300; letter-spacing: 1.5px; color: rgba(255, 255, 255, 0.7); text-transform: uppercase;">FOUNDATION</span>
         </div>
       </a>
 

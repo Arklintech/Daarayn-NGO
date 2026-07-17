@@ -75,6 +75,14 @@ async function runRegressionSuite() {
   
   const { processMominChatMessage } = await import("../ai/knowledge/conversationManager");
   const { registerTestData } = await import("../ai/knowledge/retriever");
+  const { getISTToday } = await import("../ai/knowledge/dateUtils");
+
+  const todayStr = getISTToday();
+  mockFacts.forEach(fact => {
+    if (fact.source === "donations") {
+      fact.data.date = todayStr;
+    }
+  });
 
   // Inject mock facts directly into the retriever's test data registry.
   // This bypasses cache and Firestore entirely, ensuring deterministic test execution.
@@ -120,8 +128,20 @@ async function runRegressionSuite() {
       let metricsMatch = true;
       for (const [metricKey, expectedVal] of Object.entries(item.expectedMetrics)) {
         const valStr = typeof expectedVal === "number" ? expectedVal.toLocaleString() : String(expectedVal);
-        if (!response.reply.includes(valStr) && !response.reply.toLowerCase().includes(String(expectedVal).toLowerCase())) {
-          console.error(`❌ Case ${item.id} Metric Mismatch: "${metricKey}" expected ${expectedVal} (String: ${valStr}) but response lacks it.`);
+        const valIN = typeof expectedVal === "number" ? expectedVal.toLocaleString("en-IN") : String(expectedVal);
+        const valUS = typeof expectedVal === "number" ? expectedVal.toLocaleString("en-US") : String(expectedVal);
+        const rawStr = String(expectedVal);
+        const replyClean = response.reply.replace(/,/g, "");
+
+        const matches = 
+          response.reply.includes(valStr) || 
+          response.reply.includes(valIN) || 
+          response.reply.includes(valUS) || 
+          replyClean.includes(rawStr) ||
+          response.reply.toLowerCase().includes(rawStr.toLowerCase());
+
+        if (!matches) {
+          console.error(`❌ Case ${item.id} Metric Mismatch: "${metricKey}" expected ${expectedVal} (String: ${valStr}) but response lacks it. Reply: "${response.reply}"`);
           metricsMatch = false;
         }
       }

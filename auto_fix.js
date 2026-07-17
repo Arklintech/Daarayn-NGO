@@ -55,7 +55,7 @@ while (fixedSomething && iterations < 150) {
     
     if (fileModified) {
       fs.writeFileSync(filePath, contentLines.join('\n'));
-      console.log(\`Fixed errors in \${file}\`);
+      console.log(`Fixed errors in ${file}`);
     }
   }
 }

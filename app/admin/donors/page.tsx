@@ -12,6 +12,14 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
+// Section Header Component
+const SectionHeader = ({ title, icon: Icon }: { title: string, icon?: any }) => (
+  <div className="flex items-center gap-2 mb-4 mt-8">
+    {Icon && <Icon className="w-4 h-4 text-gray-400" />}
+    <h3 className="text-[11px] font-semibold tracking-[0.2em] text-gray-400 uppercase">{title}</h3>
+  </div>
+);
+
 export default function AdminDonors() {
   const router = useRouter();
   
@@ -147,14 +155,6 @@ export default function AdminDonors() {
     const average = totalDonations > 0 ? lifetime / totalDonations : 0;
     return { total, newDonors, returning, lifetime, average };
   }, [filteredDonors]);
-
-  // Section Header Component
-  const SectionHeader = ({ title, icon: Icon }: { title: string, icon?: any }) => (
-    <div className="flex items-center gap-2 mb-4 mt-8">
-      {Icon && <Icon className="w-4 h-4 text-gray-400" />}
-      <h3 className="text-[11px] font-semibold tracking-[0.2em] text-gray-400 uppercase">{title}</h3>
-    </div>
-  );
 
   const handleQuickAction = (actionLabel: string) => {
     if (actionLabel === 'Add Donor') {

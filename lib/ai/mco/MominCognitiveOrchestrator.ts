@@ -526,16 +526,18 @@ Capabilities: I naturally support universal conversations including Mission, Str
       logStage("AI Completions", "✓", stageStart);
       logStage("Response Governance", "✓", stageStart);
 
-      try {
-        await setDoc(doc(db, "momin_conversations_history", `MOMIN-CHAT-${Date.now()}`), {
-          requestId, department: routing.department, prompt: message, normalizedPrompt: normalizedMessage,
-          response: replyText, timestamp: new Date().toISOString(), model: "Deterministic-Backend-Route",
-          user: userId || "anonymous", contextUsed: optimizedContext.contextText, referencedCollections: allowedCollections,
-          pipelineStages: stages, governanceStatus: "Verified", confidenceScore: 100,
-          mcoObjective: administratorObjective.trueObjective, mcoThinkingPlan: thinkingPlan.planId,
-          mcoReasoningVerdict: reasoningResult.verdict
-        });
-      } catch (_) {}
+      if (process.env.NODE_ENV !== "test") {
+        try {
+          await setDoc(doc(db, "momin_conversations_history", `MOMIN-CHAT-${Date.now()}`), {
+            requestId, department: routing.department, prompt: message, normalizedPrompt: normalizedMessage,
+            response: replyText, timestamp: new Date().toISOString(), model: "Deterministic-Backend-Route",
+            user: userId || "anonymous", contextUsed: optimizedContext.contextText, referencedCollections: allowedCollections,
+            pipelineStages: stages, governanceStatus: "Verified", confidenceScore: 100,
+            mcoObjective: administratorObjective.trueObjective, mcoThinkingPlan: thinkingPlan.planId,
+            mcoReasoningVerdict: reasoningResult.verdict
+          });
+        } catch (_) {}
+      }
 
       return {
         success: true,
@@ -719,10 +721,14 @@ You MUST output your response as a valid JSON object with the following exact sc
           executiveValueAddition: reasoningResult.executiveValueAddition
         }
       };
-      await setDoc(doc(db, "momin_conversations_history", conversationId), JSON.parse(JSON.stringify(historyData)));
-      logStage("Audit Trail Log", "✓", stageStart);
+      if (process.env.NODE_ENV !== "test") {
+        await setDoc(doc(db, "momin_conversations_history", conversationId), JSON.parse(JSON.stringify(historyData)));
+        logStage("Audit Trail Log", "✓", stageStart);
+      }
     } catch (logError) {
-      logStage("Audit Trail Log", "✗", stageStart, (logError as Error).message);
+      if (process.env.NODE_ENV !== "test") {
+        logStage("Audit Trail Log", "✗", stageStart, (logError as Error).message);
+      }
     }
 
     const totalDuration = Date.now() - pipelineStart;

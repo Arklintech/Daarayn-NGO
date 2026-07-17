@@ -108,26 +108,28 @@ ${finalResponseText}
         };
 
         // Persist to Firestore: momin_evolution
-        try {
-          await setDoc(doc(db, "momin_evolution", evolutionRecord.id), evolutionRecord);
-          console.log(`[ERL] Saved evolution record to Firestore: ${evolutionRecord.id}`);
-          
-          if (parsed.actionableInitiative && parsed.actionableInitiative.title) {
-            const initiativeRecord = {
-              id: `INIT-${Date.now()}`,
-              evolutionId: evolutionRecord.id,
-              timestamp: new Date().toISOString(),
-              domain: evolutionRecord.domain,
-              title: parsed.actionableInitiative.title,
-              draftContent: parsed.actionableInitiative.draftContent,
-              targetAudience: parsed.actionableInitiative.targetAudience,
-              status: "pending_review"
-            };
-            await setDoc(doc(db, "momin_initiatives", initiativeRecord.id), initiativeRecord);
-            console.log(`[ERL] Saved proactive initiative draft to Firestore: ${initiativeRecord.id}`);
+        if (process.env.NODE_ENV !== "test") {
+          try {
+            await setDoc(doc(db, "momin_evolution", evolutionRecord.id), evolutionRecord);
+            console.log(`[ERL] Saved evolution record to Firestore: ${evolutionRecord.id}`);
+            
+            if (parsed.actionableInitiative && parsed.actionableInitiative.title) {
+              const initiativeRecord = {
+                id: `INIT-${Date.now()}`,
+                evolutionId: evolutionRecord.id,
+                timestamp: new Date().toISOString(),
+                domain: evolutionRecord.domain,
+                title: parsed.actionableInitiative.title,
+                draftContent: parsed.actionableInitiative.draftContent,
+                targetAudience: parsed.actionableInitiative.targetAudience,
+                status: "pending_review"
+              };
+              await setDoc(doc(db, "momin_initiatives", initiativeRecord.id), initiativeRecord);
+              console.log(`[ERL] Saved proactive initiative draft to Firestore: ${initiativeRecord.id}`);
+            }
+          } catch (dbErr) {
+            console.error(`[ERL] Failed to persist evolution or initiative record:`, dbErr);
           }
-        } catch (dbErr) {
-          console.error(`[ERL] Failed to persist evolution or initiative record:`, dbErr);
         }
 
         console.log(`\n==================================================`);

@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, CollectionReference, DocumentData } from "firebase/firestore";
+import { getFirestore, collection, CollectionReference, DocumentData, disableNetwork } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
@@ -19,6 +19,10 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // Initialize services
 const db = getFirestore(app);
+
+if (process.env.NODE_ENV === "test") {
+  disableNetwork(db).catch(() => {});
+}
 
 // Auth initialization may fail with mock API keys in test environments.
 // We wrap it to allow the module to load safely; auth will be null in those cases.

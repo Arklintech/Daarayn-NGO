@@ -21,10 +21,10 @@ export default function AdminContent() {
 
   // Homepage CMS state
   const [homepageState, setHomepageState] = useState({
-    heroTitle: "Transparent and Impactful Charity",
+    heroTitle: "Transparent and Impactful Giving",
     heroSubtitle: "Contribute with full accountability. Every rupee is recorded in our public ledger, verified, and mapped directly to beneficiaries.",
     mission: "Empowering rural and underprivileged communities through education, primary medical relief, and clean water infrastructure.",
-    vision: "A transparent and accountable charitable trust where every donor can track their contributions in real-time.",
+    vision: "A transparent and accountable foundation where every donor can track their contributions in real-time.",
     statVolunteers: 25,
     statWaterWells: 9,
     statLedgerVerified: 12

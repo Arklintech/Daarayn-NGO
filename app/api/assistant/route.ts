@@ -1,7 +1,7 @@
 /**
  * app/api/assistant/route.ts
  *
- * API route for the Public Trust Assistant.
+ * API route for the Daarayn Assistant.
  * Serves website visitors using standard guest / public permissions constraints.
  */
 

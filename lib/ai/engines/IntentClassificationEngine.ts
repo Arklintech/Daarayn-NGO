@@ -436,6 +436,16 @@ export class IntentClassificationEngine {
         queryLower.includes("education") || queryLower.includes("orphan") || queryLower.includes("water") ||
         queryLower.includes("masjid") || entities.programName);
 
+    const isTopDonorQuery = 
+      queryLower.includes("primary donor") ||
+      queryLower.includes("top donor") ||
+      queryLower.includes("generous donor") ||
+      queryLower.includes("highest contributing") ||
+      queryLower.includes("highest active donor") ||
+      queryLower.includes("most generous") ||
+      queryLower.includes("donated the most") ||
+      queryLower.includes("who donated the most");
+
     const asksAboutSpecificDonor =
       !entities.isExecutiveAnalysis &&
       !entities.wantsAllocationAudit &&
@@ -473,6 +483,9 @@ export class IntentClassificationEngine {
     } else if (entities.wantsStrategicActions) {
       intent = "strategicPlanning";
       confidence = 0.94;
+    } else if (isTopDonorQuery) {
+      intent = "donorIntelligence";
+      confidence = 0.96;
     } else if (entities.wantsExecutiveDonorAnalysis) {
       intent = "donorIntelligence";
       confidence = 0.93;

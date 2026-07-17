@@ -22,9 +22,9 @@ export default function AdminSettings() {
 
   // SEO metadata settings
   const [metaState, setMetaState] = useState({
-    siteName: "Daarayn Aid – Public Foundation Trust",
-    description: "Daarayn Aid — Public Foundation Trust. Contribute with full accountability: public ledger, verified distribution, and trackable impact.",
-    seoKeywords: "Charity, NGO, Islamic Trust, Public Ledger, India, Maharashtra, Sadaqah, Zakat",
+    siteName: "Daarayn Foundation",
+    description: "Daarayn Foundation. Contribute with full accountability: public ledger, verified distribution, and trackable impact.",
+    seoKeywords: "Daarayn Foundation, Public Ledger, India, Maharashtra, Sadaqah, Zakat",
     socialTwitter: "https://twitter.com/daaraynorg",
     socialFb: "https://facebook.com/daaraynorg"
   });

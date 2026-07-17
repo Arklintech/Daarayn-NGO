@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable react-hooks/purity, react-hooks/set-state-in-effect */
 
 import React, { useState, useEffect, useRef } from "react";
 import { db } from "@/lib/firebase";

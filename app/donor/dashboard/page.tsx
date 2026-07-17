@@ -110,7 +110,7 @@ export default function DonorDashboard() {
     const docTitle = type === "tax" ? "OFFICIAL TAX BENEFIT RECEIPT" : "VERIFIED IMPACT DIPLOMA";
     
     const content = `=====================================================
-DAARAYN AID PUBLIC FOUNDATION TRUST
+DAARAYN FOUNDATION
 =====================================================
 ${docTitle}
 
