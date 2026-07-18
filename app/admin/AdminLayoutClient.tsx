@@ -58,7 +58,8 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     return () => unsub();
   }, [user]);
 
-    // Register single root service worker
+  // Register single root service worker
+  React.useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(err => {
         console.error('Service Worker registration failed: ', err);
