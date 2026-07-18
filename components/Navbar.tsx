@@ -102,7 +102,7 @@ export default function Navbar() {
         </Link>
 
         {/* Center: Navigation Links (Desktop) */}
-        <div className="hidden lg:flex flex-1 justify-between items-center z-10 ml-[2vw] xl:ml-[6vw]" style={{ zIndex: 10 }}>
+        <div className="hidden lg:flex items-center gap-[16px] lg:gap-[20px] xl:gap-[32px] z-10 ml-auto" style={{ zIndex: 10 }}>
           {navItems.map((item) => {
             const isActive = activeHash === item.href.replace('/', '');
             return (
