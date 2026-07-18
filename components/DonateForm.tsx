@@ -50,10 +50,11 @@ interface DonateFormProps {
   initialAmount?: string;
   initialCurrency?: string;
   initialCause?: string;
+  hideCausesGrid?: boolean;
   onSuccess?: (data: any) => void;
 }
 
-export default function DonateForm({ initialAmount = '', initialCurrency = 'INR', initialCause = '', onSuccess }: DonateFormProps) {
+export default function DonateForm({ initialAmount = '', initialCurrency = 'INR', initialCause = '', hideCausesGrid = false, onSuccess }: DonateFormProps) {
   const [loading, setLoading] = useState(false);
   const [successData, setSuccessData] = useState<any>(null);
   const [error, setError] = useState('');
@@ -235,7 +236,7 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
       <input type="hidden" name="currency" value={initialCurrency} />
 
       {/* Cause Selection Section */}
-      {initialCause === 'Contribution' && (
+      {!hideCausesGrid && (
         <motion.div variants={itemVariants} className="space-y-3">
         <div>
           <h3 style={{ fontSize: '1.1rem', color: '#fff', fontFamily: 'var(--font-playfair)', marginBottom: '4px' }}>Choose Where Your Contribution Goes</h3>

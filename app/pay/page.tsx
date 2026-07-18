@@ -12,13 +12,14 @@ export default async function PayPage({
   const amount = (resolvedSearchParams?.amt as string) || '';
   const currency = (resolvedSearchParams?.cur as string) || 'INR';
   const cause = (resolvedSearchParams?.cause as string) || 'Contribution';
+  const source = (resolvedSearchParams?.source as string) || '';
 
   return (
     <main className="main-home-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Navbar />
 
       <section className="donate-section" style={{ paddingTop: '140px', flex: 1, paddingBottom: '80px' }}>
-        <PayPageLayout amount={amount} currency={currency} cause={cause} />
+        <PayPageLayout amount={amount} currency={currency} cause={cause} source={source} />
       </section>
 
       <Footer />

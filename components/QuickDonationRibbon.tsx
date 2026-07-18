@@ -101,7 +101,7 @@ export default function QuickDonationRibbon() {
         <button 
           type="button"
           className="daarayn-ribbon-donate-btn" 
-          onClick={() => window.location.href = `/pay?amt=${amount}&cur=${currency}&cause=${encodeURIComponent(cause)}`}
+          onClick={() => window.location.href = `/pay?amt=${amount}&cur=${currency}&cause=${encodeURIComponent(cause)}&source=ribbon`}
         >
           Quick Donation <ArrowRightIcon />
         </button>

@@ -5,7 +5,7 @@ import DonateForm from '@/components/DonateForm';
 import DonationSuccess from '@/components/DonationSuccess';
 import { ShieldCheck, Lock, CheckCircle2 } from 'lucide-react';
 
-export default function PayPageLayout({ amount, currency, cause }: { amount: string, currency: string, cause: string }) {
+export default function PayPageLayout({ amount, currency, cause, source }: { amount: string, currency: string, cause: string, source?: string }) {
   const [successData, setSuccessData] = useState<any>(null);
 
   if (successData) {
@@ -34,6 +34,7 @@ export default function PayPageLayout({ amount, currency, cause }: { amount: str
           initialAmount={amount} 
           initialCurrency={currency} 
           initialCause={cause} 
+          hideCausesGrid={source === 'ribbon'}
           onSuccess={setSuccessData}
         />
       </div>
