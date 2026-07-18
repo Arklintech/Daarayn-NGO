@@ -12,14 +12,15 @@ export async function GET() {
     theme_color: '#d4af37',
     icons: [
       {
-        src: '/icon-192.png',
+        src: '/icons/icon-192.png',
         sizes: '192x192',
         type: 'image/png',
       },
       {
-        src: '/icon-512.png',
+        src: '/icons/icon-512-maskable.png',
         sizes: '512x512',
         type: 'image/png',
+        purpose: 'maskable'
       },
     ],
   });
