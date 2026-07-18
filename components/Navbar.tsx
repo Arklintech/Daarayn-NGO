@@ -83,26 +83,26 @@ export default function Navbar() {
               alt="Daarayn Logo" 
               width={60} 
               height={60}
-              className="lg:w-[80px] lg:h-[80px]"
+              className="lg:w-[60px] xl:w-[80px] lg:h-[60px] xl:h-[80px]"
               onError={(e: any) => { e.currentTarget.src = '/brand logo .png' }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '18px', fontWeight: 400, letterSpacing: '2px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }} className="lg:text-[24px]">
+              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '18px', fontWeight: 400, letterSpacing: '2px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }} className="lg:text-[20px] xl:text-[24px]">
                 DAARAYN
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }} className="lg:gap-[8px]">
-                <span style={{ display: 'block', width: '12px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[24px]" />
-                <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '9px', fontWeight: 300, letterSpacing: '1.5px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }} className="lg:text-[11px] lg:tracking-[2px]">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }} className="lg:gap-[6px] xl:gap-[8px]">
+                <span style={{ display: 'block', width: '12px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[16px] xl:w-[24px]" />
+                <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '9px', fontWeight: 300, letterSpacing: '1.5px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }} className="lg:text-[10px] xl:text-[11px] lg:tracking-[1.5px] xl:tracking-[2px]">
                   FOUNDATION
                 </span>
-                <span style={{ display: 'block', width: '12px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[24px]" />
+                <span style={{ display: 'block', width: '12px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[16px] xl:w-[24px]" />
               </div>
             </div>
           </motion.div>
         </Link>
 
         {/* Center: Navigation Links (Desktop) */}
-        <div className="hidden lg:flex items-center gap-[12px] z-10" style={{ zIndex: 10 }}>
+        <div className="hidden lg:flex items-center gap-[4px] xl:gap-[12px] z-10" style={{ zIndex: 10 }}>
           {navItems.map((item) => {
             const isActive = activeHash === item.href.replace('/', '');
             return (
@@ -124,15 +124,15 @@ export default function Navbar() {
                       window.history.pushState(null, '', item.href);
                     }
                   }}
+                  className="px-[8px] xl:px-[16px] py-[8px] text-[12px] xl:text-[14px]"
                   style={{
-                    padding: '8px 16px',
-                    fontSize: '14px',
                     fontWeight: isActive ? 500 : 400,
                     color: isActive ? '#FFF9DD' : '#fff',
                     textDecoration: 'none',
                     display: 'block',
                     transition: 'color 0.3s ease',
-                    textShadow: hoveredPath === item.href ? '0 0 8px rgba(255, 249, 221, 0.4)' : 'none'
+                    textShadow: hoveredPath === item.href ? '0 0 8px rgba(255, 249, 221, 0.4)' : 'none',
+                    whiteSpace: 'nowrap'
                   }}
                 >
                   <motion.span
