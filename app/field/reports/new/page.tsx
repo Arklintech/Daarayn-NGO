@@ -142,7 +142,7 @@ export default function NewReportWizard() {
       
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Link href="/agent/dashboard" className="p-2 admin-glass border border-white/[0.08] rounded-xl hover:bg-white/[0.04]">
+        <Link href="/field/dashboard" className="p-2 admin-glass border border-white/[0.08] rounded-xl hover:bg-white/[0.04]">
           <ArrowLeft className="w-4 h-4 text-gray-400" />
         </Link>
         <h2 className="text-lg font-bold text-luxury-gold font-playfair uppercase">New Assessment</h2>
@@ -352,7 +352,7 @@ export default function NewReportWizard() {
           </div>
           <h2 className="text-2xl font-bold text-white font-playfair uppercase tracking-wide mb-2">Report Submitted!</h2>
           <p className="text-sm text-gray-400 mb-8 max-w-[250px]">Your field assessment has been successfully logged and sent to the Command Center.</p>
-          <Link href="/agent/dashboard">
+          <Link href="/field/dashboard">
             <button className="px-8 py-3.5 rounded-xl bg-white/[0.05] border border-white/[0.1] text-white font-bold hover:bg-white/[0.1] transition">
               Return to Dashboard
             </button>

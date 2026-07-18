@@ -12,21 +12,21 @@ import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const navItems = [
-  { name: "Dashboard", href: "/agent/dashboard", icon: Home },
-  { name: "My Reports", href: "/agent/reports", icon: FileText },
-  { name: "New Need", href: "/agent/reports/new", icon: PlusCircle },
-  { name: "Messages", href: "/agent/messages", icon: MessageSquare },
-  { name: "Alerts", href: "/agent/notifications", icon: Bell },
-  { name: "Profile", href: "/agent/profile", icon: User },
-  { name: "Help", href: "/agent/help", icon: HelpCircle },
+  { name: "Dashboard", href: "/field/dashboard", icon: Home },
+  { name: "My Reports", href: "/field/reports", icon: FileText },
+  { name: "New Need", href: "/field/reports/new", icon: PlusCircle },
+  { name: "Messages", href: "/field/messages", icon: MessageSquare },
+  { name: "Alerts", href: "/field/notifications", icon: Bell },
+  { name: "Profile", href: "/field/profile", icon: User },
+  { name: "Help", href: "/field/help", icon: HelpCircle },
 ];
 
 const mobileNavItems = [
-  { name: "Home", href: "/agent/dashboard", icon: Home },
-  { name: "Reports", href: "/agent/reports", icon: FileText },
-  { name: "New Need", href: "/agent/reports/new", icon: PlusCircle },
-  { name: "Messages", href: "/agent/messages", icon: MessageSquare },
-  { name: "Profile", href: "/agent/profile", icon: User },
+  { name: "Home", href: "/field/dashboard", icon: Home },
+  { name: "Reports", href: "/field/reports", icon: FileText },
+  { name: "New Need", href: "/field/reports/new", icon: PlusCircle },
+  { name: "Messages", href: "/field/messages", icon: MessageSquare },
+  { name: "Profile", href: "/field/profile", icon: User },
 ];
 
 function AgentNavigation({ children }: { children: React.ReactNode }) {
@@ -66,10 +66,10 @@ function AgentNavigation({ children }: { children: React.ReactNode }) {
   }, [agentData?.id]);
 
   const isActiveLink = (href: string) =>
-    href === "/agent/dashboard"
-      ? pathname === "/agent/dashboard"
-      : href === "/agent/reports"
-      ? pathname === "/agent/reports"
+    href === "/field/dashboard"
+      ? pathname === "/field/dashboard"
+      : href === "/field/reports"
+      ? pathname === "/field/reports"
       : pathname.startsWith(href);
 
   const getBadgeCount = (name: string) => {
@@ -235,9 +235,9 @@ function AgentNavigation({ children }: { children: React.ReactNode }) {
 
 export default function AgentLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isLoginPage = pathname === "/agent/login" || pathname === "/agent";
+  const isLoginPage = pathname === "/field/login" || pathname === "/field";
 
-  // Inject PWA Manifest for Agent
+  // Inject PWA Manifest for Agent & Register SW
   useEffect(() => {
     let link = document.querySelector("link[rel~='manifest']") as HTMLLinkElement;
     if (!link) {
@@ -245,7 +245,14 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
       link.rel = 'manifest';
       document.head.appendChild(link);
     }
-    link.href = '/api/manifest/agent';
+    link.href = '/field/manifest.webmanifest';
+
+    // Register single root service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(err => {
+        console.error('Service Worker registration failed: ', err);
+      });
+    }
   }, []);
 
   if (isLoginPage) {

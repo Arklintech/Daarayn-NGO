@@ -89,7 +89,7 @@ export default function MyReportsPage() {
             {filter === "All" ? "You haven't submitted any reports yet." : `No reports with status "${filter}".`}
           </p>
           <Link
-            href="/agent/reports/new"
+            href="/field/reports/new"
             className="px-5 py-2 bg-gradient-to-r from-luxury-gold to-[#b8860b] text-black text-sm font-bold rounded-xl"
           >
             Submit First Report
@@ -102,7 +102,7 @@ export default function MyReportsPage() {
             return (
               <Link
                 key={report.id}
-                href={`/agent/reports/${report.id}`}
+                href={`/field/reports/${report.id}`}
                 className="block admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group"
               >
                 <div className="flex items-start gap-4">

@@ -49,7 +49,7 @@ export default function AgentLogin() {
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    if (user && agentData && !authLoading) router.push("/agent/dashboard");
+    if (user && agentData && !authLoading) router.push("/field/dashboard");
   }, [user, agentData, authLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -61,7 +61,7 @@ export default function AgentLogin() {
         const snap = await getDocs(query(collection(db, "field_agents"), where("email", "==", email.toLowerCase())));
         if (!snap.empty) {
           localStorage.setItem("demoAgent", JSON.stringify(snap.docs[0].data()));
-          window.location.href = "/agent/dashboard";
+          window.location.href = "/field/dashboard";
           return;
         }
         setError("Agent not found. Contact your supervisor.");
@@ -81,7 +81,7 @@ export default function AgentLogin() {
              if (agentDoc.rawPassword === password) {
                 // Successful fallback login using Firestore
                 localStorage.setItem("demoAgent", JSON.stringify(agentDoc));
-                window.location.href = "/agent/dashboard";
+                window.location.href = "/field/dashboard";
                 return;
              }
            }
@@ -123,7 +123,7 @@ export default function AgentLogin() {
       ══════════════════════════════════ */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
-          src="/agent login background.png" 
+          src="/field login background.png" 
           alt="Daarayn Background" 
           className="w-full h-full object-cover object-center filter brightness-[0.7]" 
         />

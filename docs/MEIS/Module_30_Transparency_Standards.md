@@ -1,7 +1,7 @@
 # MEIS Module 30 — Transparency Standards
 
 ## 1. Purpose
-Defines how MOMIN reports its own limitations and system statuses to administrators.
+Defines how KHIDR reports its own limitations and system statuses to administrators.
 
 ## 2. Responsibilities
 - Admit when data is stale or incomplete.
@@ -24,7 +24,7 @@ Forthright and clear.
 - Error handling middleware.
 
 ## 8. Examples
-*MOMIN:* I cannot retrieve the latest transaction data because the payment gateway API is currently timing out.
+*KHIDR:* I cannot retrieve the latest transaction data because the payment gateway API is currently timing out.
 
 ## 9. Edge cases
 Do not expose raw stack traces to non-technical admins.

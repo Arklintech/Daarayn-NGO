@@ -154,20 +154,8 @@ export async function POST(request: NextRequest) {
         status: "pending"
       });
 
-      if (donorContact) {
-        try {
-          await sendDonationEmail({
-            trackingId: trackingId,
-            donorName: donorName || 'Generous Donor',
-            donorEmail: donorContact,
-            amount: numAmount,
-            causes: selectedCauses,
-            date: formattedDate
-          });
-        } catch (emailErr) {
-          console.error("Failed to send email:", emailErr);
-        }
-      }
+      // Email sending moved to execute regardless of DIDMS database success
+      // ...
       // Publish notification for this donation
       const isDonorNew = donor.totalDonations <= 1;
       const isLarge = numAmount >= 50000;
@@ -190,6 +178,22 @@ export async function POST(request: NextRequest) {
 
     } catch (didmsErr: any) {
       console.warn("DIDMS auto-sync skipped during payment session:", didmsErr.message);
+    }
+
+    // Always attempt to send email, even if DIDMS fails (which often happens in dev mode without Admin SDK)
+    if (donorContact) {
+      try {
+        await sendDonationEmail({
+          trackingId: trackingId,
+          donorName: donorName || 'Generous Donor',
+          donorEmail: donorContact,
+          amount: numAmount,
+          causes: selectedCauses,
+          date: formattedDate
+        });
+      } catch (emailErr) {
+        console.error("Failed to send email:", emailErr);
+      }
     }
 
     return NextResponse.json({ success: true, trackingId: trackingId });

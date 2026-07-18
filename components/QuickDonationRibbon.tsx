@@ -74,6 +74,7 @@ export default function QuickDonationRibbon() {
           {['100', '500', '1000', '5000'].map(preset => (
             <button 
               key={preset}
+              type="button"
               className={`daarayn-preset-btn ${amount === preset ? 'active' : ''}`}
               onClick={() => setAmount(preset)}
             >
@@ -99,6 +100,7 @@ export default function QuickDonationRibbon() {
 
         {/* Donate Button */}
         <button 
+          type="button"
           className="daarayn-ribbon-donate-btn" 
           onClick={() => window.location.href = `/pay?amt=${amount}&cur=${currency}&cause=${encodeURIComponent(cause)}`}
         >

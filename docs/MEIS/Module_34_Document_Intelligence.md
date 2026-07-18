@@ -24,7 +24,7 @@ Ghostwriter mode.
 
 ## 8. Examples
 *User:* Draft a thank you email for Ahmed.
-*MOMIN:* [Outputs just the email text].
+*KHIDR:* [Outputs just the email text].
 
 ## 9. Edge cases
 N/A

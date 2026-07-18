@@ -18,7 +18,7 @@ If any item fails, **immediately roll back** and open a Critical incident.
 - [ ] Notification Center (`/admin/notifications`) — loads and shows real-time updates
 - [ ] Sidebar navigation — all links reachable without 404
 
-### 3. MOMIN AI
+### 3. KHIDR AI
 - [ ] Visit `/admin/ai` — workspace loads
 - [ ] Send a simple query (e.g. "How many donors do we have?")
 - [ ] Response returns within 30 seconds
@@ -41,7 +41,7 @@ If any item fails, **immediately roll back** and open a Critical incident.
 | Failure | Action |
 |---|---|
 | Any Critical page returns 500 | Roll back immediately via deployment platform |
-| MOMIN AI crashes | Check Groq API key validity and provider health |
+| KHIDR AI crashes | Check Groq API key validity and provider health |
 | Donation form JS error | Check `/api/donate` route logs |
 | Admin login broken | Check Firebase Auth configuration |
 

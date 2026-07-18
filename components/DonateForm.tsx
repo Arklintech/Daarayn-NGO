@@ -235,7 +235,8 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
       <input type="hidden" name="currency" value={initialCurrency} />
 
       {/* Cause Selection Section */}
-      <motion.div variants={itemVariants} className="space-y-3">
+      {initialCause === 'Contribution' && (
+        <motion.div variants={itemVariants} className="space-y-3">
         <div>
           <h3 style={{ fontSize: '1.1rem', color: '#fff', fontFamily: 'var(--font-playfair)', marginBottom: '4px' }}>Choose Where Your Contribution Goes</h3>
           <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: '1.4' }}>
@@ -291,6 +292,7 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
           })}
         </div>
       </motion.div>
+      )}
 
       <InputWrapper icon={IndianRupee} label={`Amount (${initialCurrency})`} required>
         <input

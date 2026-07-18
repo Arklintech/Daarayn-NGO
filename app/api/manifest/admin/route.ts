@@ -6,6 +6,7 @@ export async function GET() {
     short_name: 'Command Ops',
     description: 'Enterprise administration panel for Daarayn Foundation.',
     start_url: '/admin/login',
+    scope: '/admin',
     display: 'standalone',
     background_color: '#030a06',
     theme_color: '#10b981',

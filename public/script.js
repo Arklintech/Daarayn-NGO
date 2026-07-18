@@ -80,8 +80,6 @@ onDOMReady(() => {
   const amountInput = document.getElementById("qdAmountHome");
   const prefixEl = document.querySelector(".qd-prefix-home");
 
-  const prefixEl = document.querySelector(".qd-prefix-home");
-
   // Removed early return to allow ledger fetching on pages where currencyBtns are missing
 
   const SYMBOL = {
@@ -259,12 +257,12 @@ onDOMReady(() => {
 
     // Hero Animations
     const heroTl = gsap.timeline();
-    heroTl.from(".kicker", { opacity: 0, y: 20, duration: 0.8, ease: "power3.out" })
-          .from(".hero-text h1", { opacity: 0, y: 30, duration: 0.8, ease: "power3.out" }, "-=0.6")
-          .from(".hero-sub", { opacity: 0, y: 20, duration: 0.8, ease: "power3.out" }, "-=0.6")
-          .from(".hero-actions", { opacity: 0, y: 20, duration: 0.8, ease: "power3.out" }, "-=0.6")
-          .from(".hero-side-card", { opacity: 0, x: 30, duration: 1, ease: "power3.out" }, "-=0.8")
-          .from(".pillar-card", { opacity: 0, y: 20, duration: 0.6, stagger: 0.15, ease: "power3.out" }, "-=0.6");
+    heroTl.from(".daarayn-hero-kicker", { opacity: 0, y: 20, duration: 0.8, ease: "power3.out" })
+          .from(".daarayn-hero-title", { opacity: 0, y: 30, duration: 0.8, ease: "power3.out" }, "-=0.6")
+          .from(".daarayn-hero-subtitle", { opacity: 0, y: 20, duration: 0.8, ease: "power3.out" }, "-=0.6")
+          .from(".daarayn-hero-actions", { opacity: 0, y: 20, duration: 0.8, ease: "power3.out" }, "-=0.6")
+          .from(".daarayn-trust-panel", { opacity: 0, x: 30, duration: 1, ease: "power3.out" }, "-=0.8")
+          .from(".trust-card", { opacity: 0, y: 20, duration: 0.6, stagger: 0.15, ease: "power3.out" }, "-=0.6");
 
     // Subtle Parallax for hero video
     gsap.to(".hero-video-bg", {

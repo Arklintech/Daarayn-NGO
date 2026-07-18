@@ -79,6 +79,9 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        if (typeof document !== 'undefined') {
+          document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
+        }
         try {
           const userDocRef = doc(db, "users", currentUser.uid);
           const userDoc = await getDoc(userDocRef);
@@ -124,6 +127,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     };
     if (typeof window !== "undefined") {
       localStorage.setItem("daarayn_mock_auth", JSON.stringify({ email, name, role }));
+      document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
     }
     setUser(mockUser);
     setAdminData(mockData);
@@ -133,8 +137,11 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
     setLoading(true);
     if (typeof window !== "undefined") {
       localStorage.removeItem("daarayn_mock_auth");
+      document.cookie = "daarayn_session=; path=/; max-age=0; SameSite=Strict";
     }
-    await signOut(auth);
+    if (auth) {
+      await signOut(auth);
+    }
     setUser(null);
     setAdminData(null);
     setLoading(false);

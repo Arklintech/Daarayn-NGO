@@ -44,12 +44,12 @@ export default function HelpPage() {
 
       {/* Quick Links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Link href="/agent/messages" className="admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group">
+        <Link href="/field/messages" className="admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group">
           <MessageSquare className="w-6 h-6 text-luxury-gold mb-2" />
           <p className="text-sm font-bold text-white group-hover:text-luxury-gold transition">Message Admin</p>
           <p className="text-[10px] text-gray-500 mt-0.5">Get direct support</p>
         </Link>
-        <Link href="/agent/reports/new" className="admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group">
+        <Link href="/field/reports/new" className="admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group">
           <Book className="w-6 h-6 text-luxury-gold mb-2" />
           <p className="text-sm font-bold text-white group-hover:text-luxury-gold transition">Submit Report</p>
           <p className="text-[10px] text-gray-500 mt-0.5">Report a new need</p>

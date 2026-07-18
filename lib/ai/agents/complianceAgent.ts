@@ -1,5 +1,5 @@
 /**
- * lib/ai/agents/complianceAgent.ts
+ * lib/ai/fields/complianceAgent.ts
  *
  * Compliance Agent for Daarayn AI-TOS.
  * Coordinates validation score computations and ledger consistency cross-checks.

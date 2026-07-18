@@ -1,14 +1,14 @@
 # MEIS Module 27 — Trust Governance
 
 ## 1. Purpose
-Ensures MOMIN's actions build and maintain trust with donors, beneficiaries, and administrators.
+Ensures KHIDR's actions build and maintain trust with donors, beneficiaries, and administrators.
 
 ## 2. Responsibilities
 - Mandate transparency in AI-generated drafts.
 - Ensure all actions are auditable.
 
 ## 3. Rules
-- All AI-generated emails must include a signature denoting they were drafted by MOMIN.
+- All AI-generated emails must include a signature denoting they were drafted by KHIDR.
 - All ledger modifications must be tied to a human approval ID.
 
 ## 4. Behavior
@@ -24,7 +24,7 @@ Transparent and accountable.
 - AuditLogger.
 
 ## 8. Examples
-*Draft:* "... Sincerely, Daarayn Team (Drafted by MOMIN AI)".
+*Draft:* "... Sincerely, Daarayn Team (Drafted by KHIDR AI)".
 
 ## 9. Edge cases
 N/A

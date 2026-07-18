@@ -52,6 +52,9 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
       if (firebaseUser) {
+        if (typeof document !== 'undefined') {
+          document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
+        }
         // Query Firestore to find the agent with this firebaseUid
         try {
           const q = query(collection(db, "field_agents"), where("firebaseUid", "==", firebaseUser.uid));
@@ -76,18 +79,19 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
 
   const loginAsMock = (email: string, name: string) => {
     const mockUser = { email, uid: "mock-agent-123" } as User;
-    const mockAgent: FieldAgent = {
+    const mockAgent = {
       id: "mock-agent-123",
       firebaseUid: "mock-agent-123",
       name,
       email,
       phone: "+1234567890",
       region: "Global",
-      status: "active",
-      joinedAt: new Date().toISOString()
-    };
+      status: "Active",
+      joinDate: new Date().toISOString()
+    } as FieldAgent;
     if (typeof window !== "undefined") {
       localStorage.setItem("demoAgent", JSON.stringify(mockAgent));
+      document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
     }
     setUser(mockUser);
     setAgentData(mockAgent);
@@ -96,10 +100,13 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
   const logout = async () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('demoAgent');
+      document.cookie = "daarayn_session=; path=/; max-age=0; SameSite=Strict";
     }
-    await signOut(auth);
+    if (auth) {
+      await signOut(auth);
+    }
     if (typeof window !== 'undefined') {
-      window.location.href = '/agent/login';
+      window.location.href = '/field/login';
     }
   };
 

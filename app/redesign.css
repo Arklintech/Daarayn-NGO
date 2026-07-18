@@ -9,6 +9,8 @@
   background-color: #030a06;
   color: #fff;
   font-family: var(--font-poppins);
+  overflow-x: hidden;
+  width: 100%;
 }
 
 /* NAVBAR */
@@ -168,15 +170,18 @@
   gap: 12px;
   transition: all 0.3s ease;
 }
+.daarayn-quick-donation-ribbon::-webkit-scrollbar {
+  display: none;
+}
 
 .daarayn-ribbon-currency-wrapper {
   background: transparent;
   color: #fff;
   display: flex;
   align-items: center;
-  gap: 8px;
   padding: 0 16px;
   border-right: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
 }
 
 .daarayn-ribbon-currency-select {
@@ -188,6 +193,8 @@
   appearance: none;
   cursor: pointer;
   outline: none;
+  width: 100%;
+  padding-right: 24px;
 }
 .daarayn-ribbon-currency-select option {
   background: #081222;
@@ -199,9 +206,10 @@
   color: #fff;
   display: flex;
   align-items: center;
-  gap: 8px;
   padding: 0 16px;
   border-left: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  flex: 1;
 }
 
 .daarayn-ribbon-cause-select {
@@ -213,10 +221,20 @@
   appearance: none;
   cursor: pointer;
   outline: none;
+  width: 100%;
+  padding-right: 24px;
 }
 .daarayn-ribbon-cause-select option {
   background: #081222;
   color: #fff;
+}
+
+.ribbon-chevron {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
 }
 
 .daarayn-ribbon-input-group {
@@ -350,10 +368,11 @@
   width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 40px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 60px;
 }
 
 .daarayn-hero-left {
@@ -546,17 +565,9 @@
 
 /* Responsive Fixes for Ribbon */
 @media (max-width: 768px) {
-  .daarayn-quick-donation-ribbon {
-    flex-direction: column !important;
-    gap: 1.5rem !important;
-    padding: 1rem !important;
-    height: auto !important;
-    border-radius: 12px !important;
-  }
   .daarayn-quick-donation-ribbon > div, 
   .daarayn-quick-donation-ribbon > button {
-    width: 100% !important;
-    justify-content: center !important;
+    flex-shrink: 0;
   }
 }
 
@@ -601,16 +612,26 @@
   .daarayn-hero-title {
     font-size: 48px;
   }
+  .daarayn-hero-subtitle {
+    font-size: 16px;
+  }
+  .daarayn-hero-section {
+    padding-top: 20px;
+    height: auto;
+    min-height: auto;
+  }
   .daarayn-quick-donation-section {
     position: relative;
-    top: 0;
-    margin-top: 20px;
+    top: auto;
+    transform: none;
+    margin-top: 110px;
+    margin-bottom: 20px;
   }
   
   /* Disable sticky ribbon on mobile to avoid overcrowding */
   .daarayn-quick-donation-section.scrolled {
     position: relative;
-    top: 0;
+    top: auto;
     z-index: 40;
   }
   
@@ -635,7 +656,10 @@
     border: none;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding: 12px 0;
-    justify-content: space-between;
+  }
+  
+  .ribbon-chevron {
+    right: 8px;
   }
   
   .daarayn-ribbon-input-group {
@@ -674,6 +698,7 @@
   }
   
   .trust-cards-grid {
+
     flex-direction: column;
   }
 }

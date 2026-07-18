@@ -31,7 +31,7 @@ No credential should remain in use for more than 90 days without a documented ro
 1. Log in to console.groq.com → API Keys → Create new key
 2. Update `GROQ_API_KEY` in `.env.local` and in your deployment environment (Vercel / Railway)
 3. Redeploy the application
-4. Verify MOMIN AI responds correctly with a test prompt
+4. Verify KHIDR AI responds correctly with a test prompt
 5. Revoke the old key from console.groq.com
 6. Update the "Last Rotated" date in this table above
 

@@ -33,7 +33,7 @@ N/A
 N/A
 
 ## 11. Acceptance criteria
-- MOMIN strictly adheres to the provided flow for known intents.
+- KHIDR strictly adheres to the provided flow for known intents.
 
 ## 12. Implementation notes
 `ResponseLearningLibrary.ts`.

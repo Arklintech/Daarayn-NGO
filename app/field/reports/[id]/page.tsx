@@ -51,7 +51,7 @@ export default function ReportDetailPage() {
       <div className="text-center py-20">
         <FileText className="w-10 h-10 text-gray-600 mx-auto mb-3" />
         <p className="text-gray-400">Report not found.</p>
-        <Link href="/agent/reports" className="text-luxury-gold text-sm mt-2 inline-block hover:underline">← Back to Reports</Link>
+        <Link href="/field/reports" className="text-luxury-gold text-sm mt-2 inline-block hover:underline">← Back to Reports</Link>
       </div>
     );
   }
@@ -79,7 +79,7 @@ export default function ReportDetailPage() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Back Button */}
-      <Link href="/agent/reports" className="flex items-center gap-2 text-sm text-gray-400 hover:text-luxury-gold transition group">
+      <Link href="/field/reports" className="flex items-center gap-2 text-sm text-gray-400 hover:text-luxury-gold transition group">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to My Reports
       </Link>
@@ -220,7 +220,7 @@ export default function ReportDetailPage() {
       )}
 
       <Link
-        href="/agent/messages"
+        href="/field/messages"
         className="flex items-center justify-between w-full admin-glass border border-luxury-border rounded-2xl p-4 hover:border-luxury-gold/30 transition group"
       >
         <div className="flex items-center gap-3">

@@ -25,7 +25,7 @@ function InfoRow({ icon: Icon, label, value, boldValue = false }: { icon?: any, 
         {Icon && <Icon className="w-4 h-4 flex-shrink-0" />}
         <span className="text-[13px] whitespace-nowrap">{label}</span>
       </div>
-      <div className={`text-[13px] text-right ${boldValue ? 'text-white font-medium' : 'text-gray-300'}`}>
+      <div className={`text-[13px] text-right min-w-0 flex-1 flex justify-end ${boldValue ? 'text-white font-medium' : 'text-gray-300'}`}>
         {value || '—'}
       </div>
     </div>
@@ -63,7 +63,7 @@ export default function OverviewTab({ donor, donations, communications, setActiv
             <InfoRow icon={Mail} label="Email" value={donor.email} />
             <InfoRow icon={Phone} label="Phone" value={donor.phone} />
             <InfoRow icon={MapPin} label="Country / City" value={[donor.country, donor.city].filter(Boolean).join(' / ')} />
-            <InfoRow icon={Navigation} label="Address" value={<span className="block max-w-[150px] leading-snug">{donor.address || '—'}</span>} />
+            <InfoRow icon={Navigation} label="Address" value={<span className="block min-w-0 truncate text-right">{donor.address || '—'}</span>} />
             
             <div className="my-2 border-t border-white/[0.05]" />
             
@@ -177,7 +177,7 @@ export default function OverviewTab({ donor, donations, communications, setActiv
         {/* Information Shared by Donor */}
         <Section title="Information Shared by Donor">
           <div className="space-y-3">
-            <InfoRow label="Purpose / Remarks" value={<span className="block max-w-[200px] leading-snug">{donor.remarks || donor.notes || 'For the sake of Allah. Please use where it is most needed.'}</span>} />
+            <InfoRow label="Purpose / Remarks" value={<span className="block min-w-0 truncate text-right">{donor.remarks || donor.notes || 'For the sake of Allah. Please use where it is most needed.'}</span>} />
             <InfoRow label="How did you hear about us?" value={donor.source || 'Social Media'} />
             <InfoRow label="Preferred Communication" value={donor.communicationPreference || 'Email'} />
             <InfoRow label="Allow Public Display" value={donor.anonymous ? 'No' : 'Yes'} />

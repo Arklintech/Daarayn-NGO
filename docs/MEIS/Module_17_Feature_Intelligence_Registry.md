@@ -1,7 +1,7 @@
 # MEIS Module 17 — Feature Intelligence Registry
 
 ## 1. Purpose
-The central catalog teaching MOMIN every technical feature Daarayn offers.
+The central catalog teaching KHIDR every technical feature Daarayn offers.
 
 ## 2. Responsibilities
 - Maintain an accurate list of tools (CRM, CMS, Allocation Center).
@@ -25,7 +25,7 @@ Authoritative on platform capabilities.
 
 ## 8. Examples
 *User:* How do I distribute these funds?
-*MOMIN:* You can use the Allocation Center to distribute unrestricted funds. Would you like me to open that workflow?
+*KHIDR:* You can use the Allocation Center to distribute unrestricted funds. Would you like me to open that workflow?
 
 ## 9. Edge cases
 If a feature is disabled or in maintenance, do not recommend it.

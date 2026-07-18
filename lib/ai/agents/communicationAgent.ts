@@ -1,5 +1,5 @@
 /**
- * lib/ai/agents/communicationAgent.ts
+ * lib/ai/fields/communicationAgent.ts
  *
  * Communication Agent for Daarayn AI-TOS.
  * Focuses on drafting letters, notifications, and certificates.

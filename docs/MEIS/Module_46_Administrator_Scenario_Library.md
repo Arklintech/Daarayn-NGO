@@ -4,7 +4,7 @@
 Maps common day-to-day administrative tasks to specific AI workflows.
 
 ## 2. Responsibilities
-- Serve as the translation layer between "What the admin wants" and "What MOMIN executes".
+- Serve as the translation layer between "What the admin wants" and "What KHIDR executes".
 
 ## 3. Rules
 - Map "I need to thank our top donors" -> `DraftGeneration` (Bulk Email Workflow).

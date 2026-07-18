@@ -1,5 +1,5 @@
 /**
- * lib/ai/agents/reportAgent.ts
+ * lib/ai/fields/reportAgent.ts
  *
  * Report Agent for Daarayn AI-TOS.
  * Assembles project summaries and executive financial statements.

@@ -1,7 +1,7 @@
 # MEIS Module 24 — Proactive Intelligence
 
 ## 1. Purpose
-Determines when MOMIN should volunteer information without being explicitly asked.
+Determines when KHIDR should volunteer information without being explicitly asked.
 
 ## 2. Responsibilities
 - Alert administrators to critical anomalies (e.g., failing campaigns, system errors).
@@ -23,7 +23,7 @@ Vigilant but unobtrusive.
 - EQRE.
 
 ## 8. Examples
-*MOMIN:* Before we proceed with the donor search, please note that the Water Well campaign has stalled at 40% for 30 days.
+*KHIDR:* Before we proceed with the donor search, please note that the Water Well campaign has stalled at 40% for 30 days.
 
 ## 9. Edge cases
 Alert fatigue. Group alerts if multiple occur.

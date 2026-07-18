@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 
@@ -37,7 +37,7 @@ export default function Navbar() {
   ];
 
   return (
-    <nav style={{ position: 'fixed', top: 0, left: 0, width: '100%', padding: '24px 16px', zIndex: 100, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }} className="site-header lg:px-8">
+    <nav style={{ position: 'fixed', top: 0, left: 0, width: '100%', padding: '24px 16px', zIndex: 100, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }} className="lg:px-8">
       <motion.div 
         style={{
           width: '100%',
@@ -102,7 +102,7 @@ export default function Navbar() {
         </Link>
 
         {/* Center: Navigation Links (Desktop) */}
-        <div className="desktop-nav items-center gap-[12px] z-10" style={{ zIndex: 10 }}>
+        <div className="hidden lg:flex items-center gap-[12px] z-10" style={{ zIndex: 10 }}>
           {navItems.map((item) => {
             const isActive = activeHash === item.href.replace('/', '');
             return (
@@ -112,9 +112,18 @@ export default function Navbar() {
                 onMouseEnter={() => setHoveredPath(item.href)}
                 onMouseLeave={() => setHoveredPath(null)}
               >
-                <Link 
+                <a 
                   href={item.href}
-                  onClick={() => setActiveHash(item.href.replace('/', ''))}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setActiveHash(item.href.replace('/', ''));
+                    const id = item.href.replace('/#', '');
+                    const element = document.getElementById(id);
+                    if (element) {
+                      element.scrollIntoView({ behavior: 'smooth' });
+                      window.history.pushState(null, '', item.href);
+                    }
+                  }}
                   style={{
                     padding: '8px 16px',
                     fontSize: '14px',
@@ -133,7 +142,7 @@ export default function Navbar() {
                   >
                     {item.name}
                   </motion.span>
-                </Link>
+                </a>
 
                 {isActive && (
                   <motion.div
@@ -156,33 +165,91 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Toggle Button */}
-        <div className="mobile-toggle z-10 items-center pr-2">
-          <button onClick={() => setIsOpen(!isOpen)} className="text-[#FFF9DD] p-2 focus:outline-none bg-white/5 rounded-lg border border-white/10 active:scale-95 transition-transform">
+        <div className="lg:hidden flex z-10 items-center pr-2">
+          <button type="button" onClick={() => setIsOpen(!isOpen)} className="text-[#FFF9DD] p-2 focus:outline-none bg-white/5 rounded-lg border border-white/10 active:scale-95 transition-transform">
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
         {/* Mobile Drawer */}
-        {isOpen && (
-          <div className="mobile-drawer absolute top-[100%] left-0 w-full bg-[#011533]/95 backdrop-blur-xl rounded-b-xl border border-t-0 border-[#FFF9DD]/15 p-4 flex flex-col gap-2 shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-50">
-            {navItems.map((item) => {
-              const isActive = activeHash === item.href.replace('/', '');
-              return (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  onClick={() => {
-                    setActiveHash(item.href.replace('/', ''));
-                    setIsOpen(false);
-                  }}
-                  className={`text-[15px] p-3 rounded-lg transition-colors border ${isActive ? 'bg-[#FFF9DD]/10 text-[#FFF9DD] border-[#FFF9DD]/20 font-medium' : 'text-gray-200 border-transparent hover:bg-white/5 hover:text-[#FFF9DD] hover:border-white/10'}`}
-                >
-                  {item.name}
-                </Link>
-              );
-            })}
-          </div>
-        )}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              style={{
+                position: 'absolute',
+                top: '100%',
+                left: '16px',
+                right: '16px',
+                marginTop: '12px',
+                background: 'rgba(1, 21, 51, 0.95)',
+                backdropFilter: 'blur(24px)',
+                WebkitBackdropFilter: 'blur(24px)',
+                borderRadius: '20px',
+                border: '1px solid rgba(255, 249, 221, 0.15)',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '8px',
+                boxShadow: '0 30px 60px rgba(0,0,0,0.8)',
+                zIndex: 50,
+                overflow: 'hidden'
+              }}
+              className="mobile-drawer"
+            >
+              {navItems.map((item, index) => {
+                const isActive = activeHash === item.href.replace('/', '');
+                return (
+                  <motion.div
+                    key={item.name}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.04 }}
+                  >
+                    <a
+                      href={item.href}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setActiveHash(item.href.replace('/', ''));
+                        setIsOpen(false);
+                        const id = item.href.replace('/#', '');
+                        const element = document.getElementById(id);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth' });
+                          window.history.pushState(null, '', item.href);
+                        }
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '14px 20px',
+                        borderRadius: '14px',
+                        textDecoration: 'none',
+                        color: isActive ? '#FFF9DD' : 'rgba(255, 255, 255, 0.85)',
+                        background: isActive ? 'rgba(255, 249, 221, 0.1)' : 'transparent',
+                        fontWeight: isActive ? 600 : 400,
+                        border: `1px solid ${isActive ? 'rgba(255, 249, 221, 0.2)' : 'transparent'}`,
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      <span style={{ fontSize: '16px', letterSpacing: '0.5px' }}>{item.name}</span>
+                      {isActive && (
+                        <motion.div 
+                          layoutId="active-indicator-mobile"
+                          style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#FFF9DD', boxShadow: '0 0 12px #FFF9DD' }}
+                        />
+                      )}
+                    </a>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </nav>
   );

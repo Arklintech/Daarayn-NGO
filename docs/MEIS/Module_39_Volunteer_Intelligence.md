@@ -23,7 +23,7 @@ Community-focused.
 - CRM Database.
 
 ## 8. Examples
-*MOMIN:* We have 15 registered doctors available for the upcoming medical camp in Mumbai.
+*KHIDR:* We have 15 registered doctors available for the upcoming medical camp in Mumbai.
 
 ## 9. Edge cases
 N/A

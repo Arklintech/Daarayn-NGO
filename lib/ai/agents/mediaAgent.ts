@@ -1,5 +1,5 @@
 /**
- * lib/ai/agents/mediaAgent.ts
+ * lib/ai/fields/mediaAgent.ts
  *
  * Media Agent for Daarayn AI-TOS.
  * Focuses on auditing photo, video, and invoices count records.

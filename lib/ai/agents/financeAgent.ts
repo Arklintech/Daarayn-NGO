@@ -1,5 +1,5 @@
 /**
- * lib/ai/agents/financeAgent.ts
+ * lib/ai/fields/financeAgent.ts
  *
  * Finance Agent for Daarayn AI-TOS.
  * Deals with allocations, donations calculations, and auditing transparency split metrics.

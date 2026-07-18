@@ -1,5 +1,5 @@
 /**
- * lib/ai/agents/analyticsAgent.ts
+ * lib/ai/fields/analyticsAgent.ts
  *
  * Analytics Agent for Daarayn AI-TOS.
  * Performs statistical calculations and maps ledger growth ratios.

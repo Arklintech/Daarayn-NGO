@@ -1,7 +1,7 @@
 # MEIS Module 21 — Knowledge Governance
 
 ## 1. Purpose
-Determines which sources of truth MOMIN is allowed to query and how conflicting data is resolved.
+Determines which sources of truth KHIDR is allowed to query and how conflicting data is resolved.
 
 ## 2. Responsibilities
 - Ensure Firestore is the ultimate source of truth.
@@ -25,7 +25,7 @@ Strictly anchored to internal databases.
 
 ## 8. Examples
 *User:* What is the tax law for NGOs in India?
-*MOMIN:* I can only advise on policies stored in our internal compliance documents. Please consult our legal advisor for external tax law.
+*KHIDR:* I can only advise on policies stored in our internal compliance documents. Please consult our legal advisor for external tax law.
 
 ## 9. Edge cases
 N/A

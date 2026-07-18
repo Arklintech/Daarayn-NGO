@@ -52,7 +52,17 @@ export default function AdminDonors() {
       setDonors(list);
       setLastUpdated(new Date());
     } catch (err) {
-      console.error("Error loading CRM data:", err);
+      console.error("Error loading CRM data from Firestore, falling back to local:", err);
+      try {
+        const res = await fetch('/api/admin/donors-local');
+        if (res.ok) {
+          const localData = await res.json();
+          setDonors(localData);
+          setLastUpdated(new Date());
+        }
+      } catch (localErr) {
+        console.error("Local fallback also failed:", localErr);
+      }
     } finally {
       setLoading(false);
     }

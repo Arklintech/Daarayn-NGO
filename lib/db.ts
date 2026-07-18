@@ -10,6 +10,29 @@ import {
   arrayUnion
 } from "firebase/firestore";
 import { setDoc, updateDoc } from "./db-sync";
+import fs from "fs";
+import path from "path";
+
+// Local Fallback Helpers
+const dataDir = path.join(process.cwd(), "data");
+function getLocalDonors(): DonorProfile[] {
+  const file = path.join(dataDir, "donors.json");
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify([], null, 2));
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+function saveLocalDonors(donors: DonorProfile[]) {
+  fs.writeFileSync(path.join(dataDir, "donors.json"), JSON.stringify(donors, null, 2));
+}
+function getLocalDonations(): Donation[] {
+  const file = path.join(dataDir, "donations.json");
+  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify([], null, 2));
+  return JSON.parse(fs.readFileSync(file, "utf8"));
+}
+function saveLocalDonations(donations: Donation[]) {
+  fs.writeFileSync(path.join(dataDir, "donations.json"), JSON.stringify(donations, null, 2));
+}
 
 // Interfaces
 export interface DonorProfile {
@@ -125,24 +148,36 @@ export async function getOrCreateDonor(donorInput: {
   const normalizedPhone = donorInput.phone.trim();
 
   // 1. Search for existing donor by Email or Phone
-  const donorsRef = collection(db, "donors");
   let existingDonor: DonorProfile | null = null;
+  const localDonors = getLocalDonors();
 
-  if (normalizedEmail) {
-    const qEmail = query(donorsRef, where("email", "==", normalizedEmail));
-    const emailSnap = await getDocs(qEmail);
-    if (!emailSnap.empty) {
-      const docData = emailSnap.docs[0];
-      existingDonor = { id: docData.id, ...docData.data() } as DonorProfile;
+  try {
+    const donorsRef = collection(db, "donors");
+
+    if (normalizedEmail) {
+      const qEmail = query(donorsRef, where("email", "==", normalizedEmail));
+      const emailSnap = await getDocs(qEmail);
+      if (!emailSnap.empty) {
+        const docData = emailSnap.docs[0];
+        existingDonor = { id: docData.id, ...docData.data() } as DonorProfile;
+      }
     }
-  }
 
-  if (!existingDonor && normalizedPhone) {
-    const qPhone = query(donorsRef, where("phone", "==", normalizedPhone));
-    const phoneSnap = await getDocs(qPhone);
-    if (!phoneSnap.empty) {
-      const docData = phoneSnap.docs[0];
-      existingDonor = { id: docData.id, ...docData.data() } as DonorProfile;
+    if (!existingDonor && normalizedPhone) {
+      const qPhone = query(donorsRef, where("phone", "==", normalizedPhone));
+      const phoneSnap = await getDocs(qPhone);
+      if (!phoneSnap.empty) {
+        const docData = phoneSnap.docs[0];
+        existingDonor = { id: docData.id, ...docData.data() } as DonorProfile;
+      }
+    }
+  } catch (err: any) {
+    console.warn("Firestore query failed in getOrCreateDonor, using local fallback:", err.message);
+    if (normalizedEmail) {
+      existingDonor = localDonors.find(d => d.email === normalizedEmail) || null;
+    }
+    if (!existingDonor && normalizedPhone) {
+      existingDonor = localDonors.find(d => d.phone === normalizedPhone) || null;
     }
   }
 
@@ -173,7 +208,15 @@ export async function getOrCreateDonor(donorInput: {
     }
 
     if (updatesNeeded) {
-      await updateDoc(doc(db, "donors", existingDonor.id), updates);
+      try {
+        await updateDoc(doc(db, "donors", existingDonor.id), updates);
+      } catch (e) {
+        const idx = localDonors.findIndex(d => d.id === existingDonor!.id);
+        if (idx !== -1) {
+          localDonors[idx] = { ...localDonors[idx], ...updates };
+          saveLocalDonors(localDonors);
+        }
+      }
       return { ...existingDonor, ...updates };
     }
     return existingDonor;
@@ -201,7 +244,12 @@ export async function getOrCreateDonor(donorInput: {
     status: "active"
   };
 
-  await setDoc(doc(db, "donors", newId), newDonor);
+  try {
+    await setDoc(doc(db, "donors", newId), newDonor);
+  } catch (e) {
+    localDonors.push(newDonor);
+    saveLocalDonors(localDonors);
+  }
   return newDonor;
 }
 
@@ -240,15 +288,32 @@ export async function createDonation(donationInput: {
   };
 
   // 1. Save donation document
-  await setDoc(doc(db, "donations", newId), newDonation);
+  const localDonations = getLocalDonations();
+  try {
+    await setDoc(doc(db, "donations", newId), newDonation);
+  } catch (e) {
+    localDonations.unshift(newDonation);
+    saveLocalDonations(localDonations);
+  }
 
   // 2. Update donor profile totals
-  const donorRef = doc(db, "donors", donationInput.donorId);
-  await updateDoc(donorRef, {
-    totalDonations: increment(1),
-    totalAmountDonated: increment(donationInput.amount),
-    donationHistory: arrayUnion(newId)
-  });
+  try {
+    const donorRef = doc(db, "donors", donationInput.donorId);
+    await updateDoc(donorRef, {
+      totalDonations: increment(1),
+      totalAmountDonated: increment(donationInput.amount),
+      donationHistory: arrayUnion(newId)
+    });
+  } catch (e) {
+    const localDonors = getLocalDonors();
+    const idx = localDonors.findIndex(d => d.id === donationInput.donorId);
+    if (idx !== -1) {
+      localDonors[idx].totalDonations += 1;
+      localDonors[idx].totalAmountDonated += donationInput.amount;
+      localDonors[idx].donationHistory.push(newId);
+      saveLocalDonors(localDonors);
+    }
+  }
 
   return newDonation;
 }

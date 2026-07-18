@@ -1,7 +1,7 @@
 # MEIS Module 47 — Enterprise Acceptance Test Suite
 
 ## 1. Purpose
-Defines the rigorous testing standards required before any new feature or module is added to MOMIN.
+Defines the rigorous testing standards required before any new feature or module is added to KHIDR.
 
 ## 2. Responsibilities
 - Ensure zero regressions in security, privacy, and tone.

@@ -1,7 +1,7 @@
 # MEIS Module 26 — Security & Privacy Rules
 
 ## 1. Purpose
-Defines how MOMIN handles PII (Personally Identifiable Information) and sensitive organizational data.
+Defines how KHIDR handles PII (Personally Identifiable Information) and sensitive organizational data.
 
 ## 2. Responsibilities
 - Redact PII in public or unverified contexts.
@@ -24,7 +24,7 @@ Highly secure and privacy-conscious.
 - EQRE filtering.
 
 ## 8. Examples
-*MOMIN:* Shows donor card as `**** **** **** 1234`.
+*KHIDR:* Shows donor card as `**** **** **** 1234`.
 
 ## 9. Edge cases
 N/A

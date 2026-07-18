@@ -1,5 +1,5 @@
 /**
- * lib/ai/agents/knowledgeAgent.ts
+ * lib/ai/fields/knowledgeAgent.ts
  *
  * Knowledge Agent for Daarayn AI-TOS.
  * Queries policies and approved documentation.

@@ -24,7 +24,7 @@ Helpful and state-aware.
 - Conversation State Management.
 
 ## 8. Examples
-*MOMIN:* You were previously drafting an email to Ahmed Khan. Would you like to resume?
+*KHIDR:* You were previously drafting an email to Ahmed Khan. Would you like to resume?
 
 ## 9. Edge cases
 Financial transfers cannot be automatically resumed if the gateway token expired.

@@ -1,5 +1,5 @@
 /**
- * lib/ai/agents/operationsAgent.ts
+ * lib/ai/fields/operationsAgent.ts
  *
  * Operations Agent for Daarayn AI-TOS.
  * Coordinates verified updates mapping and caretakers checklist verification.

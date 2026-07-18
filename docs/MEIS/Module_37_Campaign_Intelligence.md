@@ -23,7 +23,7 @@ Strategic and monitoring.
 - Campaigns Database.
 
 ## 8. Examples
-*MOMIN:* The Winter Relief campaign is 80% funded with 2 days remaining. Suggested action: Send reminder to previous donors.
+*KHIDR:* The Winter Relief campaign is 80% funded with 2 days remaining. Suggested action: Send reminder to previous donors.
 
 ## 9. Edge cases
 Over-funded campaigns should trigger a re-allocation advisory.

@@ -13,8 +13,18 @@ const nextConfig: NextConfig = {
         source: "/pay",
         destination: "/pay.html",
       },
+      {
+        source: "/admin/manifest.webmanifest",
+        destination: "/api/manifest/admin",
+      },
+      {
+        source: "/field/manifest.webmanifest",
+        destination: "/api/manifest/field",
+      },
     ];
   },
+  // Allow local network IP for HMR
+  allowedDevOrigins: ['192.168.0.125', 'localhost'],
 };
 
 export default withSentryConfig(nextConfig, {

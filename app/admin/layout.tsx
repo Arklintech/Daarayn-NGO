@@ -58,7 +58,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => unsub();
   }, [user]);
 
-  // Inject PWA Manifest for Admin
+  // Inject PWA Manifest for Admin & Register Service Worker
   React.useEffect(() => {
     let link = document.querySelector("link[rel~='manifest']") as HTMLLinkElement;
     if (!link) {
@@ -66,7 +66,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       link.rel = 'manifest';
       document.head.appendChild(link);
     }
-    link.href = '/api/manifest/admin';
+    link.href = '/admin/manifest.webmanifest';
+
+    // Register single root service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(err => {
+        console.error('Service Worker registration failed: ', err);
+      });
+    }
   }, []);
 
   // If this is the login page, bypass layout entirely
@@ -279,8 +286,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center gap-3">
             {/* Quick Portal Switch */}
             <div className="hidden md:flex items-center gap-2 pr-3">
-              <Link href="/agent/login" target="_blank" className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
-                Agent View
+              <Link href="/field/login" target="_blank" className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
+                Field View
               </Link>
               <Link href="/donor" target="_blank" className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
                 Donor View

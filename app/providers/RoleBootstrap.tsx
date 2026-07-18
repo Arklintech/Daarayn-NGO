@@ -38,8 +38,8 @@ export const RoleBootstrapProvider: React.FC<{ children: React.ReactNode }> = ({
         
         // Guard protected admin & field sub-apps
         if ((pathname.startsWith('/admin') && pathname !== '/admin/login') || 
-            (pathname.startsWith('/agent') && pathname !== '/agent/login')) {
-          router.replace(pathname.startsWith('/admin') ? '/admin/login' : '/agent/login');
+            (pathname.startsWith('/field') && pathname !== '/field/login')) {
+          router.replace(pathname.startsWith('/admin') ? '/admin/login' : '/field/login');
         } else {
           setIsReady(true);
         }
@@ -47,8 +47,8 @@ export const RoleBootstrapProvider: React.FC<{ children: React.ReactNode }> = ({
       }
 
       try {
-        // Force cryptographic refresh of claims token on transition
-        const tokenResult = await currentUser.getIdTokenResult(true);
+        // Get current token claims (do not force refresh to avoid infinite loop with onIdTokenChanged)
+        const tokenResult = await currentUser.getIdTokenResult();
         // Note: In our current firebase setup, custom claims might not be populated immediately for dev mode.
         // We will default to public, but if they are an admin or agent we infer from their login flow later in the specific contexts. 
         // For the enterprise structure, we read claims:
@@ -62,7 +62,7 @@ export const RoleBootstrapProvider: React.FC<{ children: React.ReactNode }> = ({
           // In a pure prod env with claims, we would `router.replace('/unauthorized')` here.
         }
 
-        if (pathname.startsWith('/agent') && userRole !== 'field' && userRole !== 'admin' && pathname !== '/agent/login') {
+        if (pathname.startsWith('/field') && userRole !== 'field' && userRole !== 'admin' && pathname !== '/field/login') {
           // Same here, let FieldAgentAuthContext handle it for now.
         }
 

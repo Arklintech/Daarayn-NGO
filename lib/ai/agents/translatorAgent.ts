@@ -1,5 +1,5 @@
 /**
- * lib/ai/agents/translatorAgent.ts
+ * lib/ai/fields/translatorAgent.ts
  *
  * Translator Agent for Daarayn AI-TOS.
  * Translates texts to target languages (English, Arabic, Urdu, Hindi).

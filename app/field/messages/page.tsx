@@ -297,7 +297,7 @@ export default function AgentMessagesPage() {
       style={{ height: "calc(100dvh - 140px)" }}>
       
       {/* Sidebar - Conversation List */}
-      <div className={`w-full sm:w-[280px] bg-black/60 border-r border-luxury-border flex flex-col ${!isMobileListVisible ? 'hidden sm:flex' : 'flex'}`}>
+      <div className={`w-full sm:w-1/3 max-w-[280px] bg-black/60 border-r border-luxury-border flex flex-col ${!isMobileListVisible ? 'hidden sm:flex' : 'flex'}`}>
         <div className="p-4 border-b border-luxury-border flex items-center justify-between">
           <h2 className="text-[15px] font-bold text-white tracking-wide">Messages</h2>
           <button onClick={handleStartOperationsConv} className="p-1.5 bg-luxury-gold/10 text-luxury-gold rounded-lg hover:bg-luxury-gold/20 border border-luxury-border transition" title="Start Operations Chat">

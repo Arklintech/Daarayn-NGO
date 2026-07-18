@@ -6,8 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Daarayn Field Operations',
     short_name: 'Daarayn Field',
     description: 'Offline-resilient workspace for local field trust activities.',
-    start_url: '/agent',
-    scope: '/agent',
+    start_url: '/field',
+    scope: '/field',
     display: 'standalone',
     background_color: '#0A0B0D',
     theme_color: '#FFB000', // Field Accent: Warning/Operational Amber
@@ -19,13 +19,13 @@ export default function manifest(): MetadataRoute.Manifest {
       {
         name: 'Assigned Cases',
         short_name: 'Cases',
-        url: '/agent',
+        url: '/field',
         icons: [{ src: '/icons/shortcut-cases.png', sizes: '96x96' }]
       },
       {
         name: 'New Offline Report',
         short_name: 'New Report',
-        url: '/agent/reports/new',
+        url: '/field/reports/new',
         icons: [{ src: '/icons/shortcut-report.png', sizes: '96x96' }]
       }
     ]

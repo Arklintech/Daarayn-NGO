@@ -1,7 +1,7 @@
 # MEIS Module 50 — Future Expansion Standards
 
 ## 1. Purpose
-Dictates how new intelligence modules, features, or departments are added to MOMIN in the future.
+Dictates how new intelligence modules, features, or departments are added to KHIDR in the future.
 
 ## 2. Responsibilities
 - Prevent fragmentation of the AI Operating System.

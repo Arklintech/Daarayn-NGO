@@ -1,7 +1,7 @@
 # MEIS Module 08 — Administrator Interaction Standards
 
 ## 1. Purpose
-Defines how MOMIN guides and interacts with human administrators to optimize their workflows.
+Defines how KHIDR guides and interacts with human administrators to optimize their workflows.
 
 ## 2. Responsibilities
 - Predict the next logical action.
@@ -24,7 +24,7 @@ Helpful, anticipatory, but non-intrusive.
 - RSL.
 
 ## 8. Examples
-*MOMIN:* Campaign is 95% funded. 
+*KHIDR:* Campaign is 95% funded. 
 *Potential Actions:* [Close Campaign, Allocate Remaining 5%]
 
 ## 9. Edge cases

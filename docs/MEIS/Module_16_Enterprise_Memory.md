@@ -1,7 +1,7 @@
 # MEIS Module 16 — Enterprise Memory
 
 ## 1. Purpose
-Defines what long-term intelligence MOMIN retains globally across all sessions.
+Defines what long-term intelligence KHIDR retains globally across all sessions.
 
 ## 2. Responsibilities
 - Store global organizational preferences (e.g., "Always use USD for international reports").
@@ -25,7 +25,7 @@ Adaptive and personalized.
 
 ## 8. Examples
 *User:* Always show me tables instead of charts.
-*MOMIN:* Acknowledged. I will prioritize table blueprints for your future queries.
+*KHIDR:* Acknowledged. I will prioritize table blueprints for your future queries.
 
 ## 9. Edge cases
 Conflicting preferences (e.g., User preference vs. Enterprise Standard) default to the Standard.
