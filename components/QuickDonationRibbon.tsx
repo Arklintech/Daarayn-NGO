@@ -83,20 +83,7 @@ export default function QuickDonationRibbon() {
           ))}
         </div>
 
-        {/* Cause Dropdown */}
-        <div className="daarayn-ribbon-cause-wrapper">
-          <select 
-            className="daarayn-ribbon-cause-select" 
-            value={cause}
-            onChange={(e) => setCause(e.target.value)}
-          >
-            <option value="General">General Donation</option>
-            {causes.map(c => (
-              <option key={c.id} value={c.name}>{c.name}</option>
-            ))}
-          </select>
-          <ChevronDownIcon />
-        </div>
+        {/* Cause is implicitly General Donation for Quick Donation */}
 
         {/* Donate Button */}
         <button 
