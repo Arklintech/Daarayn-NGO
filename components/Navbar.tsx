@@ -102,7 +102,7 @@ export default function Navbar() {
         </Link>
 
         {/* Center: Navigation Links (Desktop) */}
-        <div className="hidden lg:flex items-center gap-[12px] lg:gap-[20px] xl:gap-[32px] z-10" style={{ zIndex: 10 }}>
+        <div className="hidden lg:flex flex-1 justify-between items-center z-10 ml-[2vw] xl:ml-[6vw]" style={{ zIndex: 10 }}>
           {navItems.map((item) => {
             const isActive = activeHash === item.href.replace('/', '');
             return (
@@ -124,7 +124,7 @@ export default function Navbar() {
                       window.history.pushState(null, '', item.href);
                     }
                   }}
-                  className="px-[6px] lg:px-[10px] xl:px-[16px] py-[8px] text-[13px] xl:text-[15px]"
+                  className="px-[8px] lg:px-[12px] xl:px-[16px] py-[8px] text-[13px] xl:text-[14px]"
                   style={{
                     fontWeight: isActive ? 500 : 400,
                     color: isActive ? '#FFF9DD' : '#fff',
