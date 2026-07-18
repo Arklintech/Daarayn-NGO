@@ -123,7 +123,7 @@ export default function AgentLogin() {
       ══════════════════════════════════ */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <img 
-          src="/field login background.png" 
+          src="/agent login background.png" 
           alt="Daarayn Background" 
           className="w-full h-full object-cover object-center filter brightness-[0.7]" 
         />
