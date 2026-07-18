@@ -253,6 +253,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     </div>
   );
 
+  // Inject PWA Manifest for Admin
+  React.useEffect(() => {
+    let link = document.querySelector("link[rel~='manifest']") as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'manifest';
+      document.head.appendChild(link);
+    }
+    link.href = '/api/manifest/admin';
+  }, []);
+
   return (
     <div className="bg-[#020704] min-h-screen">
       <div className="min-h-screen bg-gradient-to-br from-[#05110a] via-[#020704] to-[#030906] flex text-gray-200 max-w-enterprise mx-auto shadow-2xl overflow-hidden relative">

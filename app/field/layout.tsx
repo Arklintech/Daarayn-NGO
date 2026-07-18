@@ -245,7 +245,7 @@ export default function AgentLayout({ children }: { children: React.ReactNode })
       link.rel = 'manifest';
       document.head.appendChild(link);
     }
-    link.href = '/field/manifest.webmanifest';
+    link.href = '/api/manifest/field';
 
     // Register single root service worker
     if ('serviceWorker' in navigator) {
