@@ -7,17 +7,17 @@ export default function DocumentsTab({ donations }: any) {
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
   // Gather all proofs from all donations
-  const proofs: { url: string; donId: string; date: string }[] = donations.flatMap((d: any) =>
-    d.proofUrl
-      ? [{ url: d.proofUrl, donId: d.id, date: d.date || '' }]
-      : []
-  );
+  const proofs: { url: string; donId: string; date: string }[] = donations.flatMap((d: any) => {
+    const url = d.proofUrl || d.receiptUrl;
+    return url ? [{ url, donId: d.id, date: d.date || '' }] : [];
+  });
 
-  const receipts: { url: string; donId: string; amount: number }[] = donations.flatMap((d: any) =>
-    d.receiptUrl
+  const receipts: { url: string; donId: string; amount: number }[] = donations.flatMap((d: any) => {
+    const isScreenshot = d.receiptUrl && (d.receiptUrl.includes("proof-") || d.receiptUrl === d.proofUrl);
+    return d.receiptUrl && !isScreenshot
       ? [{ url: d.receiptUrl, donId: d.id, amount: d.amount || 0 }]
-      : []
-  );
+      : [];
+  });
 
   const prev = () => setLightboxIdx(i => (i !== null ? Math.max(0, i - 1) : null));
   const next = () => setLightboxIdx(i => (i !== null ? Math.min(proofs.length - 1, i + 1) : null));

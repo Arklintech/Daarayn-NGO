@@ -15,10 +15,22 @@ const dbPath = path.join(process.cwd(), "data", "ledger.json");
 const uploadsDir = path.join(process.cwd(), "public", "uploads");
 
 function getLocalLedger() {
-  const dir = path.dirname(dbPath);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(dbPath)) fs.writeFileSync(dbPath, JSON.stringify([], null, 2));
-  return JSON.parse(fs.readFileSync(dbPath, "utf8"));
+  try {
+    const dir = path.dirname(dbPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    if (!fs.existsSync(dbPath)) fs.writeFileSync(dbPath, JSON.stringify([], null, 2));
+    return JSON.parse(fs.readFileSync(dbPath, "utf8"));
+  } catch (e: any) {
+    console.warn("Failed to read/write local ledger at standard path. Trying /tmp/ledger.json:", e.message);
+    const tmpPath = "/tmp/ledger.json";
+    try {
+      if (!fs.existsSync(tmpPath)) fs.writeFileSync(tmpPath, JSON.stringify([], null, 2));
+      return JSON.parse(fs.readFileSync(tmpPath, "utf8"));
+    } catch (tmpErr: any) {
+      console.error("All ledger local reads failed:", tmpErr.message);
+      return [];
+    }
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -85,17 +97,47 @@ export async function POST(request: NextRequest) {
           proofUrl = await getDownloadURL(uploadResult.ref);
           proofText = "⏳ Proof Uploaded (Check)";
         } catch (uploadError: any) {
-          console.warn("Firebase Storage upload failed, falling back to public/uploads folder:", uploadError.message);
+          console.warn("Firebase Storage upload failed, trying local uploads folder:", uploadError.message);
+          try {
+            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+            fs.writeFileSync(path.join(uploadsDir, filename), fileBuffer);
+            proofUrl = `/uploads/${filename}`;
+            proofText = "⏳ Proof Uploaded (Local Fallback)";
+          } catch (localWriteError: any) {
+            console.warn("Local uploads folder is read-only. Trying /tmp/uploads:", localWriteError.message);
+            try {
+              const tmpUploadsDir = "/tmp/uploads";
+              if (!fs.existsSync(tmpUploadsDir)) fs.mkdirSync(tmpUploadsDir, { recursive: true });
+              fs.writeFileSync(path.join(tmpUploadsDir, filename), fileBuffer);
+              proofUrl = null;
+              proofText = `⏳ Proof saved in server temp storage (Filename: ${filename})`;
+            } catch (tmpWriteError: any) {
+              console.error("All file write options failed:", tmpWriteError.message);
+              proofUrl = null;
+              proofText = "⏳ Proof upload/save failed";
+            }
+          }
+        }
+      } else {
+        try {
           if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
           fs.writeFileSync(path.join(uploadsDir, filename), fileBuffer);
           proofUrl = `/uploads/${filename}`;
-          proofText = "⏳ Proof Uploaded (Local Fallback)";
+          proofText = "⏳ Proof Uploaded (Check)";
+        } catch (localWriteError: any) {
+          console.warn("Local uploads folder is read-only. Trying /tmp/uploads:", localWriteError.message);
+          try {
+            const tmpUploadsDir = "/tmp/uploads";
+            if (!fs.existsSync(tmpUploadsDir)) fs.mkdirSync(tmpUploadsDir, { recursive: true });
+            fs.writeFileSync(path.join(tmpUploadsDir, filename), fileBuffer);
+            proofUrl = null;
+            proofText = `⏳ Proof saved in server temp storage (Filename: ${filename})`;
+          } catch (tmpWriteError: any) {
+            console.error("All file write options failed:", tmpWriteError.message);
+            proofUrl = null;
+            proofText = "⏳ Proof upload/save failed";
+          }
         }
-      } else {
-        if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-        fs.writeFileSync(path.join(uploadsDir, filename), fileBuffer);
-        proofUrl = `/uploads/${filename}`;
-        proofText = "⏳ Proof Uploaded (Check)";
       }
     }
 
@@ -122,14 +164,38 @@ export async function POST(request: NextRequest) {
         await setDoc(doc(db, 'publicLedger', trackingId), newRecord);
       } catch (firestoreErr: any) {
         console.warn("Firestore setDoc failed, saving locally:", firestoreErr.message);
-        const local = getLocalLedger();
-        local.unshift({ id: trackingId, ...newRecord });
-        fs.writeFileSync(dbPath, JSON.stringify(local, null, 2));
+        try {
+          const local = getLocalLedger();
+          local.unshift({ id: trackingId, ...newRecord });
+          try {
+            fs.writeFileSync(dbPath, JSON.stringify(local, null, 2));
+          } catch (writeErr) {
+            try {
+              fs.writeFileSync("/tmp/ledger.json", JSON.stringify(local, null, 2));
+            } catch (tmpWriteErr) {
+              console.error("Failed to write fallback ledger to /tmp:", tmpWriteErr);
+            }
+          }
+        } catch (localErr) {
+          console.error("Failed to save local ledger fallback:", localErr);
+        }
       }
     } else {
-      const local = getLocalLedger();
-      local.unshift({ id: trackingId, ...newRecord });
-      fs.writeFileSync(dbPath, JSON.stringify(local, null, 2));
+      try {
+        const local = getLocalLedger();
+        local.unshift({ id: trackingId, ...newRecord });
+        try {
+          fs.writeFileSync(dbPath, JSON.stringify(local, null, 2));
+        } catch (writeErr) {
+          try {
+            fs.writeFileSync("/tmp/ledger.json", JSON.stringify(local, null, 2));
+          } catch (tmpWriteErr) {
+            console.error("Failed to write fallback ledger to /tmp:", tmpWriteErr);
+          }
+        }
+      } catch (localErr) {
+        console.error("Failed to save local ledger:", localErr);
+      }
     }
 
     // Integrate DIDMS

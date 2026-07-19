@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from "react";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, query, onSnapshot, doc, updateDoc, setDoc, where, addDoc } from "firebase/firestore";
 import { 
   Search, FileText, CheckCircle, Clock, AlertCircle, MessageSquare, 
@@ -194,27 +195,15 @@ function FieldOperationsCenterContent() {
     try {
       let fileUrl = "";
       try {
-        const formData = new FormData();
-        formData.append("files", file);
-        const uploadRes = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: formData
-        });
-        const uploadResult = await uploadRes.json();
-        if (uploadResult.success && uploadResult.urls && uploadResult.urls.length > 0) {
-          fileUrl = uploadResult.urls[0];
-        }
+        const timestamp = Date.now();
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filename = `${timestamp}_${safeName}`;
+        const storageRef = ref(storage, `communications/${filename}`);
+        await uploadBytes(storageRef, file);
+        fileUrl = await getDownloadURL(storageRef);
       } catch (uploadErr) {
-        console.warn("API upload failed, falling back to base64", uploadErr);
-      }
-
-      if (!fileUrl) {
-        fileUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+        console.error("Firebase Storage upload failed", uploadErr);
+        throw new Error("Failed to upload file to storage.");
       }
 
       const isImage = file.type.startsWith("image/");
@@ -281,28 +270,16 @@ function FieldOperationsCenterContent() {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
         let audioUrl = "";
         try {
+          const timestamp = Date.now();
+          const filename = `${timestamp}_VoiceNote.webm`;
+          const storageRef = ref(storage, `communications/${filename}`);
           const audioFile = new File([audioBlob], "VoiceNote.webm", { type: "audio/webm" });
-          const formData = new FormData();
-          formData.append("files", audioFile);
-          const uploadRes = await fetch("/api/admin/upload", {
-            method: "POST",
-            body: formData
-          });
-          const uploadResult = await uploadRes.json();
-          if (uploadResult.success && uploadResult.urls && uploadResult.urls.length > 0) {
-            audioUrl = uploadResult.urls[0];
-          }
+          await uploadBytes(storageRef, audioFile);
+          audioUrl = await getDownloadURL(storageRef);
         } catch (uploadErr) {
-          console.warn("Voice note upload failed, falling back to base64", uploadErr);
-        }
-
-        if (!audioUrl) {
-          audioUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(audioBlob);
-          });
+          console.error("Firebase Storage voice note upload failed", uploadErr);
+          alert("Failed to upload voice note.");
+          return;
         }
 
         const msg: any = {
@@ -553,7 +530,7 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── STAT CARDS ── */}
-      <div className="grid grid-cols-6 gap-3 mb-4 flex-shrink-0">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4 flex-shrink-0">
         {([
           { label:'Field Agents',        value: agents.length || 182, sub:'Active',           color:'blue',   Icon: Users },
           { label:'Total Reports',       value: allReports.length || 2842, sub:'All Time',    color:'emerald',Icon: FileText },
@@ -571,10 +548,10 @@ function FieldOperationsCenterContent() {
             }`}>
               <Icon className="w-5 h-5" />
             </div>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <p className="text-[10px] text-gray-400 truncate">{label}</p>
-              <div className="flex items-baseline gap-1.5 mt-0.5">
-                <span className="text-[18px] font-bold text-white leading-none">{value.toLocaleString()}</span>
+              <div className="flex items-baseline gap-1.5 mt-0.5 overflow-hidden">
+                <span className="text-[18px] font-bold text-white leading-none truncate">{value.toLocaleString()}</span>
                 <span className={`text-[9px] font-semibold truncate ${
                   color==='blue' ? 'text-blue-400' : color==='emerald' ? 'text-emerald-400' :
                   color==='amber' ? 'text-[#b8860b]' : 'text-red-400'

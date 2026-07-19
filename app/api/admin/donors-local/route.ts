@@ -4,9 +4,18 @@ import path from "path";
 
 export async function GET() {
   try {
-    const file = path.join(process.cwd(), "data", "donors.json");
+    const isVercel = process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL || process.env.NODE_ENV === "production";
+    const file = isVercel 
+      ? "/tmp/data/donors.json" 
+      : path.join(process.cwd(), "data", "donors.json");
     if (fs.existsSync(file)) {
       const data = JSON.parse(fs.readFileSync(file, "utf8"));
+      return NextResponse.json(data);
+    }
+    // Also try project directory as secondary fallback
+    const projFile = path.join(process.cwd(), "data", "donors.json");
+    if (fs.existsSync(projFile)) {
+      const data = JSON.parse(fs.readFileSync(projFile, "utf8"));
       return NextResponse.json(data);
     }
     return NextResponse.json([]);

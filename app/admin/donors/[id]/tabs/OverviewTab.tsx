@@ -37,7 +37,10 @@ export default function OverviewTab({ donor, donations, communications, setActiv
 
   const recentDonations = [...donations].sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()).slice(0, 5);
   const latestDonation = recentDonations[0];
-  const proofs = donations.flatMap((d: any) => d.proofUrl ? [{ url: d.proofUrl, donId: d.id, amount: d.amount }] : []);
+  const proofs = donations.flatMap((d: any) => {
+    const url = d.proofUrl || d.receiptUrl;
+    return url ? [{ url, donId: d.id, amount: d.amount }] : [];
+  });
   const recentComms = [...communications].sort((a: any, b: any) => new Date(b.sentDate || 0).getTime() - new Date(a.sentDate || 0).getTime()).slice(0, 4);
 
   const formatDate = (d: string) => {

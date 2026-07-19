@@ -355,6 +355,16 @@
   z-index: 1;
 }
 
+.daarayn-hero-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
 .daarayn-hero-overlay {
   position: absolute;
   top: 0;
@@ -621,7 +631,13 @@
   .daarayn-hero-section {
     padding-top: 20px;
     height: auto;
-    min-height: auto;
+    min-height: 100svh;
+  }
+  .daarayn-hero-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center center;
   }
   .daarayn-quick-donation-section {
     position: relative;
@@ -703,5 +719,31 @@
   .trust-cards-grid {
 
     flex-direction: column;
+  }
+}
+
+/* Fix mobile overlap for two-column sections */
+@media (max-width: 1024px) {
+  .two-column {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2rem !important;
+  }
+  .two-column.reverse .section-text {
+    order: 2;
+    margin-top: 2rem !important;
+    z-index: 2;
+  }
+  .two-column.reverse .section-media {
+    order: 1;
+    margin-bottom: 1rem !important;
+    z-index: 1;
+  }
+}
+
+/* Respect user preference for reduced motion - hide video, fallback shows bg-image on .daarayn-hero-bg */
+@media (prefers-reduced-motion: reduce) {
+  .daarayn-hero-video {
+    display: none;
   }
 }

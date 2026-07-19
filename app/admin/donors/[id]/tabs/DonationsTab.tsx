@@ -88,11 +88,11 @@ function ContributionDrawer({ donation, onClose }: { donation: any; onClose: () 
           )}
 
           {/* Proof */}
-          {donation.proofUrl && (
+          {(donation.proofUrl || donation.receiptUrl) && (
             <div>
               <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-3">Payment Proof</p>
-              <a href={donation.proofUrl} target="_blank" rel="noreferrer">
-                <img src={donation.proofUrl} alt="Payment Proof"
+              <a href={donation.proofUrl || donation.receiptUrl} target="_blank" rel="noreferrer">
+                <img src={donation.proofUrl || donation.receiptUrl} alt="Payment Proof"
                   className="w-full max-h-60 object-cover rounded-xl border hover:opacity-90 transition"
                   style={{ borderColor: 'rgba(255,255,255,0.08)' }} />
               </a>

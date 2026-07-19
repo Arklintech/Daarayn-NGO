@@ -5,6 +5,18 @@ export default function HeroSection() {
     <section className="daarayn-hero-section">
       {/* Background layer */}
       <div className="daarayn-hero-bg">
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+          poster="/ngobg.JPG"
+          className="daarayn-hero-video"
+        >
+          <source src="/background video.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
         <div className="daarayn-hero-overlay"></div>
       </div>
 

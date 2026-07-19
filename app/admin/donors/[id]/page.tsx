@@ -170,7 +170,7 @@ export default function DonorWorkspace() {
         <div className="flex flex-col xl:flex-row justify-between gap-8">
           
           {/* LEFT: Donor Identity & Actions */}
-          <div className="flex flex-1 gap-6">
+          <div className="flex flex-col sm:flex-row flex-1 gap-6 items-center sm:items-start text-center sm:text-left">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
               <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold text-luxury-gold"
@@ -183,11 +183,11 @@ export default function DonorWorkspace() {
             </div>
 
             {/* Info & Actions */}
-            <div className="flex-1 space-y-4 pt-1">
+            <div className="flex-1 space-y-4 pt-1 w-full">
               {/* Top Row: Name/ID and Action Buttons */}
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-3">
+              <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-4 w-full">
+                <div className="flex flex-col items-center sm:items-start">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                     <h1 className="text-2xl font-semibold text-white tracking-tight">{donor.name || 'Anonymous Donor'}</h1>
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
                       Verified Donor
@@ -197,15 +197,15 @@ export default function DonorWorkspace() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
                   <button onClick={() => alert('Edit Donor functionality coming soon')}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition hover:bg-white/5"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition hover:bg-white/5 whitespace-nowrap"
                     style={{ border: '1px solid rgba(255,255,255,0.15)' }}>
                     <Edit3 className="w-4 h-4" /> Edit Donor
                   </button>
                   <div className="relative">
                     <button onClick={() => setMoreOpen(!moreOpen)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[#080e1f] transition hover:opacity-90"
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-[#080e1f] transition hover:opacity-90 whitespace-nowrap"
                       style={{ background: 'linear-gradient(135deg, rgba(255,249,221,1), rgba(212,175,55,1))' }}>
                       More Actions <ChevronDown className="w-4 h-4" />
                     </button>

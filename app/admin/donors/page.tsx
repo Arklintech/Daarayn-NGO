@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, setDoc } from "firebase/firestore";
+import { collection, getDocs, doc, setDoc, onSnapshot } from "firebase/firestore";
 import { 
   Search, RefreshCw, Filter, Download, CheckCircle, 
   Users, UserPlus, RotateCcw, DollarSign, Activity, ChevronDown, 
@@ -39,6 +39,7 @@ export default function AdminDonors() {
   const [isSaving, setIsSaving] = useState(false);
 
   const fetchData = async () => {
+    // Keep this function so that the refresh button still works
     setLoading(true);
     try {
       const causeSnap = await getDocs(collection(db, "causes"));
@@ -68,7 +69,40 @@ export default function AdminDonors() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    setLoading(true);
+    
+    // Load causes once
+    getDocs(collection(db, "causes")).then((causeSnap) => {
+      const causeList: any[] = [];
+      causeSnap.forEach((c) => causeList.push({ id: c.id, ...c.data() }));
+      setCauses(causeList);
+    }).catch(err => console.warn("Failed to prefetch causes:", err));
+
+    // Listen to donors real-time
+    const unsub = onSnapshot(collection(db, "donors"), (snap) => {
+      const list: any[] = [];
+      snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
+      setDonors(list);
+      setLastUpdated(new Date());
+      setLoading(false);
+    }, (err) => {
+      console.error("Error listening to live donors from Firestore, using local fallback:", err);
+      fetch('/api/admin/donors-local')
+        .then(res => res.json())
+        .then(localData => {
+          setDonors(localData);
+          setLastUpdated(new Date());
+          setLoading(false);
+        })
+        .catch(localErr => {
+          console.error("Local fallback also failed:", localErr);
+          setLoading(false);
+        });
+    });
+
+    return () => unsub();
+  }, []);
 
   const filteredDonors = useMemo(() => {
     let result = [...donors];
@@ -378,10 +412,10 @@ export default function AdminDonors() {
 
       {/* DONOR TABLE */}
       <div>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <SectionHeader title="DONOR TABLE" />
-          <div className="flex items-center gap-4 text-sm text-gray-400">
-            <span>Show <select className="bg-white/5 border border-white/10 rounded px-2 py-1 outline-none text-white ml-1 mr-1"><option>10</option></select> entries</span>
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-400">
+            <span className="whitespace-nowrap">Show <select className="bg-white/5 border border-white/10 rounded px-2 py-1 outline-none text-white ml-1 mr-1"><option>10</option></select> entries</span>
             <div className="flex items-center gap-3">
               <span>1-10 of {kpis.total.toLocaleString()}</span>
               <div className="flex items-center gap-1">

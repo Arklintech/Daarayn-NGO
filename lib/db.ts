@@ -14,24 +14,65 @@ import fs from "fs";
 import path from "path";
 
 // Local Fallback Helpers
-const dataDir = path.join(process.cwd(), "data");
+const isVercel = process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL || process.env.NODE_ENV === "production";
+const dataDir = isVercel ? "/tmp/data" : path.join(process.cwd(), "data");
+
 function getLocalDonors(): DonorProfile[] {
-  const file = path.join(dataDir, "donors.json");
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify([], null, 2));
-  return JSON.parse(fs.readFileSync(file, "utf8"));
+  try {
+    const file = path.join(dataDir, "donors.json");
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    if (!fs.existsSync(file)) {
+      try {
+        fs.writeFileSync(file, JSON.stringify([], null, 2));
+      } catch (e) {
+        console.warn("Unable to write initial empty donors.json:", e);
+        return [];
+      }
+    }
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (err) {
+    console.warn("getLocalDonors failed:", err);
+    return [];
+  }
 }
+
 function saveLocalDonors(donors: DonorProfile[]) {
-  fs.writeFileSync(path.join(dataDir, "donors.json"), JSON.stringify(donors, null, 2));
+  try {
+    const file = path.join(dataDir, "donors.json");
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(donors, null, 2));
+  } catch (err) {
+    console.warn("saveLocalDonors failed:", err);
+  }
 }
+
 function getLocalDonations(): Donation[] {
-  const file = path.join(dataDir, "donations.json");
-  if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
-  if (!fs.existsSync(file)) fs.writeFileSync(file, JSON.stringify([], null, 2));
-  return JSON.parse(fs.readFileSync(file, "utf8"));
+  try {
+    const file = path.join(dataDir, "donations.json");
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    if (!fs.existsSync(file)) {
+      try {
+        fs.writeFileSync(file, JSON.stringify([], null, 2));
+      } catch (e) {
+        console.warn("Unable to write initial empty donations.json:", e);
+        return [];
+      }
+    }
+    return JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch (err) {
+    console.warn("getLocalDonations failed:", err);
+    return [];
+  }
 }
+
 function saveLocalDonations(donations: Donation[]) {
-  fs.writeFileSync(path.join(dataDir, "donations.json"), JSON.stringify(donations, null, 2));
+  try {
+    const file = path.join(dataDir, "donations.json");
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(file, JSON.stringify(donations, null, 2));
+  } catch (err) {
+    console.warn("saveLocalDonations failed:", err);
+  }
 }
 
 // Interfaces

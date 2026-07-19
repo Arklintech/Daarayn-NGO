@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, query, where, onSnapshot, doc, addDoc, updateDoc, setDoc } from "firebase/firestore";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 import { FieldConversation, FieldMessage } from "@/lib/db-field-ops";
@@ -116,27 +117,15 @@ export default function AgentMessagesPage() {
     try {
       let fileUrl = "";
       try {
-        const formData = new FormData();
-        formData.append("files", file);
-        const uploadRes = await fetch("/api/admin/upload", {
-          method: "POST",
-          body: formData
-        });
-        const uploadResult = await uploadRes.json();
-        if (uploadResult.success && uploadResult.urls && uploadResult.urls.length > 0) {
-          fileUrl = uploadResult.urls[0];
-        }
+        const timestamp = Date.now();
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filename = `${timestamp}_${safeName}`;
+        const storageRef = ref(storage, `communications/${filename}`);
+        await uploadBytes(storageRef, file);
+        fileUrl = await getDownloadURL(storageRef);
       } catch (uploadErr) {
-        console.warn("API upload failed, falling back to base64", uploadErr);
-      }
-
-      if (!fileUrl) {
-        fileUrl = await new Promise<string>((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve(reader.result as string); // data:image/png;base64,...
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
-        });
+        console.error("Firebase Storage upload failed", uploadErr);
+        throw new Error("Failed to upload file to storage.");
       }
 
       const isImage = file.type.startsWith("image/");
@@ -206,28 +195,16 @@ export default function AgentMessagesPage() {
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
         let audioUrl = "";
         try {
+          const timestamp = Date.now();
+          const filename = `${timestamp}_VoiceNote.webm`;
+          const storageRef = ref(storage, `communications/${filename}`);
           const audioFile = new File([audioBlob], "VoiceNote.webm", { type: "audio/webm" });
-          const formData = new FormData();
-          formData.append("files", audioFile);
-          const uploadRes = await fetch("/api/admin/upload", {
-            method: "POST",
-            body: formData
-          });
-          const uploadResult = await uploadRes.json();
-          if (uploadResult.success && uploadResult.urls && uploadResult.urls.length > 0) {
-            audioUrl = uploadResult.urls[0];
-          }
+          await uploadBytes(storageRef, audioFile);
+          audioUrl = await getDownloadURL(storageRef);
         } catch (uploadErr) {
-          console.warn("Voice note upload failed, falling back to base64", uploadErr);
-        }
-
-        if (!audioUrl) {
-          audioUrl = await new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(audioBlob);
-          });
+          console.error("Firebase Storage voice note upload failed", uploadErr);
+          alert("Failed to upload voice note.");
+          return;
         }
 
         const msg: any = {

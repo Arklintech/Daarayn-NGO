@@ -60,11 +60,29 @@ export async function sendViaResend(payload: EmailPayload): Promise<EmailResult>
   }
 
   try {
+    const formattedAttachments = payload.attachments?.map((att: any) => {
+      let contentBase64 = "";
+      if (att.content) {
+        contentBase64 = Buffer.isBuffer(att.content)
+          ? att.content.toString("base64")
+          : typeof att.content === "string"
+            ? att.content
+            : Buffer.from(att.content).toString("base64");
+      }
+      
+      return {
+        filename: att.filename,
+        content: contentBase64,
+        id: att.cid
+      };
+    });
+
     const result = await sendViaResendIP({
       from: fromEmail,
       to: [payload.to],
       subject: payload.subject,
       html: payload.html,
+      ...(formattedAttachments && formattedAttachments.length > 0 && { attachments: formattedAttachments })
     });
 
     console.log("[Resend] Response:", JSON.stringify(result.body, null, 2));

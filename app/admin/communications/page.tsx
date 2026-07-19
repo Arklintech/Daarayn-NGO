@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
+import { db, storage } from "@/lib/firebase";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle } from "lucide-react";
 import { Donation } from "@/lib/db";
@@ -9,8 +10,8 @@ import { Donation } from "@/lib/db";
 export default function CommunicationsHub() {
   const [loading, setLoading] = useState(true);
   const [causes, setCauses] = useState<any[]>([]);
-  const [selectedCauseId, setSelectedCauseId] = useState<string>("");
-  const [uniqueDonors, setUniqueDonors] = useState<any[]>([]);
+  const [selectedCauseIds, setSelectedCauseIds] = useState<string[]>([]);
+  const [donorCount, setDonorCount] = useState<number>(0);
   const [stats, setStats] = useState({ raised: 0, goalAmount: 0, percentage: 0 });
   const [type, setType] = useState("project_progress");
   const [heading, setHeading] = useState("");
@@ -30,7 +31,7 @@ export default function CommunicationsHub() {
         const causesSnap = await getDocs(collection(db, "causes"));
         const causesData = causesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
         setCauses(causesData);
-        if (causesData.length > 0) setSelectedCauseId(causesData[0].id);
+        if (causesData.length > 0) setSelectedCauseIds([causesData[0].id]);
       } catch (err) {
         console.error("Failed to load causes", err);
       } finally {
@@ -41,57 +42,30 @@ export default function CommunicationsHub() {
   }, []);
 
   useEffect(() => {
-    if (!selectedCauseId) return;
-    async function fetchCauseStats() {
-      const cause = causes.find(c => c.id === selectedCauseId);
-      if (!cause) return;
-      const q = query(collection(db, "donations"), where("status", "in", ["completed", "pending"]));
-      const snap = await getDocs(q);
-      let totalRaised = 0;
-      const uniqueMap = new Map<string, any>();
-      snap.docs.forEach(doc => {
-        const donation = doc.data() as Donation;
-        if (donation.selectedCauses && Array.isArray(donation.selectedCauses)) {
-          const matchedCause = donation.selectedCauses.find((c: any) => c.causeId === selectedCauseId);
-          if (matchedCause && donation.status === "completed") {
-            totalRaised += matchedCause.allocatedAmount;
-            if (!uniqueMap.has(donation.donorId)) {
-              uniqueMap.set(donation.donorId, { 
-                id: donation.donorId, 
-                name: donation.donorName || "Anonymous",
-                email: donation.donorEmail // May be undefined
-              });
-            }
-          }
-        }
-      });
-      
-      const safeGoal = cause.goalAmount || 1;
-      const pct = Math.min(100, Math.round((totalRaised / safeGoal) * 100));
-      setStats({ raised: totalRaised, goalAmount: cause.goalAmount || 0, percentage: pct });
-
-      // Resolve missing emails from donors collection
-      const donorsList = Array.from(uniqueMap.values());
-      const resolvedDonors: any[] = [];
-      for (const d of donorsList) {
-        if (!d.email) {
-          try {
-            const donorSnap = await getDoc(doc(db, "donors", d.id));
-            if (donorSnap.exists()) {
-              d.email = donorSnap.data().email;
-            }
-          } catch (e) {
-            console.error("Failed to fetch donor", d.id, e);
-          }
-        }
-        if (d.email && d.email.includes('@')) {
-          resolvedDonors.push(d);
-        }
-      }
-      setUniqueDonors(resolvedDonors);
+    if (selectedCauseIds.length === 0) {
+      setDonorCount(0);
+      setStats({ raised: 0, goalAmount: 0, percentage: 0 });
+      return;
     }
-    fetchCauseStats();
-  }, [selectedCauseId, causes]);
+
+    async function fetchResolution() {
+      try {
+        const res = await fetch("/api/admin/communications/resolve", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ causeIds: selectedCauseIds, type })
+        });
+        const data = await res.json();
+        if (data.success) {
+          setDonorCount(data.count);
+          setStats(data.stats);
+        }
+      } catch (err) {
+        console.error("Failed to resolve recipients", err);
+      }
+    }
+    fetchResolution();
+  }, [selectedCauseIds, type]);
 
   const handleFileUpload = async (files: File[]) => {
     // Add local previews immediately
@@ -108,17 +82,23 @@ export default function CommunicationsHub() {
     // Upload to server
     setUploading(true);
     try {
-      const formData = new FormData();
-      files.forEach(f => formData.append('files', f));
-      const res = await fetch('/api/admin/upload', { method: 'POST', body: formData });
-      const result = await res.json();
-      if (result.success && result.urls) {
-        setUploadedFiles(prev => prev.map((f, i) =>
-          i >= startIndex ? { ...f, serverUrl: result.urls[i - startIndex], uploaded: true } : f
-        ));
+      const urls: string[] = [];
+      for (const f of files) {
+        const timestamp = Date.now();
+        const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const filename = `${timestamp}_${safeName}`;
+        const storageRef = ref(storage, `campaigns/${filename}`);
+        await uploadBytes(storageRef, f);
+        const url = await getDownloadURL(storageRef);
+        urls.push(url);
       }
+      
+      setUploadedFiles(prev => prev.map((f, i) =>
+        i >= startIndex ? { ...f, serverUrl: urls[i - startIndex], uploaded: true } : f
+      ));
     } catch (e) {
       console.error('Upload failed', e);
+      alert('Upload failed.');
     } finally {
       setUploading(false);
     }
@@ -130,18 +110,15 @@ export default function CommunicationsHub() {
 
   const handleSend = async () => {
     if (!heading || !notes) return alert("Heading and notes are required.");
-    const cause = causes.find(c => c.id === selectedCauseId);
-    if (!cause) return;
+    if (selectedCauseIds.length === 0) return alert("Please select at least one cause.");
     setSending(true);
     try {
       const response = await fetch("/api/admin/communications/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          causeId: cause.id, causeName: cause.name, type, heading, notes,
-          media: uploadedFiles.filter(f => f.serverUrl).map(f => f.serverUrl!),
-          recipients: uniqueDonors,
-          stats: { raised: stats.raised, goal: stats.goalAmount, percentage: stats.percentage }
+          causeIds: selectedCauseIds, type, heading, notes,
+          media: uploadedFiles.filter(f => f.serverUrl).map(f => f.serverUrl!)
         })
       });
       const result = await response.json();
@@ -172,7 +149,7 @@ export default function CommunicationsHub() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          causeId: selectedCauseId,
+          causeId: selectedCauseIds[0],
           type,
           media: uploadedFiles.filter(f => f.uploaded)
         })
@@ -203,7 +180,8 @@ export default function CommunicationsHub() {
     </div>
   );
 
-  const selectedCause = causes.find(c => c.id === selectedCauseId);
+  const selectedCauses = causes.filter(c => selectedCauseIds.includes(c.id));
+  const causeNamesText = selectedCauses.map(c => c.name).join(', ') || '—';
 
   const typeLabels: Record<string, string> = {
     contribution_confirmation: "Contribution Confirmation",
@@ -222,22 +200,33 @@ export default function CommunicationsHub() {
       </div>
 
       {/* Cause Selector */}
-      <div className="relative w-full lg:w-1/2">
-        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-2">Target Cause</label>
-        <div className="relative">
-          <select
-            value={selectedCauseId}
-            onChange={(e) => setSelectedCauseId(e.target.value)}
-            className="w-full appearance-none pl-4 pr-10 py-3 rounded-xl text-white text-sm font-medium focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/40 cursor-pointer"
-            style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
-          >
-            {causes.map(c => <option key={c.id} value={c.id} style={{ background: '#0f1623' }}>{c.name}</option>)}
-          </select>
-          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+      <div className="w-full">
+        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Target Cause(s)</label>
+        <div className="flex flex-wrap gap-2">
+          {causes.map(c => {
+            const isSelected = selectedCauseIds.includes(c.id);
+            return (
+              <button
+                key={c.id}
+                onClick={() => {
+                  setSelectedCauseIds(prev => 
+                    isSelected && prev.length > 1 ? prev.filter(id => id !== c.id) : !isSelected ? [...prev, c.id] : prev
+                  );
+                }}
+                className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+                  isSelected 
+                    ? 'bg-[var(--gold)] text-black shadow-lg shadow-[var(--gold)]/20' 
+                    : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'
+                }`}
+              >
+                {c.name}
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {selectedCauseId && !sent && (
+      {selectedCauseIds.length > 0 && !sent && (
         <div className="space-y-6">
           {/* Stats Row */}
           <div className="flex flex-wrap gap-4">
@@ -245,7 +234,7 @@ export default function CommunicationsHub() {
               <Users className="w-4 h-4 text-[var(--gold)]" />
               <div>
                 <p className="text-[10px] text-[var(--gold)]/70 uppercase tracking-widest">Recipients</p>
-                <p className="text-lg font-bold text-white leading-none mt-0.5">{uniqueDonors.length} Donors</p>
+                <p className="text-lg font-bold text-white leading-none mt-0.5">{donorCount} Donors</p>
               </div>
             </div>
             <div className="flex items-center gap-3 px-5 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
@@ -407,14 +396,14 @@ export default function CommunicationsHub() {
               {/* Send Button */}
               <button
                 onClick={handleSend}
-                disabled={sending || uniqueDonors.length === 0}
+                disabled={sending || donorCount === 0}
                 className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-gray-100 active:scale-[0.99]"
                 style={{ background: '#ffffff' }}
               >
-                {sending ? <Activity className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Dispatch to {uniqueDonors.length} Donors</>}
+                {sending ? <Activity className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Dispatch to {donorCount} Donors</>}
               </button>
 
-              {uniqueDonors.length === 0 && (
+              {donorCount === 0 && (
                 <p className="text-xs text-red-400/80 text-center mt-3">No verified donors found for this cause.</p>
               )}
             </div>
@@ -464,8 +453,8 @@ export default function CommunicationsHub() {
                   <div className="rounded-lg p-4 space-y-2 mt-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-3">Contribution Summary</p>
                     <div className="flex justify-between text-xs py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <span className="text-white/40">Project / Cause</span>
-                      <span className="text-white font-semibold">{selectedCause?.name || '—'}</span>
+                      <span className="text-white/40 min-w-max mr-2">Target Causes</span>
+                      <span className="text-white font-semibold line-clamp-1 text-right" title={causeNamesText}>{causeNamesText}</span>
                     </div>
                     <div className="flex justify-between text-xs py-1.5">
                       <span className="text-white/40">Status</span>
@@ -493,7 +482,7 @@ export default function CommunicationsHub() {
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Communication Dispatched</h2>
           <p className="text-gray-500 text-sm max-w-md">
-            Successfully sent to {uniqueDonors.length} verified donors. This is permanently recorded in the Audit Ledger.
+            Successfully sent to {donorCount} verified donors. This is permanently recorded in the Audit Ledger.
           </p>
           <button
             onClick={() => { setSent(false); setHeading(""); setNotes(""); }}

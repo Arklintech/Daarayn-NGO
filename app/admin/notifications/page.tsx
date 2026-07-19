@@ -186,29 +186,31 @@ export default function NotificationCenterPage() {
           <p className="text-sm text-gray-400 mt-1">Stay updated with what matters across Daarayn.</p>
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+          <div className="relative w-full md:w-64">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
             <input 
               type="text" 
               placeholder="Search notifications..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] text-sm text-white placeholder-gray-500 focus:outline-none focus:border-luxury-gold/50 transition-colors w-64"
+              className="pl-9 pr-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] text-sm text-white placeholder-gray-500 focus:outline-none focus:border-luxury-gold/50 transition-colors w-full"
             />
           </div>
-          <button 
-            onClick={markAllRead}
-            disabled={totalUnread === 0}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-sm font-medium transition-colors disabled:opacity-50"
-          >
-            <CheckCircle2 className="w-4 h-4 text-gray-400" />
-            Mark all as read
-          </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-sm font-medium transition-colors">
-            <FilterIcon className="w-4 h-4 text-gray-400" />
-            Filter
-          </button>
+          <div className="flex gap-2">
+            <button 
+              onClick={markAllRead}
+              disabled={totalUnread === 0}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
+            >
+              <CheckCircle2 className="w-4 h-4 text-gray-400 shrink-0" />
+              Mark all as read
+            </button>
+            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-sm font-medium transition-colors whitespace-nowrap">
+              <FilterIcon className="w-4 h-4 text-gray-400 shrink-0" />
+              Filter
+            </button>
+          </div>
         </div>
       </div>
 
@@ -239,13 +241,13 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Filters & Total */}
-      <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
-        <div className="text-sm font-medium text-gray-300">
-          Total Unread: <span className="text-luxury-gold font-bold">{totalUnread}</span>
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-white/[0.06] pb-4 gap-4">
+        <div className="text-sm font-medium text-gray-300 flex items-center whitespace-nowrap">
+          Total Unread: <span className="text-luxury-gold font-bold ml-1">{totalUnread}</span>
           <span className="mx-2 text-gray-600">|</span>
-          Starred: <span className="text-amber-400 font-bold">{totalStarred}</span>
+          Starred: <span className="text-amber-400 font-bold ml-1">{totalStarred}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {([
             { key: "all", label: "All" },
             { key: "unread", label: "Unread" },

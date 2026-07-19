@@ -70,10 +70,10 @@ export default function FieldAgentCRM({ params }: { params: Promise<{ agentId: s
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Profile Card */}
-        <div className="col-span-1 space-y-6">
-          <div className="admin-glass border border-white/[0.08] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
+        <div className="lg:col-span-1 space-y-6">
+          <div className="admin-glass border border-white/[0.08] rounded-2xl p-6 shadow-[0_4px_20px_rgba(0,0,0,0.2)] overflow-hidden">
             <div className="flex flex-col items-center text-center">
               <div className="w-20 h-20 rounded-full bg-luxury-gold/10 border border-luxury-gold/30 flex items-center justify-center text-luxury-gold font-bold text-3xl mb-4">
                 {agent.name.charAt(0)}
@@ -93,11 +93,11 @@ export default function FieldAgentCRM({ params }: { params: Promise<{ agentId: s
 
             <div className="mt-6 space-y-4 pt-6 border-t border-white/[0.06]">
               <div className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-gray-500" />
-                <span className="text-white">{agent.email}</span>
+                <Mail className="w-4 h-4 text-gray-500 shrink-0" />
+                <span className="text-white break-all">{agent.email}</span>
               </div>
               <div className="flex items-center gap-3">
-                <Phone className="w-4 h-4 text-gray-500" />
+                <Phone className="w-4 h-4 text-gray-500 shrink-0" />
                 <span className="text-white">{agent.phone}</span>
               </div>
               <div className="flex items-center gap-3">
@@ -135,7 +135,7 @@ export default function FieldAgentCRM({ params }: { params: Promise<{ agentId: s
         </div>
 
         {/* Right Column: Reports & Activity */}
-        <div className="col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-6">
           <div className="admin-glass border border-white/[0.08] rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.2)]">
             <div className="p-4 border-b border-white/[0.06] flex items-center justify-between">
               <h4 className="text-sm font-bold text-white uppercase tracking-wider font-playfair">Submitted Reports</h4>

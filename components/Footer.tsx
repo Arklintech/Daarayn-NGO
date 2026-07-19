@@ -99,7 +99,7 @@ export default function Footer() {
               margin: '0 0 1.1rem 0',
             }}>Quick Links</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-              {[['/', 'Home'], ['/causes', 'Causes'], ['/programs', 'Programs'], ['/about', 'About Us']].map(([href, label]) => (
+              {[['/', 'Home'], ['/#programs', 'Causes'], ['/#programs', 'Programs'], ['/#about', 'About Us']].map(([href, label]) => (
                 <li key={href}><Link href={href} className="ft-link">{label}</Link></li>
               ))}
             </ul>
@@ -113,7 +113,7 @@ export default function Footer() {
               margin: '0 0 1.1rem 0',
             }}>Get Involved</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-              {[['/donate', 'Donate Now'], ['/donor/dashboard', 'Donor Portal'], ['/volunteer', 'Volunteer'], ['/contact', 'Contact Us']].map(([href, label]) => (
+              {[['/pay', 'Donate Now'], ['/donor/dashboard', 'Donor Portal'], ['/#about', 'Volunteer'], ['/#about', 'Contact Us']].map(([href, label]) => (
                 <li key={href}><Link href={href} className="ft-link">{label}</Link></li>
               ))}
             </ul>
@@ -200,11 +200,11 @@ export default function Footer() {
             © {new Date().getFullYear()} Daarayn Foundation. All rights reserved.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <Link href="/privacy" className="ft-small-link">Privacy Policy</Link>
+            <Link href="/#about" className="ft-small-link">Privacy Policy</Link>
             <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.6rem' }}>◆</span>
-            <Link href="/terms" className="ft-small-link">Terms of Service</Link>
+            <Link href="/#about" className="ft-small-link">Terms of Service</Link>
             <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.6rem' }}>◆</span>
-            <Link href="/transparency" className="ft-small-link">Transparency Ledger</Link>
+            <Link href="/#ledger" className="ft-small-link">Transparency Ledger</Link>
           </div>
         </div>
 

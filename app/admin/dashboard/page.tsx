@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, limit, query, orderBy } from "firebase/firestore";
+import { collection, getDocs, limit, query, orderBy, onSnapshot } from "firebase/firestore";
 import { 
   TrendingUp, 
   Users, 
@@ -66,16 +66,19 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function loadDashboardStats() {
+    setLoading(true);
+    const unsub = onSnapshot(collection(db, "publicLedger"), (allLedgerSnapshot) => {
       try {
         const docs: any[] = [];
         let totalSum = 0;
 
-        const allLedgerSnapshot = await getDocs(collection(db, "publicLedger"));
         allLedgerSnapshot.forEach((doc) => {
           const data = doc.data();
-          totalSum += Number(data.amount || 0);
-          docs.push({ id: doc.id, ...data });
+          const amt = Number(data.amount || 0);
+          if (data.donor !== "Audit update" && amt > 0) {
+            totalSum += amt;
+            docs.push({ id: doc.id, ...data });
+          }
         });
 
         // Sort descending by date
@@ -88,23 +91,25 @@ export default function AdminDashboard() {
         setRecentDonations(docs.slice(0, 5));
         setStats(prev => ({
           ...prev,
-          totalDonations: totalSum || 225000 // Fallback default to show premium numbers if empty
+          totalDonations: totalSum || 225000
         }));
-      } catch (err) {
-        console.warn("Error querying live dashboard data, utilizing cached profiles:", err);
-        // Load fallback static dashboard lists
-        setRecentDonations([
-          { id: "DA003", donor: "Sabir Test (UPI)", cause: "Qur’an Endowment", amount: 5000, date: "05/07/2026", status: "completed" },
-          { id: "DA002", donor: "Ahmad Malik (UPI)", cause: "Family Relief Bundle", amount: 8000, date: "04/07/2026", status: "pending" },
-          { id: "DA001", donor: "Mariam Bi (UPI)", cause: "General Support", amount: 1500, date: "02/07/2026", status: "completed" }
-        ]);
-        setStats(prev => ({ ...prev, totalDonations: 24500 }));
-      } finally {
         setLoading(false);
+      } catch (err) {
+        console.warn("Error processing live dashboard data:", err);
       }
-    }
+    }, (err) => {
+      console.warn("Error querying live dashboard data, utilizing cached profiles:", err);
+      // Load fallback static dashboard lists
+      setRecentDonations([
+        { id: "DA003", donor: "Sabir Test (UPI)", cause: "Qur’an Endowment", amount: 5000, date: "05/07/2026", status: "completed" },
+        { id: "DA002", donor: "Ahmad Malik (UPI)", cause: "Family Relief Bundle", amount: 8000, date: "04/07/2026", status: "pending" },
+        { id: "DA001", donor: "Mariam Bi (UPI)", cause: "General Support", amount: 1500, date: "02/07/2026", status: "completed" }
+      ]);
+      setStats(prev => ({ ...prev, totalDonations: 24500 }));
+      setLoading(false);
+    });
 
-    loadDashboardStats();
+    return () => unsub();
   }, []);
 
   const cardItems = [

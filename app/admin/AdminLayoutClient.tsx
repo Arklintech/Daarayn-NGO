@@ -67,6 +67,17 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     }
   }, []);
 
+  // Inject PWA Manifest for Admin
+  React.useEffect(() => {
+    let link = document.querySelector("link[rel~='manifest']") as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'manifest';
+      document.head.appendChild(link);
+    }
+    link.href = '/api/manifest/admin';
+  }, []);
+
   // If this is the login page, bypass layout entirely
   if (pathname === "/admin/login") {
     return <>{children}</>;
@@ -243,17 +254,6 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       </div>
     </div>
   );
-
-  // Inject PWA Manifest for Admin
-  React.useEffect(() => {
-    let link = document.querySelector("link[rel~='manifest']") as HTMLLinkElement;
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'manifest';
-      document.head.appendChild(link);
-    }
-    link.href = '/api/manifest/admin';
-  }, []);
 
   return (
     <div className="bg-[#020704] min-h-screen">
