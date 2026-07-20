@@ -567,10 +567,10 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div className="flex flex-col md:grid md:grid-cols-[240px_1fr] lg:grid-cols-[minmax(240px,25%)_minmax(400px,1fr)_minmax(240px,22%)] xl:grid-cols-[minmax(300px,25%)_minmax(600px,1fr)_minmax(280px,22%)] gap-3 flex-1 min-h-0 overflow-hidden relative">
+      <div className="flex flex-col md:grid md:grid-cols-[240px_1fr] lg:grid-cols-[minmax(240px,25%)_minmax(400px,1fr)_minmax(240px,22%)] xl:grid-cols-[minmax(300px,25%)_minmax(600px,1fr)_minmax(280px,22%)] gap-3 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
 
         {/* LEFT: Agent List */}
-        <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex w-full md:w-auto h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex-col overflow-hidden`}>
+        <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex w-full md:w-auto h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex-col overflow-hidden min-w-0`}>
           <div className="p-4 border-b border-white/[0.06]">
             <p className="text-[13px] font-bold text-white mb-3">Field Agents & Conversations</p>
             <div className="flex gap-2">
@@ -857,7 +857,7 @@ function FieldOperationsCenterContent() {
 
         {/* RIGHT: Report Details + Quick Actions (Only shown if Report Conversation active) */}
         {activeReport ? (
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} lg:flex absolute lg:static inset-y-0 right-0 z-40 lg:z-auto w-full md:w-[320px] lg:w-auto xl:w-[300px] bg-[#020704]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-l lg:border-none border-white/[0.07] p-4 lg:p-0 flex-shrink-0 flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar h-full shadow-2xl lg:shadow-none`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} lg:flex absolute lg:static inset-y-0 right-0 z-40 lg:z-auto w-full md:w-[320px] lg:w-auto xl:w-[300px] bg-[#020704]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-l lg:border-none border-white/[0.07] p-4 lg:p-0 flex-shrink-0 flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar h-full shadow-2xl lg:shadow-none min-w-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="lg:hidden flex items-center justify-between flex-shrink-0 mb-1">
@@ -1112,7 +1112,7 @@ function FieldOperationsCenterContent() {
           </div>
         ) : activeAgent ? (
           /* Agent profile when no report or Operational Conversation selected */
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} lg:flex absolute lg:static inset-y-0 right-0 z-40 lg:z-auto w-full md:w-[320px] lg:w-auto xl:w-[300px] bg-[#020704]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-l lg:border-none border-white/[0.07] p-4 lg:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl lg:shadow-none`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} lg:flex absolute lg:static inset-y-0 right-0 z-40 lg:z-auto w-full md:w-[320px] lg:w-auto xl:w-[300px] bg-[#020704]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-l lg:border-none border-white/[0.07] p-4 lg:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl lg:shadow-none min-w-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="lg:hidden flex items-center justify-between flex-shrink-0">
