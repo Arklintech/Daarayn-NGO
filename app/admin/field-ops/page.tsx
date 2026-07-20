@@ -883,7 +883,7 @@ function FieldOperationsCenterContent() {
 
         {/* RIGHT: Report Details + Quick Actions (Only shown if Report Conversation active) */}
         {activeReport ? (
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} lg:flex absolute lg:static inset-y-0 right-0 z-40 lg:z-auto w-full md:w-[320px] lg:w-auto xl:w-[300px] bg-[#020704]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-l lg:border-none border-white/[0.07] p-4 lg:p-0 flex-shrink-0 flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar h-full shadow-2xl lg:shadow-none min-w-0`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} lg:flex absolute lg:static inset-y-0 right-0 z-40 lg:z-auto w-full md:w-[320px] lg:w-auto xl:w-[300px] bg-[#020704]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-l lg:border-none border-white/[0.07] p-4 lg:p-0 flex-shrink-0 flex-col gap-3 overflow-hidden h-full shadow-2xl lg:shadow-none min-w-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="lg:hidden flex items-center justify-between flex-shrink-0 mb-1">
@@ -894,7 +894,7 @@ function FieldOperationsCenterContent() {
             </div>
 
             {/* Report Details Card */}
-            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-y-auto no-scrollbar flex-1">
+            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-hidden flex-1 min-h-0">
               <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between gap-2 flex-shrink-0">
                 <h3 className="text-[13px] font-bold text-white flex-shrink-0">Report Details</h3>
                 {/* Report Selector — switch between agent's reports */}
@@ -934,7 +934,7 @@ function FieldOperationsCenterContent() {
                 })()}
               </div>
 
-              <div className="p-5 space-y-4 text-[11px]">
+              <div className="p-5 pb-2 space-y-4 text-[11px] overflow-y-auto no-scrollbar flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-500">Report ID</span>
                   <div className="flex items-center gap-1">
@@ -1002,7 +1002,7 @@ function FieldOperationsCenterContent() {
                     {activeReport.status}
                   </span>
                 </div>
-                <div className="pt-2 border-t border-white/[0.06] mt-4">
+                <div className="px-5 py-4 border-t border-white/[0.06] bg-[#0a0d0b] mt-auto shrink-0 z-10">
                   <button className="w-full py-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/30 text-emerald-100 text-[12px] font-bold transition flex items-center justify-between px-4">
                     Take Action
                     <ChevronDown className="w-4 h-4 text-emerald-400" />
