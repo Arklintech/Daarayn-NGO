@@ -573,7 +573,7 @@ function FieldOperationsCenterContent() {
         {/* LEFT: Agent List */}
         <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex w-full md:w-auto h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex-col overflow-hidden min-w-0`}>
           <div className="p-3 border-b border-white/[0.06]">
-            <p className="text-[12px] font-bold text-white mb-2">Field Agents & Conversations</p>
+            <p className="text-[15px] font-bold text-white mb-2">Field Agents & Conversations</p>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
@@ -709,7 +709,7 @@ function FieldOperationsCenterContent() {
                           <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="text-gray-400 hover:text-white transition flex-shrink-0">
                             <ArrowLeft className="w-4 h-4" />
                           </button>
-                          <h2 className="text-[15px] font-extrabold text-white">Report: {activeReport.id}</h2>
+                          <h2 className="text-[18px] font-extrabold text-white">Report: {activeReport.id}</h2>
                           <span className="px-2 py-0.5 rounded-md text-[9px] font-bold border flex-shrink-0 bg-[#b8860b]/10 text-[#b8860b] border-[#b8860b]/30">
                             {activeReport.status}
                           </span>
@@ -751,7 +751,7 @@ function FieldOperationsCenterContent() {
                       </button>
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h2 className="text-[17px] font-extrabold text-white">Operations Support</h2>
+                          <h2 className="text-[18px] font-extrabold text-white">Operations Support</h2>
                           <span className="px-2 py-0.5 rounded text-[10px] font-bold border flex-shrink-0 bg-purple-500/10 text-purple-400 border-purple-500/30">
                             General Chat
                           </span>
@@ -896,7 +896,7 @@ function FieldOperationsCenterContent() {
             {/* Report Details Card */}
             <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex flex-col overflow-hidden flex-1 min-h-0">
               <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between gap-2 flex-shrink-0">
-                <h3 className="text-[13px] font-bold text-white flex-shrink-0">Report Details</h3>
+                <h3 className="text-[15px] font-bold text-white flex-shrink-0">Report Details</h3>
                 {/* Report Selector — switch between agent's reports */}
                 {(() => {
                   const agentReports = allReports.filter(r => r.agentId === activeAgentId);
