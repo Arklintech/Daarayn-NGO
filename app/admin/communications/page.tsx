@@ -200,7 +200,7 @@ export default function CommunicationsHub() {
 
   if (loading) return (
     <div className="p-8 max-w-7xl mx-auto flex items-center justify-center min-h-[50vh]">
-      <Activity className="h-8 w-8 animate-spin text-[var(--gold)]" />
+      <Activity className="h-8 w-8 animate-spin text-[var(--color-luxury-gold)]" />
     </div>
   );
 
@@ -237,7 +237,7 @@ export default function CommunicationsHub() {
           <div className="w-full rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <Target className="w-4 h-4 text-[var(--gold)]" />
+                <Target className="w-4 h-4 text-[var(--color-luxury-gold)]" />
               </div>
               <h3 className="text-base font-semibold text-white">Target Causes</h3>
             </div>
@@ -254,7 +254,7 @@ export default function CommunicationsHub() {
                     }}
                     className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                       isSelected 
-                        ? 'bg-[var(--gold)] text-black shadow-lg shadow-[var(--gold)]/20' 
+                        ? 'bg-[var(--color-luxury-gold)] text-black shadow-lg shadow-[var(--color-luxury-gold)]/20' 
                         : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'
                     }`}
                   >
@@ -270,9 +270,9 @@ export default function CommunicationsHub() {
               {/* Stats Row */}
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-3 px-5 py-3 rounded-xl flex-1 min-w-[200px]" style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)' }}>
-                  <Users className="w-4 h-4 text-[var(--gold)]" />
+                  <Users className="w-4 h-4 text-[var(--color-luxury-gold)]" />
                   <div>
-                    <p className="text-[10px] text-[var(--gold)]/70 uppercase tracking-widest">Recipients</p>
+                    <p className="text-[10px] text-[var(--color-luxury-gold)]/70 uppercase tracking-widest">Recipients</p>
                     <p className="text-lg font-bold text-white leading-none mt-0.5">{donorCount} Donors</p>
                   </div>
                 </div>
@@ -298,7 +298,7 @@ export default function CommunicationsHub() {
                       <select
                         value={type}
                         onChange={(e) => setType(e.target.value)}
-                        className="w-full appearance-none pl-4 pr-10 py-3 rounded-xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/40 cursor-pointer"
+                        className="w-full appearance-none pl-4 pr-10 py-3 rounded-xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-luxury-gold)]/40 cursor-pointer"
                         style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
                       >
                         <option value="contribution_confirmation" style={{ background: '#0f1623' }}>Contribution Confirmation</option>
@@ -318,7 +318,7 @@ export default function CommunicationsHub() {
                       placeholder="e.g. Phase 1 Foundation Laid Down"
                       value={heading}
                       onChange={(e) => setHeading(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/40"
+                      className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-[var(--color-luxury-gold)]/40"
                       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
                     />
                   </div>
@@ -330,7 +330,7 @@ export default function CommunicationsHub() {
                       placeholder="Enter factual statements describing the progress..."
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-[var(--gold)]/40 resize-none"
+                      className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-[var(--color-luxury-gold)]/40 resize-none"
                       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
                     />
                   </div>
@@ -422,8 +422,8 @@ export default function CommunicationsHub() {
                   <button
                     onClick={handlePreview}
                     disabled={donorCount === 0 || !heading || !notes}
-                    className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-[var(--gold)] active:scale-[0.99]"
-                    style={{ background: 'var(--gold)' }}
+                    className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-[var(--color-luxury-gold)] active:scale-[0.99]"
+                    style={{ background: 'var(--color-luxury-gold)' }}
                   >
                     Preview & Resolve <ArrowRight className="w-4 h-4" />
                   </button>
@@ -524,8 +524,8 @@ export default function CommunicationsHub() {
             </button>
             <button
               onClick={handleDispatch}
-              className="flex-1 py-3.5 rounded-xl font-semibold text-sm transition-all text-black hover:bg-[var(--gold)]/90"
-              style={{ background: 'var(--gold)' }}
+              className="flex-1 py-3.5 rounded-xl font-semibold text-sm transition-all text-black hover:bg-[var(--color-luxury-gold)]/90"
+              style={{ background: 'var(--color-luxury-gold)' }}
             >
               Proceed & Dispatch
             </button>
@@ -537,7 +537,7 @@ export default function CommunicationsHub() {
       {mode === "progress" && (
         <div className="rounded-2xl p-6 md:p-10 max-w-3xl mx-auto" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
           <div className="text-center mb-8 flex items-center justify-center gap-3">
-            <Activity className="w-6 h-6 text-[var(--gold)] animate-pulse" />
+            <Activity className="w-6 h-6 text-[var(--color-luxury-gold)] animate-pulse" />
             <h2 className="text-2xl font-bold text-white">Broadcast In Progress</h2>
           </div>
           
@@ -545,7 +545,7 @@ export default function CommunicationsHub() {
             <div className="space-y-6">
               <div className="w-full bg-gray-800 rounded-full h-4 overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
                 <div 
-                  className="bg-[var(--gold)] h-4 transition-all duration-500 ease-out" 
+                  className="bg-[var(--color-luxury-gold)] h-4 transition-all duration-500 ease-out" 
                   style={{ width: `${(broadcastStats.stats?.sent / broadcastStats.totalRecipients) * 100 || 0}%` }}
                 ></div>
               </div>
@@ -606,7 +606,7 @@ export default function CommunicationsHub() {
             </button>
             <button
               onClick={() => router.push(`/admin/communications/history/${broadcastId}`)}
-              className="py-3.5 px-6 rounded-xl font-semibold text-sm transition-all text-black bg-[var(--gold)] hover:bg-[var(--gold)]/90"
+              className="py-3.5 px-6 rounded-xl font-semibold text-sm transition-all text-black bg-[var(--color-luxury-gold)] hover:bg-[var(--color-luxury-gold)]/90"
             >
               View Report →
             </button>
