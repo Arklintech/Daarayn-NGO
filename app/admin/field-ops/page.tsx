@@ -568,7 +568,7 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div className="flex flex-col md:grid md:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_340px] gap-2 md:gap-3 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
+      <div className="flex flex-col md:grid md:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[380px_minmax(0,1fr)_400px] gap-2 md:gap-3 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
 
         {/* LEFT: Agent List */}
         <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex w-full md:w-auto h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex-col overflow-hidden min-w-0`}>
@@ -883,7 +883,7 @@ function FieldOperationsCenterContent() {
 
         {/* RIGHT: Report Details + Quick Actions (Only shown if Report Conversation active) */}
         {activeReport ? (
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full md:w-[340px] xl:w-[340px] bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-3 overflow-hidden h-full shadow-2xl xl:shadow-none min-w-0`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full md:w-[360px] xl:w-[400px] bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-3 overflow-hidden h-full shadow-2xl xl:shadow-none min-w-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="xl:hidden flex items-center justify-between flex-shrink-0 mb-1">
@@ -1056,7 +1056,7 @@ function FieldOperationsCenterContent() {
           </div>
         ) : activeAgent ? (
           /* Agent profile when no report or Operational Conversation selected */
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full md:w-[340px] xl:w-[340px] bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl xl:shadow-none min-w-0`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full md:w-[360px] xl:w-[400px] bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl xl:shadow-none min-w-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="xl:hidden flex items-center justify-between flex-shrink-0">
@@ -1086,7 +1086,7 @@ function FieldOperationsCenterContent() {
             </div>
           </div>
         ) : (
-          <div className="hidden xl:block xl:w-[340px] flex-shrink-0" />
+          <div className="hidden xl:block xl:w-[400px] flex-shrink-0" />
         )}
       </div>
     </div>
