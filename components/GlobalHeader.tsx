@@ -13,7 +13,7 @@ export default function GlobalHeader({ showRibbon = false }: GlobalHeaderProps) 
   // Ribbon starts at 140px (Hero integration) and moves to 100px on scroll.
   // The Navbar finishes shrinking to 64px (plus 24px padding = 88px bottom edge).
   // 100px gives a perfect 12px gap between the Navbar and the Ribbon at all times.
-  const ribbonTop = useTransform(scrollY, [0, 100], [140, 100]);
+  const ribbonTop = useTransform(scrollY, [0, 100], [116, 100]);
 
   return (
     <>
