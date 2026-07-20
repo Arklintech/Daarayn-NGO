@@ -1,6 +1,4 @@
 'use client';
-import Navbar from './Navbar';
-import QuickDonationRibbon from './QuickDonationRibbon';
 
 export default function HeroSection() {
   return (
@@ -21,9 +19,6 @@ export default function HeroSection() {
         <div className="daarayn-hero-overlay-dark"></div>
         <div className="daarayn-hero-overlay-gradient"></div>
       </div>
-
-      <Navbar />
-      <QuickDonationRibbon />
 
       <div className="daarayn-hero-content">
         {/* Left Column */}

@@ -1,5 +1,5 @@
 import '../redesign.css';
-import Navbar from '@/components/Navbar';
+import GlobalHeader from '@/components/GlobalHeader';
 import Footer from '@/components/Footer';
 import PayPageLayout from '@/components/PayPageLayout';
 
@@ -16,7 +16,7 @@ export default async function PayPage({
 
   return (
     <main className="main-home-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar />
+      <GlobalHeader showRibbon={false} />
 
       <section className="donate-section" style={{ paddingTop: '140px', flex: 1, paddingBottom: '80px' }}>
         <PayPageLayout amount={amount} currency={currency} cause={cause} source={source} />

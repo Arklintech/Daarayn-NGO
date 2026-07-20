@@ -4,22 +4,12 @@ import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 
 export default function QuickDonationRibbon() {
-  const [scrolled, setScrolled] = useState(false);
-  const [atBottom, setAtBottom] = useState(false);
   const [amount, setAmount] = useState('500');
   const [currency, setCurrency] = useState('INR');
   const [cause, setCause] = useState('General');
-
   const [causes, setCauses] = useState<{id: string, name: string}[]>([]);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-      const nearBottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 100;
-      setAtBottom(nearBottom);
-    };
-    window.addEventListener('scroll', handleScroll);
-    
     async function fetchCauses() {
       try {
         const snap = await getDocs(collection(db, "causes"));
@@ -31,14 +21,10 @@ export default function QuickDonationRibbon() {
       }
     }
     fetchCauses();
-
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
-    <div className={`daarayn-quick-donation-section ${scrolled ? 'scrolled' : ''}`}
-      style={atBottom ? { opacity: 0, pointerEvents: 'none', transition: 'opacity 0.3s' } : { transition: 'opacity 0.3s' }}
-    >
+    <div className="daarayn-quick-donation-section">
       <div className="daarayn-quick-donation-ribbon">
         
         {/* Currency Dropdown */}

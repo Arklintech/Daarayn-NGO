@@ -141,18 +141,34 @@
   transform: translateY(-2px);
 }
 
-/* QUICK DONATION RIBBON */
+/* QUICK DONATION RIBBON GLOBAL WRAPPER */
+.daarayn-global-ribbon-wrapper {
+  position: fixed;
+  left: 0;
+  width: 100%;
+  z-index: 90;
+  display: flex;
+  justify-content: center;
+  pointer-events: none; /* Let clicks pass through empty space */
+  transition: top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.daarayn-global-ribbon-wrapper.hero-integrated {
+  top: 170px; /* Sits naturally within the Hero Scene */
+}
+
+.daarayn-global-ribbon-wrapper.docked {
+  top: 88px; /* Docks perfectly beneath the Navbar when scrolled */
+}
+
 .daarayn-quick-donation-section {
   position: relative;
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  z-index: 40;
   padding: 0 32px;
-  margin-top: 140px;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
+  pointer-events: auto; /* Re-enable clicks on the ribbon itself */
 }
 
 .daarayn-quick-donation-ribbon {
@@ -564,20 +580,15 @@
   line-height: 1.5;
 }
 
-/* Scroll Styles for Ribbon */
-.daarayn-quick-donation-section.scrolled {
-  position: fixed;
-  top: 88px;
-  z-index: 90;
-}
+/* Removed old scrolled ribbon hacks */
 
-.daarayn-quick-donation-section.scrolled .daarayn-quick-donation-ribbon {
+.daarayn-global-ribbon-wrapper.docked .daarayn-quick-donation-ribbon {
   height: 60px;
   background: rgba(8, 18, 34, 0.9);
   backdrop-filter: blur(16px);
 }
 
-.daarayn-quick-donation-section.scrolled .daarayn-ribbon-trust-labels {
+.daarayn-global-ribbon-wrapper.docked .daarayn-ribbon-trust-labels {
   display: none;
 }
 
