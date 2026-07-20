@@ -177,7 +177,7 @@ export default function NotificationCenterPage() {
   const selectedItem = notifications.find(n => n.id === selectedId);
 
   return (
-    <div className="flex flex-col h-full bg-[#030906] text-gray-200 p-6 lg:p-8 space-y-6 min-h-0 overflow-hidden">
+    <div className="flex flex-col h-full bg-[#030906] text-gray-200 px-6 py-4 lg:px-8 lg:py-5 space-y-4 min-h-0 overflow-hidden">
       
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -186,7 +186,7 @@ export default function NotificationCenterPage() {
           <p className="text-sm text-gray-400 mt-1">Stay updated with what matters across Daarayn.</p>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-4 md:mt-0">
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
           <div className="relative w-full md:w-64">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
             <input 
@@ -221,9 +221,9 @@ export default function NotificationCenterPage() {
           const Icon = CATEGORY_ICONS[cat];
           const colorClass = CATEGORY_COLORS[cat];
           return (
-            <div key={cat} className="flex flex-col p-4 rounded-2xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group">
+            <div key={cat} className="flex flex-col px-4 py-3 rounded-2xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="flex items-center gap-3 mb-3">
+              <div className="flex items-center gap-3 mb-2">
                 <div className={`w-8 h-8 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center`}>
                   <Icon className={`w-4 h-4 ${colorClass.text}`} />
                 </div>
@@ -241,7 +241,7 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Filters & Total */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-white/[0.06] pb-4 gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-white/[0.06] pb-3 gap-3">
         <div className="text-sm font-medium text-gray-300 flex items-center whitespace-nowrap">
           Total Unread: <span className="text-luxury-gold font-bold ml-1">{totalUnread}</span>
           <span className="mx-2 text-gray-600">|</span>
@@ -274,11 +274,11 @@ export default function NotificationCenterPage() {
       <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
         
         {/* Left Col: List */}
-        <div className="w-full lg:w-[45%] flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="w-full lg:w-[45%] flex flex-col gap-5 overflow-y-auto pr-2 custom-scrollbar">
           
           {todayList.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-3">Today</h3>
+              <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-2">Today</h3>
               <div className="space-y-2">
                 {todayList.map(n => <NotificationRow key={n.id} notification={n} isSelected={selectedId === n.id} onSelect={() => { setSelectedId(n.id); if (!n.isRead) markRead(n.id); }} />)}
               </div>
@@ -287,7 +287,7 @@ export default function NotificationCenterPage() {
 
           {yesterdayList.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-3">Yesterday</h3>
+              <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-2">Yesterday</h3>
               <div className="space-y-2">
                 {yesterdayList.map(n => <NotificationRow key={n.id} notification={n} isSelected={selectedId === n.id} onSelect={() => { setSelectedId(n.id); if (!n.isRead) markRead(n.id); }} />)}
               </div>
@@ -296,7 +296,7 @@ export default function NotificationCenterPage() {
 
           {olderList.length > 0 && (
             <div>
-              <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-3">Older</h3>
+              <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-2">Older</h3>
               <div className="space-y-2">
                 {olderList.map(n => <NotificationRow key={n.id} notification={n} isSelected={selectedId === n.id} onSelect={() => { setSelectedId(n.id); if (!n.isRead) markRead(n.id); }} />)}
               </div>
@@ -313,7 +313,7 @@ export default function NotificationCenterPage() {
         </div>
 
         {/* Right Col: Detail Pane */}
-        <div className="flex-1 rounded-2xl bg-[#0a0f0c] border border-white/[0.06] p-6 lg:p-8 flex flex-col relative overflow-y-auto custom-scrollbar min-h-0">
+        <div className="flex-1 rounded-2xl bg-[#0a0f0c] border border-white/[0.06] p-5 lg:p-6 flex flex-col relative overflow-y-auto custom-scrollbar min-h-0">
           {/* Abstract glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-luxury-gold/[0.02] rounded-full blur-[80px] pointer-events-none" />
 
@@ -321,7 +321,7 @@ export default function NotificationCenterPage() {
             <div className="flex flex-col h-full relative z-10">
               
               {/* Header */}
-              <div className="flex items-start justify-between mb-8">
+              <div className="flex items-start justify-between mb-5">
                 <div className="flex items-start gap-4">
                   <div className={`w-12 h-12 rounded-full ${CATEGORY_COLORS[selectedItem.category].bg} ${CATEGORY_COLORS[selectedItem.category].border} border flex items-center justify-center flex-shrink-0`}>
                     {React.createElement(CATEGORY_ICONS[selectedItem.category], { className: `w-5 h-5 ${CATEGORY_COLORS[selectedItem.category].text}` })}
@@ -353,7 +353,7 @@ export default function NotificationCenterPage() {
               </div>
 
               {/* Metadata Grid */}
-              <div className="grid grid-cols-2 gap-y-6 gap-x-8 mb-8 border-b border-white/[0.06] pb-8">
+              <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-5 border-b border-white/[0.06] pb-5">
                 <MetaItem icon={<Target className="w-3.5 h-3.5" />} label="Category" value={CATEGORY_META[selectedItem.category].label} />
                 <MetaItem icon={<User className="w-3.5 h-3.5" />} label="Created By" value={selectedItem.createdBy} />
                 <MetaItem icon={<Search className="w-3.5 h-3.5" />} label="Date & Time" value={new Date(selectedItem.createdAt).toLocaleString()} />
@@ -374,8 +374,8 @@ export default function NotificationCenterPage() {
               </div>
 
               {/* Full Description / Body */}
-              <div className="mb-8 flex-1">
-                <h4 className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-3">Details</h4>
+              <div className="mb-5 flex-1">
+                <h4 className="text-xs font-semibold tracking-wider text-gray-500 uppercase mb-2">Details</h4>
                 <p className="text-sm text-gray-300 leading-relaxed max-w-2xl">
                   {selectedItem.description}
                 </p>
@@ -388,7 +388,7 @@ export default function NotificationCenterPage() {
               </div>
 
               {/* Actions Footer */}
-              <div className="flex items-center gap-3 pt-6 border-t border-white/[0.06]">
+              <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06] mt-auto">
                 <Link href={selectedItem.actionUrl} className="px-5 py-2.5 rounded-xl bg-luxury-gold text-[#030906] text-sm font-semibold hover:bg-luxury-gold/90 transition flex items-center gap-2">
                   View Record <ArrowRight className="w-4 h-4" />
                 </Link>
