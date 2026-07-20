@@ -571,7 +571,7 @@ function FieldOperationsCenterContent() {
       <div className="flex flex-col md:grid md:grid-cols-[minmax(280px,22%)_minmax(0,1fr)] xl:grid-cols-[minmax(300px,22%)_minmax(650px,1fr)_minmax(300px,24%)] gap-1.5 md:gap-2 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
 
         {/* LEFT: Agent List */}
-        <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex-col overflow-hidden min-w-0`}>
+        <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex-col overflow-hidden min-w-0 min-h-0`}>
           <div className="p-3 border-b border-white/[0.06]">
             <p className="text-[15px] font-bold text-white mb-2">Field Agents & Conversations</p>
             <div className="flex gap-2">
@@ -670,7 +670,7 @@ function FieldOperationsCenterContent() {
         </div>
 
         {/* MIDDLE: Conversation Panel */}
-        <div className={`${mobileView === 'chat' ? 'flex' : 'hidden'} md:flex flex-1 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex-col overflow-hidden min-w-0 h-full`}>
+        <div className={`${mobileView === 'chat' ? 'flex' : 'hidden'} md:flex flex-1 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex-col overflow-hidden min-w-0 min-h-0 h-full`}>
 
           {!activeAgentId ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
@@ -770,7 +770,7 @@ function FieldOperationsCenterContent() {
               
               {/* Conversation Tab */}
               {activeTab === 'Conversation' && (
-              <div className="flex flex-col h-full">
+              <div className="flex flex-col h-full min-h-0">
               <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
                 {messages.length === 0 && (
                   <div className="text-center py-6 text-gray-600 text-[11px]">No messages yet — start the conversation.</div>
@@ -857,7 +857,7 @@ function FieldOperationsCenterContent() {
 
         {/* RIGHT: Report Details + Quick Actions (Only shown if Report Conversation active) */}
         {activeReport ? (
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full xl:w-auto bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-2 overflow-hidden h-full shadow-2xl xl:shadow-none min-w-0`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full xl:w-auto bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-2 overflow-hidden h-full shadow-2xl xl:shadow-none min-w-0 min-h-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="xl:hidden flex items-center justify-between flex-shrink-0 mb-1">
@@ -1048,7 +1048,7 @@ function FieldOperationsCenterContent() {
           </div>
         ) : activeAgent ? (
           /* Agent profile when no report or Operational Conversation selected */
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full xl:w-auto bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl xl:shadow-none min-w-0`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full xl:w-auto bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl xl:shadow-none min-w-0 min-h-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="xl:hidden flex items-center justify-between flex-shrink-0">
