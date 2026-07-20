@@ -567,7 +567,11 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div className="flex flex-col md:grid md:grid-cols-[240px_1fr] lg:grid-cols-[minmax(240px,25%)_minmax(400px,1fr)_minmax(240px,22%)] xl:grid-cols-[minmax(300px,25%)_minmax(600px,1fr)_minmax(280px,22%)] gap-3 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
+      <div className={`flex flex-col md:grid gap-3 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative ${
+        activeReport 
+          ? "md:grid-cols-[240px_1fr] lg:grid-cols-[minmax(220px,20%)_minmax(320px,1fr)_auto]"
+          : "md:grid-cols-[240px_1fr] lg:grid-cols-[minmax(240px,25%)_minmax(400px,1fr)_minmax(240px,22%)] xl:grid-cols-[minmax(300px,25%)_minmax(600px,1fr)_minmax(280px,22%)]"
+      }`}>
 
         {/* LEFT: Agent List */}
         <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex w-full md:w-auto h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex-col overflow-hidden min-w-0`}>
@@ -857,7 +861,7 @@ function FieldOperationsCenterContent() {
 
         {/* RIGHT: Report Details + Quick Actions (Only shown if Report Conversation active) */}
         {activeReport ? (
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} lg:flex absolute lg:static inset-y-0 right-0 z-40 lg:z-auto w-full md:w-[320px] lg:w-auto xl:w-[300px] bg-[#020704]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-l lg:border-none border-white/[0.07] p-4 lg:p-0 flex-shrink-0 flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar h-full shadow-2xl lg:shadow-none min-w-0`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} lg:flex absolute lg:static inset-y-0 right-0 z-40 lg:z-auto w-full md:w-[320px] lg:w-auto bg-[#020704]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-l lg:border-none border-white/[0.07] p-4 lg:p-0 flex-shrink-0 flex-col lg:flex-row gap-3 overflow-y-auto lg:overflow-visible pr-1 custom-scrollbar h-full shadow-2xl lg:shadow-none min-w-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="lg:hidden flex items-center justify-between flex-shrink-0 mb-1">
@@ -867,8 +871,10 @@ function FieldOperationsCenterContent() {
               </button>
             </div>
 
-            {/* Report Details Card */}
-            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-y-auto no-scrollbar flex-1">
+            {/* COLUMN 1: Details & Quick Actions */}
+            <div className="flex flex-col gap-3 lg:w-[240px] xl:w-[280px] flex-shrink-0 min-w-0 h-full overflow-y-auto pr-1 custom-scrollbar">
+              {/* Report Details Card */}
+              <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col flex-shrink-0">
               <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between gap-2 flex-shrink-0">
                 <h3 className="text-[13px] font-bold text-white flex-shrink-0">Report Details</h3>
                 {/* Report Selector — switch between agent's reports */}
@@ -1023,9 +1029,10 @@ function FieldOperationsCenterContent() {
                 ))}
               </div>
             </div>
+            </div> {/* END COLUMN 1 */}
 
-            {/* Interactive Report Timeline */}
-            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl p-4 flex-shrink-0">
+            {/* COLUMN 2: Interactive Report Timeline */}
+            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl p-4 flex-shrink-0 lg:w-[240px] xl:w-[260px] h-fit lg:h-full lg:overflow-y-auto custom-scrollbar">
               <div className="flex items-center justify-between mb-3">
                 <p className="text-[12px] font-bold text-white">Report Timeline</p>
                 <span className="text-[9px] text-gray-500">Click stage to mark complete</span>
