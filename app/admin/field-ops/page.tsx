@@ -7,7 +7,7 @@ import { collection, query, onSnapshot, doc, updateDoc, setDoc, where, addDoc } 
 import { 
   Search, FileText, CheckCircle, Clock, AlertCircle, MessageSquare, 
   Briefcase, X, HelpCircle, Sparkles, UserPlus, Send, Paperclip, 
-  MoreHorizontal, Filter, ArrowLeft, Bell, Users, Mic, ChevronDown, Settings
+  MoreHorizontal, Filter, ArrowLeft, Bell, Users, Mic, ChevronDown, Settings, Smile
 } from "lucide-react";
 import { FieldAgent, FieldReport, FieldMessage, FieldConversation } from "@/lib/db-field-ops";
 import { notifyFieldReport, notifyConversation } from "@/lib/notifications";
@@ -49,6 +49,8 @@ function FieldOperationsCenterContent() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignTo, setAssignTo] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  
+  const [activeTab, setActiveTab] = useState('Conversation');
 
   // Global Listeners
   useEffect(() => {
@@ -598,16 +600,37 @@ function FieldOperationsCenterContent() {
               const unreadConvs = agentConvs.filter(c => c.unreadCountAdmin > 0).length;
               const hasActiveReports = allReports.filter(r => r.agentId === agent.id && ['Pending Review', 'Needs Info'].includes(r.status)).length > 0;
               
-              const isSuspended = agent.status === 'Suspended';
-              const dotColor = isSuspended ? 'amber' : unreadConvs > 0 ? 'red' : 'emerald';
+              const activeAgentReports = allReports.filter(r => r.agentId === agent.id);
+              const pendingReport = activeAgentReports.find(r => ['Pending Review', 'Needs Info'].includes(r.status));
               
-              const statusLabel = isSuspended 
-                ? 'Report under review' 
-                : unreadConvs > 0 
-                  ? `${unreadConvs} Unread Message${unreadConvs>1?'s':''}` 
-                  : hasActiveReports 
-                    ? 'Active Reports' 
-                    : 'No Reports Yet';
+              let badgeColor = 'emerald';
+              let badgeText = '✓';
+              let statusLabel = 'No Reports Yet';
+
+              if (unreadConvs > 0) {
+                badgeColor = 'red';
+                badgeText = unreadConvs.toString();
+                statusLabel = 'Waiting for reply';
+              } else if (pendingReport) {
+                if (pendingReport.status === 'Needs Info') {
+                  badgeColor = 'red';
+                  badgeText = '1';
+                  statusLabel = 'Additional info requested';
+                } else {
+                  badgeColor = 'amber';
+                  badgeText = '1';
+                  statusLabel = 'Report under review';
+                }
+              } else if (activeAgentReports.some(r => r.status === 'Approved')) {
+                badgeColor = 'emerald';
+                badgeText = '✓';
+                statusLabel = 'Report approved';
+              }
+
+              const dotColorClass = badgeColor === 'red' ? 'text-red-400' : 
+                                   badgeColor === 'amber' ? 'text-orange-400' : 'text-emerald-400';
+              const bgClass = badgeColor === 'red' ? 'bg-red-500' : 
+                             badgeColor === 'amber' ? 'bg-orange-500' : 'bg-emerald-500';
 
               return (
                 <div key={agent.id} onClick={() => {
@@ -620,28 +643,30 @@ function FieldOperationsCenterContent() {
                   <div className="relative flex-shrink-0">
                     <img src={avatar(agent.name, agent.avatarUrl)} alt={agent.name}
                       className="w-10 h-10 rounded-full object-cover border border-white/10" />
-                    <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#0a0d0b] ${
-                      dotColor==='red' ? 'bg-red-500' : dotColor==='amber' ? 'bg-amber-500' : 'bg-emerald-500'
-                    }`} />
+                    <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#0a0d0b] ${bgClass}`} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-bold text-white truncate">{agent.name}</p>
                     <p className="text-[10px] text-gray-500 truncate">{agent.city || agent.district}, {agent.state}</p>
-                    <p className={`text-[10px] mt-0.5 font-medium ${
-                      dotColor==='red' ? 'text-red-400' : dotColor==='amber' ? 'text-amber-400' : 'text-emerald-400'
-                    }`}>• {statusLabel}</p>
+                    <p className={`text-[10px] mt-0.5 font-medium ${dotColorClass}`}>• {statusLabel}</p>
                   </div>
-                  {unreadConvs > 0 && (
-                    <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">
-                      {unreadConvs}
-                    </span>
-                  )}
-                  {dotColor === 'emerald' && (
+                  {badgeText === '✓' ? (
                     <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] flex items-center justify-center flex-shrink-0">✓</span>
+                  ) : (
+                    <span className={`w-5 h-5 rounded-full ${bgClass} text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0`}>
+                      {badgeText}
+                    </span>
                   )}
                 </div>
               );
             })}
+          </div>
+
+          {/* Sticky Bottom Button */}
+          <div className="p-4 border-t border-white/[0.06] bg-[#0a0d0b] mt-auto">
+            <button className="w-full py-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/30 text-emerald-100 text-[12px] font-bold transition text-center">
+              View All Agents
+            </button>
           </div>
         </div>
 
@@ -674,84 +699,80 @@ function FieldOperationsCenterContent() {
             /* Active Conversation Selected */
             <>
               {/* Conversation Header & Switcher */}
-              <div className="px-5 pt-4 pb-3 border-b border-white/[0.06] flex-shrink-0">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 min-w-0">
-                    <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="mt-1 text-gray-400 hover:text-white transition flex-shrink-0 lg:hidden">
-                      <ArrowLeft className="w-4 h-4" />
-                    </button>
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {activeConv?.type === 'Report' ? (
-                          <>
-                            <h2 className="text-[17px] font-extrabold text-white">Report: {activeConv?.reportId}</h2>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold border flex-shrink-0 bg-blue-500/10 text-blue-400 border-blue-500/30">
-                              Report Discussion
-                            </span>
-                          </>
-                        ) : (
-                          <>
-                            <h2 className="text-[17px] font-extrabold text-white">Operations Support</h2>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold border flex-shrink-0 bg-purple-500/10 text-purple-400 border-purple-500/30">
-                              General Chat
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-gray-400 mt-1 truncate">
-                        {activeAgent?.name} • {activeConv?.status}
-                      </p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* Tablet/Mobile Details Toggle */}
-                    {(activeReport || activeAgent) && (
-                      <button 
-                        onClick={() => {
-                          setShowTabletDetails(!showTabletDetails);
-                          if (window.innerWidth < 768) setMobileView('details');
-                        }} 
-                        className="lg:hidden p-2 text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition border border-white/[0.08]"
-                        title="View Details"
-                      >
-                        <Briefcase className="w-4 h-4" />
-                      </button>
-                    )}
-                    
-                    {/* Conversation Switcher Dropdown (Mock) */}
-                    <select 
-                      value={activeConvId || ''} 
-                      onChange={(e) => setActiveConvId(e.target.value)}
-                      className="bg-white/[0.05] border border-white/[0.1] text-white text-[11px] rounded-lg px-2 py-1.5 focus:outline-none"
-                    >
-                      {conversations.filter(c => c.agentId === activeAgentId).map(c => (
-                        <option key={c.id} value={c.id} className="bg-black text-white">
-                          {c.type === 'Report' ? `Report ${c.reportId}` : 'Operations'} {c.unreadCountAdmin > 0 ? ' (Unread)' : ''}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
+              <div className="px-5 pt-4 pb-0 border-b border-white/[0.06] flex-shrink-0">
                 
-                {/* Tabs only for Report conversations */}
-                {activeConv?.type === 'Report' && activeReport && (
-                  <div className="flex gap-5 mt-3">
-                    {['Conversation','Details',`Media (${activeReport.media?.length || 0})`,`Documents (${activeReport.documents?.length || 0})`,'Timeline','History'].map(tab => {
-                      const key = tab.split(' ')[0];
-                      return (
-                        <button key={tab} onClick={() => setActiveTab(key)}
-                          className={`pb-2 text-[12px] font-medium border-b-2 transition whitespace-nowrap ${
-                            activeTab === key ? 'border-emerald-400 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'
-                          }`}>{tab}</button>
-                      );
-                    })}
+                {/* Rich Header for Reports */}
+                {activeConv?.type === 'Report' && activeReport ? (
+                  <>
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div className="flex flex-col min-w-0">
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="text-gray-400 hover:text-white transition flex-shrink-0">
+                            <ArrowLeft className="w-4 h-4" />
+                          </button>
+                          <h2 className="text-[17px] font-extrabold text-white">Report: {activeReport.id}</h2>
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border flex-shrink-0 bg-[#b8860b]/10 text-[#b8860b] border-[#b8860b]/30">
+                            {activeReport.status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-1.5 ml-7 truncate">
+                          {activeReport.category} Roof Repair • {activeReport.location.village || activeReport.location.district}, {activeReport.location.state} • Submitted by {activeReport.agentName}
+                        </p>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition text-[11px] text-gray-300 font-medium">
+                          <UserPlus className="w-3.5 h-3.5" /> Assign
+                        </button>
+                        <button className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition text-gray-300">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    
+                    {/* Tabs */}
+                    <div className="flex gap-5 mt-4 ml-7 overflow-x-auto no-scrollbar">
+                      {['Conversation','Details',`Media (${activeReport.media?.length || 0})`,`Documents (0)`,'Timeline','History'].map(tab => {
+                        const key = tab.split(' ')[0];
+                        return (
+                          <button key={tab} onClick={() => setActiveTab(key)}
+                            className={`pb-3 text-[12px] font-medium border-b-2 transition whitespace-nowrap ${
+                              activeTab === key ? 'border-emerald-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'
+                            }`}>{tab}</button>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  /* Standard Header for General Chat */
+                  <div className="flex items-start justify-between gap-3 pb-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="mt-1 text-gray-400 hover:text-white transition flex-shrink-0 lg:hidden">
+                        <ArrowLeft className="w-4 h-4" />
+                      </button>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h2 className="text-[17px] font-extrabold text-white">Operations Support</h2>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold border flex-shrink-0 bg-purple-500/10 text-purple-400 border-purple-500/30">
+                            General Chat
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-1 truncate">
+                          {activeAgent?.name} • {activeAgent?.status}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5 bg-[#06090a]">
+              {/* Tab Content Container */}
+              <div className="flex-1 overflow-y-auto bg-[#06090a] relative">
+              
+              {/* Conversation Tab */}
+              {activeTab === 'Conversation' && (
+              <div className="flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
                 {messages.length === 0 && (
                   <div className="text-center py-8 text-gray-600 text-[12px]">No messages yet — start the conversation.</div>
                 )}
@@ -833,6 +854,9 @@ function FieldOperationsCenterContent() {
                       )}
                       <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*,.pdf,.doc,.docx" disabled={isUploading} />
                     </label>
+                    <button type="button" className="p-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition text-gray-500">
+                      <Smile className="w-4 h-4" />
+                    </button>
                     <button 
                       type="button" 
                       onClick={handleToggleRecord} 
@@ -976,15 +1000,21 @@ function FieldOperationsCenterContent() {
                     {activeReport.status}
                   </span>
                 </div>
-              </div>
+                </div>
 
-              {/* (Timeline moved below Quick Actions) */}
+                <div className="pt-2 border-t border-white/[0.06] mt-4">
+                  <button className="w-full py-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/30 text-emerald-100 text-[12px] font-bold transition flex items-center justify-between px-4">
+                    Take Action
+                    <ChevronDown className="w-4 h-4 text-emerald-400" />
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl p-4 flex-shrink-0">
-              <p className="text-[12px] font-bold text-white mb-4">Quick Actions</p>
-              <div className="flex justify-between">
+            <div className="flex-shrink-0">
+              <p className="text-[12px] font-bold text-white mb-2 ml-1">Quick Actions</p>
+              <div className="grid grid-cols-5 gap-2">
                 {([
                   {
                     label: 'Approve', Icon: CheckCircle, hc: 'emerald',
@@ -1007,106 +1037,20 @@ function FieldOperationsCenterContent() {
                     disabled: ['Converted'].includes(activeReport.status),
                   },
                   {
-                    label: 'Convert', Icon: Briefcase, hc: 'purple',
+                    label: 'Convert to Cause', Icon: Sparkles, hc: 'purple',
                     fn: handleConvert,
                     disabled: activeReport.status !== 'Approved',
                   },
                 ] as { label:string; Icon:any; hc:string; fn:()=>void; disabled:boolean }[]).map(({ label, Icon, hc, fn, disabled }) => (
                   <button key={label} onClick={disabled ? undefined : fn} disabled={disabled}
-                    className={`flex flex-col items-center gap-1.5 group p-1 transition-all ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'}`}>
-                    <div className={`w-9 h-9 rounded-full border border-white/[0.1] bg-white/[0.02] flex items-center justify-center text-gray-400 transition
-                      ${!disabled ? `group-hover:bg-${hc}-500/10 group-hover:text-${hc}-400 group-hover:border-${hc}-500/30` : ''}`}>
+                    className={`flex flex-col items-center justify-center gap-2 group p-2 rounded-xl border border-white/[0.08] bg-[#0a0d0b] transition-all ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:bg-white/[0.02]'}`}>
+                    <div className={`text-gray-400 transition
+                      ${!disabled ? `group-hover:text-${hc}-400` : ''}`}>
                       <Icon className="w-4 h-4" />
                     </div>
-                    <span className="text-[9px] text-gray-500 group-hover:text-gray-300 text-center leading-tight max-w-[44px]">{label}</span>
+                    <span className="text-[9px] text-gray-500 group-hover:text-gray-300 text-center leading-[1.1]">{label}</span>
                   </button>
                 ))}
-              </div>
-            </div>
-
-            {/* Interactive Report Timeline */}
-            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl p-4 flex-shrink-0">
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-[12px] font-bold text-white">Report Timeline</p>
-                <span className="text-[9px] text-gray-500">Click stage to mark complete</span>
-              </div>
-              <div className="space-y-0">
-                {(() => {
-                  const TIMELINE_STAGES = [
-                    "Submitted",
-                    "Assigned to Reviewer",
-                    "Under Review",
-                    "Verification Visit",
-                    "Approval",
-                    "Published on Website",
-                  ];
-                  const savedStages: Record<string, string> = (activeReport as any).timelineStages || {};
-                  const handleStageClick = async (stage: string) => {
-                    if (!activeReport || stage === "Submitted") return;
-                    const alreadyDone = !!savedStages[stage];
-                    const updated = { ...savedStages };
-                    if (alreadyDone) {
-                      delete updated[stage];
-                    } else {
-                      updated[stage] = new Date().toISOString();
-                    }
-                    await updateDoc(doc(db, "field_reports", activeReport.id), {
-                      timelineStages: updated,
-                      updatedAt: new Date().toISOString(),
-                      hasAgentUnreadUpdate: true,
-                    });
-                  };
-
-                  return TIMELINE_STAGES.map((stage, i) => {
-                    const isSubmitted = stage === "Submitted";
-                    const completedAt = isSubmitted ? activeReport.createdAt : savedStages[stage];
-                    const isDone = !!completedAt;
-                    // All stages except Submitted are freely clickable by admin
-                    const isClickable = !isSubmitted;
-
-                    return (
-                      <div key={stage} className="flex gap-2.5">
-                        <div className="flex flex-col items-center">
-                          <button
-                            onClick={() => isClickable && handleStageClick(stage)}
-                            title={isSubmitted ? "Auto-set on submission" : (isDone ? "Click to undo this stage" : "Click to mark as complete")}
-                            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all ${
-                              isSubmitted
-                                ? "border-emerald-400 bg-emerald-400/20 cursor-default"
-                                : isDone
-                                ? "border-emerald-400 bg-emerald-400/20 cursor-pointer hover:bg-red-400/10 hover:border-red-400/50"
-                                : "border-[#b8860b] bg-[#b8860b]/10 cursor-pointer hover:bg-[#b8860b]/20"
-                            }`}
-                          >
-                            {isDone && (
-                              <svg className="w-2.5 h-2.5 text-emerald-400" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                            {!isDone && isClickable && (
-                              <div className="w-1.5 h-1.5 rounded-full bg-[#b8860b]" />
-                            )}
-                          </button>
-                          {i < TIMELINE_STAGES.length - 1 && (
-                            <div className={`w-0.5 flex-1 my-1 min-h-[16px] ${isDone ? "bg-emerald-400/30" : "bg-white/[0.07]"}`} />
-                          )}
-                        </div>
-                        <div className="pb-3">
-                          <p className={`text-[11px] font-semibold leading-tight ${
-                            isDone ? "text-white" : isClickable ? "text-[#b8860b]" : "text-gray-500"
-                          }`}>{stage}</p>
-                          {completedAt ? (
-                            <p className="text-[9px] text-emerald-400/70 mt-0.5">
-                              {new Date(completedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-                            </p>
-                          ) : (
-                            <p className="text-[9px] text-[#b8860b]/70 mt-0.5">Click to advance</p>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  });
-                })()}
               </div>
             </div>
           </div>
