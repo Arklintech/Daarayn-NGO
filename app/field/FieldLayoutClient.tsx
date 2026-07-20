@@ -80,8 +80,8 @@ function AgentNavigation({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="bg-[#020704] min-h-screen">
-      <div className="flex min-h-screen bg-[#020704] text-gray-200 font-sans max-w-enterprise mx-auto relative shadow-2xl">
+    <div className="fixed inset-0 bg-[#020704] overflow-hidden">
+      <div className="flex h-full w-full bg-[#020704] text-gray-200 font-sans max-w-enterprise mx-auto relative shadow-2xl">
         {/* ─── Desktop Sidebar (lg+) ──────────────────────── */}
       <aside className="hidden lg:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-[#020704] border-r border-luxury-border z-40">
         <div className="flex items-center gap-3 p-6 pb-4 border-b border-white/[0.06]">

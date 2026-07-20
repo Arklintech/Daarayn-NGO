@@ -59,7 +59,7 @@ export default function FieldAgentCRM({ params }: { params: Promise<{ agentId: s
     : 0;
 
   return (
-    <div className="space-y-6 text-xs max-w-[1600px] mx-auto w-full pb-20">
+    <div className="space-y-6 text-xs max-w-7xl mx-auto w-full pb-20">
       <div className="flex items-center gap-4">
         <Link href="/admin/field-agents" className="p-2 bg-black/40 border border-white/[0.08] rounded-xl hover:bg-white/[0.04] transition">
           <ArrowLeft className="w-4 h-4 text-gray-400" />

@@ -95,7 +95,7 @@ export default function FieldAgentManagement() {
   };
 
   return (
-    <div className="space-y-6 text-xs max-w-[1600px] mx-auto w-full">
+    <div className="space-y-6 text-xs max-w-7xl mx-auto w-full">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-luxury-gold font-playfair tracking-wide uppercase">Field Agent IAM Center</h2>

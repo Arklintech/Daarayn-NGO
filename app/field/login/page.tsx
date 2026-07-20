@@ -133,7 +133,7 @@ export default function AgentLogin() {
       </div>
 
       {/* LEFT PANEL */}
-      <div className="hidden lg:flex flex-col justify-center w-[400px] xl:w-[440px] flex-shrink-0 relative z-10 px-8 xl:px-10 py-8 gap-8">
+      <div className="hidden lg:flex flex-col justify-center w-full max-w-[400px] xl:max-w-[440px] flex-shrink-0 relative z-10 px-8 xl:px-10 py-8 gap-8">
 
         {/* Brand */}
         <div className="flex items-center gap-4">
@@ -179,7 +179,7 @@ export default function AgentLogin() {
       ══════════════════════════════════ */}
       <div className="flex-1 flex flex-col items-center justify-center px-5 relative z-10 overflow-hidden">
         {/* Subtle glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-luxury-gold/[0.015] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-[500px] h-full max-h-[500px] aspect-square bg-luxury-gold/[0.015] rounded-full blur-3xl pointer-events-none" />
 
         {/* Mobile brand — only on small screens */}
         <div className="lg:hidden flex items-center gap-2.5 mb-6">

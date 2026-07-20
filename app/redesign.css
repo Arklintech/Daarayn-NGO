@@ -27,7 +27,7 @@
 .daarayn-navbar {
   width: 100%;
   max-width: 1400px;
-  height: 72px;
+  min-height: 72px;
   background: rgba(10, 20, 38, 0.65);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -167,7 +167,7 @@
 .daarayn-quick-donation-ribbon {
   width: 100%;
   max-width: 1200px;
-  height: 72px;
+  min-height: 72px;
   background: #081222;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
@@ -419,7 +419,7 @@
 
 .daarayn-hero-title {
   font-family: var(--font-playfair);
-  font-size: 64px;
+  font-size: clamp(2.5rem, 5vw, 4rem);
   line-height: 1.1;
   color: #fff;
   font-weight: 600;
@@ -437,7 +437,7 @@
 }
 
 .daarayn-hero-subtitle {
-  font-size: 20px;
+  font-size: clamp(1rem, 1.5vw, 1.25rem);
   line-height: 1.6;
   color: rgba(255, 255, 255, 0.8);
   margin-bottom: 48px;

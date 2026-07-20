@@ -309,7 +309,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
         </header>
 
         {/* Dynamic Inner Panel Viewport */}
-        <main className={`flex-1 min-h-0 ${pathname.startsWith('/admin/field-ops') ? 'h-[calc(100vh-64px)] flex flex-col overflow-hidden' : 'p-6 lg:p-8 overflow-y-auto relative'}`}>
+        <main className={`flex-1 min-h-0 ${pathname.startsWith('/admin/field-ops') ? 'flex flex-col overflow-hidden' : 'p-6 lg:p-8 overflow-y-auto relative'}`}>
           {children}
         </main>
       </div>
