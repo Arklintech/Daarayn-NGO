@@ -776,44 +776,27 @@ function FieldOperationsCenterContent() {
                   <div className="text-center py-6 text-gray-600 text-[11px]">No messages yet — start the conversation.</div>
                 )}
                 {messages.map((msg, i) => (
-                  <div key={i} className="flex gap-3">
+                  <div key={i} className="flex gap-3.5 p-4 rounded-2xl border border-white/[0.04] bg-[#0c100d] max-w-full">
                     <img src={avatar(msg.senderName)} alt={msg.senderName}
-                      className="w-8 h-8 rounded-full border border-white/10 flex-shrink-0" />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1.5">
-                        <span className="text-[12px] font-bold text-white">{msg.senderName}</span>
-                        <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
+                      className="w-10 h-10 rounded-full object-cover border border-white/10 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2.5 mb-1.5">
+                        <span className="text-[13px] font-bold text-white">{msg.senderName}</span>
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                           msg.senderRole==='Admin' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'
                         }`}>{msg.senderRole}</span>
-                        <span className="text-[9px] text-gray-500">{new Date(msg.timestamp).toLocaleString()}</span>
-                        <MoreHorizontal className="w-3.5 h-3.5 text-gray-700 ml-auto cursor-pointer hover:text-gray-400 transition" />
+                        <span className="text-[10px] text-gray-500 ml-2">{new Date(msg.timestamp).toLocaleString('en-US', { day:'numeric', month:'short', year:'numeric', hour:'numeric', minute:'2-digit' })}</span>
+                        <MoreHorizontal className="w-4 h-4 text-gray-600 ml-auto cursor-pointer hover:text-gray-300 transition" />
                       </div>
-                      <div className={`inline-block max-w-[90%] px-3.5 py-2.5 rounded-xl rounded-tl-sm text-[11px] leading-relaxed border ${
-                        msg.senderRole==='Admin'
-                          ? 'bg-white/[0.02] border-white/[0.06] text-gray-300'
-                          : 'bg-[#0a1f14] border-emerald-800/40 text-emerald-50'
-                      }`}>
+                      <div className="text-[12.5px] text-gray-300 leading-relaxed pr-4">
                         {(msg as any).isMedia ? (
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col gap-2 mt-2">
                             {(msg as any).isImage && (msg as any).mediaBase64 ? (
-                              <img
-                                src={(msg as any).mediaBase64}
-                                alt={(msg as any).mediaName || 'Image'}
-                                className="max-w-full max-h-64 rounded-xl object-cover border border-white/10 cursor-pointer"
-                                onClick={() => window.open((msg as any).mediaBase64, '_blank')}
-                              />
+                              <img src={(msg as any).mediaBase64} alt={(msg as any).mediaName || 'Image'} className="max-w-full max-h-64 rounded-xl object-cover border border-white/10 cursor-pointer" onClick={() => window.open((msg as any).mediaBase64, '_blank')} />
                             ) : (msg as any).mediaType?.startsWith("audio/") ? (
-                              <audio
-                                src={(msg as any).mediaBase64}
-                                controls
-                                className="max-w-full rounded-lg outline-none"
-                              />
+                              <audio src={(msg as any).mediaBase64} controls className="max-w-full rounded-lg outline-none" />
                             ) : (msg as any).mediaBase64 ? (
-                              <a
-                                href={(msg as any).mediaBase64}
-                                download={(msg as any).mediaName || 'attachment'}
-                                className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 underline underline-offset-2"
-                              >
+                              <a href={(msg as any).mediaBase64} download={(msg as any).mediaName || 'attachment'} className="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 underline underline-offset-2">
                                 <FileText className="w-4 h-4 flex-shrink-0" />
                                 <span>{(msg as any).mediaName || 'Download File'}</span>
                               </a>
@@ -828,7 +811,7 @@ function FieldOperationsCenterContent() {
                                 )
                               ))
                             ) : null}
-                            <span className="text-[10px] opacity-60">{msg.text}</span>
+                            <span className="text-[11px] opacity-60 mt-1">{msg.text}</span>
                           </div>
                         ) : msg.text}
                       </div>
@@ -838,39 +821,30 @@ function FieldOperationsCenterContent() {
               </div>
 
               {/* Input */}
-              <div className="px-3 py-2.5 border-t border-white/[0.06] bg-[#070a08] flex-shrink-0">
+              <div className="px-4 py-3 bg-[#0a0d0b] flex-shrink-0">
                 <form onSubmit={handleSend}
-                  className="flex items-center gap-2 bg-black/50 border border-white/[0.08] rounded-lg px-2.5 py-1 focus-within:border-emerald-500/40 transition-colors">
+                  className="flex items-center gap-2 bg-[#0c100d] border border-white/[0.06] rounded-xl px-3 py-1.5 focus-within:border-emerald-500/40 transition-colors">
                   <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)}
-                    placeholder={`Reply in ${activeConv?.type === 'Report' ? activeConv.reportId : 'Operations'}...`}
-                    className="flex-1 bg-transparent text-[11px] text-white focus:outline-none placeholder:text-gray-600 py-1" />
-                  <div className="flex items-center gap-0.5 text-gray-500">
-                    <label className={`p-1.5 hover:text-white rounded-lg hover:bg-white/[0.05] transition cursor-pointer flex items-center justify-center ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
+                    placeholder="Type your message..."
+                    className="flex-1 bg-transparent text-[13px] text-white focus:outline-none placeholder:text-gray-600 py-1.5" />
+                  <div className="flex items-center gap-1 text-gray-500">
+                    <label className={`p-2 hover:text-white rounded-lg hover:bg-white/[0.05] transition cursor-pointer flex items-center justify-center ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                       {isUploading ? (
-                        <div className="w-4 h-4 rounded-full border-2 border-gray-500 border-t-white animate-spin" />
+                        <div className="w-4.5 h-4.5 rounded-full border-2 border-gray-500 border-t-white animate-spin" />
                       ) : (
-                        <Paperclip className="w-4 h-4" />
+                        <Paperclip className="w-4.5 h-4.5" />
                       )}
                       <input type="file" className="hidden" onChange={handleFileUpload} accept="image/*,.pdf,.doc,.docx" disabled={isUploading} />
                     </label>
-                    <button type="button" className="p-1.5 rounded-lg hover:text-white hover:bg-white/[0.05] transition text-gray-500">
-                      <Smile className="w-4 h-4" />
+                    <button type="button" className="p-2 rounded-lg hover:text-white hover:bg-white/[0.05] transition">
+                      <Smile className="w-4.5 h-4.5" />
                     </button>
-                    <button 
-                      type="button" 
-                      onClick={handleToggleRecord} 
-                      className={`p-1.5 rounded-lg transition-colors ${
-                        isRecording 
-                          ? 'text-red-500 bg-red-500/10 hover:bg-red-500/20 animate-pulse' 
-                          : 'hover:text-white hover:bg-white/[0.05] text-gray-500'
-                      }`}
-                      title={isRecording ? "Stop Recording" : "Record Voice Note"}
-                    >
-                      <Mic className="w-4 h-4" />
+                    <button type="button" onClick={handleToggleRecord} className={`p-2 rounded-lg transition-colors ${isRecording ? 'text-red-500 bg-red-500/10 animate-pulse' : 'hover:text-white hover:bg-white/[0.05]'}`}>
+                      <Mic className="w-4.5 h-4.5" />
                     </button>
                   </div>
-                  <button type="submit" className="p-2 bg-emerald-500 hover:bg-emerald-400 text-black rounded-lg transition flex-shrink-0">
-                    <Send className="w-3.5 h-3.5" />
+                  <button type="submit" className="p-2.5 ml-1 bg-[#1a4a2f] hover:bg-emerald-700 text-white rounded-xl transition flex-shrink-0 border border-emerald-800/50">
+                    <Send className="w-4.5 h-4.5" />
                   </button>
                 </form>
               </div>
