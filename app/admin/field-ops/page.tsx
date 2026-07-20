@@ -36,6 +36,10 @@ function FieldOperationsCenterContent() {
   const [isUploading, setIsUploading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  
+  // Mobile adaptive layout state
+  const [mobileView, setMobileView] = useState<'agents' | 'chat' | 'details'>('agents');
+  const [showTabletDetails, setShowTabletDetails] = useState(false);
 
   // Quick Action modal state
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -530,7 +534,7 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── STAT CARDS ── */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4 flex-shrink-0">
+      <div className="flex overflow-x-auto no-scrollbar md:grid md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4 flex-shrink-0 pb-1">
         {([
           { label:'Field Agents',        value: agents.length || 182, sub:'Active',           color:'blue',   Icon: Users },
           { label:'Total Reports',       value: allReports.length || 2842, sub:'All Time',    color:'emerald',Icon: FileText },
@@ -539,7 +543,7 @@ function FieldOperationsCenterContent() {
           { label:'Urgent Reports',      value: urgentCount || 3,     sub:'High Priority',    color:'red',    Icon: AlertCircle },
           { label:'Verified & Approved', value: verifiedCount || 1256,sub:'This Year',        color:'emerald',Icon: CheckCircle },
         ] as const).map(({ label, value, sub, color, Icon }) => (
-          <div key={label} className={`bg-[#0a0d0b] border rounded-xl p-3.5 flex items-center gap-3 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
+          <div key={label} className={`min-w-[160px] md:min-w-0 bg-[#0a0d0b] border rounded-xl p-3.5 flex items-center gap-3 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
               color==='blue'   ? 'bg-blue-500/10 text-blue-400' :
               color==='emerald'? 'bg-emerald-500/10 text-emerald-400' :
@@ -563,10 +567,10 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div className="flex flex-col md:flex-row gap-3 flex-1 min-h-0 overflow-hidden">
+      <div className="flex flex-col md:grid md:grid-cols-[240px_1fr] lg:grid-cols-[minmax(240px,25%)_minmax(400px,1fr)_minmax(240px,22%)] xl:grid-cols-[minmax(300px,25%)_minmax(600px,1fr)_minmax(280px,22%)] gap-3 flex-1 min-h-0 overflow-hidden relative">
 
         {/* LEFT: Agent List */}
-        <div className="w-full md:max-w-[240px] xl:max-w-xs flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-hidden">
+        <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex w-full md:w-auto h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex-col overflow-hidden`}>
           <div className="p-4 border-b border-white/[0.06]">
             <p className="text-[13px] font-bold text-white mb-3">Field Agents & Conversations</p>
             <div className="flex gap-2">
@@ -606,7 +610,10 @@ function FieldOperationsCenterContent() {
                     : 'No Reports Yet';
 
               return (
-                <div key={agent.id} onClick={() => setActiveAgentId(agent.id)}
+                <div key={agent.id} onClick={() => {
+                  setActiveAgentId(agent.id);
+                  setMobileView('chat');
+                }}
                   className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
                     isActive ? 'bg-emerald-950/50 border border-emerald-800/40' : 'hover:bg-white/[0.03] border border-transparent'
                   }`}>
@@ -639,7 +646,7 @@ function FieldOperationsCenterContent() {
         </div>
 
         {/* MIDDLE: Conversation Panel */}
-        <div className="flex-1 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-hidden min-w-0">
+        <div className={`${mobileView === 'chat' ? 'flex' : 'hidden'} md:flex flex-1 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex-col overflow-hidden min-w-0 h-full`}>
 
           {!activeAgentId ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
@@ -648,6 +655,9 @@ function FieldOperationsCenterContent() {
               </div>
               <p className="text-[13px] font-semibold text-white">Central Communication Hub</p>
               <p className="text-[11px] text-gray-400 mt-2">Select an agent to view their conversations.</p>
+              <button className="md:hidden mt-4 px-4 py-2 bg-emerald-500/10 text-emerald-400 text-[12px] font-bold rounded-lg border border-emerald-500/20" onClick={() => setMobileView('agents')}>
+                View Agents
+              </button>
             </div>
 
           ) : !activeConvId ? (
@@ -667,7 +677,7 @@ function FieldOperationsCenterContent() {
               <div className="px-5 pt-4 pb-3 border-b border-white/[0.06] flex-shrink-0">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3 min-w-0">
-                    <button onClick={() => setActiveAgentId(null)} className="mt-1 text-gray-400 hover:text-white transition flex-shrink-0">
+                    <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="mt-1 text-gray-400 hover:text-white transition flex-shrink-0 lg:hidden">
                       <ArrowLeft className="w-4 h-4" />
                     </button>
                     <div className="min-w-0">
@@ -694,10 +704,24 @@ function FieldOperationsCenterContent() {
                     </div>
                   </div>
                   
-                  {/* Conversation Switcher Dropdown (Mock) */}
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Tablet/Mobile Details Toggle */}
+                    {(activeReport || activeAgent) && (
+                      <button 
+                        onClick={() => {
+                          setShowTabletDetails(!showTabletDetails);
+                          if (window.innerWidth < 768) setMobileView('details');
+                        }} 
+                        className="lg:hidden p-2 text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition border border-white/[0.08]"
+                        title="View Details"
+                      >
+                        <Briefcase className="w-4 h-4" />
+                      </button>
+                    )}
+                    
+                    {/* Conversation Switcher Dropdown (Mock) */}
                     <select 
-                      value={activeConvId} 
+                      value={activeConvId || ''} 
                       onChange={(e) => setActiveConvId(e.target.value)}
                       className="bg-white/[0.05] border border-white/[0.1] text-white text-[11px] rounded-lg px-2 py-1.5 focus:outline-none"
                     >
@@ -833,7 +857,16 @@ function FieldOperationsCenterContent() {
 
         {/* RIGHT: Report Details + Quick Actions (Only shown if Report Conversation active) */}
         {activeReport ? (
-          <div className="w-full md:w-[240px] xl:w-[300px] flex-shrink-0 flex flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar">
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} lg:flex absolute lg:static inset-y-0 right-0 z-40 lg:z-auto w-full md:w-[320px] lg:w-auto xl:w-[300px] bg-[#020704]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-l lg:border-none border-white/[0.07] p-4 lg:p-0 flex-shrink-0 flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar h-full shadow-2xl lg:shadow-none`}>
+            
+            {/* Mobile/Tablet Close Button */}
+            <div className="lg:hidden flex items-center justify-between flex-shrink-0 mb-1">
+              <h3 className="text-[14px] font-bold text-white">Details & Actions</h3>
+              <button onClick={() => { setShowTabletDetails(false); setMobileView('chat'); }} className="p-1.5 bg-white/[0.05] rounded-lg text-gray-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
             {/* Report Details Card */}
             <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-y-auto no-scrollbar flex-1">
               <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between gap-2 flex-shrink-0">
@@ -1079,8 +1112,18 @@ function FieldOperationsCenterContent() {
           </div>
         ) : activeAgent ? (
           /* Agent profile when no report or Operational Conversation selected */
-          <div className="w-full md:w-[240px] xl:w-[300px] flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-4">
-            <h3 className="text-[13px] font-bold text-white">Agent Profile</h3>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} lg:flex absolute lg:static inset-y-0 right-0 z-40 lg:z-auto w-full md:w-[320px] lg:w-auto xl:w-[300px] bg-[#020704]/95 lg:bg-transparent backdrop-blur-xl lg:backdrop-blur-none border-l lg:border-none border-white/[0.07] p-4 lg:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl lg:shadow-none`}>
+            
+            {/* Mobile/Tablet Close Button */}
+            <div className="lg:hidden flex items-center justify-between flex-shrink-0">
+              <h3 className="text-[14px] font-bold text-white">Agent Info</h3>
+              <button onClick={() => { setShowTabletDetails(false); setMobileView('chat'); }} className="p-1.5 bg-white/[0.05] rounded-lg text-gray-400 hover:text-white">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-4 flex-1">
+              <h3 className="text-[13px] font-bold text-white hidden lg:block">Agent Profile</h3>
             <div className="flex flex-col items-center text-center py-3">
               <img src={avatar(activeAgent.name, activeAgent.avatarUrl)} alt={activeAgent.name}
                 className="w-16 h-16 rounded-full border-2 border-emerald-500/30 mb-3" />
@@ -1096,9 +1139,10 @@ function FieldOperationsCenterContent() {
                 </div>
               ))}
             </div>
+            </div>
           </div>
         ) : (
-          <div className="w-full md:w-[240px] xl:w-[300px] flex-shrink-0" />
+          <div className="hidden lg:block lg:w-auto xl:w-[300px] flex-shrink-0" />
         )}
       </div>
     </div>
