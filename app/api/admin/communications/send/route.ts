@@ -11,13 +11,13 @@ export async function POST(req: Request) {
     const { causeIds, type, heading, notes, media } = body;
 
     if (!causeIds || !Array.isArray(causeIds) || causeIds.length === 0) {
-      return NextResponse.json({ success: false, error: "Missing selected causes." }, { status: 400 });
+      return NextResponse.json({ success: false, error: `Missing selected causes. Received: ${JSON.stringify(causeIds)}` }, { status: 400 });
     }
 
     const { uniqueDonors, stats, causeNames } = await resolveRecipients(causeIds, type || "general_communication");
     
     if (uniqueDonors.length === 0) {
-      return NextResponse.json({ success: false, error: "No eligible recipients found." }, { status: 400 });
+      return NextResponse.json({ success: false, error: `No eligible recipients found for causes ${JSON.stringify(causeIds)} and type ${type}.` }, { status: 400 });
     }
 
     const recipients = uniqueDonors;

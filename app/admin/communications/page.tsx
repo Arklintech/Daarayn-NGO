@@ -439,6 +439,11 @@ export default function CommunicationsHub() {
                     <div className="px-8 pt-10 pb-8 text-center">
                       <img src="/email logo/daarayn-emblem.png.png" alt="Daarayn" className="w-14 h-14 object-contain mx-auto mb-5" style={{ mixBlendMode: 'screen' }} />
                       <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '26px', letterSpacing: '5px', color: '#ffffff', fontWeight: 700, marginBottom: '10px' }}>DAARAYN</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
+                        <div style={{ flex: 1, maxWidth: '60px', height: '1px', background: 'rgba(255,255,255,0.5)' }} />
+                        <span style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '3px', color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase' }}>F O U N D A T I O N</span>
+                        <div style={{ flex: 1, maxWidth: '60px', height: '1px', background: 'rgba(255,255,255,0.5)' }} />
+                      </div>
                     </div>
                     <div className="px-8 pb-8 space-y-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
                       <div className="flex justify-center pt-6">
@@ -448,6 +453,22 @@ export default function CommunicationsHub() {
                       </div>
                       <p className="text-white text-sm font-semibold">Assalamu Alaikum, Donor Name,</p>
                       {notes && <p className="text-white/50 text-xs leading-relaxed">{notes.substring(0, 120)}{notes.length > 120 ? '…' : ''}</p>}
+                      <div className="rounded-lg p-4 space-y-2 mt-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-3">Contribution Summary</p>
+                        <div className="flex justify-between text-xs py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span className="text-white/40 min-w-max mr-2">Target Causes</span>
+                          <span className="text-white font-semibold line-clamp-1 text-right" title={causeNamesText}>{causeNamesText}</span>
+                        </div>
+                        <div className="flex justify-between text-xs py-1.5">
+                          <span className="text-white/40">Status</span>
+                          <span className="text-white font-semibold">Active Deployment</span>
+                        </div>
+                      </div>
+                      <div className="text-center pt-2">
+                        <span className="inline-block px-6 py-2 text-xs font-bold uppercase tracking-widest rounded text-black" style={{ background: '#EFE5C9' }}>
+                          Track Your Impact
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
