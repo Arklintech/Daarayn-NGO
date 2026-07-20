@@ -568,7 +568,7 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div className="flex flex-col md:grid md:grid-cols-[minmax(280px,22%)_minmax(0,1fr)] xl:grid-cols-[minmax(300px,22%)_minmax(650px,1fr)_minmax(300px,24%)] gap-1 md:gap-2 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
+      <div className="flex flex-col md:grid md:grid-cols-[minmax(240px,25%)_minmax(0,1fr)] xl:grid-cols-[minmax(240px,22%)_minmax(400px,1fr)_minmax(240px,24%)] gap-1 md:gap-2 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
 
         {/* LEFT: Agent List */}
         <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-md flex-col overflow-hidden min-w-0 min-h-0`}>
