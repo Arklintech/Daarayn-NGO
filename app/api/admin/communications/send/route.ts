@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection } from "firebase/firestore";
-import { addDoc } from "@/lib/db-sync";
-import { generateLetterEmailTemplate, attachDaaraynLogo } from "@/lib/email/resend";
-import { sendEmail } from "@/lib/email/providerManager";
+import { doc, setDoc } from "firebase/firestore";
 import { resolveRecipients } from "@/lib/communication-resolver";
+import { waitUntil } from "@vercel/functions";
+import { processBroadcast } from "@/lib/broadcast-worker";
 
 export async function POST(req: Request) {
   try {
@@ -64,7 +63,6 @@ export async function POST(req: Request) {
       p.replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong style='color:#F2EEE3;'>$1</strong>")
     );
 
-    // Format project update and append links to media files
     let projectUpdateHtml = formattedNotes.join('<br><br>');
     if (media && Array.isArray(media) && media.length > 0) {
       projectUpdateHtml += '<br><br><hr style="border:none; border-top:1px solid rgba(255,255,255,0.07); margin:20px 0;"><strong style="color:#D4AF37; font-family:Georgia, serif; font-size:14px;">Attached Documents & Media:</strong><ul style="margin:10px 0 0; padding-left:20px; font-family:Arial, sans-serif; font-size:13px; color:#f3f4f6; line-height:1.6;">';
@@ -75,149 +73,48 @@ export async function POST(req: Request) {
       projectUpdateHtml += '</ul>';
     }
 
-    // Resolve and download remote attachments once for efficiency
-    const resolvedAttachments: any[] = [...attachDaaraynLogo()];
-    if (media && Array.isArray(media)) {
-      for (const url of media) {
-        try {
-          console.log(`[Send Communication] Downloading attachment: ${url}`);
-          const res = await fetch(url);
-          if (res.ok) {
-            const arrayBuffer = await res.arrayBuffer();
-            const buffer = Buffer.from(arrayBuffer);
-            const filename = url.split("/").pop()?.split("?")[0] || "document";
-            resolvedAttachments.push({
-              filename,
-              content: buffer
-            });
-            console.log(`[Send Communication] Successfully attached: ${filename}`);
-          } else {
-            console.warn(`[Send Communication] Download failed for ${url} with status: ${res.status}`);
-          }
-        } catch (downloadErr) {
-          console.error(`Failed to download attachment ${url}:`, downloadErr);
-        }
-      }
-    }
+    const broadcastId = `BCAST-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const createdAt = new Date().toISOString();
 
-    const commId = `COMM-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
-    let successCount = 0;
-    let failCount = 0;
-    
-    // Dispatch emails in batches
-    const batchSize = 10;
-    for (let i = 0; i < recipients.length; i += batchSize) {
-      const batch = recipients.slice(i, i + batchSize);
-      
-      await Promise.allSettled(batch.map(async (recipient) => {
-        if (!recipient.email) return;
-        
-        // Personalize for each recipient
-        const html = generateLetterEmailTemplate({
-          title: `${heading} — Daarayn Foundation`,
-          eyebrow: eyebrow,
-          greeting: `Assalamu Alaikum, ${recipient.name},`,
-          contributionSummary: [
-            { label: "Target Causes", value: causeName || "Daarayn Initiatives" },
-            { label: "Campaign Progress", value: stats?.percentage !== undefined ? `${stats.percentage}% Funded` : "Active" }
-          ],
-          projectUpdate: projectUpdateHtml,
-          transparencySummary: "Every Rupee you donate is tracked, documented, and reported. This communication is permanently recorded on our public ledger for complete transparency.",
-          ctaLink: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/donor/dashboard`,
-          ctaText: "Track Your Impact",
-          dua,
-          signOff: "" // Let the footer handle it in the new theme
-        });
+    // 1. Create Broadcast Job Document
+    const broadcastRef = doc(db, "broadcasts", broadcastId);
+    await setDoc(broadcastRef, {
+      id: broadcastId,
+      createdBy: "Administrator",
+      createdAt,
+      communicationType: type || "general_communication",
+      selectedCauseIds: causeIds,
+      causeName,
+      totalRecipients: recipients.length,
+      status: "Queued",
+      stats: { sent: 0, failed: 0, remaining: recipients.length },
+      startedAt: null,
+      completedAt: null,
+      processingDurationMs: 0
+    });
 
-        let attempts = 0;
-        const maxRetries = 3;
-        let delivered = false;
-        let lastError: any = null;
-
-        while (attempts < maxRetries && !delivered) {
-          try {
-            const result = await sendEmail({
-              to: recipient.email,
-              subject: `${heading} — Daarayn Foundation`,
-              html,
-              attachments: resolvedAttachments
-            });
-            
-            if (result.success) {
-              delivered = true;
-              successCount++;
-            } else {
-              throw new Error("Provider returned unsuccessful response");
-            }
-          } catch (err: any) {
-            attempts++;
-            lastError = err;
-            if (attempts < maxRetries) {
-              // Wait before retry
-              await new Promise(r => setTimeout(r, 1000));
-            }
-          }
-        }
-
-        if (!delivered) {
-          failCount++;
-          console.error(`Failed to send to ${recipient.email} after ${maxRetries} attempts:`, lastError);
-          // Log failure to communication_jobs
-          await addDoc(collection(db, "communication_jobs"), {
-            communicationId: commId,
-            recipientEmail: recipient.email,
-            recipientName: recipient.name,
-            status: "failed",
-            error: lastError?.message || "Unknown error",
-            timestamp: new Date().toISOString()
-          });
-        } else {
-          // Log success to communication_jobs
-          await addDoc(collection(db, "communication_jobs"), {
-            communicationId: commId,
-            recipientEmail: recipient.email,
-            recipientName: recipient.name,
-            status: "sent",
-            timestamp: new Date().toISOString()
-          });
-        }
-      }));
-
-      // Delay between batches
-      if (i + batchSize < recipients.length) {
-        await new Promise(r => setTimeout(r, 1500));
-      }
-    }
-
-    // Save to Firestore Communication Log
-    const logData = {
-      id: commId,
-      causeIds,
-      type,
-      recipientsCount: recipients.length,
-      successfulDeliveries: successCount,
-      failedDeliveries: failCount,
-      subject: heading,
-      message: notes,
-      media: media || [],
-      sentDate: new Date().toISOString(),
-      createdBy: "Administrator", // Can be pulled from auth session
-      status: "completed"
+    // 2. Setup Background Processing via waitUntil
+    const payload = {
+      heading,
+      eyebrow,
+      dua,
+      projectUpdateHtml,
+      mediaUrls: media || [],
+      causeName,
+      stats,
+      createdAt
     };
 
-    await addDoc(collection(db, "communications"), logData);
+    waitUntil(processBroadcast(broadcastId, recipients, payload));
 
-    // Sync is automatically queued by lib/db-sync wrapper
-    
     return NextResponse.json({ 
       success: true, 
-      sent: successCount,
-      failed: failCount,
+      broadcastId,
       total: recipients.length 
     });
     
   } catch (error: any) {
-    console.error("Communication dispatch failed:", error);
+    console.error("Communication dispatch setup failed:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
