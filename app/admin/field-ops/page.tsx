@@ -506,25 +506,25 @@ function FieldOperationsCenterContent() {
 
   return (
     <>
-      <div className="flex flex-col h-full w-full bg-[#020704] text-gray-200 overflow-hidden p-4">
+      <div className="flex flex-col h-full w-full bg-[#020704] text-gray-200 overflow-hidden p-2 md:p-3">
 
       {/* ── HEADER ── */}
-      <div className="flex items-center justify-between flex-shrink-0 mb-4 gap-4">
+      <div className="flex items-center justify-between flex-shrink-0 mb-3 gap-3">
         <div>
-          <h1 className="text-[22px] font-bold text-white tracking-wide">Field Operations Center</h1>
-          <p className="text-[12px] text-gray-400 mt-0.5">Manage field reports, communicate with field agents and track progress.</p>
+          <h1 className="text-[18px] font-bold text-white tracking-wide">Field Operations Center</h1>
+          <p className="text-[11px] text-gray-400 mt-0.5">Manage field reports, communicate with field agents and track progress.</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input type="text" placeholder="Search reports, agents, locations..."
-              className="w-full bg-black/40 border border-white/[0.08] rounded-xl pl-10 pr-16 py-[9px] text-[12px] text-white focus:outline-none focus:border-white/20 placeholder:text-gray-500" />
+              className="w-full bg-black/40 border border-white/[0.08] rounded-lg pl-9 pr-14 py-1.5 text-[11px] text-white focus:outline-none focus:border-white/20 placeholder:text-gray-500" />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
               <kbd className="bg-white/[0.05] border border-white/[0.1] rounded px-1 py-0.5 text-[9px] text-gray-400">⌘</kbd>
               <kbd className="bg-white/[0.05] border border-white/[0.1] rounded px-1 py-0.5 text-[9px] text-gray-400">K</kbd>
             </div>
           </div>
-          <button onClick={handleAIInsights} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-[9px] rounded-xl text-[12px] font-bold flex items-center gap-1.5 hover:bg-emerald-500/20 active:scale-95 transition">
+          <button onClick={handleAIInsights} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 hover:bg-emerald-500/20 active:scale-95 transition">
             <Sparkles className="w-3.5 h-3.5" /> AI Insights
           </button>
           <button className="relative p-2 text-gray-400 hover:text-white transition">
@@ -535,7 +535,7 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── STAT CARDS ── */}
-      <div className="flex overflow-x-auto no-scrollbar md:grid md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4 flex-shrink-0 pb-1">
+      <div className="flex overflow-x-auto no-scrollbar md:grid md:grid-cols-3 lg:grid-cols-6 gap-2 mb-3 flex-shrink-0 pb-1">
         {([
           { label:'Field Agents',        value: agents.length || 182, sub:'Active',           color:'blue',   Icon: Users },
           { label:'Total Reports',       value: allReports.length || 2842, sub:'All Time',    color:'emerald',Icon: FileText },
@@ -544,19 +544,19 @@ function FieldOperationsCenterContent() {
           { label:'Urgent Reports',      value: urgentCount || 3,     sub:'High Priority',    color:'red',    Icon: AlertCircle },
           { label:'Verified & Approved', value: verifiedCount || 1256,sub:'This Year',        color:'emerald',Icon: CheckCircle },
         ] as const).map(({ label, value, sub, color, Icon }) => (
-          <div key={label} className={`min-w-[160px] md:min-w-0 bg-[#0a0d0b] border rounded-xl p-3.5 flex items-center gap-3 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+          <div key={label} className={`min-w-[140px] md:min-w-0 bg-[#0a0d0b] border rounded-lg p-2.5 flex items-center gap-2.5 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
+            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
               color==='blue'   ? 'bg-blue-500/10 text-blue-400' :
               color==='emerald'? 'bg-emerald-500/10 text-emerald-400' :
               color==='amber'  ? 'bg-[#b8860b]/10 text-[#b8860b]' :
                                  'bg-red-500/10 text-red-400'
             }`}>
-              <Icon className="w-5 h-5" />
+              <Icon className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] text-gray-400 truncate">{label}</p>
+              <p className="text-[9px] text-gray-400 truncate">{label}</p>
               <div className="flex items-baseline gap-1.5 mt-0.5 overflow-hidden">
-                <span className="text-[18px] font-bold text-white leading-none truncate">{value.toLocaleString()}</span>
+                <span className="text-[16px] font-bold text-white leading-none truncate">{value.toLocaleString()}</span>
                 <span className={`text-[9px] font-semibold truncate ${
                   color==='blue' ? 'text-blue-400' : color==='emerald' ? 'text-emerald-400' :
                   color==='amber' ? 'text-[#b8860b]' : 'text-red-400'
@@ -568,12 +568,12 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div className="flex flex-col md:grid md:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_300px] gap-3 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
+      <div className="flex flex-col md:grid md:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_300px] gap-2 md:gap-3 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
 
         {/* LEFT: Agent List */}
-        <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex w-full md:w-auto h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex-col overflow-hidden min-w-0`}>
-          <div className="p-4 border-b border-white/[0.06]">
-            <p className="text-[13px] font-bold text-white mb-3">Field Agents & Conversations</p>
+        <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex w-full md:w-auto h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex-col overflow-hidden min-w-0`}>
+          <div className="p-3 border-b border-white/[0.06]">
+            <p className="text-[12px] font-bold text-white mb-2">Field Agents & Conversations</p>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
@@ -636,18 +636,18 @@ function FieldOperationsCenterContent() {
                   setActiveAgentId(agent.id);
                   setMobileView('chat');
                 }}
-                  className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
+                  className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all ${
                     isActive ? 'bg-emerald-950/50 border border-emerald-800/40' : 'hover:bg-white/[0.03] border border-transparent'
                   }`}>
                   <div className="relative flex-shrink-0">
                     <img src={avatar(agent.name, agent.avatarUrl)} alt={agent.name}
-                      className="w-10 h-10 rounded-full object-cover border border-white/10" />
+                      className="w-8 h-8 rounded-full object-cover border border-white/10" />
                     <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#0a0d0b] ${bgClass}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-bold text-white truncate">{agent.name}</p>
+                    <p className="text-[12px] font-bold text-white truncate">{agent.name}</p>
                     <p className="text-[10px] text-gray-500 truncate">{agent.city || agent.district}, {agent.state}</p>
-                    <p className={`text-[10px] mt-0.5 font-medium ${dotColorClass}`}>• {statusLabel}</p>
+                    <p className={`text-[9px] mt-0.5 font-medium ${dotColorClass}`}>• {statusLabel}</p>
                   </div>
                   {badgeText === '✓' ? (
                     <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] flex items-center justify-center flex-shrink-0">✓</span>
@@ -698,7 +698,7 @@ function FieldOperationsCenterContent() {
             /* Active Conversation Selected */
             <>
               {/* Conversation Header & Switcher */}
-              <div className="px-5 pt-4 pb-0 border-b border-white/[0.06] flex-shrink-0">
+              <div className="px-4 pt-3 pb-0 border-b border-white/[0.06] flex-shrink-0">
                 
                 {/* Rich Header for Reports */}
                 {activeConv?.type === 'Report' && activeReport ? (
@@ -709,33 +709,33 @@ function FieldOperationsCenterContent() {
                           <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="text-gray-400 hover:text-white transition flex-shrink-0">
                             <ArrowLeft className="w-4 h-4" />
                           </button>
-                          <h2 className="text-[17px] font-extrabold text-white">Report: {activeReport.id}</h2>
-                          <span className="px-2 py-0.5 rounded-md text-[10px] font-bold border flex-shrink-0 bg-[#b8860b]/10 text-[#b8860b] border-[#b8860b]/30">
+                          <h2 className="text-[15px] font-extrabold text-white">Report: {activeReport.id}</h2>
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-bold border flex-shrink-0 bg-[#b8860b]/10 text-[#b8860b] border-[#b8860b]/30">
                             {activeReport.status}
                           </span>
                         </div>
-                        <p className="text-[11px] text-gray-400 mt-1.5 ml-7 truncate">
+                        <p className="text-[10px] text-gray-400 mt-1 ml-7 truncate">
                           {activeReport.category} Roof Repair • {activeReport.location.village || activeReport.location.district}, {activeReport.location.state} • Submitted by {activeReport.agentName}
                         </p>
                       </div>
                       
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition text-[11px] text-gray-300 font-medium">
+                        <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/[0.08] hover:bg-white/[0.05] transition text-[10px] text-gray-300 font-medium">
                           <UserPlus className="w-3.5 h-3.5" /> Assign
                         </button>
-                        <button className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.05] transition text-gray-300">
+                        <button className="p-1 rounded-md border border-white/[0.08] hover:bg-white/[0.05] transition text-gray-300">
                           <MoreHorizontal className="w-4 h-4" />
                         </button>
                       </div>
                     </div>
                     
                     {/* Tabs */}
-                    <div className="flex gap-5 mt-4 ml-7 overflow-x-auto no-scrollbar">
+                    <div className="flex gap-5 mt-2.5 ml-7 overflow-x-auto no-scrollbar">
                       {['Conversation','Details',`Media (${activeReport.media?.length || 0})`,`Documents (0)`,'Timeline','History'].map(tab => {
                         const key = tab.split(' ')[0];
                         return (
                           <button key={tab} onClick={() => setActiveTab(key)}
-                            className={`pb-3 text-[12px] font-medium border-b-2 transition whitespace-nowrap ${
+                            className={`pb-2 text-[11px] font-medium border-b-2 transition whitespace-nowrap ${
                               activeTab === key ? 'border-emerald-500 text-white' : 'border-transparent text-gray-500 hover:text-gray-300'
                             }`}>{tab}</button>
                         );
@@ -744,7 +744,7 @@ function FieldOperationsCenterContent() {
                   </>
                 ) : (
                   /* Standard Header for General Chat */
-                  <div className="flex items-start justify-between gap-3 pb-3">
+                  <div className="flex items-start justify-between gap-3 pb-2">
                     <div className="flex items-start gap-3 min-w-0">
                       <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="mt-1 text-gray-400 hover:text-white transition flex-shrink-0 lg:hidden">
                         <ArrowLeft className="w-4 h-4" />
@@ -771,9 +771,9 @@ function FieldOperationsCenterContent() {
               {/* Conversation Tab */}
               {activeTab === 'Conversation' && (
               <div className="flex flex-col h-full">
-              <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
+              <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
                 {messages.length === 0 && (
-                  <div className="text-center py-8 text-gray-600 text-[12px]">No messages yet — start the conversation.</div>
+                  <div className="text-center py-6 text-gray-600 text-[11px]">No messages yet — start the conversation.</div>
                 )}
                 {messages.map((msg, i) => (
                   <div key={i} className="flex gap-3">
@@ -785,10 +785,10 @@ function FieldOperationsCenterContent() {
                         <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded ${
                           msg.senderRole==='Admin' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-blue-500/10 text-blue-400'
                         }`}>{msg.senderRole}</span>
-                        <span className="text-[10px] text-gray-500">{new Date(msg.timestamp).toLocaleString()}</span>
+                        <span className="text-[9px] text-gray-500">{new Date(msg.timestamp).toLocaleString()}</span>
                         <MoreHorizontal className="w-3.5 h-3.5 text-gray-700 ml-auto cursor-pointer hover:text-gray-400 transition" />
                       </div>
-                      <div className={`inline-block max-w-[85%] px-4 py-3 rounded-2xl rounded-tl-sm text-[12px] leading-relaxed border ${
+                      <div className={`inline-block max-w-[90%] px-3.5 py-2.5 rounded-xl rounded-tl-sm text-[11px] leading-relaxed border ${
                         msg.senderRole==='Admin'
                           ? 'bg-white/[0.02] border-white/[0.06] text-gray-300'
                           : 'bg-[#0a1f14] border-emerald-800/40 text-emerald-50'
@@ -838,12 +838,12 @@ function FieldOperationsCenterContent() {
               </div>
 
               {/* Input */}
-              <div className="px-4 py-3 border-t border-white/[0.06] bg-[#070a08] flex-shrink-0">
+              <div className="px-3 py-2.5 border-t border-white/[0.06] bg-[#070a08] flex-shrink-0">
                 <form onSubmit={handleSend}
-                  className="flex items-center gap-2 bg-black/50 border border-white/[0.08] rounded-xl px-3 py-1.5 focus-within:border-emerald-500/40 transition-colors">
+                  className="flex items-center gap-2 bg-black/50 border border-white/[0.08] rounded-lg px-2.5 py-1 focus-within:border-emerald-500/40 transition-colors">
                   <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)}
                     placeholder={`Reply in ${activeConv?.type === 'Report' ? activeConv.reportId : 'Operations'}...`}
-                    className="flex-1 bg-transparent text-[12px] text-white focus:outline-none placeholder:text-gray-600 py-1.5" />
+                    className="flex-1 bg-transparent text-[11px] text-white focus:outline-none placeholder:text-gray-600 py-1" />
                   <div className="flex items-center gap-0.5 text-gray-500">
                     <label className={`p-1.5 hover:text-white rounded-lg hover:bg-white/[0.05] transition cursor-pointer flex items-center justify-center ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}>
                       {isUploading ? (
@@ -894,8 +894,8 @@ function FieldOperationsCenterContent() {
             </div>
 
             {/* Report Details Card */}
-            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-hidden flex-1 min-h-0">
-              <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between gap-2 flex-shrink-0">
+            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex flex-col overflow-hidden flex-1 min-h-0">
+              <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between gap-2 flex-shrink-0">
                 <h3 className="text-[13px] font-bold text-white flex-shrink-0">Report Details</h3>
                 {/* Report Selector — switch between agent's reports */}
                 {(() => {
@@ -934,7 +934,7 @@ function FieldOperationsCenterContent() {
                 })()}
               </div>
 
-              <div className="p-5 pb-2 space-y-4 text-[11px] overflow-y-auto no-scrollbar flex-1">
+              <div className="p-4 pb-2 space-y-3 text-[11px] overflow-y-auto no-scrollbar flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-500">Report ID</span>
                   <div className="flex items-center gap-1">
@@ -1002,7 +1002,7 @@ function FieldOperationsCenterContent() {
                     {activeReport.status}
                   </span>
                 </div>
-                <div className="px-5 py-4 border-t border-white/[0.06] bg-[#0a0d0b] mt-auto shrink-0 z-10">
+                <div className="px-4 py-3 border-t border-white/[0.06] bg-[#0a0d0b] mt-auto shrink-0 z-10">
                   <button className="w-full py-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/30 text-emerald-100 text-[12px] font-bold transition flex items-center justify-between px-4">
                     Take Action
                     <ChevronDown className="w-4 h-4 text-emerald-400" />
@@ -1013,7 +1013,7 @@ function FieldOperationsCenterContent() {
 
             {/* Quick Actions */}
             <div className="flex-shrink-0">
-              <p className="text-[12px] font-bold text-white mb-2 ml-1">Quick Actions</p>
+              <p className="text-[11px] font-bold text-white mb-1.5 ml-1">Quick Actions</p>
               <div className="grid grid-cols-5 gap-2">
                 {([
                   {
@@ -1043,12 +1043,12 @@ function FieldOperationsCenterContent() {
                   },
                 ] as { label:string; Icon:any; hc:string; fn:()=>void; disabled:boolean }[]).map(({ label, Icon, hc, fn, disabled }) => (
                   <button key={label} onClick={disabled ? undefined : fn} disabled={disabled}
-                    className={`flex flex-col items-center justify-center gap-2 group p-2 rounded-xl border border-white/[0.08] bg-[#0a0d0b] transition-all ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:bg-white/[0.02]'}`}>
+                    className={`flex flex-col items-center justify-center gap-1.5 group p-2 rounded-lg border border-white/[0.08] bg-[#0a0d0b] transition-all ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer hover:bg-white/[0.02]'}`}>
                     <div className={`text-gray-400 transition
                       ${!disabled ? `group-hover:text-${hc}-400` : ''}`}>
                       <Icon className="w-4 h-4" />
                     </div>
-                    <span className="text-[9px] text-gray-500 group-hover:text-gray-300 text-center leading-[1.1]">{label}</span>
+                    <span className="text-[9px] text-gray-500 group-hover:text-gray-300 text-center leading-[1.1] mt-0.5">{label}</span>
                   </button>
                 ))}
               </div>
@@ -1066,16 +1066,16 @@ function FieldOperationsCenterContent() {
               </button>
             </div>
 
-            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-4 flex-1">
+            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-xl p-4 flex flex-col gap-3 flex-1">
               <h3 className="text-[13px] font-bold text-white hidden xl:block">Agent Profile</h3>
             <div className="flex flex-col items-center text-center py-3">
               <img src={avatar(activeAgent.name, activeAgent.avatarUrl)} alt={activeAgent.name}
-                className="w-16 h-16 rounded-full border-2 border-emerald-500/30 mb-3" />
+                className="w-14 h-14 rounded-full border-2 border-emerald-500/30 mb-2" />
               <h4 className="text-[15px] font-bold text-white">{activeAgent.name}</h4>
               <p className="text-[11px] text-gray-400 mt-1">{activeAgent.role} · {activeAgent.region}</p>
               <span className="mt-2 px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{activeAgent.status}</span>
             </div>
-            <div className="space-y-3.5 text-[11px]">
+            <div className="space-y-2.5 text-[11px]">
               {([['Email', activeAgent.email], ['Phone', activeAgent.phone], ['District', activeAgent.district], ['Joined', activeAgent.joinDate ? new Date(activeAgent.joinDate).toLocaleDateString() : '—']] as const).map(([k, v]) => (
                 <div key={k} className="flex justify-between items-start gap-2">
                   <span className="text-gray-500 flex-shrink-0">{k}</span>
