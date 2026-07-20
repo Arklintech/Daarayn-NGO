@@ -13,7 +13,6 @@ export default function HeroSection() {
           muted
           playsInline
           preload="auto"
-          poster="/ngobg.JPG"
           className="daarayn-hero-video"
         >
           <source src="/background video.mp4" type="video/mp4" />
