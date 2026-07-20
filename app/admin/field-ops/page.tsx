@@ -566,7 +566,7 @@ function FieldOperationsCenterContent() {
       <div className="flex flex-col md:flex-row gap-3 flex-1 min-h-0 overflow-hidden">
 
         {/* LEFT: Agent List */}
-        <div className="w-full md:max-w-[280px] lg:max-w-xs flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-hidden">
+        <div className="w-full md:max-w-[240px] xl:max-w-xs flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-hidden">
           <div className="p-4 border-b border-white/[0.06]">
             <p className="text-[13px] font-bold text-white mb-3">Field Agents & Conversations</p>
             <div className="flex gap-2">
@@ -833,7 +833,7 @@ function FieldOperationsCenterContent() {
 
         {/* RIGHT: Report Details + Quick Actions (Only shown if Report Conversation active) */}
         {activeReport ? (
-          <div className="w-full md:max-w-[280px] lg:max-w-xs flex-shrink-0 flex flex-col gap-3">
+          <div className="w-full md:w-[240px] xl:w-[300px] flex-shrink-0 flex flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar">
             {/* Report Details Card */}
             <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-2xl flex flex-col overflow-y-auto no-scrollbar flex-1">
               <div className="px-5 py-4 border-b border-white/[0.06] flex items-center justify-between gap-2 flex-shrink-0">
@@ -1079,7 +1079,7 @@ function FieldOperationsCenterContent() {
           </div>
         ) : activeAgent ? (
           /* Agent profile when no report or Operational Conversation selected */
-          <div className="w-[300px] flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-4">
+          <div className="w-full md:w-[240px] xl:w-[300px] flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-2xl p-5 flex flex-col gap-4">
             <h3 className="text-[13px] font-bold text-white">Agent Profile</h3>
             <div className="flex flex-col items-center text-center py-3">
               <img src={avatar(activeAgent.name, activeAgent.avatarUrl)} alt={activeAgent.name}
@@ -1098,7 +1098,7 @@ function FieldOperationsCenterContent() {
             </div>
           </div>
         ) : (
-          <div className="w-[300px] flex-shrink-0" />
+          <div className="w-full md:w-[240px] xl:w-[300px] flex-shrink-0" />
         )}
       </div>
     </div>
