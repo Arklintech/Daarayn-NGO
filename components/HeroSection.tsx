@@ -1,8 +1,10 @@
 'use client';
+import Navbar from './Navbar';
+import QuickDonationRibbon from './QuickDonationRibbon';
 
 export default function HeroSection() {
   return (
-    <section className="daarayn-hero-section">
+    <section className="cinematic-hero-scene">
       {/* Background layer */}
       <div className="daarayn-hero-bg">
         <video
@@ -17,8 +19,12 @@ export default function HeroSection() {
           <source src="/background video.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
-        <div className="daarayn-hero-overlay"></div>
+        <div className="daarayn-hero-overlay-dark"></div>
+        <div className="daarayn-hero-overlay-gradient"></div>
       </div>
+
+      <Navbar />
+      <QuickDonationRibbon />
 
       <div className="daarayn-hero-content">
         {/* Left Column */}
