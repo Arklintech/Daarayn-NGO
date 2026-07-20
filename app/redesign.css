@@ -150,16 +150,9 @@
   display: flex;
   justify-content: center;
   pointer-events: none; /* Let clicks pass through empty space */
-  transition: top 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.daarayn-global-ribbon-wrapper.hero-integrated {
-  top: 140px; /* Sits naturally within the Hero Scene */
-}
-
-.daarayn-global-ribbon-wrapper.docked {
-  top: 88px; /* Docks perfectly beneath the Navbar when scrolled */
-}
+/* Framer motion handles top position dynamically */
 
 .daarayn-quick-donation-section {
   position: relative;
@@ -582,15 +575,7 @@
 
 /* Removed old scrolled ribbon hacks */
 
-.daarayn-global-ribbon-wrapper.docked .daarayn-quick-donation-ribbon {
-  height: 60px;
-  background: rgba(8, 18, 34, 0.9);
-  backdrop-filter: blur(16px);
-}
-
-.daarayn-global-ribbon-wrapper.docked .daarayn-ribbon-trust-labels {
-  display: none;
-}
+/* Scroll styles removed as Framer motion handles this globally */
 
 /* Responsive Fixes for Ribbon */
 @media (max-width: 768px) {
