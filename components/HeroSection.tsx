@@ -20,6 +20,10 @@ export default function HeroSection() {
         <div className="daarayn-hero-overlay-gradient"></div>
       </div>
 
+      {/* Spacer to reserve room for the global floating Quick Donation Ribbon */}
+      <div style={{ height: '220px', flexShrink: 0 }} className="hidden lg:block"></div>
+      <div style={{ height: '140px', flexShrink: 0 }} className="block lg:hidden"></div>
+
       <div className="daarayn-hero-content">
         {/* Left Column */}
         <div className="daarayn-hero-left">
