@@ -177,7 +177,7 @@ export default function NotificationCenterPage() {
   const selectedItem = notifications.find(n => n.id === selectedId);
 
   return (
-    <div className="flex flex-col h-full bg-[#030906] min-h-screen text-gray-200 p-6 lg:p-8 space-y-8">
+    <div className="flex flex-col h-full bg-[#030906] text-gray-200 p-6 lg:p-8 space-y-6 min-h-0 overflow-hidden">
       
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -313,7 +313,7 @@ export default function NotificationCenterPage() {
         </div>
 
         {/* Right Col: Detail Pane */}
-        <div className="flex-1 rounded-2xl bg-[#0a0f0c] border border-white/[0.06] p-6 lg:p-8 flex flex-col relative overflow-hidden">
+        <div className="flex-1 rounded-2xl bg-[#0a0f0c] border border-white/[0.06] p-6 lg:p-8 flex flex-col relative overflow-y-auto custom-scrollbar min-h-0">
           {/* Abstract glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-luxury-gold/[0.02] rounded-full blur-[80px] pointer-events-none" />
 
