@@ -176,7 +176,7 @@ function AgentNavigation({ children }: { children: React.ReactNode }) {
 
       {/* ─── Main Content ────────────────────────────────── */}
       <main className={[
-        "flex-1 min-h-screen w-full overflow-y-auto",
+        "flex-1 h-full w-full overflow-y-auto",
         "lg:pl-64",       
         "md:pl-16",       
         "pt-[60px] md:pt-0",

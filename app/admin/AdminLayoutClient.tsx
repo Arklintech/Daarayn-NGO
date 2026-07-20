@@ -256,11 +256,11 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
   );
 
   return (
-    <div className="bg-[#020704] min-h-screen">
-      <div className="min-h-screen bg-gradient-to-br from-[#05110a] via-[#020704] to-[#030906] flex text-gray-200 max-w-enterprise mx-auto shadow-2xl overflow-hidden relative">
+    <div className="bg-[#020704] h-screen w-screen overflow-hidden">
+      <div className="h-screen bg-gradient-to-br from-[#05110a] via-[#020704] to-[#030906] flex text-gray-200 max-w-enterprise mx-auto shadow-2xl overflow-hidden relative">
       
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-64 border-r border-white/[0.06] bg-luxury-bg-deep/40 backdrop-blur-xl shrink-0 h-screen sticky top-0">
+      <aside className="hidden lg:block w-64 border-r border-white/[0.06] bg-luxury-bg-deep/40 backdrop-blur-xl shrink-0 h-screen">
         {renderSidebarContent()}
       </aside>
 
@@ -268,7 +268,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       <div className="flex-1 flex flex-col min-w-0">
         
         {/* Top Header */}
-        <header className="h-16 border-b border-white/[0.06] bg-luxury-bg-deep/20 backdrop-blur-xl flex items-center justify-between px-6 sticky top-0 z-40">
+        <header className="h-16 shrink-0 border-b border-white/[0.06] bg-luxury-bg-deep/20 backdrop-blur-xl flex items-center justify-between px-6 z-40">
           <div className="flex items-center gap-4">
             <button 
               onClick={() => setMobileSidebarOpen(true)}
@@ -309,7 +309,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
         </header>
 
         {/* Dynamic Inner Panel Viewport */}
-        <main className={`flex-1 ${pathname.startsWith('/admin/field-ops') ? 'h-[calc(100vh-64px)] flex flex-col overflow-hidden' : 'p-6 lg:p-8 overflow-y-auto'}`}>
+        <main className={`flex-1 ${pathname.startsWith('/admin/field-ops') ? 'flex flex-col overflow-hidden' : 'p-6 lg:p-8 overflow-y-auto relative'}`}>
           {children}
         </main>
       </div>
