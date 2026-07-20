@@ -215,7 +215,7 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Category Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 lg:gap-3 w-full min-w-0">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0">
         {categories.map(([cat, meta]) => {
           const catUnread = notifications.filter(n => n.category === cat && !n.isRead).length;
           const Icon = CATEGORY_ICONS[cat];
