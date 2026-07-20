@@ -215,23 +215,23 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Category Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0">
+      <div className="grid grid-cols-2 lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0">
         {categories.map(([cat, meta]) => {
           const catUnread = notifications.filter(n => n.category === cat && !n.isRead).length;
           const Icon = CATEGORY_ICONS[cat];
           const colorClass = CATEGORY_COLORS[cat];
           return (
-            <div key={cat} className="flex flex-col px-3 py-3 rounded-2xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0">
+            <div key={cat} className="flex flex-col p-3 rounded-xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="flex items-center gap-3 mb-2">
-                <div className={`w-8 h-8 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center`}>
-                  <Icon className={`w-4 h-4 ${colorClass.text}`} />
+              <div className="flex items-start xl:items-center gap-2 mb-2 min-w-0">
+                <div className={`w-6 h-6 lg:w-7 lg:h-7 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0`}>
+                  <Icon className={`w-3 h-3 lg:w-3.5 lg:h-3.5 ${colorClass.text}`} />
                 </div>
-                <span className="text-xs font-medium text-gray-300 leading-tight flex-1">{meta.label}</span>
+                <span className="text-[10px] xl:text-xs font-medium text-gray-300 leading-tight flex-1 min-w-0 break-words">{meta.label}</span>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-white">{notifications.filter(n => n.category === cat).length}</div>
-                <div className={`text-[10px] font-semibold tracking-wider uppercase mt-1 ${catUnread > 0 ? colorClass.text : 'text-gray-600'}`}>
+              <div className="min-w-0 mt-auto">
+                <div className="text-lg xl:text-2xl font-bold text-white truncate">{notifications.filter(n => n.category === cat).length}</div>
+                <div className={`text-[9px] xl:text-[10px] font-semibold tracking-wider uppercase mt-0.5 truncate ${catUnread > 0 ? colorClass.text : 'text-gray-600'}`}>
                   {catUnread > 0 ? `${catUnread} Unread` : "0 Unread"}
                 </div>
               </div>
@@ -321,17 +321,17 @@ export default function NotificationCenterPage() {
             <div className="flex flex-col h-full relative z-10">
               
               {/* Header */}
-              <div className="flex items-start justify-between mb-5">
-                <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 rounded-full ${CATEGORY_COLORS[selectedItem.category].bg} ${CATEGORY_COLORS[selectedItem.category].border} border flex items-center justify-center flex-shrink-0`}>
-                    {React.createElement(CATEGORY_ICONS[selectedItem.category], { className: `w-5 h-5 ${CATEGORY_COLORS[selectedItem.category].text}` })}
+              <div className="flex items-start justify-between mb-5 min-w-0 gap-4">
+                <div className="flex items-start gap-3 lg:gap-4 min-w-0">
+                  <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full ${CATEGORY_COLORS[selectedItem.category].bg} ${CATEGORY_COLORS[selectedItem.category].border} border flex items-center justify-center shrink-0`}>
+                    {React.createElement(CATEGORY_ICONS[selectedItem.category], { className: `w-4 h-4 lg:w-5 lg:h-5 ${CATEGORY_COLORS[selectedItem.category].text}` })}
                   </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-white mb-1 leading-tight">{selectedItem.title}</h2>
-                    <p className="text-sm text-gray-400">{selectedItem.description}</p>
+                  <div className="min-w-0">
+                    <h2 className="text-base lg:text-lg font-bold text-white mb-0.5 leading-tight truncate">{selectedItem.title}</h2>
+                    <p className="text-xs lg:text-sm text-gray-400 truncate">{selectedItem.description}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 lg:gap-3 shrink-0">
                   {!selectedItem.isRead && (
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-500 uppercase tracking-wider">
                       <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Unread
