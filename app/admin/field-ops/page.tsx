@@ -50,7 +50,6 @@ function FieldOperationsCenterContent() {
   const [assignTo, setAssignTo] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   
-  const [activeTab, setActiveTab] = useState('Conversation');
 
   // Global Listeners
   useEffect(() => {
@@ -875,6 +874,9 @@ function FieldOperationsCenterContent() {
                   </button>
                 </form>
               </div>
+              </div>
+              )}
+              </div>
             </>
           )}
         </div>
@@ -1000,8 +1002,6 @@ function FieldOperationsCenterContent() {
                     {activeReport.status}
                   </span>
                 </div>
-                </div>
-
                 <div className="pt-2 border-t border-white/[0.06] mt-4">
                   <button className="w-full py-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/30 text-emerald-100 text-[12px] font-bold transition flex items-center justify-between px-4">
                     Take Action
