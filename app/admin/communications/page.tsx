@@ -254,7 +254,7 @@ export default function CommunicationsHub() {
                     }}
                     className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
                       isSelected 
-                        ? 'bg-[var(--color-luxury-gold)] text-black shadow-lg shadow-[var(--color-luxury-gold)]/20' 
+                        ? 'bg-white text-black shadow-lg shadow-white/20' 
                         : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'
                     }`}
                   >
@@ -422,8 +422,8 @@ export default function CommunicationsHub() {
                   <button
                     onClick={handlePreview}
                     disabled={donorCount === 0 || !heading || !notes}
-                    className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-[var(--color-luxury-gold)] active:scale-[0.99]"
-                    style={{ background: 'var(--color-luxury-gold)' }}
+                    className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-gray-100 active:scale-[0.99]"
+                    style={{ background: '#ffffff' }}
                   >
                     Preview & Resolve <ArrowRight className="w-4 h-4" />
                   </button>

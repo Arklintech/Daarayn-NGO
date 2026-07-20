@@ -68,7 +68,7 @@ export default function BroadcastReport() {
           <button onClick={exportCSV} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-semibold text-white hover:bg-white/10 transition">
             <Download className="w-4 h-4" /> Export CSV
           </button>
-          <button onClick={() => window.print()} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[var(--gold)] rounded-lg text-xs font-semibold text-black hover:bg-[var(--gold)]/90 transition">
+          <button onClick={() => window.print()} className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-white rounded-lg text-xs font-semibold text-black hover:bg-gray-100 transition">
             <FileText className="w-4 h-4" /> Save as PDF
           </button>
         </div>
