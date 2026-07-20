@@ -568,7 +568,7 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div className="flex flex-col md:grid md:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_300px] gap-2 md:gap-3 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
+      <div className="flex flex-col md:grid md:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_340px] gap-2 md:gap-3 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
 
         {/* LEFT: Agent List */}
         <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex w-full md:w-auto h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex-col overflow-hidden min-w-0`}>
@@ -636,18 +636,18 @@ function FieldOperationsCenterContent() {
                   setActiveAgentId(agent.id);
                   setMobileView('chat');
                 }}
-                  className={`flex items-center gap-2 p-1.5 rounded-lg cursor-pointer transition-all ${
+                  className={`flex items-center gap-3 p-2.5 rounded-xl cursor-pointer transition-all ${
                     isActive ? 'bg-emerald-950/50 border border-emerald-800/40' : 'hover:bg-white/[0.03] border border-transparent'
                   }`}>
                   <div className="relative flex-shrink-0">
                     <img src={avatar(agent.name, agent.avatarUrl)} alt={agent.name}
-                      className="w-7 h-7 rounded-full object-cover border border-white/10" />
-                    <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#0a0d0b] ${bgClass}`} />
+                      className="w-10 h-10 rounded-full object-cover border border-white/10" />
+                    <span className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-[#0a0d0b] ${bgClass}`} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-bold text-white truncate">{agent.name}</p>
-                    <p className="text-[10px] text-gray-500 truncate">{agent.city || agent.district}, {agent.state}</p>
-                    <p className={`text-[9px] mt-0.5 font-medium ${dotColorClass}`}>• {statusLabel}</p>
+                    <p className="text-[13px] font-bold text-white truncate">{agent.name}</p>
+                    <p className="text-[11px] text-gray-500 truncate">{agent.city || agent.district}, {agent.state}</p>
+                    <p className={`text-[10px] mt-0.5 font-medium ${dotColorClass}`}>• {statusLabel}</p>
                   </div>
                   {badgeText === '✓' ? (
                     <span className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-[10px] flex items-center justify-center flex-shrink-0">✓</span>
@@ -883,7 +883,7 @@ function FieldOperationsCenterContent() {
 
         {/* RIGHT: Report Details + Quick Actions (Only shown if Report Conversation active) */}
         {activeReport ? (
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full md:w-[300px] xl:w-[300px] bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-3 overflow-hidden h-full shadow-2xl xl:shadow-none min-w-0`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full md:w-[340px] xl:w-[340px] bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-3 overflow-hidden h-full shadow-2xl xl:shadow-none min-w-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="xl:hidden flex items-center justify-between flex-shrink-0 mb-1">
@@ -1057,7 +1057,7 @@ function FieldOperationsCenterContent() {
           </div>
         ) : activeAgent ? (
           /* Agent profile when no report or Operational Conversation selected */
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full md:w-[300px] xl:w-[300px] bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl xl:shadow-none min-w-0`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full md:w-[340px] xl:w-[340px] bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl xl:shadow-none min-w-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="xl:hidden flex items-center justify-between flex-shrink-0">
@@ -1087,7 +1087,7 @@ function FieldOperationsCenterContent() {
             </div>
           </div>
         ) : (
-          <div className="hidden xl:block xl:w-[300px] flex-shrink-0" />
+          <div className="hidden xl:block xl:w-[340px] flex-shrink-0" />
         )}
       </div>
     </div>
