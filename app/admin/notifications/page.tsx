@@ -215,13 +215,13 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Category Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-[repeat(auto-fit,minmax(140px,1fr))] gap-2 lg:gap-3 w-full min-w-0">
         {categories.map(([cat, meta]) => {
           const catUnread = notifications.filter(n => n.category === cat && !n.isRead).length;
           const Icon = CATEGORY_ICONS[cat];
           const colorClass = CATEGORY_COLORS[cat];
           return (
-            <div key={cat} className="flex flex-col px-4 py-3 rounded-2xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group">
+            <div key={cat} className="flex flex-col px-3 py-3 rounded-2xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="flex items-center gap-3 mb-2">
                 <div className={`w-8 h-8 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center`}>
@@ -271,10 +271,10 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Main Two Columns */}
-      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 flex-1 min-h-0 min-w-0 w-full overflow-hidden">
         
         {/* Left Col: List */}
-        <div className="w-full lg:w-[45%] flex flex-col gap-5 overflow-y-auto pr-2 custom-scrollbar">
+        <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col gap-5 overflow-y-auto pr-2 custom-scrollbar min-w-0">
           
           {todayList.length > 0 && (
             <div>
@@ -313,7 +313,7 @@ export default function NotificationCenterPage() {
         </div>
 
         {/* Right Col: Detail Pane */}
-        <div className="flex-1 rounded-2xl bg-[#0a0f0c] border border-white/[0.06] p-5 lg:p-6 flex flex-col relative overflow-y-auto custom-scrollbar min-h-0">
+        <div className="flex-1 rounded-2xl bg-[#0a0f0c] border border-white/[0.06] p-5 lg:p-6 flex flex-col relative overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0 min-w-0">
           {/* Abstract glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-luxury-gold/[0.02] rounded-full blur-[80px] pointer-events-none" />
 
