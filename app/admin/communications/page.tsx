@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, getDocs, doc, onSnapshot } from "firebase/firestore";
-import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle, X, ArrowRight, Download, BarChart2 } from "lucide-react";
+import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle, X, ArrowRight, Download, BarChart2, Target } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function CommunicationsHub() {
@@ -234,9 +234,14 @@ export default function CommunicationsHub() {
       {mode === "compose" && (
         <>
           {/* Cause Selector */}
-          <div className="w-full">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Target Cause(s)</label>
-            <div className="flex flex-wrap gap-2">
+          <div className="w-full rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                <Target className="w-4 h-4 text-[var(--gold)]" />
+              </div>
+              <h3 className="text-base font-semibold text-white">Target Causes</h3>
+            </div>
+            <div className="flex flex-wrap gap-2 mt-2">
               {causes.map(c => {
                 const isSelected = selectedCauseIds.includes(c.id);
                 return (
