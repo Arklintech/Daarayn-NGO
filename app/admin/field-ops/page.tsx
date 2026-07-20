@@ -509,7 +509,7 @@ function FieldOperationsCenterContent() {
       <div className="flex flex-col h-full w-full bg-[#020704] text-gray-200 overflow-hidden p-2 md:p-3">
 
       {/* ── HEADER ── */}
-      <div className="flex items-center justify-between flex-shrink-0 mb-1.5 gap-3">
+      <div className="flex items-center justify-between flex-shrink-0 mb-1 gap-3">
         <div>
           <h1 className="text-[16px] font-bold text-white tracking-wide leading-none">Field Operations Center</h1>
           <p className="text-[11px] text-gray-400 mt-0.5">Manage field reports, communicate with field agents and track progress.</p>
@@ -518,24 +518,24 @@ function FieldOperationsCenterContent() {
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
             <input type="text" placeholder="Search reports, agents, locations..."
-              className="w-full bg-black/40 border border-white/[0.08] rounded-lg pl-9 pr-14 py-1.5 text-[11px] text-white focus:outline-none focus:border-white/20 placeholder:text-gray-500" />
+              className="w-full bg-black/40 border border-white/[0.08] rounded-lg pl-8 pr-12 py-1 text-[11px] text-white focus:outline-none focus:border-white/20 placeholder:text-gray-500" />
             <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
               <kbd className="bg-white/[0.05] border border-white/[0.1] rounded px-1 py-0.5 text-[9px] text-gray-400">⌘</kbd>
               <kbd className="bg-white/[0.05] border border-white/[0.1] rounded px-1 py-0.5 text-[9px] text-gray-400">K</kbd>
             </div>
           </div>
-          <button onClick={handleAIInsights} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1.5 rounded-lg text-[11px] font-bold flex items-center gap-1.5 hover:bg-emerald-500/20 active:scale-95 transition">
+          <button onClick={handleAIInsights} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 hover:bg-emerald-500/20 active:scale-95 transition">
             <Sparkles className="w-3.5 h-3.5" /> AI Insights
           </button>
-          <button className="relative p-2 text-gray-400 hover:text-white transition">
-            <Bell className="w-5 h-5" />
+          <button className="relative p-1.5 text-gray-400 hover:text-white transition">
+            <Bell className="w-4 h-4" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 border border-[#020704] rounded-full" />
           </button>
         </div>
       </div>
 
       {/* ── STAT CARDS ── */}
-      <div className="flex overflow-x-auto no-scrollbar md:grid md:grid-cols-3 lg:grid-cols-6 gap-1.5 mb-1.5 flex-shrink-0 pb-1">
+      <div className="flex overflow-x-auto no-scrollbar md:grid md:grid-cols-3 lg:grid-cols-6 gap-1.5 mb-1.5 flex-shrink-0">
         {([
           { label:'Field Agents',        value: agents.length || 182, sub:'Active',           color:'blue',   Icon: Users },
           { label:'Total Reports',       value: allReports.length || 2842, sub:'All Time',    color:'emerald',Icon: FileText },
@@ -544,20 +544,20 @@ function FieldOperationsCenterContent() {
           { label:'Urgent Reports',      value: urgentCount || 3,     sub:'High Priority',    color:'red',    Icon: AlertCircle },
           { label:'Verified & Approved', value: verifiedCount || 1256,sub:'This Year',        color:'emerald',Icon: CheckCircle },
         ] as const).map(({ label, value, sub, color, Icon }) => (
-          <div key={label} className={`min-w-[140px] md:min-w-0 bg-[#0a0d0b] border rounded-lg p-1.5 flex items-center gap-2 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
-            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
+          <div key={label} className={`min-w-[140px] md:min-w-0 bg-[#0a0d0b] border rounded-lg p-1.5 flex items-center gap-1.5 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
+            <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 ${
               color==='blue'   ? 'bg-blue-500/10 text-blue-400' :
               color==='emerald'? 'bg-emerald-500/10 text-emerald-400' :
               color==='amber'  ? 'bg-[#b8860b]/10 text-[#b8860b]' :
                                  'bg-red-500/10 text-red-400'
             }`}>
-              <Icon className="w-3.5 h-3.5" />
+              <Icon className="w-3 h-3" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] text-gray-400 truncate leading-none mb-0.5">{label}</p>
-              <div className="flex items-baseline gap-1.5 overflow-hidden leading-none">
-                <span className="text-[14px] font-bold text-white truncate">{value.toLocaleString()}</span>
-                <span className={`text-[9px] font-semibold truncate ${
+              <p className="text-[8px] text-gray-400 truncate leading-none mb-0.5">{label}</p>
+              <div className="flex items-baseline gap-1 overflow-hidden leading-none">
+                <span className="text-[13px] font-bold text-white truncate">{value.toLocaleString()}</span>
+                <span className={`text-[8px] font-semibold truncate ${
                   color==='blue' ? 'text-blue-400' : color==='emerald' ? 'text-emerald-400' :
                   color==='amber' ? 'text-[#b8860b]' : 'text-red-400'
                 }`}>{sub}</span>
@@ -568,10 +568,10 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── 3-COLUMN BODY ── */}
-      <div className="flex flex-col md:grid md:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)_340px] gap-2 md:gap-3 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
+      <div className="flex flex-col md:grid md:grid-cols-[minmax(280px,22%)_minmax(0,1fr)] xl:grid-cols-[minmax(300px,22%)_minmax(650px,1fr)_minmax(300px,24%)] gap-1.5 md:gap-2 flex-1 min-w-0 w-full min-h-0 overflow-hidden relative">
 
         {/* LEFT: Agent List */}
-        <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex w-full md:w-auto h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex-col overflow-hidden min-w-0`}>
+        <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex h-full flex-shrink-0 bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex-col overflow-hidden min-w-0`}>
           <div className="p-3 border-b border-white/[0.06]">
             <p className="text-[15px] font-bold text-white mb-2">Field Agents & Conversations</p>
             <div className="flex gap-2">
@@ -766,7 +766,7 @@ function FieldOperationsCenterContent() {
               </div>
 
               {/* Tab Content Container */}
-              <div className="flex-1 overflow-y-auto bg-[#06090a] relative">
+              <div className="flex-1 overflow-hidden bg-[#06090a] relative flex flex-col min-h-0">
               
               {/* Conversation Tab */}
               {activeTab === 'Conversation' && (
@@ -857,7 +857,7 @@ function FieldOperationsCenterContent() {
 
         {/* RIGHT: Report Details + Quick Actions (Only shown if Report Conversation active) */}
         {activeReport ? (
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full md:w-[340px] xl:w-[340px] bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-3 overflow-hidden h-full shadow-2xl xl:shadow-none min-w-0`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full xl:w-auto bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-2 overflow-hidden h-full shadow-2xl xl:shadow-none min-w-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="xl:hidden flex items-center justify-between flex-shrink-0 mb-1">
@@ -1048,7 +1048,7 @@ function FieldOperationsCenterContent() {
           </div>
         ) : activeAgent ? (
           /* Agent profile when no report or Operational Conversation selected */
-          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full md:w-[340px] xl:w-[340px] bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl xl:shadow-none min-w-0`}>
+          <div className={`${(mobileView === 'details' || showTabletDetails) ? 'flex' : 'hidden'} xl:flex absolute xl:static inset-y-0 right-0 z-40 xl:z-auto w-full xl:w-auto bg-[#020704]/95 xl:bg-transparent backdrop-blur-xl xl:backdrop-blur-none border-l xl:border-none border-white/[0.07] p-4 xl:p-0 flex-shrink-0 flex-col gap-4 h-full shadow-2xl xl:shadow-none min-w-0`}>
             
             {/* Mobile/Tablet Close Button */}
             <div className="xl:hidden flex items-center justify-between flex-shrink-0">
@@ -1078,7 +1078,7 @@ function FieldOperationsCenterContent() {
             </div>
           </div>
         ) : (
-          <div className="hidden xl:block xl:w-[340px] flex-shrink-0" />
+          <div className="hidden xl:block flex-shrink-0" />
         )}
       </div>
     </div>
