@@ -166,7 +166,7 @@
 
 .daarayn-quick-donation-ribbon {
   width: 100%;
-  max-width: 1200px;
+  max-width: 1400px;
   min-height: 72px;
   background: #081222;
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -644,8 +644,9 @@
     position: relative;
     top: auto;
     transform: none;
-    margin-top: 110px;
+    margin-top: 0;
     margin-bottom: 20px;
+    padding: 0 16px;
   }
   
   /* Disable sticky ribbon on mobile to avoid overcrowding */
