@@ -509,9 +509,9 @@ function FieldOperationsCenterContent() {
       <div className="flex flex-col h-full w-full bg-[#020704] text-gray-200 overflow-hidden p-2 md:p-3">
 
       {/* ── HEADER ── */}
-      <div className="flex items-center justify-between flex-shrink-0 mb-3 gap-3">
+      <div className="flex items-center justify-between flex-shrink-0 mb-1.5 gap-3">
         <div>
-          <h1 className="text-[18px] font-bold text-white tracking-wide">Field Operations Center</h1>
+          <h1 className="text-[16px] font-bold text-white tracking-wide leading-none">Field Operations Center</h1>
           <p className="text-[11px] text-gray-400 mt-0.5">Manage field reports, communicate with field agents and track progress.</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
@@ -535,7 +535,7 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── STAT CARDS ── */}
-      <div className="flex overflow-x-auto no-scrollbar md:grid md:grid-cols-3 lg:grid-cols-6 gap-2 mb-3 flex-shrink-0 pb-1">
+      <div className="flex overflow-x-auto no-scrollbar md:grid md:grid-cols-3 lg:grid-cols-6 gap-1.5 mb-1.5 flex-shrink-0 pb-1">
         {([
           { label:'Field Agents',        value: agents.length || 182, sub:'Active',           color:'blue',   Icon: Users },
           { label:'Total Reports',       value: allReports.length || 2842, sub:'All Time',    color:'emerald',Icon: FileText },
@@ -544,19 +544,19 @@ function FieldOperationsCenterContent() {
           { label:'Urgent Reports',      value: urgentCount || 3,     sub:'High Priority',    color:'red',    Icon: AlertCircle },
           { label:'Verified & Approved', value: verifiedCount || 1256,sub:'This Year',        color:'emerald',Icon: CheckCircle },
         ] as const).map(({ label, value, sub, color, Icon }) => (
-          <div key={label} className={`min-w-[140px] md:min-w-0 bg-[#0a0d0b] border rounded-lg p-2.5 flex items-center gap-2.5 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+          <div key={label} className={`min-w-[140px] md:min-w-0 bg-[#0a0d0b] border rounded-lg p-1.5 flex items-center gap-2 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
+            <div className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
               color==='blue'   ? 'bg-blue-500/10 text-blue-400' :
               color==='emerald'? 'bg-emerald-500/10 text-emerald-400' :
               color==='amber'  ? 'bg-[#b8860b]/10 text-[#b8860b]' :
                                  'bg-red-500/10 text-red-400'
             }`}>
-              <Icon className="w-4 h-4" />
+              <Icon className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[9px] text-gray-400 truncate">{label}</p>
-              <div className="flex items-baseline gap-1.5 mt-0.5 overflow-hidden">
-                <span className="text-[16px] font-bold text-white leading-none truncate">{value.toLocaleString()}</span>
+              <p className="text-[9px] text-gray-400 truncate leading-none mb-0.5">{label}</p>
+              <div className="flex items-baseline gap-1.5 overflow-hidden leading-none">
+                <span className="text-[14px] font-bold text-white truncate">{value.toLocaleString()}</span>
                 <span className={`text-[9px] font-semibold truncate ${
                   color==='blue' ? 'text-blue-400' : color==='emerald' ? 'text-emerald-400' :
                   color==='amber' ? 'text-[#b8860b]' : 'text-red-400'
@@ -731,7 +731,7 @@ function FieldOperationsCenterContent() {
                     
                     {/* Tabs */}
                     <div className="flex gap-5 mt-2.5 ml-7 overflow-x-auto no-scrollbar">
-                      {['Conversation','Details',`Media (${activeReport.media?.length || 0})`,`Documents (0)`,'Timeline','History'].map(tab => {
+                      {['Conversation','Details',`Media (${activeReport.media?.length || 0})`,`Documents (0)`,'History'].map(tab => {
                         const key = tab.split(' ')[0];
                         return (
                           <button key={tab} onClick={() => setActiveTab(key)}
@@ -868,7 +868,7 @@ function FieldOperationsCenterContent() {
             </div>
 
             {/* Report Details Card */}
-            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex flex-col overflow-hidden flex-1 min-h-0">
+            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-xl flex flex-col flex-shrink-0">
               <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between gap-2 flex-shrink-0">
                 <h3 className="text-[15px] font-bold text-white flex-shrink-0">Report Details</h3>
                 {/* Report Selector — switch between agent's reports */}
@@ -908,80 +908,64 @@ function FieldOperationsCenterContent() {
                 })()}
               </div>
 
-              <div className="p-4 pb-2 space-y-3 text-[11px] overflow-y-auto no-scrollbar flex-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Report ID</span>
-                  <div className="flex items-center gap-1">
-                    <span className="text-white font-medium">{activeReport.id}</span>
-                    <MoreHorizontal className="w-3.5 h-3.5 text-gray-600 cursor-pointer" />
+              <div className="px-4 py-3 text-[11px] flex-shrink-0 grid grid-cols-[100px_1fr] gap-y-1.5 items-center">
+                <span className="text-gray-500">Report ID</span>
+                <div className="flex items-center gap-1 justify-end">
+                  <span className="text-white font-medium">{activeReport.id}</span>
+                  <MoreHorizontal className="w-3 h-3 text-gray-600 cursor-pointer" />
+                </div>
+                
+                <span className="text-gray-500">Category</span>
+                <span className="text-white font-medium text-right">{activeReport.category}</span>
+                
+                <span className="text-gray-500">Location</span>
+                <span className="text-white font-medium text-right truncate">{activeReport.location.village || activeReport.location.district}, {activeReport.location.state}</span>
+                
+                <span className="text-gray-500">Submitted On</span>
+                <span className="text-white font-medium text-right">{new Date(activeReport.createdAt).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
+                
+                <span className="text-gray-500 self-start mt-0.5">Submitted By</span>
+                <div className="flex items-center gap-2 justify-end">
+                  <div className="text-right">
+                    <p className="text-white font-bold text-[11px] leading-none">{activeReport.agentName.split(' ')[0]}</p>
+                    <p className="text-gray-500 text-[9px] mt-0.5">{activeReport.agentId}</p>
                   </div>
+                  <img src={avatar(activeReport.agentName)} alt={activeReport.agentName}
+                    className="w-6 h-6 rounded-full border border-white/10" />
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Category</span>
-                  <span className="text-white font-medium text-right">{activeReport.category}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Location</span>
-                  <span className="text-white font-medium text-right">{activeReport.location.village || activeReport.location.district}, {activeReport.location.state}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Submitted On</span>
-                  <span className="text-white font-medium text-right">{new Date(activeReport.createdAt).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
-                </div>
-
-                {/* Submitted By */}
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-gray-500">Submitted By</span>
-                  <div className="flex items-center gap-2">
-                    <div className="text-right">
-                      <p className="text-white font-bold text-[11px]">{activeReport.agentName.split(' ')[0]}</p>
-                      <p className="text-gray-500 text-[9px]">{activeReport.agentId}</p>
-                    </div>
-                    <img src={avatar(activeReport.agentName)} alt={activeReport.agentName}
-                      className="w-7 h-7 rounded-full border border-white/10" />
+                
+                <span className="text-gray-500 self-start mt-0.5">Assigned To</span>
+                <div className="flex items-center gap-2 justify-end">
+                  <div className="text-right">
+                    <p className="text-white font-bold text-[11px] leading-none">Ahmed Khan</p>
+                    <p className="text-gray-500 text-[9px] mt-0.5">(You)</p>
                   </div>
+                  <img src="https://ui-avatars.com/api/?name=Ahmed+Khan&background=111&color=fff&size=64" alt="Ahmed Khan"
+                    className="w-6 h-6 rounded-full border border-white/10" />
                 </div>
-
-                {/* Assigned To */}
-                <div className="flex items-center justify-between py-0.5">
-                  <span className="text-gray-500">Assigned To</span>
-                  <div className="flex items-center gap-2">
-                    <div className="text-right">
-                      <p className="text-white font-bold text-[11px]">Ahmed Khan</p>
-                      <p className="text-gray-500 text-[9px]">(You)</p>
-                    </div>
-                    <img src="https://ui-avatars.com/api/?name=Ahmed+Khan&background=111&color=fff&size=64" alt="Ahmed Khan"
-                      className="w-7 h-7 rounded-full border border-white/10" />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Urgency</span>
-                  <span className={`font-bold flex items-center gap-1.5 ${activeReport.urgency==='High' ? 'text-red-400' : activeReport.urgency==='Medium' ? 'text-amber-400' : 'text-emerald-400'}`}>
-                    <span className={`w-2 h-2 rounded-full ${activeReport.urgency==='High' ? 'bg-red-500' : activeReport.urgency==='Medium' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                    {activeReport.urgency}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Estimated Budget</span>
-                  <span className="text-white font-bold text-[12px]">{activeReport.estimatedBudget}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Beneficiaries</span>
-                  <span className="text-white font-medium">{activeReport.beneficiaries?.families || 0} Families</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Status</span>
-                  <span className={`font-bold ${activeReport.status==='Approved' ? 'text-emerald-400' : activeReport.status==='Converted' ? 'text-purple-400' : 'text-[#b8860b]'}`}>
-                    {activeReport.status}
-                  </span>
-                </div>
+                
+                <span className="text-gray-500">Urgency</span>
+                <span className={`font-bold flex items-center gap-1.5 justify-end ${activeReport.urgency==='High' ? 'text-red-400' : activeReport.urgency==='Medium' ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${activeReport.urgency==='High' ? 'bg-red-500' : activeReport.urgency==='Medium' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                  {activeReport.urgency}
+                </span>
+                
+                <span className="text-gray-500">Budget</span>
+                <span className="text-white font-bold text-[12px] text-right">{activeReport.estimatedBudget}</span>
+                
+                <span className="text-gray-500">Beneficiaries</span>
+                <span className="text-white font-medium text-right">{activeReport.beneficiaries?.families || 0} Families</span>
+                
+                <span className="text-gray-500">Status</span>
+                <span className={`font-bold text-right ${activeReport.status==='Approved' ? 'text-emerald-400' : activeReport.status==='Converted' ? 'text-purple-400' : 'text-[#b8860b]'}`}>
+                  {activeReport.status}
+                </span>
               </div>
               
-              <div className="px-4 py-3 border-t border-white/[0.06] bg-[#0a0d0b] mt-auto shrink-0 z-10">
-                <button className="w-full py-2.5 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/30 text-emerald-100 text-[12px] font-bold transition flex items-center justify-between px-4">
+              <div className="px-4 py-2 border-t border-white/[0.06] bg-[#0a0d0b] shrink-0 z-10">
+                <button className="w-full py-2 rounded-xl bg-emerald-950/40 hover:bg-emerald-900/60 border border-emerald-800/30 text-emerald-100 text-[11px] font-bold transition flex items-center justify-between px-4">
                   Take Action
-                  <ChevronDown className="w-4 h-4 text-emerald-400" />
+                  <ChevronDown className="w-3.5 h-3.5 text-emerald-400" />
                 </button>
               </div>
             </div>
@@ -1026,6 +1010,39 @@ function FieldOperationsCenterContent() {
                     <span className="text-[9px] text-gray-500 group-hover:text-gray-300 text-center leading-[1.1] mt-0.5">{label}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* Report Timeline */}
+            <div className="flex flex-col flex-1 min-h-0">
+              <p className="text-[11px] font-bold text-white mb-2 ml-1 flex-shrink-0">Report Timeline</p>
+              <div className="flex-1 overflow-y-auto no-scrollbar relative pl-3">
+                <div className="absolute left-[15px] top-2 bottom-2 w-px bg-white/[0.08]" />
+                <div className="space-y-4 pb-2">
+                  <div className="relative flex gap-3">
+                    <div className={`w-2 h-2 rounded-full mt-1.5 relative z-10 ring-4 ring-[#020704] ${activeReport.status === 'Approved' ? 'bg-emerald-500' : activeReport.status === 'Rejected' ? 'bg-red-500' : activeReport.status === 'Converted' ? 'bg-purple-500' : 'bg-[#b8860b]'}`} />
+                    <div>
+                      <p className="text-[11px] text-white font-bold">{activeReport.status}</p>
+                      <p className="text-[9px] text-gray-500 mt-0.5">Current Status</p>
+                    </div>
+                  </div>
+                  {activeReport.assignedAdminId && (
+                    <div className="relative flex gap-3 opacity-60">
+                      <div className="w-2 h-2 rounded-full bg-blue-400 mt-1.5 relative z-10 ring-4 ring-[#020704]" />
+                      <div>
+                        <p className="text-[11px] text-white font-bold">Assigned for Review</p>
+                        <p className="text-[9px] text-gray-500 mt-0.5">System auto-assigned to you</p>
+                      </div>
+                    </div>
+                  )}
+                  <div className="relative flex gap-3 opacity-60">
+                    <div className="w-2 h-2 rounded-full bg-gray-400 mt-1.5 relative z-10 ring-4 ring-[#020704]" />
+                    <div>
+                      <p className="text-[11px] text-white font-bold">Report Submitted</p>
+                      <p className="text-[9px] text-gray-500 mt-0.5">{new Date(activeReport.createdAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} • By {activeReport.agentName.split(' ')[0]}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
