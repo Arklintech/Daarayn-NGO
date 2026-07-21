@@ -535,7 +535,7 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── STAT CARDS ── */}
-      <div className="flex lg:grid lg:grid-cols-6 gap-2 lg:gap-1 mb-1 flex-shrink-0 min-w-0 overflow-x-auto custom-scrollbar pb-1.5 lg:pb-0 snap-x">
+      <div className="flex md:grid md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-1 mb-1 flex-shrink-0 min-w-0 overflow-x-auto md:overflow-visible custom-scrollbar pb-1.5 md:pb-0 snap-x">
         {([
           { label:'Field Agents',        value: agents.length || 182, sub:'Active',           color:'blue',   Icon: Users },
           { label:'Total Reports',       value: allReports.length || 2842, sub:'All Time',    color:'emerald',Icon: FileText },
@@ -544,7 +544,7 @@ function FieldOperationsCenterContent() {
           { label:'Urgent Reports',      value: urgentCount || 3,     sub:'High Priority',    color:'red',    Icon: AlertCircle },
           { label:'Verified & Approved', value: verifiedCount || 1256,sub:'This Year',        color:'emerald',Icon: CheckCircle },
         ] as const).map(({ label, value, sub, color, Icon }) => (
-          <div key={label} className={`shrink-0 snap-start min-w-[120px] lg:min-w-0 bg-[#0a0d0b] border rounded-md p-1 flex items-center gap-1 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
+          <div key={label} className={`shrink-0 md:shrink md:snap-none snap-start min-w-[140px] md:min-w-[79px] lg:min-w-0 bg-[#0a0d0b] border rounded-md p-1 flex items-center gap-1 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
             <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 ${
               color==='blue'   ? 'bg-blue-500/10 text-blue-400' :
               color==='emerald'? 'bg-emerald-500/10 text-emerald-400' :

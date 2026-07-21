@@ -216,13 +216,13 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Category Grid */}
-      <div className="flex lg:grid lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0 overflow-x-auto custom-scrollbar pb-1.5 lg:pb-0 snap-x">
+      <div className="flex md:grid md:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0 overflow-x-auto md:overflow-visible custom-scrollbar pb-1.5 md:pb-0 snap-x">
         {categories.map(([cat, meta]) => {
           const catUnread = notifications.filter(n => n.category === cat && !n.isRead).length;
           const Icon = CATEGORY_ICONS[cat];
           const colorClass = CATEGORY_COLORS[cat];
           return (
-            <div key={cat} className="flex flex-col p-2 lg:p-3 rounded-xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0 shrink-0 snap-start w-[140px] lg:w-auto">
+            <div key={cat} className="flex flex-col p-2 lg:p-3 rounded-xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0 shrink-0 md:shrink md:snap-none snap-start w-[140px] md:w-auto">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="flex flex-row items-center gap-2 mb-2 min-w-0">
                 <div className={`w-6 h-6 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0`}>
