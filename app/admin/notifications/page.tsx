@@ -82,22 +82,7 @@ export default function NotificationCenterPage() {
       snap.forEach((d) => list.push({ id: d.id, ...(d.data() as AdminNotification), isStarred: (d.data() as any).isStarred }));
       setNotifications(list);
       
-      // Auto-select first item if nothing selected, and mark it read
-      if (list.length > 0) {
-        setSelectedId((prev) => {
-          if (!prev) {
-            const first = list[0];
-            if (!first.isRead) {
-              updateDoc(doc(db, "admin_notifications", first.id), {
-                isRead: true,
-                readAt: new Date().toISOString(),
-              }).catch(() => {});
-            }
-            return first.id;
-          }
-          return prev;
-        });
-      }
+      // Do not auto-select on mobile to prevent hijacking the view.
     });
     return () => unsub();
   }, []);
@@ -181,7 +166,7 @@ export default function NotificationCenterPage() {
     <div className="flex flex-col h-full w-full min-w-0 bg-[#030906] min-h-screen text-gray-200 p-4 lg:p-5 space-y-4 overflow-hidden">
       
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div className={`${selectedItem ? 'hidden' : 'flex'} lg:flex flex-col md:flex-row md:items-center justify-between gap-3`}>
         <div>
           <h1 className="text-xl font-semibold text-white tracking-tight">Notification Center</h1>
           <p className="text-xs text-gray-400 mt-1">Stay updated with what matters across Daarayn.</p>
@@ -216,7 +201,7 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Category Grid */}
-      <div className="flex md:grid md:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0 overflow-x-auto md:overflow-visible custom-scrollbar pb-1.5 md:pb-0 snap-x">
+      <div className={`${selectedItem ? 'hidden' : 'flex'} md:grid md:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0 overflow-x-auto md:overflow-visible custom-scrollbar pb-1.5 md:pb-0 snap-x`}>
         {categories.map(([cat, meta]) => {
           const catUnread = notifications.filter(n => n.category === cat && !n.isRead).length;
           const Icon = CATEGORY_ICONS[cat];
@@ -242,7 +227,7 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Filters & Total */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-white/[0.06] pb-3 gap-3 min-w-0">
+      <div className={`${selectedItem ? 'hidden' : 'flex'} lg:flex flex-col lg:flex-row lg:items-center justify-between border-b border-white/[0.06] pb-3 gap-3 min-w-0`}>
         <div className="text-xs font-medium text-gray-300 flex items-center whitespace-nowrap">
           Total Unread: <span className="text-luxury-gold font-bold ml-1">{totalUnread}</span>
           <span className="mx-2 text-gray-600">|</span>

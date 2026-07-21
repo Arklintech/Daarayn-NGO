@@ -509,7 +509,7 @@ function FieldOperationsCenterContent() {
       <div className="flex flex-col h-full w-full bg-[#020704] text-gray-200 overflow-hidden p-1.5 md:p-3">
 
       {/* ── HEADER ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between flex-shrink-0 mb-0.5 gap-2.5 min-w-0">
+      <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex flex-col sm:flex-row sm:items-center justify-between flex-shrink-0 mb-0.5 gap-2.5 min-w-0`}>
         <div>
           <h1 className="text-[12px] font-bold text-white tracking-wide leading-none">Field Operations Center</h1>
           <p className="text-[8.5px] text-gray-400 mt-0">Manage field reports, communicate with field agents and track progress.</p>
@@ -535,7 +535,7 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── STAT CARDS ── */}
-      <div className="flex md:grid md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-1 mb-1 flex-shrink-0 min-w-0 overflow-x-auto md:overflow-visible custom-scrollbar pb-1.5 md:pb-0 snap-x">
+      <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex md:grid md:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-1 mb-1 flex-shrink-0 min-w-0 overflow-x-auto md:overflow-visible custom-scrollbar pb-1.5 md:pb-0 snap-x`}>
         {([
           { label:'Field Agents',        value: agents.length || 182, sub:'Active',           color:'blue',   Icon: Users },
           { label:'Total Reports',       value: allReports.length || 2842, sub:'All Time',    color:'emerald',Icon: FileText },
@@ -720,6 +720,9 @@ function FieldOperationsCenterContent() {
                       </div>
                       
                       <div className="flex items-center gap-1.5 flex-shrink-0">
+                        <button onClick={() => { setShowTabletDetails(true); setMobileView('details'); }} className="xl:hidden flex items-center gap-1 px-2 py-0.5 rounded-md border border-white/[0.08] hover:bg-white/[0.05] transition text-[8px] text-gray-300 font-medium">
+                          <FileText className="w-2.5 h-2.5" /> Details
+                        </button>
                         <button className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-white/[0.08] hover:bg-white/[0.05] transition text-[8px] text-gray-300 font-medium">
                           <UserPlus className="w-2.5 h-2.5" /> Assign
                         </button>
