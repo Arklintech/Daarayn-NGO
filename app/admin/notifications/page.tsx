@@ -177,37 +177,37 @@ export default function NotificationCenterPage() {
   const selectedItem = notifications.find(n => n.id === selectedId);
 
   return (
-    <div className="flex flex-col h-full w-full min-w-0 bg-[#030906] text-gray-200 px-6 py-4 lg:px-8 lg:py-5 space-y-4 min-h-0 overflow-hidden">
+    <div className="flex flex-col h-full w-full min-w-0 bg-[#030906] text-gray-200 px-4 py-3 lg:px-6 lg:py-4 space-y-3 min-h-0 overflow-hidden">
       
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 lg:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">Notification Center</h1>
-          <p className="text-sm text-gray-400 mt-1">Stay updated with what matters across Daarayn.</p>
+          <h1 className="text-xl lg:text-2xl font-semibold text-white tracking-tight">Notification Center</h1>
+          <p className="text-xs lg:text-sm text-gray-400 mt-1">Stay updated with what matters across Daarayn.</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
-          <div className="relative w-full md:w-64">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+          <div className="relative w-full md:w-56">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
             <input 
               type="text" 
               placeholder="Search notifications..." 
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] text-sm text-white placeholder-gray-500 focus:outline-none focus:border-luxury-gold/50 transition-colors w-full"
+              className="pl-8 pr-3 py-1.5 lg:py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs lg:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-luxury-gold/50 transition-colors w-full"
             />
           </div>
           <div className="flex gap-2">
             <button 
               onClick={markAllRead}
               disabled={totalUnread === 0}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
+              className="flex items-center gap-1.5 px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-xs lg:text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
             >
-              <CheckCircle2 className="w-4 h-4 text-gray-400 shrink-0" />
+              <CheckCircle2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-gray-400 shrink-0" />
               Mark all as read
             </button>
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-sm font-medium transition-colors whitespace-nowrap">
-              <FilterIcon className="w-4 h-4 text-gray-400 shrink-0" />
+            <button className="flex items-center gap-1.5 px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-xs lg:text-sm font-medium transition-colors whitespace-nowrap">
+              <FilterIcon className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-gray-400 shrink-0" />
               Filter
             </button>
           </div>
@@ -221,128 +221,252 @@ export default function NotificationCenterPage() {
           const Icon = CATEGORY_ICONS[cat];
           const colorClass = CATEGORY_COLORS[cat];
           return (
-            <div key={cat} className="flex flex-col p-3 rounded-xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0">
+            <div key={cat} className="flex flex-col p-2 lg:p-2.5 xl:p-3 rounded-xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="flex items-start xl:items-center gap-2 mb-2 min-w-0">
-                <div className={`w-6 h-6 lg:w-7 lg:h-7 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0`}>
-                  <Icon className={`w-3 h-3 lg:w-3.5 lg:h-3.5 ${colorClass.text}`} />
+              <div className="flex items-start xl:items-center gap-1.5 lg:gap-2 mb-1.5 lg:mb-2 min-w-0">
+                <div className={`w-5 h-5 lg:w-6 lg:h-6 xl:w-7 xl:h-7 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0`}>
+                  <Icon className={`w-2.5 h-2.5 lg:w-3 lg:h-3 xl:w-3.5 xl:h-3.5 ${colorClass.text}`} />
                 </div>
-                <span className="text-[10px] xl:text-xs font-medium text-gray-300 leading-tight flex-1 whitespace-normal break-words">{meta.label}</span>
+                <span className="text-[9px] lg:text-[10px] xl:text-[11px] font-medium text-gray-300 leading-tight flex-1 whitespace-normal break-words">{meta.label}</span>
               </div>
               <div className="min-w-0 mt-auto">
-                <div className="text-lg xl:text-2xl font-bold text-white">{notifications.filter(n => n.category === cat).length}</div>
-                <div className={`text-[9px] xl:text-[10px] font-semibold tracking-wider uppercase mt-0.5 whitespace-normal ${catUnread > 0 ? colorClass.text : 'text-gray-600'}`}>
+                <div className="text-base lg:text-lg xl:text-xl font-bold text-white">{notifications.filter(n => n.category === cat).length}</div>
+                <div className={`text-[8px] xl:text-[9px] font-semibold tracking-wider uppercase mt-0.5 whitespace-normal ${catUnread > 0 ? colorClass.text : 'text-gray-600'}`}>
+                  {catUnread > 0 ? `${catUnread} Unread` : "0 Unread"}
+                </div>
+              </div>
+                  </button>
+                  <MoreMenu
+                    onMarkUnread={() => markUnread(selectedItem.id)}
+                    onDelete={() => deleteNotif(selectedItem.id)}
+  return Date.now() - new Date(iso).getTime() < 7 * 24 * 60 * 60 * 1000;
+}
+
+const CATEGORY_ICONS: Record<NotificationCategory, any> = {
+  field_reports: MapPin,
+  conversations: MessageSquare,
+  donors: User,
+  donations: IndianRupee,
+  causes_campaigns: Target,
+  communications: Megaphone,
+  executive_reports: BarChart2,
+};
+
+const CATEGORY_COLORS: Record<NotificationCategory, { bg: string, border: string, text: string }> = {
+  field_reports: { bg: "bg-emerald-500/10", border: "border-emerald-500/20", text: "text-emerald-400" },
+  conversations: { bg: "bg-blue-500/10", border: "border-blue-500/20", text: "text-blue-400" },
+  donors: { bg: "bg-purple-500/10", border: "border-purple-500/20", text: "text-purple-400" },
+  donations: { bg: "bg-amber-500/10", border: "border-amber-500/20", text: "text-amber-400" },
+  causes_campaigns: { bg: "bg-teal-500/10", border: "border-teal-500/20", text: "text-teal-400" },
+  communications: { bg: "bg-pink-500/10", border: "border-pink-500/20", text: "text-pink-400" },
+  executive_reports: { bg: "bg-yellow-500/10", border: "border-yellow-500/20", text: "text-yellow-400" },
+};
+
+export default function NotificationCenterPage() {
+  const [notifications, setNotifications] = useState<(AdminNotification & { id: string, isStarred?: boolean })[]>([]);
+  const [filter, setFilter] = useState<FilterType>("all");
+  const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  // Real-time Firestore listener
+  useEffect(() => {
+    const q = query(collection(db, "admin_notifications"), orderBy("createdAt", "desc"), limit(200));
+    const unsub = onSnapshot(q, (snap) => {
+      const list: (AdminNotification & { id: string, isStarred?: boolean })[] = [];
+      snap.forEach((d) => list.push({ id: d.id, ...(d.data() as AdminNotification), isStarred: (d.data() as any).isStarred }));
+      setNotifications(list);
+      
+      // Auto-select first item if nothing selected, and mark it read
+      if (list.length > 0) {
+        setSelectedId((prev) => {
+          if (!prev) {
+            const first = list[0];
+            if (!first.isRead) {
+              updateDoc(doc(db, "admin_notifications", first.id), {
+                isRead: true,
+                readAt: new Date().toISOString(),
+              }).catch(() => {});
+            }
+            return first.id;
+          }
+          return prev;
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  const filtered = notifications.filter((n) => {
+    if (filter === "unread") return !n.isRead;
+    if (filter === "starred") return n.isStarred;
+    if (filter === "today") return isToday(n.createdAt);
+    if (filter === "week") return isThisWeek(n.createdAt);
+    return true;
+  }).filter((n) => {
+    if (search) {
+      const q = search.toLowerCase();
+      return n.title.toLowerCase().includes(q) || n.description.toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const totalUnread = notifications.filter((n) => !n.isRead).length;
+  const totalStarred = notifications.filter((n) => n.isStarred).length;
+
+  const markRead = async (id: string) => {
+    try {
+      await updateDoc(doc(db, "admin_notifications", id), {
+        isRead: true,
+        readAt: new Date().toISOString(),
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const markAllRead = async () => {
+    const unread = notifications.filter((n) => !n.isRead);
+    if (!unread.length) return;
+    try {
+      const batch = writeBatch(db);
+      unread.forEach((n) => {
+        batch.update(doc(db, "admin_notifications", n.id), {
+          isRead: true,
+          readAt: new Date().toISOString(),
+        });
+      });
+      await batch.commit();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const markUnread = async (id: string) => {
+    try {
+      await updateDoc(doc(db, "admin_notifications", id), {
+        isRead: false,
+        readAt: null,
+      });
+    } catch (e) { console.error(e); }
+  };
+
+  const toggleStar = async (id: string, current: boolean) => {
+    try {
+      await updateDoc(doc(db, "admin_notifications", id), { isStarred: !current });
+    } catch (e) { console.error(e); }
+  };
+
+  const deleteNotif = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "admin_notifications", id));
+      if (selectedId === id) setSelectedId(null);
+    } catch (e) { console.error(e); }
+  };
+
+  const categories = Object.entries(CATEGORY_META) as [NotificationCategory, typeof CATEGORY_META[NotificationCategory]][];
+  
+  const todayList = filtered.filter(n => isToday(n.createdAt));
+  const yesterdayList = filtered.filter(n => isYesterday(n.createdAt));
+  const olderList = filtered.filter(n => !isToday(n.createdAt) && !isYesterday(n.createdAt));
+
+  const selectedItem = notifications.find(n => n.id === selectedId);
+
+  return (
+    <div className="flex flex-col h-full w-full min-w-0 bg-[#030906] text-gray-200 px-4 py-3 lg:px-6 lg:py-4 space-y-3 min-h-0 overflow-hidden">
+      
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 lg:gap-4">
+        <div>
+          <h1 className="text-xl lg:text-2xl font-semibold text-white tracking-tight">Notification Center</h1>
+          <p className="text-xs lg:text-sm text-gray-400 mt-1">Stay updated with what matters across Daarayn.</p>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto mt-2 md:mt-0">
+          <div className="relative w-full md:w-56">
+            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <input 
+              type="text" 
+              placeholder="Search notifications..." 
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 pr-3 py-1.5 lg:py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] text-xs lg:text-sm text-white placeholder-gray-500 focus:outline-none focus:border-luxury-gold/50 transition-colors w-full"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={markAllRead}
+              disabled={totalUnread === 0}
+              className="flex items-center gap-1.5 px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-xs lg:text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
+            >
+              <CheckCircle2 className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-gray-400 shrink-0" />
+              Mark all as read
+            </button>
+            <button className="flex items-center gap-1.5 px-3 py-1.5 lg:px-4 lg:py-2 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-xs lg:text-sm font-medium transition-colors whitespace-nowrap">
+              <FilterIcon className="w-3.5 h-3.5 lg:w-4 lg:h-4 text-gray-400 shrink-0" />
+              Filter
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Category Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0">
+        {categories.map(([cat, meta]) => {
+          const catUnread = notifications.filter(n => n.category === cat && !n.isRead).length;
+          const Icon = CATEGORY_ICONS[cat];
+          const colorClass = CATEGORY_COLORS[cat];
+          return (
+            <div key={cat} className="flex flex-col p-2 lg:p-2.5 xl:p-3 rounded-xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="flex items-start xl:items-center gap-1.5 lg:gap-2 mb-1.5 lg:mb-2 min-w-0">
+                <div className={`w-5 h-5 lg:w-6 lg:h-6 xl:w-7 xl:h-7 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0`}>
+                  <Icon className={`w-2.5 h-2.5 lg:w-3 lg:h-3 xl:w-3.5 xl:h-3.5 ${colorClass.text}`} />
+                </div>
+                <span className="text-[9px] lg:text-[10px] xl:text-[11px] font-medium text-gray-300 leading-tight flex-1 whitespace-normal break-words">{meta.label}</span>
+              </div>
+              <div className="min-w-0 mt-auto">
+                <div className="text-base lg:text-lg xl:text-xl font-bold text-white">{notifications.filter(n => n.category === cat).length}</div>
+                <div className={`text-[8px] xl:text-[9px] font-semibold tracking-wider uppercase mt-0.5 whitespace-normal ${catUnread > 0 ? colorClass.text : 'text-gray-600'}`}>
                   {catUnread > 0 ? `${catUnread} Unread` : "0 Unread"}
                 </div>
               </div>
             </div>
-          )
+          );
         })}
       </div>
 
-      {/* Filters & Total */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-white/[0.06] pb-3 gap-3">
-        <div className="text-sm font-medium text-gray-300 flex items-center whitespace-nowrap">
-          Total Unread: <span className="text-luxury-gold font-bold ml-1">{totalUnread}</span>
-          <span className="mx-2 text-gray-600">|</span>
-          Starred: <span className="text-amber-400 font-bold ml-1">{totalStarred}</span>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {([
-            { key: "all", label: "All" },
-            { key: "unread", label: "Unread" },
-            { key: "starred", label: "Starred" },
-            { key: "today", label: "Today" },
-            { key: "week", label: "This Week" }
-          ] as { key: FilterType, label: string }[]).map((f) => (
-            <button
-              key={f.key}
-              onClick={() => setFilter(f.key)}
-              className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                filter === f.key 
-                  ? "bg-luxury-gold/20 text-luxury-gold border border-luxury-gold/30" 
-                  : "bg-transparent text-gray-400 hover:text-white border border-transparent"
-              }`}
-            >
-              {f.label}
-            </button>
+      {/* Content Area */}
+      <div className="flex flex-1 gap-4 min-h-0 overflow-hidden">
+        
+        {/* Left List */}
+        <div className="w-1/3 min-w-[300px] bg-white/[0.01] border border-white/[0.04] rounded-2xl overflow-y-auto scrollbar-hide">
+          {filtered.map(n => (
+            <NotificationRow 
+              key={n.id} 
+              notification={n} 
+              isSelected={selectedId === n.id} 
+              onSelect={() => {
+                setSelectedId(n.id);
+                if (!n.isRead) markRead(n.id);
+              }} 
+            />
           ))}
         </div>
-      </div>
 
-      {/* Main Two Columns */}
-      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 flex-1 min-h-0 min-w-0 w-full overflow-hidden">
-        
-        {/* Left Col: List */}
-        <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col gap-5 overflow-y-auto pr-2 custom-scrollbar min-w-0">
-          
-          {todayList.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-2">Today</h3>
-              <div className="space-y-2">
-                {todayList.map(n => <NotificationRow key={n.id} notification={n} isSelected={selectedId === n.id} onSelect={() => { setSelectedId(n.id); if (!n.isRead) markRead(n.id); }} />)}
-              </div>
-            </div>
-          )}
-
-          {yesterdayList.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-2">Yesterday</h3>
-              <div className="space-y-2">
-                {yesterdayList.map(n => <NotificationRow key={n.id} notification={n} isSelected={selectedId === n.id} onSelect={() => { setSelectedId(n.id); if (!n.isRead) markRead(n.id); }} />)}
-              </div>
-            </div>
-          )}
-
-          {olderList.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold tracking-wider uppercase text-gray-500 mb-2">Older</h3>
-              <div className="space-y-2">
-                {olderList.map(n => <NotificationRow key={n.id} notification={n} isSelected={selectedId === n.id} onSelect={() => { setSelectedId(n.id); if (!n.isRead) markRead(n.id); }} />)}
-              </div>
-            </div>
-          )}
-
-          {filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-20 text-center border border-white/[0.04] border-dashed rounded-2xl bg-white/[0.01]">
-              <Bell className="w-8 h-8 text-gray-600 mb-3" />
-              <p className="text-sm font-medium text-gray-400">No notifications found.</p>
-            </div>
-          )}
-
-        </div>
-
-        {/* Right Col: Detail Pane */}
-        <div className="flex-1 rounded-2xl bg-[#0a0f0c] border border-white/[0.06] p-5 lg:p-6 flex flex-col relative overflow-y-auto overflow-x-hidden custom-scrollbar min-h-0 min-w-0">
-          {/* Abstract glow */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-luxury-gold/[0.02] rounded-full blur-[80px] pointer-events-none" />
-
+        {/* Right Detail */}
+        <div className="flex-1 bg-white/[0.01] border border-white/[0.04] rounded-2xl p-6 overflow-y-auto">
           {selectedItem ? (
-            <div className="flex flex-col h-full relative z-10">
+            <div className="flex flex-col h-full">
               
               {/* Header */}
-              <div className="flex items-start justify-between mb-5 min-w-0 gap-4">
-                <div className="flex items-start gap-3 lg:gap-4 min-w-0">
-                  <div className={`w-10 h-10 lg:w-12 lg:h-12 rounded-full ${CATEGORY_COLORS[selectedItem.category].bg} ${CATEGORY_COLORS[selectedItem.category].border} border flex items-center justify-center shrink-0`}>
-                    {React.createElement(CATEGORY_ICONS[selectedItem.category], { className: `w-4 h-4 lg:w-5 lg:h-5 ${CATEGORY_COLORS[selectedItem.category].text}` })}
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="text-base lg:text-lg font-bold text-white mb-0.5 leading-tight truncate">{selectedItem.title}</h2>
-                    <p className="text-xs lg:text-sm text-gray-400 truncate">{selectedItem.description}</p>
-                  </div>
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-white mb-1">{selectedItem.title}</h2>
+                  <p className="text-xs text-gray-400">Sent {new Date(selectedItem.createdAt).toLocaleDateString()}</p>
                 </div>
-                <div className="flex items-center gap-2 lg:gap-3 shrink-0">
-                  {!selectedItem.isRead && (
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-500 uppercase tracking-wider">
-                      <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Unread
-                    </div>
-                  )}
-                  <button
-                    onClick={() => toggleStar(selectedItem.id, !!selectedItem.isStarred)}
-                    title={selectedItem.isStarred ? "Remove star" : "Star this notification"}
-                    className="p-2 rounded-lg hover:bg-white/[0.04] transition-colors"
-                  >
-                    <Star className={`w-4 h-4 ${selectedItem.isStarred ? "fill-amber-400 text-amber-400" : "text-gray-500 hover:text-amber-400"}`} />
+                <div className="flex items-center gap-2">
+                  <button onClick={() => toggleStar(selectedItem.id, !!selectedItem.isStarred)} className="p-2 rounded-lg hover:bg-white/[0.04] text-gray-500 hover:text-amber-400 transition-colors">
+                    <Star className={`w-4 h-4 ${selectedItem.isStarred ? 'fill-amber-400 text-amber-400' : ''}`} />
                   </button>
                   <MoreMenu
                     onMarkUnread={() => markUnread(selectedItem.id)}
@@ -353,16 +477,16 @@ export default function NotificationCenterPage() {
               </div>
 
               {/* Metadata Grid */}
-              <div className="grid grid-cols-2 gap-y-4 gap-x-8 mb-5 border-b border-white/[0.06] pb-5">
-                <MetaItem icon={<Target className="w-3.5 h-3.5" />} label="Category" value={CATEGORY_META[selectedItem.category].label} />
-                <MetaItem icon={<User className="w-3.5 h-3.5" />} label="Created By" value={selectedItem.createdBy} />
-                <MetaItem icon={<Search className="w-3.5 h-3.5" />} label="Date & Time" value={new Date(selectedItem.createdAt).toLocaleString()} />
+              <div className="grid grid-cols-2 gap-y-3 gap-x-6 lg:gap-y-4 lg:gap-x-8 mb-4 lg:mb-5 border-b border-white/[0.06] pb-4 lg:pb-5">
+                <MetaItem icon={<Target className="w-3 h-3 lg:w-3.5 lg:h-3.5" />} label="Category" value={CATEGORY_META[selectedItem.category].label} />
+                <MetaItem icon={<User className="w-3 h-3 lg:w-3.5 lg:h-3.5" />} label="Created By" value={selectedItem.createdBy} />
+                <MetaItem icon={<Search className="w-3 h-3 lg:w-3.5 lg:h-3.5" />} label="Date & Time" value={new Date(selectedItem.createdAt).toLocaleString()} />
                 
                 {/* Dynamically render other metadata */}
                 {selectedItem.metadata && Object.entries(selectedItem.metadata).map(([key, value]) => (
                   <MetaItem 
                     key={key} 
-                    icon={<ChevronRight className="w-3.5 h-3.5" />} 
+                    icon={<ChevronRight className="w-3 h-3 lg:w-3.5 lg:h-3.5" />} 
                     label={key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())} 
                     value={
                       typeof value === 'object' && value !== null 
@@ -434,28 +558,28 @@ function NotificationRow({ notification, isSelected, onSelect }: { notification:
   return (
     <div 
       onClick={onSelect}
-      className={`p-4 rounded-2xl cursor-pointer transition-all border flex items-start gap-4 ${
+      className={`p-3 lg:p-4 rounded-2xl cursor-pointer transition-all border flex items-start gap-3 lg:gap-4 group ${
         isSelected 
-          ? "bg-white/[0.05] border-white/[0.12]" 
+          ? "bg-white/[0.04] border-white/[0.1] shadow-[0_0_20px_rgba(255,255,255,0.02)]" 
           : "bg-transparent border-transparent hover:bg-white/[0.02] hover:border-white/[0.04]"
       }`}
     >
-      <div className={`w-10 h-10 rounded-full ${colorClass.bg} flex items-center justify-center flex-shrink-0 mt-0.5 relative`}>
-        <Icon className={`w-4 h-4 ${colorClass.text}`} />
+      <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0 mt-0.5 relative`}>
+        <Icon className={`w-3.5 h-3.5 lg:w-4 lg:h-4 ${colorClass.text}`} />
         {!notification.isRead && (
-          <div className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-luxury-gold border-2 border-[#030906]" />
+          <div className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-luxury-gold border-2 border-[#030906]" />
         )}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <h4 className={`text-sm font-semibold truncate pr-4 ${!notification.isRead ? 'text-white' : 'text-gray-300'}`}>
+        <div className="flex items-center justify-between mb-0.5 lg:mb-1">
+          <h4 className={`text-xs lg:text-sm font-semibold truncate pr-4 ${!notification.isRead ? 'text-white' : 'text-gray-300'}`}>
             {notification.title}
           </h4>
-          <span className="text-[10px] text-gray-500 font-medium flex-shrink-0">
+          <span className="text-[9px] lg:text-[10px] text-gray-500 font-medium flex-shrink-0">
             {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
           </span>
         </div>
-        <p className="text-[12px] text-gray-400 line-clamp-2 leading-relaxed">
+        <p className="text-[11px] lg:text-[12px] text-gray-400 line-clamp-2 leading-relaxed">
           {notification.description}
         </p>
       </div>
@@ -509,13 +633,13 @@ function MoreMenu({ onMarkUnread, onDelete, isRead }: { onMarkUnread: () => void
 
 function MetaItem({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) {
   return (
-    <div className="flex items-start gap-3 min-w-0">
-      <div className="w-6 h-6 rounded-md bg-white/[0.04] flex items-center justify-center text-gray-400 mt-0.5 shrink-0">
+    <div className="flex items-start gap-2 min-w-0">
+      <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-md bg-white/[0.04] flex items-center justify-center text-gray-400 shrink-0">
         {icon}
       </div>
       <div className="min-w-0 flex-1">
-        <div className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-0.5 truncate">{label}</div>
-        <div className="text-sm font-semibold text-white break-words">{value}</div>
+        <div className="text-[9px] lg:text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-0.5 truncate">{label}</div>
+        <div className="text-xs lg:text-sm font-semibold text-white break-words">{value}</div>
       </div>
     </div>
   );
