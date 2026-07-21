@@ -215,19 +215,19 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Category Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4 w-full min-w-0">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-3 lg:gap-4 w-full min-w-0">
         {categories.map(([cat, meta]) => {
           const catUnread = notifications.filter(n => n.category === cat && !n.isRead).length;
           const Icon = CATEGORY_ICONS[cat];
           const colorClass = CATEGORY_COLORS[cat];
           return (
-            <div key={cat} className="flex flex-col p-4 rounded-2xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0">
+            <div key={cat} className="flex flex-col p-3 lg:p-4 rounded-2xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0">
               <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="flex items-start xl:items-center gap-3 mb-3 min-w-0">
-                <div className={`w-8 h-8 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0`}>
-                  <Icon className={`w-4 h-4 ${colorClass.text}`} />
+              <div className="flex flex-col xl:flex-row items-start xl:items-center gap-2 xl:gap-3 mb-3 min-w-0">
+                <div className={`w-7 h-7 xl:w-8 xl:h-8 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0`}>
+                  <Icon className={`w-3.5 h-3.5 xl:w-4 xl:h-4 ${colorClass.text}`} />
                 </div>
-                <span className="text-xs font-medium text-gray-300 leading-tight flex-1 whitespace-normal break-words">{meta.label}</span>
+                <span className="text-[11px] xl:text-xs font-medium text-gray-300 leading-tight flex-1 whitespace-normal break-words">{meta.label}</span>
               </div>
               <div className="min-w-0 mt-auto">
                 <div className="text-2xl font-bold text-white">{notifications.filter(n => n.category === cat).length}</div>
@@ -271,10 +271,10 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Main Two Columns */}
-      <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0 min-w-0 w-full overflow-hidden">
+      <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 flex-1 min-h-0 min-w-0 w-full overflow-hidden">
         
         {/* Left Col: List */}
-        <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col gap-6 overflow-y-auto pr-2 custom-scrollbar min-w-0">
+        <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col gap-4 lg:gap-6 overflow-y-auto pr-2 custom-scrollbar min-w-0 shrink-0">
           
           {todayList.length > 0 && (
             <div>
@@ -313,7 +313,7 @@ export default function NotificationCenterPage() {
         </div>
 
         {/* Right Col: Detail Pane */}
-        <div className="flex-1 rounded-2xl bg-[#0a0f0c] border border-white/[0.06] p-6 lg:p-8 flex flex-col relative overflow-y-auto overflow-x-hidden custom-scrollbar min-w-0 min-h-0">
+        <div className="flex-1 rounded-2xl bg-[#0a0f0c] border border-white/[0.06] p-5 lg:p-8 flex flex-col relative overflow-y-auto overflow-x-hidden custom-scrollbar min-w-0 min-h-0">
           {/* Abstract glow */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-luxury-gold/[0.02] rounded-full blur-[80px] pointer-events-none" />
 
