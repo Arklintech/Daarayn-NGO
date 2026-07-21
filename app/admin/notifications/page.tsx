@@ -177,7 +177,7 @@ export default function NotificationCenterPage() {
   const selectedItem = notifications.find(n => n.id === selectedId);
 
   return (
-    <div className="flex flex-col h-full bg-[#030906] text-gray-200 px-6 py-4 lg:px-8 lg:py-5 space-y-4 min-h-0 overflow-hidden">
+    <div className="flex flex-col h-full w-full min-w-0 bg-[#030906] text-gray-200 px-6 py-4 lg:px-8 lg:py-5 space-y-4 min-h-0 overflow-hidden">
       
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -227,11 +227,11 @@ export default function NotificationCenterPage() {
                 <div className={`w-6 h-6 lg:w-7 lg:h-7 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0`}>
                   <Icon className={`w-3 h-3 lg:w-3.5 lg:h-3.5 ${colorClass.text}`} />
                 </div>
-                <span className="text-[10px] xl:text-xs font-medium text-gray-300 leading-tight flex-1 min-w-0 break-words">{meta.label}</span>
+                <span className="text-[10px] xl:text-xs font-medium text-gray-300 leading-tight flex-1 whitespace-normal break-words">{meta.label}</span>
               </div>
               <div className="min-w-0 mt-auto">
-                <div className="text-lg xl:text-2xl font-bold text-white truncate">{notifications.filter(n => n.category === cat).length}</div>
-                <div className={`text-[9px] xl:text-[10px] font-semibold tracking-wider uppercase mt-0.5 truncate ${catUnread > 0 ? colorClass.text : 'text-gray-600'}`}>
+                <div className="text-lg xl:text-2xl font-bold text-white">{notifications.filter(n => n.category === cat).length}</div>
+                <div className={`text-[9px] xl:text-[10px] font-semibold tracking-wider uppercase mt-0.5 whitespace-normal ${catUnread > 0 ? colorClass.text : 'text-gray-600'}`}>
                   {catUnread > 0 ? `${catUnread} Unread` : "0 Unread"}
                 </div>
               </div>
@@ -509,13 +509,13 @@ function MoreMenu({ onMarkUnread, onDelete, isRead }: { onMarkUnread: () => void
 
 function MetaItem({ icon, label, value }: { icon: React.ReactNode, label: string, value: string }) {
   return (
-    <div className="flex items-start gap-3">
-      <div className="w-6 h-6 rounded-md bg-white/[0.04] flex items-center justify-center text-gray-400 mt-0.5 flex-shrink-0">
+    <div className="flex items-start gap-3 min-w-0">
+      <div className="w-6 h-6 rounded-md bg-white/[0.04] flex items-center justify-center text-gray-400 mt-0.5 shrink-0">
         {icon}
       </div>
-      <div>
-        <div className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-0.5">{label}</div>
-        <div className="text-sm font-semibold text-white">{value}</div>
+      <div className="min-w-0 flex-1">
+        <div className="text-[11px] text-gray-500 font-medium uppercase tracking-wider mb-0.5 truncate">{label}</div>
+        <div className="text-sm font-semibold text-white break-words">{value}</div>
       </div>
     </div>
   );
