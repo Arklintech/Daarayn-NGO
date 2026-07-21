@@ -17,6 +17,7 @@ import {
   MoreVertical,
   ChevronRight,
   ArrowRight,
+  ArrowLeft,
   Trash2,
   MailOpen,
   X
@@ -215,7 +216,7 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Category Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0">
         {categories.map(([cat, meta]) => {
           const catUnread = notifications.filter(n => n.category === cat && !n.isRead).length;
           const Icon = CATEGORY_ICONS[cat];
@@ -241,7 +242,7 @@ export default function NotificationCenterPage() {
       </div>
 
       {/* Filters & Total */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-white/[0.06] pb-3 gap-3">
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between border-b border-white/[0.06] pb-3 gap-3 min-w-0">
         <div className="text-xs font-medium text-gray-300 flex items-center whitespace-nowrap">
           Total Unread: <span className="text-luxury-gold font-bold ml-1">{totalUnread}</span>
           <span className="mx-2 text-gray-600">|</span>
@@ -274,7 +275,7 @@ export default function NotificationCenterPage() {
       <div className="flex flex-col lg:flex-row gap-4 flex-1 min-h-0 min-w-0 w-full overflow-hidden">
         
         {/* Left Col: List */}
-        <div className="w-full lg:w-[40%] xl:w-[35%] flex flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar min-w-0 shrink-0">
+        <div className={`w-full lg:w-[40%] xl:w-[35%] flex-col gap-4 overflow-y-auto pr-2 custom-scrollbar min-w-0 shrink-0 ${selectedItem ? 'hidden lg:flex' : 'flex'}`}>
           
           {todayList.length > 0 && (
             <div>
@@ -313,7 +314,7 @@ export default function NotificationCenterPage() {
         </div>
 
         {/* Right Col: Detail Pane */}
-        <div className="flex-1 rounded-xl bg-[#0a0f0c] border border-white/[0.06] p-4 lg:p-6 flex flex-col relative overflow-y-auto overflow-x-hidden custom-scrollbar min-w-0 min-h-0">
+        <div className={`flex-1 rounded-xl bg-[#0a0f0c] border border-white/[0.06] p-4 lg:p-6 flex-col relative overflow-y-auto overflow-x-hidden custom-scrollbar min-w-0 min-h-0 ${!selectedItem ? 'hidden lg:flex' : 'flex'}`}>
           {/* Abstract glow */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-luxury-gold/[0.02] rounded-full blur-[60px] pointer-events-none" />
 
@@ -323,6 +324,9 @@ export default function NotificationCenterPage() {
               {/* Header */}
               <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between mb-5 gap-3 min-w-0">
                 <div className="flex items-start gap-3 min-w-0">
+                  <button onClick={() => setSelectedId(null)} className="lg:hidden mt-1 p-1.5 rounded-md bg-white/[0.05] text-gray-400 hover:text-white flex-shrink-0 transition-colors">
+                    <ArrowLeft className="w-4 h-4" />
+                  </button>
                   <div className={`w-9 h-9 rounded-full ${CATEGORY_COLORS[selectedItem.category].bg} ${CATEGORY_COLORS[selectedItem.category].border} border flex items-center justify-center shrink-0`}>
                     {React.createElement(CATEGORY_ICONS[selectedItem.category], { className: `w-4 h-4 ${CATEGORY_COLORS[selectedItem.category].text}` })}
                   </div>

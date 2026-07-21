@@ -509,7 +509,7 @@ function FieldOperationsCenterContent() {
       <div className="flex flex-col h-full w-full bg-[#020704] text-gray-200 overflow-hidden p-1.5 md:p-3">
 
       {/* ── HEADER ── */}
-      <div className="flex items-center justify-between flex-shrink-0 mb-0.5 gap-2.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between flex-shrink-0 mb-0.5 gap-2.5 min-w-0">
         <div>
           <h1 className="text-[12px] font-bold text-white tracking-wide leading-none">Field Operations Center</h1>
           <p className="text-[8.5px] text-gray-400 mt-0">Manage field reports, communicate with field agents and track progress.</p>
@@ -535,7 +535,7 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── STAT CARDS ── */}
-      <div className="flex overflow-x-auto no-scrollbar md:grid md:grid-cols-3 lg:grid-cols-6 gap-1 mb-1 flex-shrink-0">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5 md:gap-1 mb-1 flex-shrink-0 min-w-0">
         {([
           { label:'Field Agents',        value: agents.length || 182, sub:'Active',           color:'blue',   Icon: Users },
           { label:'Total Reports',       value: allReports.length || 2842, sub:'All Time',    color:'emerald',Icon: FileText },
@@ -908,7 +908,7 @@ function FieldOperationsCenterContent() {
                 })()}
               </div>
 
-              <div className="px-3 py-2.5 text-[8.5px] flex-shrink-0 grid grid-cols-[100px_1fr] gap-y-1 items-center">
+              <div className="px-3 py-2.5 text-[8.5px] flex-shrink-0 grid grid-cols-1 sm:grid-cols-[100px_1fr] gap-y-1.5 sm:gap-y-1 items-start sm:items-center min-w-0 overflow-y-auto no-scrollbar max-h-[30vh] sm:max-h-none">
                 <span className="text-gray-500">Report ID</span>
                 <div className="flex items-center gap-0.5 justify-end">
                   <span className="text-white font-medium">{activeReport.id}</span>
@@ -925,8 +925,8 @@ function FieldOperationsCenterContent() {
                 <span className="text-white font-medium text-right">{new Date(activeReport.createdAt).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span>
                 
                 <span className="text-gray-500 self-start mt-0">Submitted By</span>
-                <div className="flex items-center gap-1.5 justify-end">
-                  <div className="text-right">
+                <div className="flex items-center gap-1.5 justify-start sm:justify-end min-w-0">
+                  <div className="text-left sm:text-right min-w-0">
                     <p className="text-white font-bold text-[8.5px] leading-none">{activeReport.agentName.split(' ')[0]}</p>
                     <p className="text-gray-500 text-[8px] mt-0">{activeReport.agentId}</p>
                   </div>
@@ -935,8 +935,8 @@ function FieldOperationsCenterContent() {
                 </div>
                 
                 <span className="text-gray-500 self-start mt-0">Assigned To</span>
-                <div className="flex items-center gap-1.5 justify-end">
-                  <div className="text-right">
+                <div className="flex items-center gap-1.5 justify-start sm:justify-end min-w-0">
+                  <div className="text-left sm:text-right min-w-0">
                     <p className="text-white font-bold text-[8.5px] leading-none">Ahmed Khan</p>
                     <p className="text-gray-500 text-[8px] mt-0">(You)</p>
                   </div>
@@ -945,8 +945,8 @@ function FieldOperationsCenterContent() {
                 </div>
                 
                 <span className="text-gray-500">Urgency</span>
-                <span className={`font-bold flex items-center gap-1 justify-end ${activeReport.urgency==='High' ? 'text-red-400' : activeReport.urgency==='Medium' ? 'text-amber-400' : 'text-emerald-400'}`}>
-                  <span className={`w-1 h-1 rounded-full ${activeReport.urgency==='High' ? 'bg-red-500' : activeReport.urgency==='Medium' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                <span className={`font-bold flex items-center gap-1 justify-start sm:justify-end ${activeReport.urgency==='High' ? 'text-red-400' : activeReport.urgency==='Medium' ? 'text-amber-400' : 'text-emerald-400'}`}>
+                  <span className={`w-1 h-1 rounded-full flex-shrink-0 ${activeReport.urgency==='High' ? 'bg-red-500' : activeReport.urgency==='Medium' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
                   {activeReport.urgency}
                 </span>
                 
@@ -971,9 +971,9 @@ function FieldOperationsCenterContent() {
             </div>
 
             {/* Quick Actions */}
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 min-w-0">
               <p className="text-[8.5px] font-bold text-white mb-1 ml-0.5">Quick Actions</p>
-              <div className="grid grid-cols-5 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-1.5 min-w-0">
                 {([
                   {
                     label: 'Approve', Icon: CheckCircle, hc: 'emerald',
