@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/lib/AuthContext";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
@@ -25,7 +25,11 @@ import {
   Sparkles,
   Mail,
   MapPin,
-  Bell
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  PanelLeftClose,
+  PanelLeftOpen
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { db } from "@/lib/firebase";
@@ -37,6 +41,23 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
   const router = useRouter();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [totalUnread, setTotalUnread] = useState(0);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Initialize sidebar collapsed state from localStorage
+  useEffect(() => {
+    const savedState = localStorage.getItem("daarayn_admin_sidebar_collapsed");
+    if (savedState !== null) {
+      setIsCollapsed(savedState === "true");
+    }
+  }, []);
+
+  const toggleSidebar = () => {
+    setIsCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem("daarayn_admin_sidebar_collapsed", String(next));
+      return next;
+    });
+  };
 
   // Guard: if no user is signed in, redirect to login
   React.useEffect(() => {
@@ -182,17 +203,29 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Brand Header */}
-      <div className="p-6 border-b border-white/[0.06] flex items-center gap-3">
-        <img src="/brand logo1.png" alt="Daarayn Logo" className="w-9 h-9 object-contain filter brightness-110 drop-shadow-[0_0_4px_rgba(212,175,55,0.25)]" />
-        <div>
-          <h2 className="text-xs font-semibold tracking-[0.4em] font-playfair text-white">DAARAYN</h2>
-          <span className="text-[9px] font-semibold text-luxury-gold uppercase tracking-widest block mt-0.5">Control Center</span>
+      <div className="p-5 border-b border-white/[0.06] flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <img src="/brand logo1.png" alt="Daarayn Logo" className="w-8 h-8 object-contain filter brightness-110 drop-shadow-[0_0_4px_rgba(212,175,55,0.25)]" />
+          <div>
+            <h2 className="text-xs font-semibold tracking-[0.4em] font-playfair text-white">DAARAYN</h2>
+            <span className="text-[9px] font-semibold text-luxury-gold uppercase tracking-widest block mt-0.5">Control Center</span>
+          </div>
         </div>
+
+        {/* Desktop Collapse Toggle Button [◀] */}
+        <button
+          onClick={toggleSidebar}
+          className="hidden lg:flex items-center justify-center p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.06] hover:border-luxury-gold/40 text-gray-400 hover:text-white transition group"
+          title="Collapse Navigation (Focus Mode) [◀]"
+          aria-label="Collapse Navigation"
+        >
+          <ChevronLeft className="w-4 h-4 text-gray-400 group-hover:text-luxury-gold transition" />
+        </button>
       </div>
 
       {/* Admin Quick Profile */}
-      <div className="p-4 mx-4 my-3 rounded-2xl bg-white/[0.02] border border-white/[0.04] flex items-center gap-3">
-        <div className="w-9 h-9 rounded-full bg-luxury-gold/10 border border-luxury-gold/25 flex items-center justify-center text-luxury-gold font-bold text-sm">
+      <div className="p-3.5 mx-4 my-3 rounded-2xl bg-white/[0.02] border border-white/[0.04] flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-luxury-gold/10 border border-luxury-gold/25 flex items-center justify-center text-luxury-gold font-bold text-xs">
           {adminName[0].toUpperCase()}
         </div>
         <div className="overflow-hidden">
@@ -204,7 +237,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       </div>
 
       {/* Nav List */}
-      <nav className="flex-1 px-4 py-4 space-y-6 overflow-y-auto">
+      <nav className="flex-1 px-4 py-3 space-y-5 overflow-y-auto">
         {sidebarSections.map((section, idx) => (
           <div key={idx} className="space-y-1">
             {section.title !== "Notification Center" && section.title !== "Dashboard" && (
@@ -246,9 +279,9 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       <div className="p-4 border-t border-white/[0.06]">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-medium text-red-400 hover:bg-red-950/20 hover:text-red-300 transition duration-200"
+          className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-xs font-medium text-red-400 hover:bg-red-950/20 hover:text-red-300 transition duration-200"
         >
-          <LogOut className="w-4.5 h-4.5" />
+          <LogOut className="w-4 h-4" />
           Authorize Sign Out
         </button>
       </div>
@@ -257,19 +290,26 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
 
   return (
     <div className="fixed inset-0 bg-[#020704] overflow-hidden">
-      <div className="h-full w-full bg-gradient-to-br from-[#05110a] via-[#020704] to-[#030906] flex text-gray-200 max-w-enterprise mx-auto shadow-2xl overflow-hidden relative">
+      <div className="h-full w-full bg-gradient-to-br from-[#05110a] via-[#020704] to-[#030906] flex text-gray-200 shadow-2xl overflow-hidden relative">
       
-      {/* Desktop Sidebar */}
-      <aside className="hidden lg:block w-64 border-r border-white/[0.06] bg-luxury-bg-deep/40 backdrop-blur-xl shrink-0 h-full flex flex-col">
-        {renderSidebarContent()}
+      {/* Desktop Sidebar (Zero Footprint when Collapsed) */}
+      <aside 
+        className={`hidden lg:flex flex-col border-r border-white/[0.06] bg-luxury-bg-deep/40 backdrop-blur-xl shrink-0 h-full transition-all duration-300 overflow-hidden ${
+          isCollapsed ? 'w-0 border-r-0 pointer-events-none opacity-0' : 'w-64 opacity-100'
+        }`}
+      >
+        <div className="w-64 h-full flex flex-col">
+          {renderSidebarContent()}
+        </div>
       </aside>
 
       {/* Main Panel Wrapper */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 w-full">
         
         {/* Top Header */}
         <header className="h-16 shrink-0 border-b border-white/[0.06] bg-luxury-bg-deep/20 backdrop-blur-xl flex items-center justify-between px-6 z-40">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3.5">
+            {/* Mobile Hamburger Toggle */}
             <button 
               onClick={() => setMobileSidebarOpen(true)}
               className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.04] lg:hidden transition"
@@ -277,10 +317,29 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
             >
               <Menu className="w-5 h-5 text-gray-300" />
             </button>
+
+            {/* Desktop Expand Navigation Button [▶] when Collapsed */}
+            {isCollapsed && (
+              <button 
+                onClick={toggleSidebar}
+                className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-luxury-gold/30 bg-luxury-gold/10 hover:bg-luxury-gold/20 hover:border-luxury-gold/50 text-luxury-gold text-xs font-semibold tracking-wide transition shadow-[0_0_12px_rgba(212,175,55,0.15)] group"
+                title="Expand Navigation [▶]"
+                aria-label="Expand Navigation"
+              >
+                <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <span>Nav Menu</span>
+              </button>
+            )}
+
             <div className="hidden sm:block">
               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block">DAARAYN COMMAND</span>
-              <h1 className="text-sm font-semibold text-white tracking-wide font-playfair uppercase -mt-0.5">
+              <h1 className="text-sm font-semibold text-white tracking-wide font-playfair uppercase -mt-0.5 flex items-center gap-2">
                 {sidebarSections.flatMap(s => s.items as any[]).find(item => item.href && pathname.startsWith(item.href))?.name || "Command Centre"}
+                {isCollapsed && (
+                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-medium normal-case tracking-normal">
+                    Focus Mode
+                  </span>
+                )}
               </h1>
             </div>
           </div>
@@ -309,7 +368,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
         </header>
 
         {/* Dynamic Inner Panel Viewport */}
-        <main className={`flex-1 min-h-0 ${pathname.startsWith('/admin/field-ops') ? 'h-[calc(100vh-64px)] flex flex-col overflow-hidden' : 'p-6 lg:p-8 overflow-y-auto relative'}`}>
+        <main className={`flex-1 min-w-0 min-h-0 ${pathname.startsWith('/admin/field-ops') ? 'h-[calc(100vh-64px)] flex flex-col overflow-hidden' : 'p-6 lg:p-8 overflow-y-auto relative'}`}>
           {children}
         </main>
       </div>
@@ -349,3 +408,4 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     </div>
   );
 }
+
