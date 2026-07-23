@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Poppins, Cinzel } from "next/font/google";
 import "./globals.css";
 import { AuthContextProvider } from "@/lib/AuthContext";
@@ -28,6 +28,14 @@ export const metadata: Metadata = {
   description: "Enterprise management panel for Daarayn Foundation.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#030a06",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${poppins.variable} ${playfair.variable} ${cinzel.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-luxury-bg text-gray-100 selection:bg-luxury-gold selection:text-black">
+      <body className="min-h-[100dvh] h-full flex flex-col bg-luxury-bg text-gray-100 selection:bg-luxury-gold selection:text-black overflow-x-hidden">
         <PWAProvider>
           <RoleBootstrapProvider>
             <AuthContextProvider>

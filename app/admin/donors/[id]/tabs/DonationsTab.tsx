@@ -148,8 +148,8 @@ export default function DonationsTab({ donations }: any) {
           <p>No donations found for this donor.</p>
         </div>
       ) : (
-        <div className="rounded-2xl overflow-hidden overflow-x-auto" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <table className="w-full text-left text-sm whitespace-nowrap min-w-[700px]">
+        <div className="rounded-2xl overflow-hidden overflow-x-auto table-scroll-container" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
+          <table className="w-full text-left text-sm whitespace-nowrap min-w-[700px] table-scroll-container">
             <thead>
               <tr className="border-b text-[11px] uppercase tracking-widest text-gray-500" style={{ borderColor: 'rgba(255,255,255,0.06)' }}>
                 <th className="px-5 py-3.5">Contribution ID</th>

@@ -289,7 +289,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
   );
 
   return (
-    <div className="fixed inset-0 bg-[#020704] overflow-hidden">
+    <div className="fixed inset-0 h-[100dvh] w-full bg-[#020704] overflow-hidden pwa-safe-pad">
       <div className="h-full w-full bg-gradient-to-br from-[#05110a] via-[#020704] to-[#030906] flex text-gray-200 shadow-2xl overflow-hidden relative">
       
       {/* Desktop Sidebar (Zero Footprint when Collapsed) */}
@@ -304,16 +304,16 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       </aside>
 
       {/* Main Panel Wrapper */}
-      <div className="flex-1 flex flex-col min-w-0 min-h-0 w-full">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 w-full overflow-hidden">
         
         {/* Top Header */}
-        <header className="h-16 shrink-0 border-b border-white/[0.06] bg-luxury-bg-deep/20 backdrop-blur-xl flex items-center justify-between px-6 z-40">
-          <div className="flex items-center gap-3.5">
+        <header className="h-16 shrink-0 border-b border-white/[0.06] bg-luxury-bg-deep/20 backdrop-blur-xl flex items-center justify-between px-4 sm:px-6 z-40">
+          <div className="flex items-center gap-3">
             {/* Mobile Hamburger Toggle */}
             <button 
               onClick={() => setMobileSidebarOpen(true)}
-              className="p-1.5 rounded-lg border border-white/[0.08] hover:bg-white/[0.04] lg:hidden transition"
-              aria-label="Open sidebar"
+              className="p-2.5 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl border border-white/[0.08] hover:bg-white/[0.04] lg:hidden transition active:scale-95"
+              aria-label="Open sidebar nav"
             >
               <Menu className="w-5 h-5 text-gray-300" />
             </button>
@@ -322,7 +322,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
             {isCollapsed && (
               <button 
                 onClick={toggleSidebar}
-                className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg border border-luxury-gold/30 bg-luxury-gold/10 hover:bg-luxury-gold/20 hover:border-luxury-gold/50 text-luxury-gold text-xs font-semibold tracking-wide transition shadow-[0_0_12px_rgba(212,175,55,0.15)] group"
+                className="hidden lg:flex items-center gap-2 px-3.5 py-2 min-h-[44px] rounded-xl border border-luxury-gold/30 bg-luxury-gold/10 hover:bg-luxury-gold/20 hover:border-luxury-gold/50 text-luxury-gold text-xs font-semibold tracking-wide transition shadow-[0_0_12px_rgba(212,175,55,0.15)] group"
                 title="Expand Navigation [▶]"
                 aria-label="Expand Navigation"
               >
@@ -347,10 +347,10 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
           <div className="flex items-center gap-3">
             {/* Quick Portal Switch */}
             <div className="hidden md:flex items-center gap-2 pr-3">
-              <Link href="/field/login" target="_blank" className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
+              <Link href="/field/login" target="_blank" className="px-3 py-2 min-h-[44px] flex items-center rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
                 Field View
               </Link>
-              <Link href="/donor" target="_blank" className="px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
+              <Link href="/donor" target="_blank" className="px-3 py-2 min-h-[44px] flex items-center rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
                 Donor View
               </Link>
             </div>
@@ -358,17 +358,17 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
             {/* Profile trigger */}
             <Link 
               href="/admin/settings" 
-              className="flex items-center gap-2.5 pl-3 py-1.5 border-l border-white/[0.06]"
+              className="flex items-center gap-2.5 pl-3 py-1.5 border-l border-white/[0.06] min-h-[44px]"
             >
-              <div className="w-8 h-8 rounded-full bg-luxury-card border border-white/[0.08] flex items-center justify-center text-gray-400 hover:text-white transition">
+              <div className="w-9 h-9 rounded-full bg-luxury-card border border-white/[0.08] flex items-center justify-center text-gray-400 hover:text-white transition">
                 <UserIcon className="w-4 h-4" />
               </div>
             </Link>
           </div>
         </header>
 
-        {/* Dynamic Inner Panel Viewport */}
-        <main className={`flex-1 min-w-0 min-h-0 ${pathname.startsWith('/admin/field-ops') ? 'h-[calc(100vh-64px)] flex flex-col overflow-hidden' : 'p-6 lg:p-8 overflow-y-auto relative'}`}>
+        {/* Dynamic Inner Panel Viewport with Container Queries */}
+        <main className={`workspace-container flex-1 min-w-0 min-h-0 ${pathname.startsWith('/admin/field-ops') ? 'h-[calc(100dvh-64px)] flex flex-col overflow-hidden' : 'p-[clamp(12px,2.5vw,32px)] overflow-y-auto relative'}`}>
           {children}
         </main>
       </div>

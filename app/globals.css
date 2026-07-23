@@ -27,6 +27,18 @@
 :root {
   --background: #030a06;
   --foreground: #f3f4f6;
+
+  /* Centralized Responsive System Tokens */
+  --space-page-inline: clamp(12px, 3vw, 32px);
+  --space-section-gap: clamp(16px, 2.5vw, 32px);
+  --space-card-padding: clamp(14px, 2vw, 24px);
+  --touch-target-min: 44px;
+
+  /* PWA Safe Area Insets */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-area-left: env(safe-area-inset-left, 0px);
+  --safe-area-right: env(safe-area-inset-right, 0px);
 }
 
 body {
@@ -34,6 +46,26 @@ body {
   color: var(--foreground);
   font-family: 'Poppins', sans-serif;
   overflow-x: hidden;
+  min-height: 100dvh;
+}
+
+/* Container Queries Boundary Utility */
+.workspace-container {
+  container-type: inline-size;
+}
+
+/* PWA Safe Area Utilities */
+.pwa-safe-top {
+  padding-top: max(12px, env(safe-area-inset-top, 0px));
+}
+.pwa-safe-bottom {
+  padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+}
+.pwa-safe-pad {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 /* Glassmorphic Utilities */
@@ -67,32 +99,11 @@ body {
   background: #ffffff;
 }
 
-/* 
-  ===========================================
-  Foldable Cover Screen Support (280px - 340px)
-  ===========================================
-*/
-@media (max-width: 340px) {
-  /* Ensure text scales down on extremely narrow viewports */
-  html {
-    font-size: 13px; 
-  }
-  
-  /* Prevent horizontal scrolling by aggressive wrapping */
-  .flex-row, .flex {
-    flex-wrap: wrap !important;
-  }
-  
-  /* Exception: Keep icons aligned */
-  .flex-nowrap, .sidebar-link, .nav-item {
-    flex-wrap: nowrap !important;
-  }
-
-  /* Shrink padding globally on tiny devices */
-  main, section, div, p {
-    padding-left: max(4px, 2%) !important;
-    padding-right: max(4px, 2%) !important;
-  }
+/* Responsive Table Container Guard */
+.table-scroll-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Animations */
