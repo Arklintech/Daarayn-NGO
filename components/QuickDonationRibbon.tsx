@@ -70,7 +70,7 @@ export default function QuickDonationRibbon() {
         </div>
 
         {/* Cause Dropdown */}
-        <div className="daarayn-ribbon-cause-wrapper" style={{ minWidth: '150px' }}>
+        <div className="daarayn-ribbon-cause-wrapper">
           <select 
             className="daarayn-ribbon-cause-select" 
             value={cause}

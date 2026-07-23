@@ -187,9 +187,11 @@
   color: #fff;
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 14px;
   border-right: 1px solid rgba(255, 255, 255, 0.2);
   position: relative;
+  flex: 0 0 auto;
+  min-width: max-content;
 }
 
 .daarayn-ribbon-currency-select {
@@ -217,7 +219,8 @@
   padding: 0 16px;
   border-left: 1px solid rgba(255, 255, 255, 0.2);
   position: relative;
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: max-content;
 }
 
 .daarayn-ribbon-cause-select {
@@ -230,10 +233,8 @@
   cursor: pointer;
   outline: none;
   width: 100%;
-  padding-right: 24px;
-  text-overflow: ellipsis;
+  padding-right: 28px;
   white-space: nowrap;
-  overflow: hidden;
 }
 .daarayn-ribbon-cause-select option {
   background: #081222;
@@ -249,7 +250,8 @@
 }
 
 .daarayn-ribbon-input-group {
-  flex-grow: 1;
+  flex: 1 1 120px;
+  min-width: 100px;
   height: 100%;
   display: flex;
 }
@@ -260,9 +262,9 @@
   background: #040914;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 0 20px;
+  padding: 0 16px;
   color: #fff;
-  font-size: 16px;
+  font-size: 15px;
   outline: none;
   font-family: var(--font-poppins);
 }
@@ -271,19 +273,21 @@
   display: flex;
   gap: 8px;
   height: 100%;
+  flex: 0 0 auto;
 }
 
 .daarayn-preset-btn {
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.15);
   color: #fff;
-  padding: 0 20px;
+  padding: 0 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 400;
   cursor: pointer;
   transition: all 0.2s;
   height: 100%;
+  white-space: nowrap;
 }
 
 .daarayn-preset-btn:hover {
@@ -302,7 +306,7 @@
   color: #050E1D;
   font-size: 15px;
   font-weight: 500;
-  padding: 0 32px;
+  padding: 0 28px;
   height: 100%;
   border-radius: 8px;
   border: none;
@@ -313,6 +317,7 @@
   gap: 8px;
   white-space: nowrap;
   transition: transform 0.2s;
+  flex: 0 0 auto;
 }
 
 .daarayn-ribbon-donate-btn:hover {
