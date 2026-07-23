@@ -316,70 +316,80 @@ export default function CommunicationsHub() {
                   </div>
                 </div>
 
-                {/* Grid of Cause Cards with Controlled Scroll Container */}
+                {/* Vertical Stacked List of Cause Rows with Controlled Scroll Container */}
                 {filteredCauses.length === 0 ? (
                   <div className="text-center py-8 px-4 rounded-xl border border-dashed border-white/10 bg-white/[0.01]">
                     <p className="text-xs text-gray-400">No causes found matching &quot;{causeSearchQuery}&quot;</p>
                     <button 
                       onClick={() => setCauseSearchQuery("")} 
-                      className="mt-2 text-xs text-[var(--color-luxury-gold)] underline hover:text-white"
+                      className="mt-2 text-xs text-blue-400 underline hover:text-white"
                     >
                       Clear search filter
                     </button>
                   </div>
                 ) : (
-                  <div className="max-h-64 overflow-y-auto custom-scrollbar pr-1">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                      {filteredCauses.map(c => {
-                        const isSelected = selectedCauseIds.includes(c.id);
-                        const causeName = c.name || c.title || "Unnamed Cause";
-                        return (
-                          <div
-                            key={c.id}
-                            role="checkbox"
-                            aria-checked={isSelected}
-                            aria-selected={isSelected}
-                            tabIndex={0}
-                            onClick={() => {
+                  <div className="max-h-80 overflow-y-auto custom-scrollbar pr-1 space-y-2">
+                    {filteredCauses.map(c => {
+                      const isSelected = selectedCauseIds.includes(c.id);
+                      const causeName = c.name || c.title || "Unnamed Cause";
+                      return (
+                        <div
+                          key={c.id}
+                          role="checkbox"
+                          aria-checked={isSelected}
+                          aria-selected={isSelected}
+                          tabIndex={0}
+                          onClick={() => {
+                            setSelectedCauseIds(prev => 
+                              isSelected ? prev.filter(id => id !== c.id) : [...prev, c.id]
+                            );
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
                               setSelectedCauseIds(prev => 
                                 isSelected ? prev.filter(id => id !== c.id) : [...prev, c.id]
                               );
-                            }}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault();
-                                setSelectedCauseIds(prev => 
-                                  isSelected ? prev.filter(id => id !== c.id) : [...prev, c.id]
-                                );
-                              }
-                            }}
-                            className={`w-full p-3.5 rounded-xl border transition-all duration-200 cursor-pointer select-none active:scale-[0.98] flex items-center justify-between gap-3 ${
+                            }
+                          }}
+                          className={`w-full p-3.5 md:p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none active:scale-[0.99] flex items-center justify-between gap-4 ${
+                            isSelected 
+                              ? 'bg-gradient-to-r from-blue-600/90 via-blue-600/80 to-blue-700/80 border-blue-400/60 text-white font-semibold shadow-lg shadow-blue-900/30 ring-1 ring-blue-400/40' 
+                              : 'bg-white/[0.03] border-white/[0.07] text-gray-200 hover:bg-white/[0.08] hover:border-white/20 hover:text-white'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                            <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${
                               isSelected 
-                                ? 'bg-gradient-to-r from-[var(--color-luxury-gold)]/20 via-[var(--color-luxury-gold)]/10 to-white/[0.02] border-[var(--color-luxury-gold)]/60 text-white font-semibold shadow-[0_0_15px_rgba(212,175,55,0.12)]' 
-                                : 'bg-white/[0.03] border-white/[0.07] text-gray-300 hover:bg-white/[0.08] hover:border-white/20 hover:text-white'
-                            }`}
-                          >
-                            <div className="flex items-center gap-3 min-w-0 flex-1">
-                              <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${
-                                isSelected 
-                                  ? 'bg-[var(--color-luxury-gold)] text-black font-bold' 
-                                  : 'bg-white/10 text-transparent border border-white/20'
-                              }`}>
-                                <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              </div>
-                              <span className="text-xs md:text-sm font-medium leading-snug truncate">
-                                {causeName}
-                              </span>
+                                ? 'bg-white text-blue-700 font-bold shadow-sm' 
+                                : 'bg-white/10 text-transparent border border-white/20'
+                            }`}>
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
                             </div>
+                            <span className="text-sm md:text-base font-medium leading-snug truncate">
+                              {causeName}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
                             {c.category && (
-                              <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-400 shrink-0">
+                              <span className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md border font-medium ${
+                                isSelected 
+                                  ? 'bg-white/20 border-white/30 text-white' 
+                                  : 'bg-white/5 border-white/10 text-gray-400'
+                              }`}>
                                 {c.category}
                               </span>
                             )}
+                            {isSelected && (
+                              <span className="text-xs font-semibold px-2 py-0.5 rounded bg-white/20 text-white hidden sm:inline-block">
+                                Selected
+                              </span>
+                            )}
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
