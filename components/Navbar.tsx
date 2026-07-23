@@ -115,13 +115,16 @@ export default function Navbar() {
                 <a 
                   href={item.href}
                   onClick={(e) => {
-                    e.preventDefault();
-                    setActiveHash(item.href.replace('/', ''));
                     const id = item.href.replace('/#', '');
                     const element = document.getElementById(id);
-                    if (element) {
+                    if (window.location.pathname === '/' && element) {
+                      e.preventDefault();
+                      setActiveHash(item.href.replace('/', ''));
                       element.scrollIntoView({ behavior: 'smooth' });
                       window.history.pushState(null, '', item.href);
+                    } else {
+                      // Navigate to target route/anchor when on payment gate or other subpages
+                      window.location.href = item.href;
                     }
                   }}
                   className="px-[8px] lg:px-[12px] xl:px-[16px] py-[8px] text-[13px] xl:text-[14px]"
@@ -212,14 +215,16 @@ export default function Navbar() {
                     <a
                       href={item.href}
                       onClick={(e) => {
-                        e.preventDefault();
-                        setActiveHash(item.href.replace('/', ''));
-                        setIsOpen(false);
                         const id = item.href.replace('/#', '');
                         const element = document.getElementById(id);
-                        if (element) {
+                        setIsOpen(false);
+                        if (window.location.pathname === '/' && element) {
+                          e.preventDefault();
+                          setActiveHash(item.href.replace('/', ''));
                           element.scrollIntoView({ behavior: 'smooth' });
                           window.history.pushState(null, '', item.href);
+                        } else {
+                          window.location.href = item.href;
                         }
                       }}
                       style={{

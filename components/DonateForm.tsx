@@ -32,9 +32,12 @@ const InputWrapper = ({ icon: Icon, children, label, required }: any) => (
   </motion.div>
 );
 
+// Safe string normalization helper
+const normStr = (str?: string) => (str || '').toLowerCase().replace(/[’']/g, "'").trim();
+
 // Map common names to icons
-const getIconForCause = (title: string) => {
-  const t = title.toLowerCase();
+const getIconForCause = (title?: string) => {
+  const t = normStr(title);
   if (t.includes('medical') || t.includes('health')) return Stethoscope;
   if (t.includes('masjid') || t.includes('mosque')) return Building2;
   if (t.includes('quran') || t.includes('endowment')) return BookOpen;
@@ -74,7 +77,8 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
         const snap = await getDocs(collection(db, "causes"));
         let list: any[] = [];
         snap.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() });
+          const data = doc.data();
+          list.push({ id: doc.id, name: data.name || data.title || "Cause", ...data });
         });
         
         if (list.length === 0) throw new Error("No causes found in database");
@@ -82,11 +86,12 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
 
         // Handle fallback if initial cause isn't found
         let finalList = list;
-        if (initialCause && 
-            initialCause.toLowerCase() !== 'contribution' && 
-            initialCause.toLowerCase() !== 'general' && 
-            initialCause.toLowerCase() !== 'general donation' &&
-            !list.find(c => c.name?.toLowerCase() === initialCause.toLowerCase() || c.id === initialCause)
+        const normInit = normStr(initialCause);
+        if (normInit && 
+            normInit !== 'contribution' && 
+            normInit !== 'general' && 
+            normInit !== 'general donation' &&
+            !list.find(c => normStr(c.name) === normInit || normStr(c.title) === normInit || c.id === initialCause)
         ) {
           const fallbackId = `custom_${Date.now()}`;
           finalList = [{ id: fallbackId, name: initialCause }, ...list];
@@ -94,7 +99,7 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
         setCauses(finalList);
 
         // Auto-select initial cause if matched
-        const initialMatch = finalList.find(c => c.name?.toLowerCase() === initialCause.toLowerCase() || c.id === initialCause);
+        const initialMatch = finalList.find(c => normStr(c.name) === normInit || normStr(c.title) === normInit || c.id === initialCause);
         if (initialMatch) {
           setSelectedCausesList([initialMatch.id]);
         }
@@ -113,12 +118,13 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
         ];
         
         let finalList = [...fallbacks];
-        if (initialCause && !fallbacks.find(c => c.name.toLowerCase() === initialCause.toLowerCase() || c.id === initialCause)) {
+        const normInit = normStr(initialCause);
+        if (normInit && !fallbacks.find(c => normStr(c.name) === normInit || c.id === initialCause)) {
           finalList = [{ id: `custom_${Date.now()}`, name: initialCause }, ...finalList];
         }
         setCauses(finalList);
         
-        const matched = finalList.find(c => c.name.toLowerCase() === initialCause.toLowerCase() || c.id === initialCause);
+        const matched = finalList.find(c => normStr(c.name) === normInit || c.id === initialCause);
         if (matched) setSelectedCausesList([matched.id]);
       }
     }
@@ -249,7 +255,8 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginTop: '1rem' }}>
           {causes.map((cause) => {
             const isSelected = selectedCausesList.includes(cause.id);
-            const Icon = getIconForCause(cause.name);
+            const causeTitle = cause.name || cause.title || 'Cause';
+            const Icon = getIconForCause(causeTitle);
             
             return (
               <motion.div
