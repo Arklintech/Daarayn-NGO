@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { collection, getDocs, doc, onSnapshot } from "firebase/firestore";
-import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle, X, ArrowRight, Download, BarChart2, Target } from "lucide-react";
+import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export default function CommunicationsHub() {
@@ -12,6 +12,7 @@ export default function CommunicationsHub() {
   const [loading, setLoading] = useState(true);
   const [causes, setCauses] = useState<any[]>([]);
   const [selectedCauseIds, setSelectedCauseIds] = useState<string[]>([]);
+  const [causeSearchQuery, setCauseSearchQuery] = useState("");
   
   // Phase 2 State Machine
   const [mode, setMode] = useState<"compose" | "summary" | "progress" | "success">("compose");
@@ -233,37 +234,157 @@ export default function CommunicationsHub() {
 
       {mode === "compose" && (
         <>
-          {/* Cause Selector */}
-          <div className="w-full rounded-2xl p-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                <Target className="w-4 h-4 text-[var(--color-luxury-gold)]" />
+          {/* Target Causes Selector */}
+          {(() => {
+            const filteredCauses = causes.filter(c => {
+              const q = causeSearchQuery.toLowerCase().trim();
+              if (!q) return true;
+              const nameMatch = (c.name || c.title || "").toLowerCase().includes(q);
+              const catMatch = (c.category || "").toLowerCase().includes(q);
+              return nameMatch || catMatch;
+            });
+
+            return (
+              <div className="w-full rounded-2xl p-5 md:p-6" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+                  {/* Title & Icon */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.1)', border: '1px solid rgba(212,175,55,0.2)' }}>
+                      <Target className="w-5 h-5 text-[var(--color-luxury-gold)]" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-white tracking-wide">Target Causes</h3>
+                      <p className="text-xs text-gray-400">Click anywhere on a cause card to select or deselect it.</p>
+                    </div>
+                  </div>
+
+                  {/* Controls: Search, Counters & Actions */}
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Search Input */}
+                    <div className="relative flex-1 sm:flex-none sm:w-60">
+                      <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <input 
+                        type="text" 
+                        placeholder="Search causes..." 
+                        value={causeSearchQuery}
+                        onChange={(e) => setCauseSearchQuery(e.target.value)}
+                        className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-black/40 border border-white/10 text-xs text-white placeholder-gray-500 focus:outline-none focus:border-[var(--color-luxury-gold)]/60 transition"
+                      />
+                      {causeSearchQuery && (
+                        <button 
+                          type="button" 
+                          onClick={() => setCauseSearchQuery("")}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Selected Count Badge */}
+                    <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--color-luxury-gold)]/10 border border-[var(--color-luxury-gold)]/30 text-[var(--color-luxury-gold)] whitespace-nowrap">
+                      {selectedCauseIds.length} / {causes.length} Selected
+                    </span>
+
+                    {/* Select All Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const filteredIds = filteredCauses.map(c => c.id);
+                        const allSelected = filteredIds.length > 0 && filteredIds.every(id => selectedCauseIds.includes(id));
+                        if (allSelected) {
+                          setSelectedCauseIds(prev => prev.filter(id => !filteredIds.includes(id)));
+                        } else {
+                          setSelectedCauseIds(prev => Array.from(new Set([...prev, ...filteredIds])));
+                        }
+                      }}
+                      className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-200 hover:text-white transition whitespace-nowrap active:scale-95"
+                    >
+                      {filteredCauses.length > 0 && filteredCauses.every(c => selectedCauseIds.includes(c.id)) ? "Deselect Filtered" : "Select All"}
+                    </button>
+
+                    {/* Clear Selection Button */}
+                    {selectedCauseIds.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCauseIds([])}
+                        className="px-3 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-xs font-semibold text-red-400 transition whitespace-nowrap active:scale-95"
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Grid of Cause Cards with Controlled Scroll Container */}
+                {filteredCauses.length === 0 ? (
+                  <div className="text-center py-8 px-4 rounded-xl border border-dashed border-white/10 bg-white/[0.01]">
+                    <p className="text-xs text-gray-400">No causes found matching &quot;{causeSearchQuery}&quot;</p>
+                    <button 
+                      onClick={() => setCauseSearchQuery("")} 
+                      className="mt-2 text-xs text-[var(--color-luxury-gold)] underline hover:text-white"
+                    >
+                      Clear search filter
+                    </button>
+                  </div>
+                ) : (
+                  <div className="max-h-64 overflow-y-auto custom-scrollbar pr-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                      {filteredCauses.map(c => {
+                        const isSelected = selectedCauseIds.includes(c.id);
+                        const causeName = c.name || c.title || "Unnamed Cause";
+                        return (
+                          <div
+                            key={c.id}
+                            role="checkbox"
+                            aria-checked={isSelected}
+                            aria-selected={isSelected}
+                            tabIndex={0}
+                            onClick={() => {
+                              setSelectedCauseIds(prev => 
+                                isSelected ? prev.filter(id => id !== c.id) : [...prev, c.id]
+                              );
+                            }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                setSelectedCauseIds(prev => 
+                                  isSelected ? prev.filter(id => id !== c.id) : [...prev, c.id]
+                                );
+                              }
+                            }}
+                            className={`w-full p-3.5 rounded-xl border transition-all duration-200 cursor-pointer select-none active:scale-[0.98] flex items-center justify-between gap-3 ${
+                              isSelected 
+                                ? 'bg-gradient-to-r from-[var(--color-luxury-gold)]/20 via-[var(--color-luxury-gold)]/10 to-white/[0.02] border-[var(--color-luxury-gold)]/60 text-white font-semibold shadow-[0_0_15px_rgba(212,175,55,0.12)]' 
+                                : 'bg-white/[0.03] border-white/[0.07] text-gray-300 hover:bg-white/[0.08] hover:border-white/20 hover:text-white'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 transition-colors ${
+                                isSelected 
+                                  ? 'bg-[var(--color-luxury-gold)] text-black font-bold' 
+                                  : 'bg-white/10 text-transparent border border-white/20'
+                              }`}>
+                                <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              </div>
+                              <span className="text-xs md:text-sm font-medium leading-snug truncate">
+                                {causeName}
+                              </span>
+                            </div>
+                            {c.category && (
+                              <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-400 shrink-0">
+                                {c.category}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-              <h3 className="text-base font-semibold text-white">Target Causes</h3>
-            </div>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {causes.map(c => {
-                const isSelected = selectedCauseIds.includes(c.id);
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => {
-                      setSelectedCauseIds(prev => 
-                        isSelected && prev.length > 1 ? prev.filter(id => id !== c.id) : !isSelected ? [...prev, c.id] : prev
-                      );
-                    }}
-                    className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
-                      isSelected 
-                        ? 'bg-white text-black shadow-lg shadow-white/20' 
-                        : 'bg-white/5 text-gray-400 hover:bg-white/10 hover:text-white border border-white/5'
-                    }`}
-                  >
-                    {c.name}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+            );
+          })()}
 
           {selectedCauseIds.length > 0 && (
             <div className="space-y-6">
