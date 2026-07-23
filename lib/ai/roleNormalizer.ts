@@ -2,13 +2,13 @@
  * lib/ai/roleNormalizer.ts
  *
  * Single source of truth for mapping UI / Firebase admin roles
- * to KHIDR AI-TOS RBAC roles.
+ * to KHIZR AI-TOS RBAC roles.
  */
 
-import type { KhidrRole } from "./knowledge/permissionEngine";
+import type { KhizrRole } from "./knowledge/permissionEngine";
 import type { UserRole } from "./permissions";
 
-const UI_ROLE_MAP: Record<string, KhidrRole> = {
+const UI_ROLE_MAP: Record<string, KhizrRole> = {
   super_admin: "super_admin",
   superadmin: "super_admin",
   admin: "editor",
@@ -22,9 +22,9 @@ const UI_ROLE_MAP: Record<string, KhidrRole> = {
 
 /**
  * Normalizes any role string from the UI, API body, or Firebase
- * into a canonical KHIDR RBAC role.
+ * into a canonical KHIZR RBAC role.
  */
-export function normalizeKhidrRole(role?: string | null): KhidrRole {
+export function normalizeKhizrRole(role?: string | null): KhizrRole {
   if (!role) return "public";
 
   const normalized = role.toLowerCase().trim().replace(/\s+/g, "_");
@@ -33,10 +33,10 @@ export function normalizeKhidrRole(role?: string | null): KhidrRole {
     return UI_ROLE_MAP[normalized];
   }
 
-  // Already a valid KhidrRole
-  const valid: KhidrRole[] = ["super_admin", "editor", "inspector", "public"];
-  if (valid.includes(normalized as KhidrRole)) {
-    return normalized as KhidrRole;
+  // Already a valid KhizrRole
+  const valid: KhizrRole[] = ["super_admin", "editor", "inspector", "public"];
+  if (valid.includes(normalized as KhizrRole)) {
+    return normalized as KhizrRole;
   }
 
   return "public";
@@ -46,9 +46,9 @@ export function normalizeKhidrRole(role?: string | null): KhidrRole {
  * Normalizes to the broader UserRole set used by BusinessRulesEngine.
  */
 export function normalizeUserRole(role?: string | null): UserRole {
-  const khidr = normalizeKhidrRole(role);
-  if (khidr === "super_admin" || khidr === "editor" || khidr === "inspector" || khidr === "public") {
-    return khidr;
+  const khizr = normalizeKhizrRole(role);
+  if (khizr === "super_admin" || khizr === "editor" || khizr === "inspector" || khizr === "public") {
+    return khizr;
   }
   return "public";
 }

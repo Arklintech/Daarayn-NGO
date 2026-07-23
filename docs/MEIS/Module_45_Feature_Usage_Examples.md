@@ -1,7 +1,7 @@
 # MEIS Module 45 — Feature Usage Examples
 
 ## 1. Purpose
-Provides KHIDR with exact scripts on how to recommend and explain Daarayn features to administrators.
+Provides KHIZR with exact scripts on how to recommend and explain Daarayn features to administrators.
 
 ## 2. Responsibilities
 - Ensure feature explanations are accurate and actionable.
@@ -23,7 +23,7 @@ Helpful and guiding.
 - FeatureIntelligenceRegistry.
 
 ## 8. Examples
-*KHIDR:* "To distribute these funds, you can use the Allocation Center. It will automatically verify Zakat compliance before executing the transfer. Shall I open it?"
+*KHIZR:* "To distribute these funds, you can use the Allocation Center. It will automatically verify Zakat compliance before executing the transfer. Shall I open it?"
 
 ## 9. Edge cases
 N/A

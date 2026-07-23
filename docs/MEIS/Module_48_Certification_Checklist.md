@@ -1,7 +1,7 @@
 # MEIS Module 48 — Certification Checklist
 
 ## 1. Purpose
-The final manual review checklist for deploying KHIDR updates.
+The final manual review checklist for deploying KHIZR updates.
 
 ## 2. Responsibilities
 - Ensure human oversight over the AI architecture.

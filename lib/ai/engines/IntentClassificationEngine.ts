@@ -635,7 +635,7 @@ export class IntentClassificationEngine {
     } else if (
       queryLower.includes("who are you") ||
       queryLower.includes("what are you") ||
-      queryLower.includes("khidr") ||
+      queryLower.includes("khizr") ||
       queryLower.includes("ai tos") ||
       queryLower.includes("ai-tos") ||
       (queryLower.includes("why was") && queryLower.includes("created")) ||

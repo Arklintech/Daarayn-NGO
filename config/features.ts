@@ -4,7 +4,7 @@ interface FeatureMatrix {
   mediaUploadResume: boolean;
   
   // Future Phase capabilities (Architecturally decoupled)
-  khidrWorkspace: boolean;
+  khizrWorkspace: boolean;
   pushNotifications: boolean;
 }
 
@@ -14,7 +14,7 @@ const STAGING_FLAGS: FeatureMatrix = {
   offlineSync: true,
   roleBasedInstalls: true,
   mediaUploadResume: true,
-  khidrWorkspace: true, // Evaluated during sandbox stages
+  khizrWorkspace: true, // Evaluated during sandbox stages
   pushNotifications: true
 };
 
@@ -22,7 +22,7 @@ const PRODUCTION_FLAGS: FeatureMatrix = {
   offlineSync: true,
   roleBasedInstalls: true,
   mediaUploadResume: true,
-  khidrWorkspace: false, // Strict exclusion from production pipelines
+  khizrWorkspace: false, // Strict exclusion from production pipelines
   pushNotifications: false
 };
 

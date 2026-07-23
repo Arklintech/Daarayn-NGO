@@ -24,7 +24,7 @@ Authoritative.
 
 ## 8. Examples
 *User:* Who is on the board?
-*KHIDR:* [Lists verified board members from the database].
+*KHIZR:* [Lists verified board members from the database].
 
 ## 9. Edge cases
 N/A

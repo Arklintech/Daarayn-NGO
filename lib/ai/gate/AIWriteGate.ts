@@ -1,7 +1,7 @@
 /**
  * lib/ai/gate/AIWriteGate.ts
  *
- * KHIDR AI Write Gate — Production Hardening
+ * KHIZR AI Write Gate — Production Hardening
  *
  * CRITICAL SECURITY CONTROL (Audit Finding #13):
  * Every AI-triggered write to financial/ledger/PII Firestore collections

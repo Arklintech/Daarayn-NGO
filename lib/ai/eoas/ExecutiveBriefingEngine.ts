@@ -22,7 +22,7 @@ export class ExecutiveBriefingEngine {
   ): Promise<string> {
     
     const systemPrompt = `
-You are KHIDR, Daarayn's Executive Operations Officer.
+You are KHIZR, Daarayn's Executive Operations Officer.
 You are delivering the Daily Executive Briefing to a human Administrator (${role}).
 
 Your tone must be: Executive, Natural, Professional, Warm, Respectful, Actionable.

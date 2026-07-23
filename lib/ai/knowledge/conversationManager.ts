@@ -1,36 +1,36 @@
 /**
  * lib/ai/knowledge/conversationManager.ts
  *
- * KHIDR Conversation Manager — Thin Dispatcher
+ * KHIZR Conversation Manager — Thin Dispatcher
  *
  * This file is now a thin entry point that:
  *   1. Accepts the raw administrator request
  *   2. Runs HCIE normalization (Phase 6.0)
- *   3. Hands off to the KHIDR Cognitive Orchestrator (MCO)
+ *   3. Hands off to the KHIZR Cognitive Orchestrator (MCO)
  *
  * All intelligence, reasoning, tool orchestration, governance, and response
  * generation lives inside the MCO pipeline. This file does not contain any
  * pipeline logic.
  */
 
-import type { KhidrRole } from "./permissionEngine";
-import { normalizeKhidrRole } from "../roleNormalizer";
-import { KhidrSessionMemory } from "./memory";
+import type { KhizrRole } from "./permissionEngine";
+import { normalizeKhizrRole } from "../roleNormalizer";
+import { KhizrSessionMemory } from "./memory";
 import { AIReliabilityFramework } from "../engines/AIReliabilityFramework";
 import { HumanCommunicationIntelligenceEngine } from "../hcie/HumanCommunicationIntelligenceEngine";
-import { KhidrCognitiveOrchestrator } from "../mco/KhidrCognitiveOrchestrator";
+import { KhizrCognitiveOrchestrator } from "../mco/KhizrCognitiveOrchestrator";
 import type { WorkflowPlan } from "../orchestrator/executionPlanner";
 import type { ActionPlan } from "../planner";
 
-export interface KhidrChatRequest {
+export interface KhizrChatRequest {
   sessionId: string;
   userId: string;
-  userRole: KhidrRole;
+  userRole: KhizrRole;
   message: string;
   history: Array<{ role: "user" | "assistant"; content: string }>;
 }
 
-export interface KhidrChatResponse {
+export interface KhizrChatResponse {
   success: boolean;
   reply: string;
   actionPlan: ActionPlan | null;
@@ -60,13 +60,13 @@ export interface KhidrChatResponse {
 }
 
 /**
- * Main entry point for all KHIDR administrator interactions.
- * Delegates immediately to the KHIDR Cognitive Orchestrator (MCO)
+ * Main entry point for all KHIZR administrator interactions.
+ * Delegates immediately to the KHIZR Cognitive Orchestrator (MCO)
  * after HCIE normalization.
  */
-export async function processKhidrChatMessage(
-  req: KhidrChatRequest
-): Promise<KhidrChatResponse> {
+export async function processKhizrChatMessage(
+  req: KhizrChatRequest
+): Promise<KhizrChatResponse> {
   const { sessionId, userId, userRole, message, history } = req;
 
   // Generate correlation ID and pipeline clock
@@ -74,16 +74,16 @@ export async function processKhidrChatMessage(
   const pipelineStart = Date.now();
   const stages: Array<{ stage: string; status: string; durationMs: number; error?: string }> = [];
 
-  const normalizedRole = normalizeKhidrRole(userRole);
+  const normalizedRole = normalizeKhizrRole(userRole);
 
   AIReliabilityFramework.logDiagnostic(
     requestId,
     "info",
-    `KHIDR MCO Pipeline Started | Query: "${message}" | Session: ${sessionId} | Role: ${normalizedRole}`
+    `KHIZR MCO Pipeline Started | Query: "${message}" | Session: ${sessionId} | Role: ${normalizedRole}`
   );
 
   // Build session history context
-  const sessionMemory = new KhidrSessionMemory(
+  const sessionMemory = new KhizrSessionMemory(
     history.map(h => ({ role: h.role, content: h.content, timestamp: new Date().toISOString() }))
   );
   const historyText = sessionMemory.formatHistory();
@@ -96,7 +96,7 @@ export async function processKhidrChatMessage(
   AIReliabilityFramework.logDiagnostic(requestId, "info", `HCIE: "${message}" → "${hcieAnalysis.normalizedMessage}" (${hcieDuration}ms)`);
 
   // Delegate entirely to MCO — the cognitive mind
-  return KhidrCognitiveOrchestrator.process(
+  return KhizrCognitiveOrchestrator.process(
     { ...req, userRole: normalizedRole },
     hcieAnalysis,
     historyText,

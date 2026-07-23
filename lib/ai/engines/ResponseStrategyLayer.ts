@@ -1,10 +1,10 @@
 /**
  * lib/ai/engines/ResponseStrategyLayer.ts
  *
- * Response Strategy Layer (RSL) for KHIDR AI-TOS.
+ * Response Strategy Layer (RSL) for KHIZR AI-TOS.
  * Inserted between Permission Validation and Verified Retrieval.
  *
- * Purpose: Deterministically decide HOW KHIDR responds BEFORE any prompt
+ * Purpose: Deterministically decide HOW KHIZR responds BEFORE any prompt
  * is constructed or any LLM token is spent.
  *
  * This layer is the single authority for:
@@ -22,7 +22,7 @@
 import type { SystemIntent } from "./IntentClassificationEngine";
 import type { ICEAnalysis } from "./IntentClassificationEngine";
 import type { EQREResolution } from "./EnterpriseQueryResolutionEngine";
-import type { KhidrRole } from "../knowledge/permissionEngine";
+import type { KhizrRole } from "../knowledge/permissionEngine";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -297,7 +297,7 @@ export class ResponseStrategyLayer {
     message: string,
     ice: ICEAnalysis,
     eqre: EQREResolution,
-    userRole: KhidrRole
+    userRole: KhizrRole
   ): ResponseStrategy {
     const q = message.toLowerCase();
     const intent = ice.intent;
@@ -445,7 +445,7 @@ export class ResponseStrategyLayer {
   private static selectMode(
     objective: UserObjective,
     intent: SystemIntent,
-    userRole: KhidrRole
+    userRole: KhizrRole
   ): ResponseMode {
     // Audit mode — super_admin only
     if (userRole === "super_admin" &&
@@ -495,7 +495,7 @@ export class ResponseStrategyLayer {
   private static determineDepth(
     q: string,
     mode: ResponseMode,
-    userRole: KhidrRole,
+    userRole: KhizrRole,
     objective?: UserObjective
   ): ResponseDepth {
     if (objective === "CompliancePushback") return "EXECUTIVE";
@@ -569,7 +569,7 @@ export class ResponseStrategyLayer {
     blueprint: ResponseBlueprint,
     mode: ResponseMode,
     depth: ResponseDepth,
-    userRole: KhidrRole,
+    userRole: KhizrRole,
     q: string
   ): { allowedComponents: string[]; hiddenComponents: string[] } {
 
@@ -661,7 +661,7 @@ export class ResponseStrategyLayer {
       AUDIT:
         "Respond as a compliance auditor. Lead with the verification finding. Present evidence systematically. Expose governance and certification metadata as authorised.",
       CHAT:
-        "Respond naturally, conversationally, and expansively like an experienced AI assistant who is deeply knowledgeable about Daarayn and its mission. You are allowed to use your general knowledge about KHIDR, AI-TOS, and Daarayn.",
+        "Respond naturally, conversationally, and expansively like an experienced AI assistant who is deeply knowledgeable about Daarayn and its mission. You are allowed to use your general knowledge about KHIZR, AI-TOS, and Daarayn.",
     };
 
     const structureMap: Record<ResponseMode, string> = {

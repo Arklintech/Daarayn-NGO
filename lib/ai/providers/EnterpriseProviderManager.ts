@@ -3,7 +3,7 @@
  *
  * ╔══════════════════════════════════════════════════════════════════════════╗
  * ║        ENTERPRISE INTELLIGENCE PROVIDER MANAGER (EIPM)                  ║
- * ║        The sole gateway for all AI language generation in KHIDR.         ║
+ * ║        The sole gateway for all AI language generation in KHIZR.         ║
  * ╚══════════════════════════════════════════════════════════════════════════╝
  *
  * RESPONSIBILITIES:
@@ -63,7 +63,7 @@ class EnterpriseProviderManagerSingleton {
   }
 
   /**
-   * The primary entry point for ALL AI language generation in KHIDR.
+   * The primary entry point for ALL AI language generation in KHIZR.
    *
    * @param req - Provider request with prompts, mode (json/text), and options.
    * @returns NormalizedResponse — provider identity is never exposed to the caller.

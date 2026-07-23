@@ -30,9 +30,9 @@ allFiles.forEach(file => {
   const content = fs.readFileSync(file, 'utf8');
   let newContent = content;
   
-  newContent = newContent.replace(/MOMIN/g, 'KHIDR');
-  newContent = newContent.replace(/Momin/g, 'Khidr');
-  newContent = newContent.replace(/momin/g, 'khidr');
+  newContent = newContent.replace(/MOMIN/g, 'KHIZR');
+  newContent = newContent.replace(/Momin/g, 'Khizr');
+  newContent = newContent.replace(/momin/g, 'khizr');
   
   if (newContent !== content) {
     fs.writeFileSync(file, newContent, 'utf8');

@@ -6,8 +6,8 @@
  */
 
 import { NextResponse } from "next/server";
-import { processKhidrChatMessage } from "@/lib/ai/knowledge/conversationManager";
-import { normalizeKhidrRole } from "@/lib/ai/roleNormalizer";
+import { processKhizrChatMessage } from "@/lib/ai/knowledge/conversationManager";
+import { normalizeKhizrRole } from "@/lib/ai/roleNormalizer";
 
 export async function POST(request: Request) {
   try {
@@ -18,9 +18,9 @@ export async function POST(request: Request) {
     }
 
     const sessionKey = sessionId || `SESS-${Date.now()}`;
-    const userRole = normalizeKhidrRole(adminRole || "editor");
+    const userRole = normalizeKhizrRole(adminRole || "editor");
 
-    const result = await processKhidrChatMessage({
+    const result = await processKhizrChatMessage({
       sessionId: sessionKey,
       userId: adminEmail || "anonymous-admin",
       userRole: userRole,

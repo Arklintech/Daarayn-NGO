@@ -345,7 +345,7 @@ export const notifyExecutive = {
       description: "Your daily operations summary is available for review.",
       entityType: "ExecutiveReport",
       entityId: `BRIEF-${new Date().toISOString().split("T")[0]}`,
-      createdBy: "KHIDR AI",
+      createdBy: "KHIZR AI",
       actionUrl: "/admin/dashboard",
       priority: "normal",
     }),

@@ -1,7 +1,7 @@
 /**
  * lib/ai/mibf/CommunicationLibrary.ts
  *
- * Defines how KHIDR communicates: tone, style, and CXL Response Laws.
+ * Defines how KHIZR communicates: tone, style, and CXL Response Laws.
  */
 
 export const CommunicationDirectives = {

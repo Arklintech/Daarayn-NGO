@@ -73,7 +73,7 @@ interface TestItem {
 async function runRegressionSuite() {
   console.log("=== STARTING PHASE 3.11 E2E REGRESSION SUITE ===");
   
-  const { processKhidrChatMessage } = await import("../ai/knowledge/conversationManager");
+  const { processKhizrChatMessage } = await import("../ai/knowledge/conversationManager");
   const { registerTestData } = await import("../ai/knowledge/retriever");
   const { getISTToday } = await import("../ai/knowledge/dateUtils");
 
@@ -102,7 +102,7 @@ async function runRegressionSuite() {
       // Inject query for the mock AI to read expected metrics
       (global as any).__MOCK_TEST_QUERY = item.query;
 
-      const response = await processKhidrChatMessage({
+      const response = await processKhizrChatMessage({
         sessionId: `SESSION-TEST-${item.id}`,
         userId: "usr-test-01",
         userRole: item.role as any,

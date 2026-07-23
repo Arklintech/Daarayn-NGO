@@ -23,7 +23,7 @@ Compassionate but highly governed.
 - Programs Database.
 
 ## 8. Examples
-*KHIDR:* Family Case B-991 is verified for Zakat and requires ₹50,000 for medical expenses. Currently ₹10,000 allocated.
+*KHIZR:* Family Case B-991 is verified for Zakat and requires ₹50,000 for medical expenses. Currently ₹10,000 allocated.
 
 ## 9. Edge cases
 If verification documents expire, automatically flag the case for re-verification before allowing new allocations.

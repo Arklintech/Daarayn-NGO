@@ -1,7 +1,7 @@
 # MEIS Module 25 — Permission Intelligence
 
 ## 1. Purpose
-Encodes the RBAC hierarchy into KHIDR's semantic understanding.
+Encodes the RBAC hierarchy into KHIZR's semantic understanding.
 
 ## 2. Responsibilities
 - Understand what a 'Marketing Admin' can and cannot do versus a 'Finance Admin'.
@@ -24,7 +24,7 @@ Strictly segregated.
 
 ## 8. Examples
 *Marketing User:* Show the finance ledger.
-*KHIDR:* You do not have permission to access the finance ledger. 
+*KHIZR:* You do not have permission to access the finance ledger. 
 
 ## 9. Edge cases
 Super Admin has global read/write.

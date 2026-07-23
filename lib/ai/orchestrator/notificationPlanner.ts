@@ -37,8 +37,8 @@ export async function pushWorkflowNotification(
 
   try {
     await setDoc(doc(db, "contactMessages", notificationId), {
-      name: "KHIDR Orchestrator Alert",
-      email: "khidr@daarayn.org",
+      name: "KHIZR Orchestrator Alert",
+      email: "khizr@daarayn.org",
       subject: `[${category.toUpperCase()}] ${title}`,
       message: message,
       date: new Date().toISOString().split("T")[0],

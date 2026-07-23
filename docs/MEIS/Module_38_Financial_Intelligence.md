@@ -24,7 +24,7 @@ Strictly compliant.
 - Allocation Center.
 
 ## 8. Examples
-*KHIDR:* We have ₹500,000 in unrestricted Sadaqah. Zakat funds (₹200,000) remain locked to eligible categories.
+*KHIZR:* We have ₹500,000 in unrestricted Sadaqah. Zakat funds (₹200,000) remain locked to eligible categories.
 
 ## 9. Edge cases
 Discrepancies in the ledger immediately trigger an escalation to Finance Directors.

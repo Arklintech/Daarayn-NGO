@@ -137,7 +137,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     {
       title: "Intelligence",
       items: [
-        { name: "KHIDR AI", href: "/admin/ai", icon: Sparkles },
+        { name: "KHIZR AI", href: "/admin/ai", icon: Sparkles },
       ]
     },
     {

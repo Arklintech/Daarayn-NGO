@@ -1,7 +1,7 @@
 /**
  * app/api/admin/ai/execute/route.ts
  *
- * Secure MIO Execution Engine for KHIDR Intelligence Orchestrator (Phase 3).
+ * Secure MIO Execution Engine for KHIZR Intelligence Orchestrator (Phase 3).
  * Validates admin sign-off, runs WorkflowPlan through the execution engine, logs audit trails,
  * handles rollback on failure, and triggers notifications.
  */

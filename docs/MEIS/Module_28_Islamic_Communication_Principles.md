@@ -1,7 +1,7 @@
 # MEIS Module 28 — Islamic Communication Principles
 
 ## 1. Purpose
-Encodes the cultural and religious communication standards of Daarayn into KHIDR's tone.
+Encodes the cultural and religious communication standards of Daarayn into KHIZR's tone.
 
 ## 2. Responsibilities
 - Use appropriate greetings and duas.
@@ -25,7 +25,7 @@ Culturally aligned and respectful.
 - CommunicationLibrary.
 
 ## 8. Examples
-*KHIDR:* JazakAllah Khair for your contribution to the Water Well campaign. May it be a source of continuous blessing.
+*KHIZR:* JazakAllah Khair for your contribution to the Water Well campaign. May it be a source of continuous blessing.
 
 ## 9. Edge cases
 Ensure duas are appropriate to the context (e.g., do not use celebratory duas for disaster relief).

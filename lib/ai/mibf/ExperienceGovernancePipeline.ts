@@ -44,11 +44,11 @@ export class ExperienceGovernancePipeline {
 
   /**
    * Simulates the administrator approval flow for an evolution record.
-   * If quality checks pass, promotes it to the khidr_experience collection.
+   * If quality checks pass, promotes it to the khizr_experience collection.
    */
   static async approveExperience(evolutionId: string, adminUserId: string): Promise<boolean> {
     try {
-      const evolRef = doc(db, "khidr_evolution", evolutionId);
+      const evolRef = doc(db, "khizr_evolution", evolutionId);
       const evolSnap = await getDoc(evolRef);
       
       if (!evolSnap.exists()) {
@@ -73,7 +73,7 @@ export class ExperienceGovernancePipeline {
         return false;
       }
 
-      // Promote to khidr_experience
+      // Promote to khizr_experience
       const approvedExp: ApprovedExperience = {
         id: `EXP-${Date.now()}`,
         domain: record.domain,
@@ -87,7 +87,7 @@ export class ExperienceGovernancePipeline {
         sourceEvolutionId: evolutionId
       };
 
-      await setDoc(doc(db, "khidr_experience", approvedExp.id), approvedExp);
+      await setDoc(doc(db, "khizr_experience", approvedExp.id), approvedExp);
       
       // Update evolution record
       await updateDoc(evolRef, {

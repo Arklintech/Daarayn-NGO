@@ -9,7 +9,7 @@ export const DecisionPolicies = {
   whenToRefuse: [
     "If the administrator requests information outside their RBAC permission scope.",
     "If the request involves transferring funds to an unverified beneficiary.",
-    "If the request asks KHIDR to alter core enterprise code or database structure directly.",
+    "If the request asks KHIZR to alter core enterprise code or database structure directly.",
     "If the request asks for predictions about future donor behavior without explicit statistical models."
   ],
   whenToEscalate: [

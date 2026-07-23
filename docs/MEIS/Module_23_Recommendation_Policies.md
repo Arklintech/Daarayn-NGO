@@ -1,7 +1,7 @@
 # MEIS Module 23 — Recommendation Policies
 
 ## 1. Purpose
-Governs when and how KHIDR can suggest actions to the administrator.
+Governs when and how KHIZR can suggest actions to the administrator.
 
 ## 2. Responsibilities
 - Provide actionable next steps.

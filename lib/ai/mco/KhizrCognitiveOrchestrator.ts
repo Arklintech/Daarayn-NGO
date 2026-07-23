@@ -1,7 +1,7 @@
 /**
- * lib/ai/mco/KhidrCognitiveOrchestrator.ts
+ * lib/ai/mco/KhizrCognitiveOrchestrator.ts
  *
- * KHIDR Cognitive Orchestrator (MCO)
+ * KHIZR Cognitive Orchestrator (MCO)
  * The single cognitive mind of the Daarayn AI Operating System.
  *
  * MCO is the mandatory entry point for every administrator interaction
@@ -22,11 +22,11 @@
  */
 
 import { routeToSpecialist } from "../knowledge/router";
-import type { KhidrRole } from "../knowledge/permissionEngine";
+import type { KhizrRole } from "../knowledge/permissionEngine";
 import { retrieveTargetedData } from "../knowledge/retriever";
 import { buildMKIEPrompt } from "../knowledge/promptBuilder";
 import { generateAIResponse } from "../providerManager";
-import { KhidrSessionMemory } from "../knowledge/memory";
+import { KhizrSessionMemory } from "../knowledge/memory";
 import { db } from "../../firebase";
 import { doc, setDoc } from "firebase/firestore";
 import { planAction } from "../planner";
@@ -59,7 +59,7 @@ import { MCOReasoningEngine } from "./MCOReasoningEngine";
 import { SpiritualIntelligenceEngine } from "../engines/SpiritualIntelligenceEngine";
 import { CrossDomainIntelligenceEngine } from "../eoas/CrossDomainIntelligenceEngine";
 import { ExecutiveAnticipationEngine } from "../eoas/ExecutiveAnticipationEngine";
-import { normalizeKhidrRole } from "../roleNormalizer";
+import { normalizeKhizrRole } from "../roleNormalizer";
 import {
   buildDonorSpecificReply,
   buildPendingDonorsReply,
@@ -83,25 +83,25 @@ import {
 } from "./ExecutiveIntelligenceBuilder";
 import { buildExecutiveOpsReport } from "./ExecutiveOpsReportBuilder";
 
-import type { KhidrChatRequest, KhidrChatResponse } from "../knowledge/conversationManager";
+import type { KhizrChatRequest, KhizrChatResponse } from "../knowledge/conversationManager";
 
-export class KhidrCognitiveOrchestrator {
+export class KhizrCognitiveOrchestrator {
 
   /**
-   * The single cognitive entry point for every KHIDR interaction.
+   * The single cognitive entry point for every KHIZR interaction.
    * Orchestrates the full enterprise pipeline with cognitive reasoning.
    */
   static async process(
-    req: KhidrChatRequest,
+    req: KhizrChatRequest,
     hcieAnalysis: HCIEAnalysis,
     historyText: string,
     requestId: string,
     pipelineStart: number,
     stages: Array<{ stage: string; status: string; durationMs: number; error?: string }>
-  ): Promise<KhidrChatResponse> {
+  ): Promise<KhizrChatResponse> {
 
     const { sessionId, userId, message, history } = req;
-    const userRole = normalizeKhidrRole(req.userRole);
+    const userRole = normalizeKhizrRole(req.userRole);
     const normalizedMessage = hcieAnalysis.normalizedMessage;
 
     function logStage(stage: string, status: "✓" | "✗", startMs: number, error?: string) {
@@ -122,11 +122,11 @@ export class KhidrCognitiveOrchestrator {
     let strategicAlerts: string | null = null;
 
     // ═══════════════════════════════════════════════════════════════════
-    // MCO COGNITIVE EVOLUTION 6: THE KHIDR CONSTITUTION
+    // MCO COGNITIVE EVOLUTION 6: THE KHIZR CONSTITUTION
     // ═══════════════════════════════════════════════════════════════════
-    const khidrConstitution = `
-[THE KHIDR CONSTITUTION]
-Identity: I am KHIDR, the Executive Operations Officer of Daarayn Foundation, built upon the AI-TOS (AI Trust Operating System) architecture.
+    const khizrConstitution = `
+[THE KHIZR CONSTITUTION]
+Identity: I am KHIZR, the Executive Operations Officer of Daarayn Foundation, built upon the AI-TOS (AI Trust Operating System) architecture.
 Origins: I was created to solve the fundamental problem of Trust (Amanah) and operational friction in modern non-profits, ensuring Daarayn operates with Adl (Justice) and Ihsan (Excellence).
 Purpose: To help administrators fulfil Daarayn's amanah through proactive intelligence and operational command.
 Protection: I protect Trust, Transparency, Accountability, Beneficiaries, Donors, and Organizational Integrity.
@@ -528,7 +528,7 @@ Capabilities: I naturally support universal conversations including Mission, Str
 
       if (process.env.NODE_ENV !== "test") {
         try {
-          await setDoc(doc(db, "khidr_conversations_history", `KHIDR-CHAT-${Date.now()}`), {
+          await setDoc(doc(db, "khizr_conversations_history", `KHIZR-CHAT-${Date.now()}`), {
             requestId, department: routing.department, prompt: message, normalizedPrompt: normalizedMessage,
             response: replyText, timestamp: new Date().toISOString(), model: "Deterministic-Backend-Route",
             user: userId || "anonymous", contextUsed: optimizedContext.contextText, referencedCollections: allowedCollections,
@@ -580,7 +580,7 @@ Capabilities: I naturally support universal conversations including Mission, Str
     }
 
     const mcoEnrichmentBlock = `
-${khidrConstitution}
+${khizrConstitution}
 
 ${strategicAlerts ? `[STRATEGIC ALERTS]\n${strategicAlerts}\n\n` : ""}
 ${crossDomainInsight ? `[ORGANIZATIONAL MEMORY INSIGHT]\n${crossDomainInsight}\n\n` : ""}
@@ -606,7 +606,7 @@ ${spiritualDirectives}
 ${toneMirroringDirective}
 
 [CCF STRICTNESS DIRECTIVE]
-EXECUTIVE RESPONSE PRINCIPLE: Never expose raw retrieval data unless explicitly requested. Data is evidence. KHIDR provides judgment. Synthesize the data into an executive recommendation or insight. Do NOT act like a reporting engine. Do NOT use repetitive markdown structures unless explicitly requested. Follow the Conversation Blueprint exactly as the flow of your natural prose. Vary your opening naturally. When answering general knowledge questions, be highly precise, accurate, and comprehensive, as an Executive Intelligence Operating System should be.
+EXECUTIVE RESPONSE PRINCIPLE: Never expose raw retrieval data unless explicitly requested. Data is evidence. KHIZR provides judgment. Synthesize the data into an executive recommendation or insight. Do NOT act like a reporting engine. Do NOT use repetitive markdown structures unless explicitly requested. Follow the Conversation Blueprint exactly as the flow of your natural prose. Vary your opening naturally. When answering general knowledge questions, be highly precise, accurate, and comprehensive, as an Executive Intelligence Operating System should be.
 You MUST output your response as a valid JSON object with the following exact schema:
 {
   "executiveSummary": "A brief one sentence summary of your response.",
@@ -684,7 +684,7 @@ You MUST output your response as a valid JSON object with the following exact sc
     // AUDIT TRAIL — Enriched with MCO Cognitive Data
     // ═══════════════════════════════════════════════════════════════════
     stageStart = Date.now();
-    const conversationId = `KHIDR-CHAT-${Date.now()}`;
+    const conversationId = `KHIZR-CHAT-${Date.now()}`;
     try {
       const historyData = {
         conversationId, requestId, department: routing.department,
@@ -722,7 +722,7 @@ You MUST output your response as a valid JSON object with the following exact sc
         }
       };
       if (process.env.NODE_ENV !== "test") {
-        await setDoc(doc(db, "khidr_conversations_history", conversationId), JSON.parse(JSON.stringify(historyData)));
+        await setDoc(doc(db, "khizr_conversations_history", conversationId), JSON.parse(JSON.stringify(historyData)));
         logStage("Audit Trail Log", "✓", stageStart);
       }
     } catch (logError) {

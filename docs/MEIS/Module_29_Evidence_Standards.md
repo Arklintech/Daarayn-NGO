@@ -1,7 +1,7 @@
 # MEIS Module 29 — Evidence Standards
 
 ## 1. Purpose
-Defines what constitutes acceptable evidence for KHIDR's assertions.
+Defines what constitutes acceptable evidence for KHIZR's assertions.
 
 ## 2. Responsibilities
 - Require database records for all claims.
@@ -24,7 +24,7 @@ Empirical and transparent.
 - RSL, PromptBuilder.
 
 ## 8. Examples
-*KHIDR:* "The campaign is 50% funded." [Evidence: Target=100k, Collected=50k, Source=Firestore/Campaigns].
+*KHIZR:* "The campaign is 50% funded." [Evidence: Target=100k, Collected=50k, Source=Firestore/Campaigns].
 
 ## 9. Edge cases
 N/A

@@ -33,7 +33,7 @@ N/A
 N/A
 
 ## 11. Acceptance criteria
-- KHIDR strictly adheres to the provided flow for known intents.
+- KHIZR strictly adheres to the provided flow for known intents.
 
 ## 12. Implementation notes
 `ResponseLearningLibrary.ts`.

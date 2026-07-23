@@ -2,11 +2,11 @@
  * lib/ai/conversationManager.ts
  *
  * Legacy wrapper for Daarayn AI-TOS conversation processing.
- * Delegates query requests directly to Phase 2 KHIDR Knowledge Intelligence Engine (MKIE).
+ * Delegates query requests directly to Phase 2 KHIZR Knowledge Intelligence Engine (MKIE).
  */
 
-import { processKhidrChatMessage } from "./knowledge/conversationManager";
-import type { KhidrRole } from "./knowledge/permissionEngine";
+import { processKhizrChatMessage } from "./knowledge/conversationManager";
+import type { KhizrRole } from "./knowledge/permissionEngine";
 
 export interface ChatSessionRequest {
   sessionId: string;
@@ -36,10 +36,10 @@ export async function processChatMessage(
   req: ChatSessionRequest
 ): Promise<ChatSessionResponse> {
   try {
-    const result = await processKhidrChatMessage({
+    const result = await processKhizrChatMessage({
       sessionId: req.sessionId,
       userId: req.userId,
-      userRole: req.userRole as KhidrRole,
+      userRole: req.userRole as KhizrRole,
       message: req.message,
       history: req.history,
     });

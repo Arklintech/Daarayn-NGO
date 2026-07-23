@@ -44,7 +44,7 @@ export async function registerApproval(
 
   try {
     // Write approval record to database audits log namespace
-    await setDoc(doc(db, "khidr_workflows_approvals", approvalId), record);
+    await setDoc(doc(db, "khizr_workflows_approvals", approvalId), record);
     console.log(`[MIO Approval] Registered sign-off: "${decision}" for workflow ${workflow.workflowId} by ${adminEmail}`);
     return true;
   } catch (error) {

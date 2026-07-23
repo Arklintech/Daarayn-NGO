@@ -89,7 +89,7 @@ export class ResponseStrategyLayer {
 `,
   "lib/ai/knowledge/promptBuilder.ts": `
 export function buildMKIEPrompt(eio: any, history: string): any {
-  return { systemPrompt: "You are KHIDR.", userPrompt: eio.query };
+  return { systemPrompt: "You are KHIZR.", userPrompt: eio.query };
 }
 `,
   "lib/ai/engines/ExecutiveReflectionEngine.ts": `

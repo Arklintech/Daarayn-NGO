@@ -1,7 +1,7 @@
 # MEIS Module 41 — Failure Handling
 
 ## 1. Purpose
-Defines how KHIDR responds when backend systems, APIs, or data layers fail.
+Defines how KHIZR responds when backend systems, APIs, or data layers fail.
 
 ## 2. Responsibilities
 - Prevent generic "I don't know" responses.
@@ -25,7 +25,7 @@ Transparent and reassuring.
 
 ## 8. Examples
 *Error:* Firestore Timeout.
-*KHIDR:* I am currently unable to reach the donor database due to a system timeout. I cannot complete the search at this moment.
+*KHIZR:* I am currently unable to reach the donor database due to a system timeout. I cannot complete the search at this moment.
 
 ## 9. Edge cases
 If the Intent Engine fails, default to a strict safe fallback mode (Information/Standard).

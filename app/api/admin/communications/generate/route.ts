@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     if (!causeSnap.exists()) {
       return NextResponse.json({
         success: false,
-        error: `Khidr could not generate this communication because the selected Cause with ID "${causeId}" does not exist.`
+        error: `Khizr could not generate this communication because the selected Cause with ID "${causeId}" does not exist.`
       }, { status: 200 });
     }
     const cause = causeSnap.data();
@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     if (cause.status !== "active" && type !== "completion_report") {
       return NextResponse.json({
         success: false,
-        error: `Khidr could not generate this communication because the selected Cause "${cause.name}" is currently inactive.`
+        error: `Khizr could not generate this communication because the selected Cause "${cause.name}" is currently inactive.`
       }, { status: 200 });
     }
 
@@ -64,7 +64,7 @@ export async function POST(request: Request) {
     if (!cause || !cause.name) {
       return NextResponse.json({
         success: false,
-        error: "Khidr could not generate this communication because there is insufficient verified information available for the selected Cause. Please approve field updates or upload verified media before generating."
+        error: "Khizr could not generate this communication because there is insufficient verified information available for the selected Cause. Please approve field updates or upload verified media before generating."
       }, { status: 200 });
     }
 
@@ -104,7 +104,7 @@ export async function POST(request: Request) {
     };
 
     // 5. Construct prompts
-    const systemPrompt = `You are Khidr, the Executive Intelligence Operating System for the Daarayn Trust Operating System.
+    const systemPrompt = `You are Khizr, the Executive Intelligence Operating System for the Daarayn Trust Operating System.
 You are tasked with generating premium donor communications based ONLY on verified operational data.
 
 CRITICAL RULES:
@@ -122,7 +122,7 @@ You must return a structured JSON response with the following keys:
 - body: The full communication text, written in Daarayn's tone.
 - preview: An HTML-formatted email preview matching the style of the landing page (elegant dark/emerald green aesthetics, clear typography, structured sections).
 - captions: Descriptive captions for any uploaded media, separated by newlines (or a message indicating no media if none).
-- internalNotes: Executive dispatch notes visible only to admins containing: Generation source ("Khidr AI Engine"), verification status ("Verified Operational Data"), latest approved update used (include the report ID/title of the most recent approved update), and generation timestamp.
+- internalNotes: Executive dispatch notes visible only to admins containing: Generation source ("Khizr AI Engine"), verification status ("Verified Operational Data"), latest approved update used (include the report ID/title of the most recent approved update), and generation timestamp.
 
 Response must be valid JSON matching the exact schema above. Do not output markdown code blocks wrapper.`;
 
@@ -165,7 +165,7 @@ Please regenerate only the "${regenerateField}" field. All other fields in your 
       console.error("JSON parsing failed, falling back to raw output", parseError);
       return NextResponse.json({
         success: false,
-        error: "Failed to parse Khidr's structured response. Please try again."
+        error: "Failed to parse Khizr's structured response. Please try again."
       }, { status: 200 });
     }
 

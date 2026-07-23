@@ -1,7 +1,7 @@
 # MEIS Module 07 — Conversation Intelligence
 
 ## 1. Purpose
-Defines how KHIDR handles context, memory, and reference resolution across multi-turn chats.
+Defines how KHIZR handles context, memory, and reference resolution across multi-turn chats.
 
 ## 2. Responsibilities
 - Resolve pronouns ("he", "that campaign").

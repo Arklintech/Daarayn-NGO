@@ -1,7 +1,7 @@
 /**
  * lib/ai/mco/AdministratorObjectiveEngine.ts
  *
- * KHIDR Cognitive Orchestrator — Stage 1: Administrator Objective Engine
+ * KHIZR Cognitive Orchestrator — Stage 1: Administrator Objective Engine
  *
  * Purpose: Determine the administrator's TRUE operational objective — not
  * just what they typed, but what they are trying to ACCOMPLISH as a trustee
@@ -13,7 +13,7 @@
 
 import type { ICEAnalysis } from "../engines/IntentClassificationEngine";
 import type { HCIEAnalysis } from "../hcie/HumanCommunicationIntelligenceEngine";
-import type { KhidrRole } from "../knowledge/permissionEngine";
+import type { KhizrRole } from "../knowledge/permissionEngine";
 
 // The urgency level of the objective
 export type ObjectiveUrgency = "IMMEDIATE" | "STANDARD" | "BACKGROUND";
@@ -98,7 +98,7 @@ export class AdministratorObjectiveEngine {
     normalizedMessage: string,
     hcieAnalysis: HCIEAnalysis,
     iceAnalysis: ICEAnalysis,
-    userRole: KhidrRole,
+    userRole: KhizrRole,
     historyText: string
   ): AdministratorObjective {
 

@@ -1,7 +1,7 @@
 /**
  * lib/ai/engines/ExecutiveReflectionEngine.ts
  * 
- * Executive Reflection Loop (ERL) for KHIDR Executive Intelligence & Experience Program (MEIEP).
+ * Executive Reflection Loop (ERL) for KHIZR Executive Intelligence & Experience Program (MEIEP).
  * This engine runs asynchronously after the main response is delivered to the administrator.
  * It evaluates the interaction against 6 core executive questions and extracts organizational lessons.
  */
@@ -26,13 +26,13 @@ export class ExecutiveReflectionEngine {
 
         const systemPrompt = `
 You are the Executive Reflection Engine for Daarayn's AI Operating System.
-Your job is to analyze the recent interaction between the Administrator and KHIDR.
+Your job is to analyze the recent interaction between the Administrator and KHIZR.
 
 Evaluate the interaction against these 6 questions:
-1. Did KHIDR understand what the administrator really wanted?
+1. Did KHIZR understand what the administrator really wanted?
 2. Was the answer grounded in verified Daarayn records?
 3. Could the answer have been explained more clearly?
-4. Did KHIDR recommend the most useful next action?
+4. Did KHIZR recommend the most useful next action?
 5. If a human Executive Director had answered this, would they have said it differently?
 6. What organizational lesson can be captured from this interaction?
 
@@ -61,10 +61,10 @@ Output MUST be a valid JSON object matching this schema exactly:
 [Query]
 ${eio.query}
 
-[Verified Data Context Provided to KHIDR]
+[Verified Data Context Provided to KHIZR]
 ${JSON.stringify(eio.metrics)}
 
-[KHIDR's Final Response]
+[KHIZR's Final Response]
 ${finalResponseText}
         `.trim();
 
@@ -107,10 +107,10 @@ ${finalResponseText}
           }
         };
 
-        // Persist to Firestore: khidr_evolution
+        // Persist to Firestore: khizr_evolution
         if (process.env.NODE_ENV !== "test") {
           try {
-            await setDoc(doc(db, "khidr_evolution", evolutionRecord.id), evolutionRecord);
+            await setDoc(doc(db, "khizr_evolution", evolutionRecord.id), evolutionRecord);
             console.log(`[ERL] Saved evolution record to Firestore: ${evolutionRecord.id}`);
             
             if (parsed.actionableInitiative && parsed.actionableInitiative.title) {
@@ -124,7 +124,7 @@ ${finalResponseText}
                 targetAudience: parsed.actionableInitiative.targetAudience,
                 status: "pending_review"
               };
-              await setDoc(doc(db, "khidr_initiatives", initiativeRecord.id), initiativeRecord);
+              await setDoc(doc(db, "khizr_initiatives", initiativeRecord.id), initiativeRecord);
               console.log(`[ERL] Saved proactive initiative draft to Firestore: ${initiativeRecord.id}`);
             }
           } catch (dbErr) {

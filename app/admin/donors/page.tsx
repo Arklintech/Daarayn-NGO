@@ -227,7 +227,7 @@ export default function AdminDonors() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } else if (actionLabel === 'Ask KHIDR') {
+    } else if (actionLabel === 'Ask KHIZR') {
       router.push('/admin/ai');
     } else if (actionLabel === 'Generate Board Report') {
       // Re-use download CSV for board report for now
@@ -399,7 +399,7 @@ export default function AdminDonors() {
             { label: "Donor Communications", icon: MessageSquare },
             { label: "Export Report", icon: FileText },
             { label: "Download CSV", icon: Download },
-            { label: "Ask KHIDR", icon: Star },
+            { label: "Ask KHIZR", icon: Star },
             { label: "Generate Board Report", icon: FileText },
           ].map((action, i) => (
             <button key={i} onClick={() => handleQuickAction(action.label)} className="flex items-center gap-2 px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[13px] font-medium text-gray-300 hover:text-white transition">

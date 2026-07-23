@@ -1,7 +1,7 @@
 # MEIS Module 32 — Analytics Intelligence
 
 ## 1. Purpose
-Defines how KHIDR summarizes and presents quantitative data.
+Defines how KHIZR summarizes and presents quantitative data.
 
 ## 2. Responsibilities
 - Translate raw metrics into narrative insights.
@@ -24,7 +24,7 @@ Analytical and strategic.
 - VerifiedAnalyticsEngine.
 
 ## 8. Examples
-*KHIDR:* "Recurring donations dropped by 5% this month. Would you like to draft a re-engagement email to lapsed donors?"
+*KHIZR:* "Recurring donations dropped by 5% this month. Would you like to draft a re-engagement email to lapsed donors?"
 
 ## 9. Edge cases
 If metrics are 0 or empty, do not render a chart. 

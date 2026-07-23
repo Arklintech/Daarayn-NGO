@@ -23,7 +23,7 @@ CRM-focused.
 - CRM Database.
 
 ## 8. Examples
-*KHIDR:* Ahmed is a Tier 1 recurring donor. His last interaction was a support ticket 2 days ago.
+*KHIZR:* Ahmed is a Tier 1 recurring donor. His last interaction was a support ticket 2 days ago.
 
 ## 9. Edge cases
 Merging duplicate donor profiles requires a confirmation workflow.

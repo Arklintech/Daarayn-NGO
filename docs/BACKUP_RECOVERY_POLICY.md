@@ -54,7 +54,7 @@ firebase firestore:export gs://daarayn-firestore-backups/manual-$(date +%Y-%m-%d
 | `field_reports` | Operational records | High |
 | `programs` | Campaign data | High |
 | `admin_notifications` | Audit trail | Medium |
-| `khidr_conversations_history` | AI audit trail | Medium |
+| `khizr_conversations_history` | AI audit trail | Medium |
 
 ---
 

@@ -5,7 +5,7 @@ import { generateWithGrok } from './lib/ai/grok';
 async function main() {
   try {
     const res = await generateWithGrok(
-      'You are KHIDR. Respond in JSON: {\"executiveSummary\":\"...\"}', 
+      'You are KHIZR. Respond in JSON: {\"executiveSummary\":\"...\"}', 
       'Give me an executive summary of financial health of Daarayn', 
       { model: process.env.GROK_MODEL || 'llama-3.3-70b-versatile', temperature: 0.15, maxTokens: 2000 }
     );

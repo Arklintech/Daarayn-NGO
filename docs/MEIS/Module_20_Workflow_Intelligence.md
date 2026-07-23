@@ -25,7 +25,7 @@ Transactional.
 
 ## 8. Examples
 *User:* Send the receipt.
-*KHIDR:* Calls \`/api/dispatch-updates\` with donor payload and logs the action.
+*KHIZR:* Calls \`/api/dispatch-updates\` with donor payload and logs the action.
 
 ## 9. Edge cases
 Partial payloads must prompt the user for the missing data (e.g., "What is the email address?").

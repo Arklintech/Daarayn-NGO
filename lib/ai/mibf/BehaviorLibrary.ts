@@ -1,7 +1,7 @@
 /**
  * lib/ai/mibf/BehaviorLibrary.ts
  * 
- * Defines core behavioral rules and constraints for KHIDR.
+ * Defines core behavioral rules and constraints for KHIZR.
  */
 
 export const BehaviorRules = [

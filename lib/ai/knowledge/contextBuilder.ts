@@ -1,7 +1,7 @@
 /**
  * lib/ai/knowledge/contextBuilder.ts
  *
- * Context Builder for KHIDR Knowledge Intelligence Engine (MKIE).
+ * Context Builder for KHIZR Knowledge Intelligence Engine (MKIE).
  * Formats Firestore raw query results into concise, structured, and verified text context blocks.
  */
 

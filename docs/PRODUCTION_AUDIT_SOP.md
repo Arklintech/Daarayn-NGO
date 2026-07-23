@@ -97,12 +97,12 @@
 - [ ] Offline persistence behavior verified
 - [ ] Firestore Rules reviewed for beneficiary/donor PII field-level exposure, not just collection-level access
 
-## B.3 AI Pipeline (KHIDR)
+## B.3 AI Pipeline (KHIZR)
 - [ ] Provider failover tested (Groq unavailable → graceful degradation, not a crash)
 - [ ] Rate-limit and timeout handling verified with simulated slow/failed responses
 - [ ] JSON response parsing has schema validation — malformed AI output never reaches downstream logic unchecked
 - [ ] Retry logic has a max-attempts ceiling (no infinite retry loops)
-- [ ] **Critical:** any KHIDR action that writes to the Public Ledger, adjusts donor/beneficiary records, or triggers a financial action must pass through a deterministic validation gate — the AI proposes, a non-AI rule/permission check confirms, before it's committed. No AI output should be trusted to write directly to financial or ledger state.
+- [ ] **Critical:** any KHIZR action that writes to the Public Ledger, adjusts donor/beneficiary records, or triggers a financial action must pass through a deterministic validation gate — the AI proposes, a non-AI rule/permission check confirms, before it's committed. No AI output should be trusted to write directly to financial or ledger state.
 - [ ] Logging captures AI inputs/outputs for any action with financial or ledger impact, for auditability after the fact
 
 ## B.4 API Stability

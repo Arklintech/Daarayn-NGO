@@ -5,7 +5,7 @@ const DATABASE_VERSION = 1;
 
 export interface OfflineDraft {
   id: string;
-  payloadType: 'field_report' | 'khidr_prompt' | 'crm_draft';
+  payloadType: 'field_report' | 'khizr_prompt' | 'crm_draft';
   payload: Record<string, any>;
   timestamp: number;
   retries: number;
@@ -21,8 +21,8 @@ export async function initializePwaDatabase(): Promise<IDBPDatabase> {
       }
 
       // Store persistent conversational states locally (legacy)
-      if (!db.objectStoreNames.contains('khidr_conversations')) {
-        const chatStore = db.createObjectStore('khidr_conversations', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('khizr_conversations')) {
+        const chatStore = db.createObjectStore('khizr_conversations', { keyPath: 'id' });
         chatStore.createIndex('by_session', 'sessionId');
       }
 

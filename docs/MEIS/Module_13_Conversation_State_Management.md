@@ -25,7 +25,7 @@ Reliable and session-bound.
 
 ## 8. Examples
 *State:* \`{ intent: 'transfer', step: 2, amount: 500 }\`
-*User:* "Confirm." -> *KHIDR:* Executes transfer.
+*User:* "Confirm." -> *KHIZR:* Executes transfer.
 
 ## 9. Edge cases
 User abandons a workflow midway. After 15 minutes, state should reset.

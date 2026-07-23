@@ -32,7 +32,7 @@ import {
 } from "recharts";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { normalizeKhidrRole } from "@/lib/ai/roleNormalizer";
+import { normalizeKhizrRole } from "@/lib/ai/roleNormalizer";
 
 const COLORS = ["#D4AF37", "#10B981", "#3B82F6", "#EF4444"];
 
@@ -57,7 +57,7 @@ const ALERT_LABELS: Record<AlertType, string> = {
   NOTE: 'SYSTEM NOTE', TIP: 'VERIFIED', IMPORTANT: 'ERCE CERTIFIED', WARNING: 'ADVISORY', CAUTION: 'REJECTED',
 };
 
-function KhidrMarkdown({ content }: { content: string }) {
+function KhizrMarkdown({ content }: { content: string }) {
   // Parse the content into segments: either a GFM alert block or regular markdown
   const segments: Array<{ type: 'alert'; alertType: AlertType; lines: string[] } | { type: 'markdown'; text: string }> = [];
 
@@ -204,7 +204,7 @@ export default function AIDashboard() {
     { 
       id: "welcome", 
       role: "assistant", 
-      content: "Assalamu Alaikum. I am KHIDR, the Enterprise Intelligence Operating System for the Daarayn Foundation. Every interaction begins here. What operational query or directive shall we execute?",
+      content: "Assalamu Alaikum. I am KHIZR, the Enterprise Intelligence Operating System for the Daarayn Foundation. Every interaction begins here. What operational query or directive shall we execute?",
       metadata: { responseMode: "INFORMATION", responseDepth: "STANDARD", allowedComponents: [] }
     }
   ]);
@@ -221,7 +221,7 @@ export default function AIDashboard() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const adminName = adminData?.name || user?.email?.split("@")[0] || "Administrator";
-  const userRole = normalizeKhidrRole(adminData?.role || "super_admin");
+  const userRole = normalizeKhizrRole(adminData?.role || "super_admin");
 
   const loadData = async () => {
     setLoading(true);
@@ -288,7 +288,7 @@ export default function AIDashboard() {
       }
 
     } catch (err) {
-      console.error("Failed to load KHIDR context data:", err);
+      console.error("Failed to load KHIZR context data:", err);
     } finally {
       setLoading(false);
     }
@@ -296,7 +296,7 @@ export default function AIDashboard() {
 
   useEffect(() => {
     loadData();
-    setCopilotSessionId(`KHIDR-SESS-${Date.now()}`);
+    setCopilotSessionId(`KHIZR-SESS-${Date.now()}`);
   }, []);
 
   // Scroll to bottom smoothly when user sends a message
@@ -403,7 +403,7 @@ export default function AIDashboard() {
       setCopilotMessages(prev => [...prev, {
         id: `msg-${Date.now()}-assistant`,
         role: "assistant",
-        content: "Error: Could not establish connectivity with KHIDR services.",
+        content: "Error: Could not establish connectivity with KHIZR services.",
         metadata: { responseMode: "INFORMATION" }
       }]);
     } finally {
@@ -546,7 +546,7 @@ export default function AIDashboard() {
             <Sparkles className="w-3.5 h-3.5 text-black" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-bold text-white tracking-wider font-playfair uppercase">KHIDR OS</span>
+            <span className="text-[13px] font-bold text-white tracking-wider font-playfair uppercase">KHIZR OS</span>
             <span className="text-[9px] font-bold text-luxury-gold uppercase tracking-[0.25em] px-1.5 py-0.5 rounded border border-luxury-gold/20 bg-luxury-gold/5">ACTIVE</span>
           </div>
         </div>
@@ -583,7 +583,7 @@ export default function AIDashboard() {
               </div>
               <div className="space-y-2">
                 <h2 className="text-xl font-bold text-white font-playfair tracking-wide">Assalamu Alaikum, {adminName}</h2>
-                <p className="text-xs text-gray-400 max-w-md mx-auto">KHIDR AI Operating System is active and synchronized. Let us process analytics, compose draft acknowledgements, or audit operations.</p>
+                <p className="text-xs text-gray-400 max-w-md mx-auto">KHIZR AI Operating System is active and synchronized. Let us process analytics, compose draft acknowledgements, or audit operations.</p>
               </div>
 
               {/* Single Quiet Status Line */}
@@ -652,7 +652,7 @@ export default function AIDashboard() {
                     {isAssistant && (
                       <div className="flex items-center gap-2 mb-3 text-[10px] font-bold text-luxury-gold/60 uppercase tracking-widest font-mono">
                         <Sparkles className="w-3 h-3" />
-                        KHIDR
+                        KHIZR
                       </div>
                     )}
                     
@@ -664,7 +664,7 @@ export default function AIDashboard() {
 
                     <div className="w-full text-[13px] leading-relaxed text-gray-200 font-sans">
                       {isAssistant ? (
-                        <KhidrMarkdown content={msg.content} />
+                        <KhizrMarkdown content={msg.content} />
                       ) : (
                         <div className="whitespace-pre-wrap text-gray-100">{msg.content}</div>
                       )}
@@ -852,7 +852,7 @@ export default function AIDashboard() {
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="p-4 bg-white/[0.01] border border-white/[0.05] rounded-xl space-y-3">
                         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                           <Layers className="w-3.5 h-3.5" />
-                          Workflow Blueprint: {msg.workflowPlan.workflowId || "KHIDR-PLAN"}
+                          Workflow Blueprint: {msg.workflowPlan.workflowId || "KHIZR-PLAN"}
                         </div>
                         <div className="space-y-2">
                           {(msg.workflowPlan.tasks || []).map((t: { name: string; status?: string }, idx: number) => (
@@ -870,7 +870,7 @@ export default function AIDashboard() {
                     {/* 4. ANALYTICS METRICS */}
                     {isAssistant && msgSecs.analytics && stats && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="p-4 bg-white/[0.01] border border-white/[0.05] rounded-xl space-y-4">
-                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">KHIDR AI Metrics Summary</div>
+                        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">KHIZR AI Metrics Summary</div>
                         <div className="grid grid-cols-3 gap-2">
                           <div className="p-3 rounded-lg bg-white/[0.02] border border-white/[0.04] text-center">
                             <div className="text-[9px] text-gray-500 uppercase">Drafts Generated</div>
@@ -1041,7 +1041,7 @@ export default function AIDashboard() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2 mb-1.5 text-[9px] font-bold text-luxury-gold/70 uppercase tracking-widest font-mono">
                   <Sparkles className="w-2.5 h-2.5 animate-spin" />
-                  KHIDR SYSTEM
+                  KHIZR SYSTEM
                 </div>
                 <div className="flex gap-1.5 p-3 rounded-2xl bg-white/[0.02]">
                   <span className="w-1.5 h-1.5 rounded-full bg-luxury-gold/60 animate-bounce [animation-delay:0ms]" />
@@ -1101,7 +1101,7 @@ export default function AIDashboard() {
                   if (copilotInput.trim()) handleSendCopilot(copilotInput);
                 }
               }}
-              placeholder="Command KHIDR AI OS..."
+              placeholder="Command KHIZR AI OS..."
               rows={1}
               className="flex-1 bg-transparent px-2 py-1.5 text-xs focus:outline-none text-white placeholder-gray-600 resize-none min-h-[32px] max-h-[140px]"
               style={{ lineHeight: '1.5' }}
@@ -1115,7 +1115,7 @@ export default function AIDashboard() {
             </button>
           </form>
 
-          <p className="text-center text-[9px] text-gray-600">KHIDR AI OS • Realtime Governance Certified • Authorized Operations Only</p>
+          <p className="text-center text-[9px] text-gray-600">KHIZR AI OS • Realtime Governance Certified • Authorized Operations Only</p>
         </div>
       </div>
 

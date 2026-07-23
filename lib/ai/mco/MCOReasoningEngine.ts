@@ -1,7 +1,7 @@
 /**
  * lib/ai/mco/MCOReasoningEngine.ts
  *
- * KHIDR Cognitive Orchestrator — Stage 3: Reasoning Engine
+ * KHIZR Cognitive Orchestrator — Stage 3: Reasoning Engine
  *
  * Purpose: After all enterprise tools have been invoked and data gathered,
  * MCO challenges its own reasoning before authorizing the response.
@@ -76,7 +76,7 @@ export class MCOReasoningEngine {
       verdict: isGrounded ? "PASS" : "WARN",
       reasoning: isGrounded
         ? `${eio.facts.length} Firestore records retrieved. Analytics engine ran ${eio.metrics.transactionCount} calculations.`
-        : "No Firestore records retrieved. Response must rely on KHIDR's organizational knowledge only."
+        : "No Firestore records retrieved. Response must rely on KHIZR's organizational knowledge only."
     });
     if (!isGrounded) score -= 15;
 

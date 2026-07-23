@@ -1,7 +1,7 @@
 # MEIS Module 11 — Response Strategy Policies
 
 ## 1. Purpose
-Determines exactly HOW KHIDR responds based on the combination of intent, role, and context.
+Determines exactly HOW KHIZR responds based on the combination of intent, role, and context.
 
 ## 2. Responsibilities
 - Evaluate the outputs of Intent Classification (ICE).

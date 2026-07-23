@@ -192,7 +192,7 @@ export default function CommunicationsHub() {
         setVerificationError(result.error || "Generation failed.");
       }
     } catch (err) {
-      setVerificationError("Failed to connect to Khidr service.");
+      setVerificationError("Failed to connect to Khizr service.");
     } finally {
       setGenerating(false);
     }
@@ -416,7 +416,7 @@ export default function CommunicationsHub() {
                     className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-gray-100 active:scale-[0.99] mb-3"
                     style={{ background: '#ffffff' }}
                   >
-                    {generating ? <Activity className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Generate with Khidr</>}
+                    {generating ? <Activity className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Generate with Khizr</>}
                   </button>
 
                   <button

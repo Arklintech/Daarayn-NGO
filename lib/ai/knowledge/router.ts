@@ -1,13 +1,13 @@
 /**
  * lib/ai/knowledge/router.ts
  *
- * AI Specialist Router for KHIDR Knowledge Intelligence Engine.
+ * AI Specialist Router for KHIZR Knowledge Intelligence Engine.
  * Directs parsed query intents to target specialist departments.
  */
 
-import type { KhidrIntent } from "./intentEngine";
+import type { KhizrIntent } from "./intentEngine";
 
-export type KhidrDepartment =
+export type KhizrDepartment =
   | "executive"
   | "donation"
   | "project"
@@ -21,7 +21,7 @@ export type KhidrDepartment =
   | "analytics";
 
 export interface RoutingDecision {
-  department: KhidrDepartment;
+  department: KhizrDepartment;
   reason: string;
   collectionsRequired: string[];
 }
@@ -30,7 +30,7 @@ export interface RoutingDecision {
  * Routes classified intent to the appropriate intelligence department
  * and identifies the Firestore collections required to answer the query.
  */
-export function routeToSpecialist(intent: KhidrIntent, query: string): RoutingDecision {
+export function routeToSpecialist(intent: KhizrIntent, query: string): RoutingDecision {
   const queryLower = query.toLowerCase();
 
   switch (intent) {

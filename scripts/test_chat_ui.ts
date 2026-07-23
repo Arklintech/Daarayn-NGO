@@ -6,7 +6,7 @@ async function testChat() {
     "What is Daarayn's core mission?",
     "Can you tell me about the recent donations?",
     "What is your operating philosophy?",
-    "Hello KHIDR, how are you today?"
+    "Hello KHIZR, how are you today?"
   ];
 
   let history: any[] = [];
@@ -37,7 +37,7 @@ async function testChat() {
         continue;
       }
       
-      console.log(`[KHIDR] (${Date.now() - start}ms):\nReply: ${data.reply}`);
+      console.log(`[KHIZR] (${Date.now() - start}ms):\nReply: ${data.reply}`);
       console.log(`Blueprint: ${data.metadata?.blueprint}, MCO Objective: ${data.metadata?.mcoObjective}`);
       
       history.push({ role: "user", content: q });

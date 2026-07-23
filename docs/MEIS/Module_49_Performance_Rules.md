@@ -1,10 +1,10 @@
 # MEIS Module 49 — Performance Rules
 
 ## 1. Purpose
-Establishes the latency and efficiency constraints for the KHIDR pipeline.
+Establishes the latency and efficiency constraints for the KHIZR pipeline.
 
 ## 2. Responsibilities
-- Ensure KHIDR responds quickly enough to serve as a real-time Operating System.
+- Ensure KHIZR responds quickly enough to serve as a real-time Operating System.
 
 ## 3. Rules
 - The pre-LLM pipeline (ICE, EQRE, BPE, RSL) must execute in under 200ms.
