@@ -11,8 +11,10 @@ export default function HeroSection() {
           muted
           playsInline
           preload="auto"
+          poster="/hero-poster.jpg"
           className="daarayn-hero-video"
         >
+          <source src="/hero-video-fast.mp4" type="video/mp4" />
           <source src="/background video.mp4" type="video/mp4" />
           Your browser does not support the video tag.
         </video>
