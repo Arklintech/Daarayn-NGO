@@ -508,6 +508,29 @@ function FieldOperationsCenterContent() {
     <>
       <div className="flex flex-col h-full w-full min-w-0 bg-[#020704] text-gray-200 overflow-hidden p-1.5 md:p-3">
 
+      {/* ── MOBILE NAVIGATION CONTROLS ── */}
+      <div className="flex md:hidden items-center justify-between bg-[#0a0d0b] border border-white/[0.08] rounded-xl p-1 mb-2 shrink-0 gap-1 overflow-x-auto custom-scrollbar">
+        <button onClick={() => setMobileView('agents')} className={`flex-1 min-w-[75px] py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${mobileView === 'agents' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-gray-400 hover:text-white'}`}>
+          <Users className="w-3.5 h-3.5" /> <span>Agents</span>
+          {totalUnread > 0 && <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">{totalUnread}</span>}
+        </button>
+        <button onClick={() => setMobileView('chat')} className={`flex-1 min-w-[75px] py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${mobileView === 'chat' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-gray-400 hover:text-white'}`}>
+          <MessageSquare className="w-3.5 h-3.5" /> <span>Chat</span>
+        </button>
+        {activeReport ? (
+          <button onClick={() => setMobileView('details')} className={`flex-1 min-w-[85px] py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${mobileView === 'details' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-gray-400 hover:text-white'}`}>
+            <FileText className="w-3.5 h-3.5" /> <span>Actions</span>
+          </button>
+        ) : activeAgent ? (
+          <button onClick={() => setMobileView('details')} className={`flex-1 min-w-[85px] py-1.5 px-2 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1 ${mobileView === 'details' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-gray-400 hover:text-white'}`}>
+            <UserPlus className="w-3.5 h-3.5" /> <span>Profile</span>
+          </button>
+        ) : null}
+        <button onClick={handleAIInsights} className="py-1.5 px-2.5 rounded-lg text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition flex items-center justify-center gap-1 shrink-0">
+          <Sparkles className="w-3.5 h-3.5" /> <span>AI</span>
+        </button>
+      </div>
+
       {/* ── HEADER ── */}
       <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex flex-col sm:flex-row sm:items-center justify-between flex-shrink-0 mb-2 gap-3 min-w-0`}>
         <div>
@@ -727,8 +750,27 @@ function FieldOperationsCenterContent() {
                       </div>
                     </div>
                     
+                    {/* Mobile Quick Action Buttons Bar inside Chat View */}
+                    <div className="flex md:hidden items-center gap-1.5 overflow-x-auto py-1.5 mb-1 border-t border-white/[0.06] shrink-0 no-scrollbar">
+                      <button onClick={handleApprove} disabled={['Approved','Converted'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
+                        <CheckCircle className="w-3.5 h-3.5" /> Approve
+                      </button>
+                      <button onClick={() => { setRequestInfoText(''); setShowRequestInfoModal(true); }} disabled={['Approved','Converted','Rejected'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
+                        <HelpCircle className="w-3.5 h-3.5" /> Request Info
+                      </button>
+                      <button onClick={() => { setRejectReason(''); setShowRejectModal(true); }} disabled={['Approved','Converted','Rejected'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
+                        <X className="w-3.5 h-3.5" /> Reject
+                      </button>
+                      <button onClick={() => { setAssignTo(activeReport.assignedAdminId || ''); setShowAssignModal(true); }} disabled={['Converted'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
+                        <UserPlus className="w-3.5 h-3.5" /> Assign
+                      </button>
+                      <button onClick={handleConvert} disabled={activeReport.status !== 'Approved'} className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
+                        <Sparkles className="w-3.5 h-3.5" /> Convert
+                      </button>
+                    </div>
+                    
                     {/* Tabs */}
-                    <div className="flex gap-4 mt-3 ml-7 overflow-x-auto no-scrollbar">
+                    <div className="flex gap-4 mt-2 ml-7 overflow-x-auto no-scrollbar">
                       {['Conversation','Details',`Media (${activeReport.media?.length || 0})`,`Documents (0)`,'History'].map(tab => {
                         const key = tab.split(' ')[0];
                         return (
@@ -847,6 +889,99 @@ function FieldOperationsCenterContent() {
               </div>
               </div>
               )}
+              
+              {/* Details Tab */}
+              {activeTab === 'Details' && activeReport && (
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                  <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-lg p-3.5 space-y-2 text-xs">
+                    <h3 className="font-bold text-white text-sm mb-2">Report Summary & Audit</h3>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div><span className="text-gray-400 block">Report ID</span><span className="text-white font-bold">{activeReport.id}</span></div>
+                      <div><span className="text-gray-400 block">Category</span><span className="text-white font-semibold">{activeReport.category}</span></div>
+                      <div><span className="text-gray-400 block">Location</span><span className="text-white">{activeReport.location.village || activeReport.location.district}, {activeReport.location.state}</span></div>
+                      <div><span className="text-gray-400 block">Urgency</span><span className={`font-bold ${activeReport.urgency==='High' ? 'text-red-400' : 'text-emerald-400'}`}>{activeReport.urgency}</span></div>
+                      <div><span className="text-gray-400 block">Budget</span><span className="text-white font-bold">{activeReport.estimatedBudget}</span></div>
+                      <div><span className="text-gray-400 block">Beneficiaries</span><span className="text-white font-medium">{activeReport.beneficiaries?.families || 0} Families</span></div>
+                      <div><span className="text-gray-400 block">Status</span><span className="text-emerald-400 font-bold">{activeReport.status}</span></div>
+                      <div><span className="text-gray-400 block">Submitted By</span><span className="text-white font-bold">{activeReport.agentName}</span></div>
+                    </div>
+                    {activeReport.description && (
+                      <div className="pt-2 border-t border-white/[0.06] mt-2">
+                        <span className="text-gray-400 block mb-1">Description</span>
+                        <p className="text-gray-200 leading-relaxed bg-black/30 p-2.5 rounded-lg border border-white/[0.05]">{activeReport.description}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Actions Grid */}
+                  <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-lg p-3.5 space-y-2">
+                    <h3 className="font-bold text-white text-xs mb-2">Quick Operations Actions</h3>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      <button onClick={handleApprove} disabled={['Approved','Converted'].includes(activeReport.status)} className="p-2.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30">
+                        <CheckCircle className="w-4 h-4" /> Approve Report
+                      </button>
+                      <button onClick={() => { setRequestInfoText(''); setShowRequestInfoModal(true); }} disabled={['Approved','Converted','Rejected'].includes(activeReport.status)} className="p-2.5 rounded-lg bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30">
+                        <HelpCircle className="w-4 h-4" /> Request Info
+                      </button>
+                      <button onClick={() => { setRejectReason(''); setShowRejectModal(true); }} disabled={['Approved','Converted','Rejected'].includes(activeReport.status)} className="p-2.5 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30">
+                        <X className="w-4 h-4" /> Reject Report
+                      </button>
+                      <button onClick={() => { setAssignTo(activeReport.assignedAdminId || ''); setShowAssignModal(true); }} disabled={['Converted'].includes(activeReport.status)} className="p-2.5 rounded-lg bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30">
+                        <UserPlus className="w-4 h-4" /> Assign Reviewer
+                      </button>
+                      <button onClick={handleConvert} disabled={activeReport.status !== 'Approved'} className="col-span-2 sm:col-span-1 p-2.5 rounded-lg bg-purple-500/20 border border-purple-500/30 text-purple-400 text-xs font-bold flex items-center justify-center gap-1.5 disabled:opacity-30">
+                        <Sparkles className="w-4 h-4" /> Convert to Cause
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Media Tab */}
+              {activeTab === 'Media' && activeReport && (
+                <div className="flex-1 overflow-y-auto p-4">
+                  {(!activeReport.media || activeReport.media.length === 0) ? (
+                    <div className="text-center py-10 text-gray-500 text-xs">No media files attached to this report.</div>
+                  ) : (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {activeReport.media.map((url, idx) => (
+                        <div key={idx} className="relative rounded-lg overflow-hidden border border-white/10 group bg-black/40">
+                          <img src={url} alt={`Media ${idx+1}`} className="w-full h-36 object-cover cursor-pointer hover:scale-105 transition duration-300" onClick={() => window.open(url, '_blank')} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Documents Tab */}
+              {activeTab === 'Documents' && (
+                <div className="flex-1 overflow-y-auto p-4">
+                  <div className="text-center py-10 text-gray-500 text-xs">No extra document attachments uploaded.</div>
+                </div>
+              )}
+
+              {/* History Tab */}
+              {activeTab === 'History' && activeReport && (
+                <div className="flex-1 overflow-y-auto p-4">
+                  <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-lg p-4 space-y-3">
+                    <h3 className="font-bold text-white text-xs mb-3">Audit Timeline</h3>
+                    <div className="space-y-3 border-l border-white/10 pl-3">
+                      <div className="relative">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 absolute -left-[17px] top-1" />
+                        <p className="text-xs text-white font-bold">Report Status: {activeReport.status}</p>
+                        <p className="text-[11px] text-gray-400">Current live state</p>
+                      </div>
+                      <div className="relative">
+                        <span className="w-2.5 h-2.5 rounded-full bg-gray-400 absolute -left-[17px] top-1" />
+                        <p className="text-xs text-white font-bold">Report Created</p>
+                        <p className="text-[11px] text-gray-400">{new Date(activeReport.createdAt).toLocaleString()} • Agent: {activeReport.agentName}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               </div>
             </>
           )}
