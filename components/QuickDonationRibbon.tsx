@@ -3,6 +3,14 @@ import { useState, useEffect } from 'react';
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  INR: '₹',
+  GBP: '£',
+  USD: '$',
+  AED: 'د.إ',
+  SAR: '﷼',
+};
+
 export default function QuickDonationRibbon() {
   const [amount, setAmount] = useState('500');
   const [currency, setCurrency] = useState('INR');
@@ -23,36 +31,41 @@ export default function QuickDonationRibbon() {
     fetchCauses();
   }, []);
 
+  const symbol = CURRENCY_SYMBOLS[currency] || '₹';
+
   return (
     <div className="daarayn-quick-donation-section">
       <div className="daarayn-quick-donation-ribbon">
         
-        {/* Currency Dropdown */}
-        <div className="daarayn-ribbon-currency-wrapper">
-          <select 
-            className="daarayn-ribbon-currency-select" 
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-          >
-            <option value="INR">INR ₹</option>
-            <option value="GBP">GBP £</option>
-            <option value="USD">USD $</option>
-            <option value="AED">AED د.إ</option>
-            <option value="SAR">SAR ﷼</option>
-          </select>
-          <ChevronDownIcon />
-        </div>
+        {/* Currency & Amount Input Unified Group */}
+        <div className="daarayn-ribbon-amount-row">
+          <div className="daarayn-ribbon-currency-wrapper">
+            <select 
+              className="daarayn-ribbon-currency-select" 
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value)}
+              aria-label="Select Currency"
+            >
+              <option value="INR">INR ₹</option>
+              <option value="GBP">GBP £</option>
+              <option value="USD">USD $</option>
+              <option value="AED">AED د.إ</option>
+              <option value="SAR">SAR ﷼</option>
+            </select>
+            <ChevronDownIcon />
+          </div>
 
-        {/* Input Field */}
-        <div className="daarayn-ribbon-input-group">
-          <input 
-            type="number" 
-            className="daarayn-ribbon-input" 
-            placeholder="Enter Amount" 
-            min="1"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
+          <div className="daarayn-ribbon-input-group">
+            <input 
+              type="number" 
+              className="daarayn-ribbon-input" 
+              placeholder="Amount" 
+              min="1"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              aria-label="Donation Amount"
+            />
+          </div>
         </div>
 
         {/* Preset Buttons */}
@@ -64,35 +77,40 @@ export default function QuickDonationRibbon() {
               className={`daarayn-preset-btn ${amount === preset ? 'active' : ''}`}
               onClick={() => setAmount(preset)}
             >
-              ₹{preset}
+              {symbol}{preset}
             </button>
           ))}
         </div>
 
-        {/* Cause Dropdown */}
-        <div className="daarayn-ribbon-cause-wrapper">
-          <select 
-            className="daarayn-ribbon-cause-select" 
-            value={cause}
-            onChange={(e) => setCause(e.target.value)}
-          >
-            <option value="General">General Donation</option>
-            {causes.map(c => (
-              <option key={c.id} value={c.name}>{c.name}</option>
-            ))}
-          </select>
-          <ChevronDownIcon />
-        </div>
-        {/* Donate Button */}
-        <button 
-          type="button"
-          className="daarayn-ribbon-donate-btn" 
-          onClick={() => window.location.href = `/pay?amt=${amount}&cur=${currency}&cause=${encodeURIComponent(cause)}&source=ribbon`}
-        >
-          Quick Donation <ArrowRightIcon />
-        </button>
-      </div>
+        {/* Cause Dropdown & CTA Row */}
+        <div className="daarayn-ribbon-action-row">
+          <div className="daarayn-ribbon-cause-wrapper">
+            <select 
+              className="daarayn-ribbon-cause-select" 
+              value={cause}
+              onChange={(e) => setCause(e.target.value)}
+              aria-label="Select Cause"
+            >
+              <option value="General">General Donation</option>
+              {causes.map(c => (
+                <option key={c.id} value={c.name}>{c.name}</option>
+              ))}
+            </select>
+            <ChevronDownIcon />
+          </div>
 
+          {/* Donate Button */}
+          <button 
+            type="button"
+            className="daarayn-ribbon-donate-btn" 
+            onClick={() => window.location.href = `/pay?amt=${amount}&cur=${currency}&cause=${encodeURIComponent(cause)}&source=ribbon`}
+          >
+            <span>Quick Donate</span>
+            <ArrowRightIcon />
+          </button>
+        </div>
+
+      </div>
     </div>
   );
 }

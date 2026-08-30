@@ -33,26 +33,67 @@ export interface LetterEmailProps {
 // HTML EMAIL TEMPLATE (LETTER-STYLE)
 // ─────────────────────────────────────────────
 export function generateLetterEmailTemplate(props: LetterEmailProps): string {
-  // Embed logo as base64 data URI — works in all email clients including Gmail
-  // (CID attachments are blocked by Gmail web client)
   // Use CID attachment instead of Base64 to prevent Spam flagging by Gmail
   const logoUrl = 'cid:logo@daarayn.org';
   
   return `
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<meta name="supported-color-schemes" content="light dark">
 <title>${props.title || "Daarayn Foundation"}</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    color-scheme: light dark;
+    supported-color-schemes: light dark;
+  }
+  body, table, td, p, a, li, blockquote {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: #080e1f !important;
+    color: #f3f4f6 !important;
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+  .bg-body {
+    background-color: #080e1f !important;
+  }
+  .dark-card {
+    background-color: #0c142b !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+  .text-white {
+    color: #ffffff !important;
+  }
+  .text-gold {
+    color: #D4AF37 !important;
+  }
+  .text-gray {
+    color: #9ca3af !important;
+  }
+  @media (prefers-color-scheme: dark) {
+    body, .bg-body { background-color: #080e1f !important; color: #f3f4f6 !important; }
+    .dark-card { background-color: #0c142b !important; }
+  }
+  @media (prefers-color-scheme: light) {
+    body, .bg-body { background-color: #080e1f !important; color: #f3f4f6 !important; }
+    .dark-card { background-color: #0c142b !important; }
+  }
+</style>
 </head>
-<body style="margin:0; padding:0; background-color:#080e1f; font-family:Georgia, 'Times New Roman', serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#080e1f;">
+<body class="bg-body" style="margin:0; padding:0; background-color:#080e1f; color:#f3f4f6; font-family:Georgia, 'Times New Roman', serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" class="bg-body" style="background-color:#080e1f; width:100%;">
 <tr>
-<td align="center" style="padding:52px 16px;">
+<td align="center" style="padding:32px 12px;">
 
-<table role="presentation" width="580" cellpadding="0" cellspacing="0" style="max-width:580px; width:100%; border:1px solid rgba(255, 255, 255, 0.08); border-radius:12px; padding:40px; background-color:rgba(10, 16, 40, 0.5);">
+<table role="presentation" width="580" cellpadding="0" cellspacing="0" class="dark-card" style="max-width:580px; width:100%; min-width:300px; border:1px solid rgba(255, 255, 255, 0.1); border-radius:12px; padding:32px 24px; background-color:#0c142b;">
 
   <!-- HEADER -->
   <tr>

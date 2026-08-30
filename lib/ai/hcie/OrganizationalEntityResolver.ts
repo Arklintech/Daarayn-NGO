@@ -1,7 +1,7 @@
 import Fuse from "fuse.js";
 import { LRUCache } from "lru-cache";
-import { db } from "../../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { causeRepository } from "../../repositories/causeRepository";
+import { donorRepository } from "../../repositories/donorRepository";
 
 interface OrgEntity {
   id: string;
@@ -10,7 +10,7 @@ interface OrgEntity {
   aliases: string[];
 }
 
-// Cache to prevent hitting Firestore on every request
+// Cache to prevent hitting Repositories on every request
 const entityCache = new LRUCache<string, OrgEntity[]>({ max: 1, ttl: 1000 * 60 * 60 }); // 1 hour cache
 
 export class OrganizationalEntityResolver {
@@ -23,27 +23,25 @@ export class OrganizationalEntityResolver {
     const entities: OrgEntity[] = [];
 
     try {
-      // Fetch Projects
-      const projectsSnap = await getDocs(collection(db, "projects"));
-      projectsSnap.forEach(doc => {
-        const data = doc.data();
+      // Fetch Causes / Projects
+      const causes = await causeRepository.getAll();
+      causes.forEach(cause => {
         entities.push({
-          id: doc.id,
-          name: data.name || doc.id,
+          id: cause.id,
+          name: cause.title || cause.id,
           type: "project",
-          aliases: data.name ? data.name.toLowerCase().split(" ") : []
+          aliases: cause.title ? cause.title.toLowerCase().split(" ") : []
         });
       });
 
-      // Fetch Donors (In production, this would be a subset or indexed search, not all donors)
-      const donorsSnap = await getDocs(collection(db, "donors"));
-      donorsSnap.forEach(doc => {
-        const data = doc.data();
+      // Fetch Donors
+      const donors = await donorRepository.getAll();
+      donors.forEach(donor => {
         entities.push({
-          id: doc.id,
-          name: data.name || doc.id,
+          id: donor.id,
+          name: donor.name || donor.id,
           type: "donor",
-          aliases: data.name ? data.name.toLowerCase().split(" ") : []
+          aliases: donor.name ? donor.name.toLowerCase().split(" ") : []
         });
       });
 
@@ -52,7 +50,7 @@ export class OrganizationalEntityResolver {
       entities.push({ id: "eid_2026", name: "Eid Relief 2026", type: "campaign", aliases: ["eid", "qurbani", "bakrid"] });
       
     } catch (e) {
-      console.warn("[HCIE] Entity Resolver could not fetch from Firestore, using fallback.", e);
+      console.warn("[HCIE] Entity Resolver could not fetch from Repository, using fallback.", e);
       // Fallback entities
       entities.push({ id: "DA001", name: "Family Relief Bundle", type: "project", aliases: ["family", "relief", "food"] });
       entities.push({ id: "DA002", name: "Orphan Sponsorship", type: "project", aliases: ["orphan", "children", "education"] });

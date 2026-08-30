@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
+import Link from "next/link";
 import { 
   BadgeIndianRupee, 
   Search, 
@@ -13,7 +14,8 @@ import {
   Clock, 
   Eye, 
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -156,6 +158,30 @@ export default function AdminDonations() {
 
   return (
     <div className="space-y-6 text-xs">
+      {/* Executive Header with Back Navigation */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
+        <div className="flex items-center gap-3">
+          <Link
+            href="/admin/dashboard"
+            className="p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-gray-300 hover:text-white hover:bg-white/[0.08] transition-all flex items-center justify-center shrink-0 group shadow-sm"
+            title="Back to Dashboard"
+          >
+            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform text-luxury-gold" />
+          </Link>
+          <div>
+            <h1 className="text-base sm:text-lg font-bold text-white tracking-wide">Donations & Public Ledger</h1>
+            <p className="text-[10px] sm:text-[11px] text-gray-400">View, audit, verify, and export all public contributions</p>
+          </div>
+        </div>
+
+        <button 
+          onClick={handleExportCSV}
+          className="px-4 py-2.5 rounded-xl bg-white/[0.05] border border-white/[0.1] hover:bg-white/[0.1] text-white font-semibold transition flex items-center gap-2 shrink-0 self-start sm:self-auto shadow-sm"
+        >
+          <Download className="w-4 h-4 text-luxury-gold" /> Export Ledger CSV
+        </button>
+      </div>
+
       {/* Filtering Toolbar */}
       <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
         <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto">
@@ -212,7 +238,8 @@ export default function AdminDonations() {
 
       {/* Main donations table */}
       <div className="rounded-3xl admin-glass border border-white/[0.06] overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/[0.06] text-gray-500 font-semibold uppercase tracking-wider text-[10px]">
@@ -275,25 +302,21 @@ export default function AdminDonations() {
                       )}
                     </td>
                     <td className="p-4 text-right">
-                      {item.status === "pending" ? (
+                      {item.status === "pending" && (
                         <div className="flex items-center justify-end gap-2">
                           <button 
                             onClick={() => handleApprove(item.id)}
-                            className="p-1.5 rounded-lg bg-emerald-950/30 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-900/40 transition"
-                            title="Verify and Approve"
+                            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold transition"
                           >
-                            <Check className="w-4 h-4" />
+                            Verify
                           </button>
                           <button 
                             onClick={() => handleReject(item.id)}
-                            className="p-1.5 rounded-lg bg-red-950/30 border border-red-500/20 text-red-400 hover:bg-red-900/40 transition"
-                            title="Reject and Flag"
+                            className="px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition"
                           >
-                            <X className="w-4 h-4" />
+                            Reject
                           </button>
                         </div>
-                      ) : (
-                        <span className="text-gray-600 font-medium italic pr-2">Archived</span>
                       )}
                     </td>
                   </tr>
@@ -301,6 +324,83 @@ export default function AdminDonations() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View */}
+        <div className="block md:hidden p-3 space-y-3">
+          {loading && donations.length === 0 ? (
+            <div className="py-12 text-center text-gray-500">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-luxury-gold border-t-transparent mx-auto mb-2"></div>
+              Loading donations queue...
+            </div>
+          ) : filteredDonations.length === 0 ? (
+            <div className="py-12 text-center text-gray-500">No contributions match the filters.</div>
+          ) : (
+            filteredDonations.map((item) => (
+              <div key={item.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h4 className="text-sm font-bold text-white">{item.donor}</h4>
+                    <span className="text-xs text-gray-400 block font-mono">{item.id}</span>
+                  </div>
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-semibold border ${
+                    item.status === "completed" 
+                      ? "bg-emerald-950/40 text-emerald-300 border-emerald-500/20"
+                      : item.status === "rejected"
+                      ? "bg-red-950/40 text-red-300 border-red-500/20"
+                      : "bg-amber-950/40 text-amber-300 border-amber-500/20"
+                  }`}>
+                    {item.status === "completed" && <Check className="w-2.5 h-2.5" />}
+                    {item.status === "rejected" && <X className="w-2.5 h-2.5" />}
+                    {item.status === "pending" && <Clock className="w-2.5 h-2.5" />}
+                    {item.status === "completed" ? "Verified" : item.status === "rejected" ? "Rejected" : "Pending"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-white/[0.06]">
+                  <div>
+                    <span className="text-[10px] text-gray-500 block">Amount</span>
+                    <span className="font-bold text-luxury-gold text-base">₹{Number(item.amount).toLocaleString()}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-500 block">Program Cause</span>
+                    <span className="text-gray-300 truncate block">{item.cause}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-500 block">Ref Code</span>
+                    <span className="text-gray-400 font-mono text-[11px] block">{item.refCode || "—"}</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-gray-500 block">Proof</span>
+                    {item.proofUrl ? (
+                      <button onClick={() => setSelectedProofUrl(item.proofUrl)} className="text-luxury-gold text-[11px] font-semibold underline flex items-center gap-1">
+                        <Eye className="w-3 h-3" /> View Proof
+                      </button>
+                    ) : (
+                      <span className="text-gray-600 italic text-[11px]">No file</span>
+                    )}
+                  </div>
+                </div>
+
+                {item.status === "pending" && (
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/[0.06]">
+                    <button 
+                      onClick={() => handleApprove(item.id)}
+                      className="flex-1 py-2 min-h-[44px] rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold transition"
+                    >
+                      Verify
+                    </button>
+                    <button 
+                      onClick={() => handleReject(item.id)}
+                      className="flex-1 py-2 min-h-[44px] rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition"
+                    >
+                      Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
 

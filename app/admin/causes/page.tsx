@@ -24,12 +24,16 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const CAUSE_STYLE_MAP: Record<string, any> = {
-  "family-relief-bundle": { icon: Heart, color: "from-rose-500 to-rose-900" },
-  "orphan-care-sponsor": { icon: Baby, color: "from-violet-500 to-violet-900" },
-  "masjid-al-noor-const": { icon: Building2, color: "from-emerald-500 to-emerald-900" },
-  "sheikh-arham-sponsorship": { icon: GraduationCap, color: "from-amber-500 to-amber-900" },
+import { DEFAULT_CAUSES } from "@/lib/causes";
+
+const CAUSE_STYLE_MAP: Record<string, { icon: any, color: string }> = {
+  "clean-water-wells": { icon: Droplets, color: "from-blue-500 to-cyan-500" },
+  "orphan-sponsorship": { icon: Baby, color: "from-amber-500 to-orange-500" },
+  "emergency-food-aid": { icon: AlertTriangle, color: "from-red-500 to-rose-500" },
+  "masjid-construction": { icon: Building2, color: "from-emerald-500 to-teal-500" },
+  "healthcare-medical-fund": { icon: Stethoscope, color: "from-purple-500 to-pink-500" },
 };
+
 
 export default function CauseManagementCenter() {
   const [loading, setLoading] = useState(true);
@@ -42,9 +46,17 @@ export default function CauseManagementCenter() {
       try {
         // Fetch Unified Causes
         const causesSnap = await getDocs(collection(db, "causes"));
-        const fetchedCauses: any[] = [];
+        let fetchedCauses: any[] = [];
         causesSnap.forEach(doc => fetchedCauses.push({ id: doc.id, ...doc.data() }));
+        
+        if (fetchedCauses.length === 0) {
+          fetchedCauses = DEFAULT_CAUSES;
+          for (const c of DEFAULT_CAUSES) {
+            setDoc(doc(db, "causes", c.id), c).catch(err => console.warn("Auto-seed cause failed:", err));
+          }
+        }
         setCausesList(fetchedCauses);
+
 
         // Fetch Donations
         const q = query(collection(db, "donations"), where("status", "==", "completed"));

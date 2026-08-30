@@ -144,7 +144,7 @@ export default function AdminContent() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-gray-400 font-bold mb-1.5 uppercase tracking-wider">Mission Statement</label>
                 <textarea 
@@ -167,7 +167,7 @@ export default function AdminContent() {
 
             <div className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.04]">
               <h4 className="text-[10px] font-bold text-luxury-gold uppercase tracking-wider mb-4">Homepage counters & indicators</h4>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
                   <label className="block text-gray-500 mb-1.5 uppercase text-[9px]">Active Volunteers</label>
                   <input 

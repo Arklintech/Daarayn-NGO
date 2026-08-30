@@ -2,6 +2,8 @@ import { db } from "@/lib/firebase";
 import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 import { generateLetterEmailTemplate, attachDaaraynLogo } from "@/lib/email/resend";
 import { sendEmail } from "@/lib/email/providerManager";
+import { communicationRepository } from "@/lib/repositories/communicationRepository";
+import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 
 export async function processBroadcast(broadcastId: string, recipients: any[], payload: any) {
   const { heading, eyebrow, dua, projectUpdateHtml, mediaUrls, causeName, stats, createdAt } = payload;
@@ -136,20 +138,48 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
     }
 
     const processingDurationMs = Date.now() - new Date(createdAt).getTime();
-    await updateDoc(broadcastRef, {
+    try {
+      await updateDoc(broadcastRef, {
+        status: "Completed",
+        completedAt: new Date().toISOString(),
+        processingDurationMs,
+        "stats.sent": successCount,
+        "stats.failed": failCount,
+        "stats.remaining": 0
+      });
+    } catch {}
+
+    // Persist durable history to Google Sheets
+    await communicationRepository.save({
+      id: broadcastId,
+      type: "Email Broadcast",
+      subject: heading || "Daarayn Dispatch",
+      bodyText: eyebrow || "",
+      selectedCauses: causeName ? [causeName] : [],
+      recipientCount: recipients.length,
+      sentCount: successCount,
+      failedCount: failCount,
       status: "Completed",
+      createdBy: "Admin",
+      createdAt: createdAt || new Date().toISOString(),
       completedAt: new Date().toISOString(),
-      processingDurationMs,
-      "stats.sent": successCount,
-      "stats.failed": failCount,
-      "stats.remaining": 0
+    });
+
+    // Notify connected client listeners in real-time
+    realtimeBroadcaster.broadcast("BROADCAST_COMPLETED", {
+      broadcastId,
+      sent: successCount,
+      failed: failCount,
     });
 
   } catch (error: any) {
     console.error("Broadcast failed globally:", error);
-    await updateDoc(broadcastRef, {
-      status: "Failed",
-      failureReason: error?.message || "Unknown error"
-    });
+    try {
+      await updateDoc(broadcastRef, {
+        status: "Failed",
+        failureReason: error?.message || "Unknown error"
+      });
+    } catch {}
   }
 }
+

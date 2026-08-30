@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, setDoc } from 'firebase/firestore';
+import { DEFAULT_CAUSES } from "@/lib/causes";
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Edit3, MoreHorizontal, Mail, Phone, MapPin,
@@ -45,6 +46,31 @@ export default function DonorWorkspace() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [moreOpen, setMoreOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', country: '', city: '' });
+
+  useEffect(() => {
+    if (donor) {
+      setEditForm({
+        name: donor.name || '',
+        email: donor.email || '',
+        phone: donor.phone || '',
+        country: donor.country || 'India',
+        city: donor.city || ''
+      });
+    }
+  }, [donor]);
+
+  const handleSaveEdit = async () => {
+    try {
+      const donorRef = doc(db, 'donors', donorId);
+      await setDoc(donorRef, { ...editForm, updatedAt: new Date().toISOString() }, { merge: true });
+      setDonor(prev => ({ ...prev, ...editForm }));
+      setIsEditOpen(false);
+    } catch (err) {
+      console.error("Failed to update donor profile:", err);
+    }
+  };
 
   useEffect(() => {
     if (!donorId) return;
@@ -63,8 +89,9 @@ export default function DonorWorkspace() {
         setDonations(donList);
 
         const causeSnap = await getDocs(collection(db, 'causes'));
-        const causeList: any[] = [];
+        let causeList: any[] = [];
         causeSnap.forEach(d => causeList.push({ id: d.id, ...d.data() }));
+        if (causeList.length === 0) causeList = DEFAULT_CAUSES;
         setCauses(causeList);
 
         const commSnap = await getDocs(collection(db, 'communications'));
@@ -198,7 +225,7 @@ export default function DonorWorkspace() {
 
                 {/* Actions */}
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
-                  <button onClick={() => alert('Edit Donor functionality coming soon')}
+                  <button onClick={() => setIsEditOpen(true)}
                     className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-white transition hover:bg-white/5 whitespace-nowrap"
                     style={{ border: '1px solid rgba(255,255,255,0.15)' }}>
                     <Edit3 className="w-4 h-4" /> Edit Donor
@@ -338,6 +365,52 @@ export default function DonorWorkspace() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* Edit Donor Profile Modal */}
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="bg-[#0b1324] border border-white/10 rounded-2xl w-full max-w-md p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-3 border-b border-white/10">
+              <h3 className="text-lg font-bold text-white">Edit Donor Profile</h3>
+              <button onClick={() => setIsEditOpen(false)} className="text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="text-gray-400 block mb-1 font-medium">Full Name</label>
+                <input type="text" value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-luxury-gold" />
+              </div>
+              <div>
+                <label className="text-gray-400 block mb-1 font-medium">Email Address</label>
+                <input type="email" value={editForm.email} onChange={e => setEditForm({ ...editForm, email: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-luxury-gold" />
+              </div>
+              <div>
+                <label className="text-gray-400 block mb-1 font-medium">Phone Number</label>
+                <input type="text" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-luxury-gold" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-gray-400 block mb-1 font-medium">Country</label>
+                  <input type="text" value={editForm.country} onChange={e => setEditForm({ ...editForm, country: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-luxury-gold" />
+                </div>
+                <div>
+                  <label className="text-gray-400 block mb-1 font-medium">City</label>
+                  <input type="text" value={editForm.city} onChange={e => setEditForm({ ...editForm, city: e.target.value })} className="w-full bg-white/5 border border-white/10 rounded-xl px-3.5 py-2.5 text-white focus:outline-none focus:border-luxury-gold" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-white/10">
+              <button onClick={() => setIsEditOpen(false)} className="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white text-xs font-semibold">
+                Cancel
+              </button>
+              <button onClick={handleSaveEdit} className="px-4 py-2 rounded-xl bg-luxury-gold text-black font-bold text-xs hover:bg-luxury-gold/80">
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

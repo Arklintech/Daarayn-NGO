@@ -118,6 +118,9 @@ export interface Donation {
   receiptUrl?: string;
   transactionReference: string;
   donorEmail?: string;
+  causeId?: string;
+  causeTitle?: string;
+  proofDriveFileId?: string;
   allocatedAmount?: number;
   allocationStatus?: "fully" | "partially";
 }

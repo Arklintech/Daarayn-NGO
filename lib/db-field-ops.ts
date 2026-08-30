@@ -39,7 +39,6 @@ export interface FieldAgent {
 
   // Security
   requirePasswordChange: boolean;
-  rawPassword?: string;
 
   // Permissions
   permissions: {

@@ -79,16 +79,28 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     return () => unsub();
   }, [user]);
 
-  // Register single root service worker
+  // Register SW + detect live updates for mobile PWA
+  const [swUpdateReady, setSwUpdateReady] = React.useState(false);
   React.useEffect(() => {
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(err => {
-        console.error('Service Worker registration failed: ', err);
-      });
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then((reg) => {
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (!newWorker) return;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                setSwUpdateReady(true);
+              }
+            });
+          });
+        })
+        .catch(err => console.error('SW registration failed:', err));
     }
   }, []);
 
-  // Inject PWA Manifest for Admin
+
+  // Inject PWA Manifest & Icons for Admin
   React.useEffect(() => {
     let link = document.querySelector("link[rel~='manifest']") as HTMLLinkElement;
     if (!link) {
@@ -97,6 +109,30 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       document.head.appendChild(link);
     }
     link.href = '/api/manifest/admin';
+
+    let appleIcon = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
+    if (!appleIcon) {
+      appleIcon = document.createElement('link');
+      appleIcon.rel = 'apple-touch-icon';
+      document.head.appendChild(appleIcon);
+    }
+    appleIcon.href = '/icons/admin-apple-touch-icon.png?v=3';
+
+    let icon = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+    if (!icon) {
+      icon = document.createElement('link');
+      icon.rel = 'icon';
+      document.head.appendChild(icon);
+    }
+    icon.href = '/icons/admin-icon-192.png?v=3';
+
+    let shortcutIcon = document.querySelector("link[rel='shortcut icon']") as HTMLLinkElement;
+    if (!shortcutIcon) {
+      shortcutIcon = document.createElement('link');
+      shortcutIcon.rel = 'shortcut icon';
+      document.head.appendChild(shortcutIcon);
+    }
+    shortcutIcon.href = '/icons/admin-icon-192.png?v=3';
   }, []);
 
   // If this is the login page, bypass layout entirely
@@ -205,7 +241,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       {/* Brand Header */}
       <div className="p-5 border-b border-white/[0.06] flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src="/brand logo1.png" alt="Daarayn Logo" className="w-8 h-8 object-contain filter brightness-110 drop-shadow-[0_0_4px_rgba(212,175,55,0.25)]" />
+          <img src="/admin-download-logo.png" alt="Daarayn Admin Logo" className="w-8 h-8 rounded-lg object-contain shadow-[0_0_8px_rgba(212,175,55,0.4)] border border-luxury-gold/30" />
           <div>
             <h2 className="text-xs font-semibold tracking-[0.4em] font-playfair text-white">DAARAYN</h2>
             <span className="text-[9px] font-semibold text-luxury-gold uppercase tracking-widest block mt-0.5">Control Center</span>
@@ -247,7 +283,9 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
             )}
             {section.items.map((item) => {
               const Icon = item.icon as any;
-              const isActive = pathname.startsWith(item.href!);
+              const isActive = item.href === "/admin" || item.href === "/admin/dashboard"
+                ? pathname === "/admin" || pathname === "/admin/dashboard"
+                : pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href + "/"));
               return (
                 <Link
                   key={item.name}
@@ -347,6 +385,9 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
           <div className="flex items-center gap-3">
             {/* Quick Portal Switch */}
             <div className="hidden md:flex items-center gap-2 pr-3">
+              <Link href="/" target="_blank" className="px-3 py-2 min-h-[44px] flex items-center rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
+                Website
+              </Link>
               <Link href="/field/login" target="_blank" className="px-3 py-2 min-h-[44px] flex items-center rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] hover:border-luxury-gold/50 text-[10px] font-semibold text-gray-300 uppercase tracking-wider transition">
                 Field View
               </Link>
@@ -401,6 +442,21 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
               {renderSidebarContent()}
             </motion.aside>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* PWA Update Toast — shown when new SW version is ready */}
+      <AnimatePresence>
+        {swUpdateReady && (
+          <motion.div
+            initial={{ opacity: 0, y: -60 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -60 }}
+            className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-[#0d1410] border border-[#b8860b]/60 text-white px-5 py-3 rounded-xl shadow-2xl shadow-black/40 backdrop-blur-md"
+          >
+            <span className="w-2 h-2 rounded-full bg-[#b8860b] animate-pulse flex-shrink-0" />
+            <p className="text-xs font-semibold text-[#b8860b]">✨ Update Available — refreshing in 3s...</p>
+          </motion.div>
         )}
       </AnimatePresence>
 

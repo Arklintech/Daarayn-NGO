@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, setDoc, onSnapshot } from "firebase/firestore";
+import { DEFAULT_CAUSES } from "@/lib/causes";
 import { 
   Search, RefreshCw, Filter, Download, CheckCircle, 
   Users, UserPlus, RotateCcw, DollarSign, Activity, ChevronDown, 
@@ -34,6 +35,8 @@ export default function AdminDonors() {
   const [selectedCause, setSelectedCause] = useState("All Causes");
   const [selectedCountry, setSelectedCountry] = useState("All Countries");
   const [verification, setVerification] = useState("All Status");
+  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isAddDonorOpen, setIsAddDonorOpen] = useState(false);
   const [newDonor, setNewDonor] = useState({ name: '', email: '', phone: '', country: 'India', city: '' });
   const [isSaving, setIsSaving] = useState(false);
@@ -43,8 +46,9 @@ export default function AdminDonors() {
     setLoading(true);
     try {
       const causeSnap = await getDocs(collection(db, "causes"));
-      const causeList: any[] = [];
+      let causeList: any[] = [];
       causeSnap.forEach((c) => causeList.push({ id: c.id, ...c.data() }));
+      if (causeList.length === 0) causeList = DEFAULT_CAUSES;
       setCauses(causeList);
 
       const snap = await getDocs(collection(db, "donors"));
@@ -74,10 +78,14 @@ export default function AdminDonors() {
     
     // Load causes once
     getDocs(collection(db, "causes")).then((causeSnap) => {
-      const causeList: any[] = [];
+      let causeList: any[] = [];
       causeSnap.forEach((c) => causeList.push({ id: c.id, ...c.data() }));
+      if (causeList.length === 0) causeList = DEFAULT_CAUSES;
       setCauses(causeList);
-    }).catch(err => console.warn("Failed to prefetch causes:", err));
+    }).catch(err => {
+      console.warn("Failed to prefetch causes:", err);
+      setCauses(DEFAULT_CAUSES);
+    });
 
     // Listen to donors real-time
     const unsub = onSnapshot(collection(db, "donors"), (snap) => {
@@ -200,6 +208,20 @@ export default function AdminDonors() {
     return { total, newDonors, returning, lifetime, average };
   }, [filteredDonors]);
 
+  // Reset page when filters or page size change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, timePeriod, quickSegment, selectedCause, selectedCountry, verification, pageSize]);
+
+  const totalEntries = filteredDonors.length;
+  const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
+  const startEntry = totalEntries === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endEntry = Math.min(currentPage * pageSize, totalEntries);
+
+  const paginatedDonors = useMemo(() => {
+    return filteredDonors.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  }, [filteredDonors, currentPage, pageSize]);
+
   const handleQuickAction = (actionLabel: string) => {
     if (actionLabel === 'Add Donor') {
       setIsAddDonorOpen(true);
@@ -230,8 +252,6 @@ export default function AdminDonors() {
     } else if (actionLabel === 'Ask KHIZR') {
       router.push('/admin/ai');
     } else if (actionLabel === 'Generate Board Report') {
-      // Re-use download CSV for board report for now
-      alert('Generating Executive Board Report (PDF) - currently will download as CSV.');
       handleQuickAction('Download CSV');
     }
   };
@@ -415,19 +435,49 @@ export default function AdminDonors() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <SectionHeader title="DONOR TABLE" />
           <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm text-gray-400">
-            <span className="whitespace-nowrap">Show <select className="bg-white/5 border border-white/10 rounded px-2 py-1 outline-none text-white ml-1 mr-1"><option>10</option></select> entries</span>
+            <span className="whitespace-nowrap flex items-center gap-1.5">
+              Show 
+              <select 
+                value={pageSize}
+                onChange={(e) => { setPageSize(Number(e.target.value)); setCurrentPage(1); }}
+                className="bg-white/5 border border-white/10 rounded px-2.5 py-1 outline-none text-white focus:border-luxury-gold cursor-pointer"
+              >
+                <option value={10} className="bg-[#0a0a0a]">10</option>
+                <option value={25} className="bg-[#0a0a0a]">25</option>
+                <option value={50} className="bg-[#0a0a0a]">50</option>
+                <option value={100} className="bg-[#0a0a0a]">100</option>
+              </select> 
+              entries
+            </span>
             <div className="flex items-center gap-3">
-              <span>1-10 of {kpis.total.toLocaleString()}</span>
+              <span className="font-mono text-gray-300">
+                {startEntry}-{endEntry} of {totalEntries.toLocaleString()}
+              </span>
               <div className="flex items-center gap-1">
-                <button className="w-7 h-7 flex items-center justify-center bg-white/5 border border-white/5 rounded hover:bg-white/10">{'<'}</button>
-                <button className="w-7 h-7 flex items-center justify-center bg-white/5 border border-white/5 rounded hover:bg-white/10">{'>'}</button>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage <= 1}
+                  className="w-7 h-7 flex items-center justify-center bg-white/5 border border-white/10 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white transition"
+                  title="Previous Page"
+                >
+                  {'<'}
+                </button>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage >= totalPages || totalEntries === 0}
+                  className="w-7 h-7 flex items-center justify-center bg-white/5 border border-white/10 rounded hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed text-white transition"
+                  title="Next Page"
+                >
+                  {'>'}
+                </button>
               </div>
             </div>
           </div>
         </div>
 
         <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden mt-2">
-          <div className="overflow-x-auto no-scrollbar">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto no-scrollbar">
             <table className="w-full text-left border-collapse whitespace-nowrap">
               <thead>
                 <tr className="border-b border-white/10 text-[11px] text-gray-400">
@@ -446,10 +496,10 @@ export default function AdminDonors() {
               <tbody className="divide-y divide-white/10">
                 {loading ? (
                   <tr><td colSpan={10} className="py-20 text-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-luxury-gold border-t-transparent mx-auto" /></td></tr>
-                ) : filteredDonors.length === 0 ? (
+                ) : paginatedDonors.length === 0 ? (
                   <tr><td colSpan={10} className="py-20 text-center text-gray-500 text-sm">No donor records found matching filters.</td></tr>
                 ) : (
-                  filteredDonors.slice(0, 10).map((donor, idx) => (
+                  paginatedDonors.map((donor, idx) => (
                     <motion.tr
                       key={donor.id}
                       onClick={() => router.push(`/admin/donors/${donor.id}`)}
@@ -479,11 +529,11 @@ export default function AdminDonors() {
                       </td>
                       <td className="px-5 py-4">
                         <div className="flex items-center justify-center gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); router.push(`/admin/donors/${donor.id}`); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition">
+                          <button onClick={(e) => { e.stopPropagation(); router.push(`/admin/donors/${donor.id}`); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition" aria-label="View Donor Details" title="View Profile">
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button onClick={(e) => { e.stopPropagation(); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition">
-                            <MoreVertical className="w-4 h-4" />
+                          <button onClick={(e) => { e.stopPropagation(); router.push(`/admin/communications?donorId=${donor.id}`); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-gray-400 hover:text-luxury-gold hover:bg-white/10 transition" aria-label="Message Donor" title="Send Message">
+                            <MessageSquare className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -493,40 +543,102 @@ export default function AdminDonors() {
               </tbody>
             </table>
           </div>
+
+          {/* Mobile Stacked Card View */}
+          <div className="block md:hidden p-3 space-y-3">
+            {loading ? (
+              <div className="py-12 text-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-luxury-gold border-t-transparent mx-auto" /></div>
+            ) : paginatedDonors.length === 0 ? (
+              <div className="py-12 text-center text-gray-500 text-sm">No donor records found matching filters.</div>
+            ) : (
+              paginatedDonors.map((donor, idx) => (
+                <div 
+                  key={donor.id}
+                  onClick={() => router.push(`/admin/donors/${donor.id}`)}
+                  className="p-4 rounded-xl bg-white/[0.03] border border-white/10 space-y-3 cursor-pointer hover:border-luxury-gold/40 transition active:scale-[0.99]"
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-white">{donor.name || "Anonymous"}</h4>
+                        {idx === 0 && <span className="bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wider">VIP</span>}
+                      </div>
+                      <span className="text-[11px] text-gray-400 font-mono mt-0.5 block">{donor.id}</span>
+                    </div>
+                    {donor.status === 'active' ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-luxury-gold/30 text-luxury-gold text-[10px] font-medium bg-luxury-gold/10">
+                        <CheckCircle className="w-2.5 h-2.5" /> Verified
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-luxury-gold/30 text-luxury-gold text-[10px] font-medium bg-luxury-gold/10">
+                        <AlertTriangle className="w-2.5 h-2.5" /> Pending
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-white/[0.06]">
+                    <div>
+                      <span className="text-[10px] text-gray-500 block">Total Donated</span>
+                      <span className="font-bold text-luxury-gold text-sm">₹{(donor.totalAmountDonated || 0).toLocaleString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-500 block">Contributions</span>
+                      <span className="text-white font-medium">{donor.totalDonations || 0} donations</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-500 block">Location</span>
+                      <span className="text-gray-300 truncate block">{donor.city || "Mumbai"}, {donor.country || "IN"}</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-500 block">Last Active</span>
+                      <span className="text-gray-300 block">{donor.lastContributionDate ? new Date(donor.lastContributionDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short'}) : '10 May'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-xs">
+                    <span className="text-gray-400 truncate max-w-[200px]">{donor.email || donor.phone || "—"}</span>
+                    <button className="px-3 py-1.5 min-h-[36px] rounded-lg bg-luxury-gold/10 text-luxury-gold font-semibold text-[11px] border border-luxury-gold/30 flex items-center gap-1">
+                      View Profile <Eye className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
       {isAddDonorOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl">
+          <div className="bg-[#0a0a0a] border border-white/10 rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-lg font-semibold text-white tracking-wide">Add New Donor</h2>
-              <button onClick={() => setIsAddDonorOpen(false)} className="text-gray-400 hover:text-white"><X className="w-5 h-5"/></button>
+              <button onClick={() => setIsAddDonorOpen(false)} className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-400 hover:text-white" aria-label="Close modal"><X className="w-5 h-5"/></button>
             </div>
             <div className="space-y-4">
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Full Name</label>
-                <input type="text" value={newDonor.name} onChange={e => setNewDonor({...newDonor, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-luxury-gold" placeholder="John Doe" />
+                <input type="text" value={newDonor.name} onChange={e => setNewDonor({...newDonor, name: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-luxury-gold min-h-[44px]" placeholder="John Doe" />
               </div>
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Email Address</label>
-                <input type="email" value={newDonor.email} onChange={e => setNewDonor({...newDonor, email: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-luxury-gold" placeholder="john@example.com" />
+                <input type="email" value={newDonor.email} onChange={e => setNewDonor({...newDonor, email: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-luxury-gold min-h-[44px]" placeholder="john@example.com" />
               </div>
               <div>
                 <label className="text-xs text-gray-400 mb-1 block">Phone Number</label>
-                <input type="tel" value={newDonor.phone} onChange={e => setNewDonor({...newDonor, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-luxury-gold" placeholder="+91 98765 43210" />
+                <input type="tel" value={newDonor.phone} onChange={e => setNewDonor({...newDonor, phone: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-luxury-gold min-h-[44px]" placeholder="+91 98765 43210" />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">Country</label>
-                  <input type="text" value={newDonor.country} onChange={e => setNewDonor({...newDonor, country: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-luxury-gold" placeholder="India" />
+                  <input type="text" value={newDonor.country} onChange={e => setNewDonor({...newDonor, country: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-luxury-gold min-h-[44px]" placeholder="India" />
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">City</label>
-                  <input type="text" value={newDonor.city} onChange={e => setNewDonor({...newDonor, city: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-luxury-gold" placeholder="Mumbai" />
+                  <input type="text" value={newDonor.city} onChange={e => setNewDonor({...newDonor, city: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-luxury-gold min-h-[44px]" placeholder="Mumbai" />
                 </div>
               </div>
-              <button 
+              <button  
                 onClick={handleSaveDonor}
                 disabled={isSaving}
                 className="w-full mt-4 bg-luxury-gold hover:bg-luxury-gold/80 text-black font-semibold py-3 rounded-xl transition text-sm disabled:opacity-50 flex items-center justify-center gap-2"

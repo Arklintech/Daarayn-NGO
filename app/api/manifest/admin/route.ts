@@ -2,22 +2,47 @@ import { NextResponse } from 'next/server';
 
 export async function GET() {
   return NextResponse.json({
-    name: 'Daarayn Command Center',
-    short_name: 'Command Ops',
-    description: 'Enterprise administration panel for Daarayn Foundation.',
-    start_url: '/admin/login',
+    name: 'Daarayn Admin Panel',
+    short_name: 'Daarayn Admin',
+    description: 'Enterprise operational command center for Daarayn Foundation.',
+    start_url: '/admin/dashboard',
     scope: '/admin',
     display: 'standalone',
-    background_color: '#030a06',
-    theme_color: '#10b981',
-    icons: [
+    display_override: ['standalone', 'window-controls-overlay', 'minimal-ui'],
+    orientation: 'any',
+    categories: ['humanitarian', 'finance', 'productivity'],
+    prefer_related_applications: false,
+    background_color: '#080c10',
+    theme_color: '#d4af37',
+    shortcuts: [
       {
-        src: '/icons/icon-192.png',
-        sizes: '192x192',
-        type: 'image/png',
+        name: 'Command Dashboard',
+        short_name: 'Dashboard',
+        url: '/admin/dashboard',
+        icons: [{ src: '/icons/admin-icon-192.png?v=3', sizes: '192x192' }]
       },
       {
-        src: '/icons/icon-512-maskable.png',
+        name: 'Field Operations',
+        short_name: 'Field Ops',
+        url: '/admin/field-ops',
+        icons: [{ src: '/icons/admin-icon-192.png?v=3', sizes: '192x192' }]
+      }
+    ],
+    icons: [
+      {
+        src: '/icons/admin-icon-192.png?v=3',
+        sizes: '192x192',
+        type: 'image/png',
+        purpose: 'any'
+      },
+      {
+        src: '/icons/admin-icon-512.png?v=3',
+        sizes: '512x512',
+        type: 'image/png',
+        purpose: 'any'
+      },
+      {
+        src: '/icons/admin-icon-512-maskable.png?v=3',
         sizes: '512x512',
         type: 'image/png',
         purpose: 'maskable'
@@ -25,3 +50,4 @@ export async function GET() {
     ],
   });
 }
+

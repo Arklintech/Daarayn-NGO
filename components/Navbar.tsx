@@ -51,6 +51,7 @@ export default function Navbar() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
+          gap: '32px',
           padding: '0 16px',
           boxShadow: navShadow,
           pointerEvents: 'auto',
@@ -58,6 +59,10 @@ export default function Navbar() {
         }}
         className="lg:px-[24px]"
       >
+        {/* Glow Effects */}
+        <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: '30%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255, 249, 221, 0.4), transparent)', zIndex: 0 }} />
+        <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '50%', height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255, 249, 221, 0.2), transparent)', zIndex: 0 }} />
+
         {/* Subtle Islamic Star Background Watermark */}
         <div style={{ position: 'absolute', inset: 0, borderRadius: '16px', overflow: 'hidden', pointerEvents: 'none' }}>
           <svg 
@@ -70,7 +75,7 @@ export default function Navbar() {
         </div>
 
         {/* Left: Logo */}
-        <Link href="/#home" onClick={() => { setActiveHash('#home'); setIsOpen(false); }} style={{ textDecoration: 'none', zIndex: 10 }}>
+        <Link href="/#home" onClick={() => { setActiveHash('#home'); setIsOpen(false); }} style={{ textDecoration: 'none', zIndex: 10, flexShrink: 0, paddingRight: '24px' }}>
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -87,7 +92,7 @@ export default function Navbar() {
               onError={(e: any) => { e.currentTarget.src = '/brand logo .png' }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '18px', fontWeight: 400, letterSpacing: '2px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }} className="lg:text-[20px] xl:text-[24px]">
+              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '18px', fontWeight: 400, letterSpacing: '10px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }} className="lg:text-[20px] xl:text-[24px]">
                 DAARAYN
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }} className="lg:gap-[6px] xl:gap-[8px]">

@@ -11,9 +11,10 @@ import {
 } from "lucide-react";
 import { FieldAgent, FieldReport, FieldMessage, FieldConversation } from "@/lib/db-field-ops";
 import { notifyFieldReport, notifyConversation } from "@/lib/notifications";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 function FieldOperationsCenterContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const paramAgentId = searchParams.get("agentId");
   const paramReportId = searchParams.get("reportId");
@@ -49,7 +50,13 @@ function FieldOperationsCenterContent() {
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [assignTo, setAssignTo] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
-  
+
+  // Take Action panel state
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
+  const [takeActionStatus, setTakeActionStatus] = useState('');
+  const [takeActionNotes, setTakeActionNotes] = useState('');
+  const [takeActionLoading, setTakeActionLoading] = useState(false);
+  const [takeActionSuccess, setTakeActionSuccess] = useState(false);
 
   // Global Listeners
   useEffect(() => {
@@ -90,6 +97,9 @@ function FieldOperationsCenterContent() {
 
   // When active Agent changes, auto-select their most recent conversation (unless overridden by query param)
   useEffect(() => {
+    setSelectedReportId(null);
+    setTakeActionStatus('');
+    setTakeActionNotes('');
     if (!activeAgentId) { setActiveConvId(null); return; }
     
     // If the currently selected conv belongs to this agent, keep it.
@@ -141,9 +151,11 @@ function FieldOperationsCenterContent() {
 
   const activeAgent = agents.find(a => a.id === activeAgentId);
   const activeConv = conversations.find(c => c.id === activeConvId);
-  const activeReport = activeConv?.reportId 
-    ? allReports.find(r => r.id === activeConv?.reportId) 
-    : (activeAgentId ? allReports.find(r => r.agentId === activeAgentId) : null);
+  const activeReport = selectedReportId
+    ? allReports.find(r => r.id === selectedReportId) || null
+    : (activeConv?.reportId 
+        ? allReports.find(r => r.id === activeConv?.reportId) || null
+        : (activeAgentId ? allReports.find(r => r.agentId === activeAgentId) || null : null));
   
   const filteredAgents = agents.filter(a =>
     a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -157,19 +169,45 @@ function FieldOperationsCenterContent() {
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !activeConvId || !activeAgent) return;
+    if (!newMessage.trim() || !activeAgent) return;
+
+    let targetConvId = activeConvId;
+
     try {
+      if (!targetConvId) {
+        targetConvId = `conv_${activeAgent.id}_general`;
+        const newConv: FieldConversation = {
+          id: targetConvId,
+          agentId: activeAgent.id,
+          type: "Operations",
+          lastMessage: {
+            text: newMessage,
+            timestamp: new Date().toISOString(),
+            senderRole: "Admin"
+          },
+          unreadCountAdmin: 0,
+          unreadCountAgent: 1,
+          status: "Waiting For Field Agent",
+          isUrgent: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        await setDoc(doc(db, "field_conversations", targetConvId), newConv);
+        setActiveConvId(targetConvId);
+      }
+
       const msg: Omit<FieldMessage, "id"> = {
-        conversationId: activeConvId, 
-        senderId: "Admin_1", // Replace with real auth
+        conversationId: targetConvId, 
+        senderId: "Admin_1",
         senderRole: "Admin",
-        senderName: "Ahmed Khan", // Replace with real auth name
+        senderName: "Ahmed Khan",
         text: newMessage, 
         timestamp: new Date().toISOString()
       };
       await addDoc(collection(db, "field_messages"), msg);
       
-      await updateDoc(doc(db, "field_conversations", activeConvId), {
+      await updateDoc(doc(db, "field_conversations", targetConvId), {
         lastMessage: {
           text: newMessage,
           timestamp: new Date().toISOString(),
@@ -180,8 +218,12 @@ function FieldOperationsCenterContent() {
         status: "Waiting For Field Agent"
       });
       setNewMessage("");
-    } catch (err) { console.error(err); }
+    } catch (err) { 
+      console.error("Admin message send failed:", err); 
+      alert("Failed to send message. Please try again.");
+    }
   };
+
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !activeConvId || !activeAgent) return;
@@ -327,22 +369,33 @@ function FieldOperationsCenterContent() {
     if (!activeReport) return;
     setActionLoading(true);
     try {
+      const now = new Date().toISOString();
       await updateDoc(doc(db, "field_reports", activeReport.id), {
         status: "Approved",
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
+        "timelineStages.Approval": now,
+        hasAgentUnreadUpdate: true,
       });
       await notifyFieldReport.approved(activeReport.id, activeReport.agentId, activeReport.title);
-      // Post system message to agent's conversation
+      await addDoc(collection(db, "field_notifications"), {
+        agentId: activeReport.agentId,
+        title: "Report Approved ✅",
+        message: `Your report "${activeReport.title}" has been approved.`,
+        type: "Success",
+        isRead: false,
+        timestamp: now,
+        relatedReportId: activeReport.id,
+      });
       const conv = conversations.find(c => c.reportId === activeReport.id);
       if (conv) {
         await addDoc(collection(db, "field_messages"), {
           conversationId: conv.id, senderId: "System", senderRole: "System",
           senderName: "System", text: `✅ Your report "${activeReport.title}" has been approved.`,
-          timestamp: new Date().toISOString(), readByAgent: false, readByAdmin: true,
+          timestamp: now, readByAgent: false, readByAdmin: true,
         });
         await updateDoc(doc(db, "field_conversations", conv.id), {
-          lastMessage: { text: `✅ Report Approved`, timestamp: new Date().toISOString(), senderRole: "System" },
-          unreadCountAgent: 1, updatedAt: new Date().toISOString(),
+          lastMessage: { text: `✅ Report Approved`, timestamp: now, senderRole: "System" },
+          unreadCountAgent: 1, updatedAt: now,
         });
       }
     } finally { setActionLoading(false); }
@@ -352,22 +405,33 @@ function FieldOperationsCenterContent() {
     if (!activeReport || !rejectReason.trim()) return;
     setActionLoading(true);
     try {
+      const now = new Date().toISOString();
       await updateDoc(doc(db, "field_reports", activeReport.id), {
         status: "Rejected", adminNotes: rejectReason.trim(),
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
+        hasAgentUnreadUpdate: true,
       });
       await notifyFieldReport.rejected(activeReport.id, activeReport.agentId, activeReport.title);
+      await addDoc(collection(db, "field_notifications"), {
+        agentId: activeReport.agentId,
+        title: "Report Rejected ❌",
+        message: `Your report "${activeReport.title}" was not approved. Reason: ${rejectReason.trim()}`,
+        type: "Alert",
+        isRead: false,
+        timestamp: now,
+        relatedReportId: activeReport.id,
+      });
       const conv = conversations.find(c => c.reportId === activeReport.id);
       if (conv) {
         await addDoc(collection(db, "field_messages"), {
           conversationId: conv.id, senderId: "System", senderRole: "System",
           senderName: "System",
           text: `❌ Your report "${activeReport.title}" was not approved.\n\nReason: ${rejectReason.trim()}`,
-          timestamp: new Date().toISOString(), readByAgent: false, readByAdmin: true,
+          timestamp: now, readByAgent: false, readByAdmin: true,
         });
         await updateDoc(doc(db, "field_conversations", conv.id), {
-          lastMessage: { text: `❌ Report Rejected`, timestamp: new Date().toISOString(), senderRole: "System" },
-          unreadCountAgent: 1, updatedAt: new Date().toISOString(),
+          lastMessage: { text: `❌ Report Rejected`, timestamp: now, senderRole: "System" },
+          unreadCountAgent: 1, updatedAt: now,
         });
       }
       setShowRejectModal(false);
@@ -379,9 +443,21 @@ function FieldOperationsCenterContent() {
     if (!activeReport || !requestInfoText.trim()) return;
     setActionLoading(true);
     try {
+      const now = new Date().toISOString();
       await updateDoc(doc(db, "field_reports", activeReport.id), {
         status: "Needs Info", adminNotes: requestInfoText.trim(),
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
+        "timelineStages.Needs Info": now,
+        hasAgentUnreadUpdate: true,
+      });
+      await addDoc(collection(db, "field_notifications"), {
+        agentId: activeReport.agentId,
+        title: "Information Requested ℹ️",
+        message: `Additional info requested for "${activeReport.title}": ${requestInfoText.trim()}`,
+        type: "Info",
+        isRead: false,
+        timestamp: now,
+        relatedReportId: activeReport.id,
       });
       const conv = conversations.find(c => c.reportId === activeReport.id);
       if (conv) {
@@ -389,11 +465,11 @@ function FieldOperationsCenterContent() {
           conversationId: conv.id, senderId: "Admin_1", senderRole: "Admin",
           senderName: "Ahmed Khan",
           text: `ℹ️ Additional information needed for your report "${activeReport.title}":\n\n${requestInfoText.trim()}`,
-          timestamp: new Date().toISOString(), readByAgent: false, readByAdmin: true,
+          timestamp: now, readByAgent: false, readByAdmin: true,
         });
         await updateDoc(doc(db, "field_conversations", conv.id), {
-          lastMessage: { text: `ℹ️ Info Requested`, timestamp: new Date().toISOString(), senderRole: "Admin" },
-          unreadCountAgent: 1, status: "Waiting For Field Agent", updatedAt: new Date().toISOString(),
+          lastMessage: { text: `ℹ️ Info Requested`, timestamp: now, senderRole: "Admin" },
+          unreadCountAgent: 1, status: "Waiting For Field Agent", updatedAt: now,
         });
       }
       setShowRequestInfoModal(false);
@@ -405,20 +481,97 @@ function FieldOperationsCenterContent() {
     if (!activeReport || !assignTo.trim()) return;
     setActionLoading(true);
     try {
+      const now = new Date().toISOString();
       await updateDoc(doc(db, "field_reports", activeReport.id), {
         assignedAdminId: assignTo.trim(),
         status: activeReport.status === "Pending Review" ? "Under Review" : activeReport.status,
-        updatedAt: new Date().toISOString(),
+        updatedAt: now,
+        "timelineStages.Assigned to Reviewer": now,
+        "timelineStages.Under Review": now,
+        hasAgentUnreadUpdate: true,
+      });
+      await addDoc(collection(db, "field_notifications"), {
+        agentId: activeReport.agentId,
+        title: "Reviewer Assigned 👤",
+        message: `Your report "${activeReport.title}" has been assigned for review.`,
+        type: "Info",
+        isRead: false,
+        timestamp: now,
+        relatedReportId: activeReport.id,
       });
       const conv = conversations.find(c => c.reportId === activeReport.id);
       if (conv) {
         await updateDoc(doc(db, "field_conversations", conv.id), {
-          assignedAdminId: assignTo.trim(), updatedAt: new Date().toISOString(),
+          assignedAdminId: assignTo.trim(), updatedAt: now,
         });
       }
       setShowAssignModal(false);
       setAssignTo('');
     } finally { setActionLoading(false); }
+  };
+
+  const handleTakeAction = async () => {
+    if (!activeReport || !takeActionStatus) return;
+    setTakeActionLoading(true);
+    setTakeActionSuccess(false);
+    try {
+      const now = new Date().toISOString();
+      const STAGE_ORDER: Record<string, string[]> = {
+        'Under Review': ['Assigned to Reviewer', 'Under Review'],
+        'Needs Info': ['Under Review', 'Needs Info'],
+        'Scheduled': ['Assigned to Reviewer', 'Under Review', 'Verification Visit'],
+        'Approved': ['Assigned to Reviewer', 'Under Review', 'Verification Visit', 'Approval'],
+        'Converted': ['Assigned to Reviewer', 'Under Review', 'Verification Visit', 'Approval', 'Published on Website'],
+      };
+      
+      const stagesToStamp = STAGE_ORDER[takeActionStatus] || [];
+      const timelineUpdate: Record<string, string> = {};
+      stagesToStamp.forEach(stage => {
+        timelineUpdate[`timelineStages.${stage}`] = now;
+      });
+
+      await updateDoc(doc(db, 'field_reports', activeReport.id), {
+        status: takeActionStatus,
+        adminNotes: takeActionNotes.trim() || activeReport.adminNotes || '',
+        updatedAt: now,
+        hasAgentUnreadUpdate: true,
+        ...timelineUpdate,
+      });
+
+      await addDoc(collection(db, "field_notifications"), {
+        agentId: activeReport.agentId,
+        title: `Report Status: ${takeActionStatus}`,
+        message: `Your report "${activeReport.title}" status changed to ${takeActionStatus}.${takeActionNotes.trim() ? ` Notes: ${takeActionNotes.trim()}` : ''}`,
+        type: takeActionStatus === "Approved" ? "Success" : takeActionStatus === "Rejected" ? "Alert" : "Info",
+        isRead: false,
+        timestamp: now,
+        relatedReportId: activeReport.id,
+      });
+
+      const conv = conversations.find(c => c.reportId === activeReport.id);
+      if (conv) {
+        const notePart = takeActionNotes.trim() ? `\n\nAdmin Notes: ${takeActionNotes.trim()}` : '';
+        await addDoc(collection(db, 'field_messages'), {
+          conversationId: conv.id, senderId: 'System', senderRole: 'System',
+          senderName: 'System',
+          text: `🔄 Your report "${activeReport.title}" status changed to: ${takeActionStatus}${notePart}`,
+          timestamp: now, readByAgent: false, readByAdmin: true,
+        });
+        await updateDoc(doc(db, 'field_conversations', conv.id), {
+          lastMessage: { text: `🔄 Status → ${takeActionStatus}`, timestamp: now, senderRole: 'System' },
+          unreadCountAgent: 1, updatedAt: now,
+        });
+      }
+
+      setTakeActionSuccess(true);
+      setTakeActionNotes('');
+      setTakeActionStatus('');
+      setTimeout(() => setTakeActionSuccess(false), 3000);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setTakeActionLoading(false);
+    }
   };
 
   const handleConvert = async () => {
@@ -451,23 +604,30 @@ function FieldOperationsCenterContent() {
       const topCat = Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0];
       const convRate = allReports.length > 0 ? Math.round((allReports.filter(r=>r.status==='Converted').length / allReports.length) * 100) : 0;
 
-      // Try AI API first
-      const res = await fetch('/api/ai/chat', {
+      const prompt = `You are Khizr, an AI operational analyst for Daarayn Foundation. Analyze this live field operations data and provide 5 concise, actionable bullet points for the admin dashboard. Format each point as "**Heading**: Description".\n\nOperational Data: ${JSON.stringify({ totalAgents: agents.length, activeAgents: agents.filter(a=>a.status==='Active').length, totalReports: allReports.length, pendingReview: pending, urgentCases: urgent, unreadMessages: unread, suspendedAgents: suspended, topCategory: topCat?.[0] || "General", conversionRate: convRate + "%" })}`;
+
+      // Call Daarayn KHIZR AI Copilot API
+      const res = await fetch('/api/admin/ai/copilot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [{
-            role: 'user',
-            content: `You are an AI analyst for Daarayn, a humanitarian NGO. Analyze this operational data and give 5 actionable bullet points for the admin. Be concise and specific.\n\nData: ${JSON.stringify({ agents: agents.length, activeAgents: agents.filter(a=>a.status==='Active').length, totalReports: allReports.length, pending, urgent, unread, suspended, topCategory: topCat?.[0], conversionRate: convRate+'%' })}`
-          }]
+          message: prompt,
+          adminRole: 'super_admin'
         })
       });
+
       if (res.ok) {
         const data = await res.json();
-        const text = data.message || data.content || data.choices?.[0]?.message?.content;
-        if (text) { setAiInsights(text); setAiLoading(false); return; }
+        const text = data.reply || data.content;
+        if (text && typeof text === 'string' && text.length > 20) {
+          setAiInsights(text);
+          setAiLoading(false);
+          return;
+        }
       }
-    } catch (_) {}
+    } catch (err) {
+      console.warn("AI Copilot request fallback to local analytics model:", err);
+    }
 
     // Fallback: generate insights from live data locally
     const pending2 = allReports.filter(r => ['Pending Review','Needs Info'].includes(r.status)).length;
@@ -541,21 +701,22 @@ function FieldOperationsCenterContent() {
           <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
             <input type="text" placeholder="Search reports, agents, locations..."
-              className="w-full bg-black/40 border border-white/[0.08] rounded-lg pl-8 pr-9 py-1.5 text-xs text-white focus:outline-none focus:border-luxury-gold/50 placeholder:text-gray-500 transition" />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-0.5">
-              <kbd className="bg-white/[0.05] border border-white/[0.1] rounded px-1 py-0.2 text-[9px] text-gray-400">⌘</kbd>
-              <kbd className="bg-white/[0.05] border border-white/[0.1] rounded px-1 py-0.2 text-[9px] text-gray-400">K</kbd>
+              className="w-full bg-black/40 border border-white/[0.08] rounded-lg pl-8 pr-14 py-1.5 text-xs text-white focus:outline-none focus:border-luxury-gold/50 placeholder:text-gray-500 transition" />
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
+              <kbd className="bg-white/[0.08] border border-white/[0.12] rounded px-1.5 py-0.5 text-[9px] font-mono text-gray-400 shadow-sm leading-none">⌘</kbd>
+              <kbd className="bg-white/[0.08] border border-white/[0.12] rounded px-1.5 py-0.5 text-[9px] font-mono text-gray-400 shadow-sm leading-none">K</kbd>
             </div>
           </div>
-          <button onClick={handleAIInsights} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/20 active:scale-95 transition">
+          <button onClick={handleAIInsights} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/20 active:scale-95 transition shrink-0">
             <Sparkles className="w-3.5 h-3.5" /> AI Insights
           </button>
-          <button className="relative p-2 text-gray-400 hover:text-white transition">
+          <button onClick={() => router.push('/admin/notifications')} className="relative p-2 text-gray-400 hover:text-white transition shrink-0" title="View Notifications">
             <Bell className="w-4 h-4" />
             <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 border border-[#020704] rounded-full" />
           </button>
         </div>
       </div>
+
 
       {/* ── STAT CARDS ── */}
       <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex md:grid md:grid-cols-3 lg:grid-cols-6 gap-2 mb-2 flex-shrink-0 min-w-0 overflow-x-auto md:overflow-visible custom-scrollbar pb-1.5 md:pb-0 snap-x`}>
@@ -999,6 +1160,9 @@ function FieldOperationsCenterContent() {
               </button>
             </div>
 
+            {/* ── Scrollable content wrapper ── */}
+            <div className="flex-1 min-h-0 overflow-y-auto custom-scrollbar flex flex-col gap-2 pb-3">
+
             {/* Report Details Card */}
             <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-lg flex flex-col flex-shrink-0">
               <div className="px-3.5 py-3 border-b border-white/[0.06] flex items-center justify-between gap-2 flex-shrink-0">
@@ -1019,12 +1183,14 @@ function FieldOperationsCenterContent() {
                       <select
                         value={activeReport.id}
                         onChange={e => {
-                          const chosen = allReports.find(r => r.id === e.target.value);
-                          if (!chosen) return;
-                          const conv = conversations.find(c => c.reportId === chosen.id);
-                          if (conv) setActiveConvId(conv.id);
+                          const chosenId = e.target.value;
+                          setSelectedReportId(chosenId);
+                          setTakeActionStatus('');
+                          setTakeActionNotes('');
+                          const matchedConv = conversations.find(c => c.reportId === chosenId);
+                          if (matchedConv) setActiveConvId(matchedConv.id);
                         }}
-                        className="bg-[#0d1410] border border-white/[0.1] text-white text-xs rounded-md px-2 py-1 focus:outline-none focus:border-emerald-500/40 max-w-[110px] truncate cursor-pointer"
+                        className="bg-[#0d1410] border border-white/[0.1] text-white text-xs rounded-md px-2 py-1 focus:outline-none focus:border-emerald-500/40 max-w-[130px] truncate cursor-pointer font-medium"
                         style={{ colorScheme: 'dark' }}
                       >
                         {agentReports.map(r => (
@@ -1080,6 +1246,183 @@ function FieldOperationsCenterContent() {
               </div>
             </div>
 
+            {/* ── TAKE ACTION (includes timeline + action form) ── */}
+            <div className="bg-[#0a0d0b] border border-white/[0.07] rounded-lg flex-shrink-0 overflow-hidden">
+              <div className="px-3.5 py-2.5 border-b border-white/[0.06] flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <h3 className="text-xs font-bold text-white">Take Action</h3>
+              </div>
+
+              {/* 6-stage lifecycle timeline — interactive step selection with cascading gold checkmarks */}
+              <div className="px-3.5 pt-3 pb-1">
+                <p className="text-[10px] text-gray-400 font-semibold mb-2 flex items-center justify-between">
+                  <span>LIFECYCLE STAGES</span>
+                  <span className="text-[9px] text-[#b8860b]">Click circle to select stage</span>
+                </p>
+                {(() => {
+                  const TIMELINE_STAGES: { label: string; statusTarget: string; humanDesc: string }[] = [
+                    { label: "Submitted", statusTarget: "Pending Review", humanDesc: "Submitted" },
+                    { label: "Assigned to Reviewer", statusTarget: "Under Review", humanDesc: "Under Review" },
+                    { label: "Under Review", statusTarget: "Under Review", humanDesc: "Under Review" },
+                    { label: "Verification Visit", statusTarget: "Scheduled", humanDesc: "Verification Visit (Scheduled)" },
+                    { label: "Approval", statusTarget: "Approved", humanDesc: "Approved" },
+                    { label: "Published on Website", statusTarget: "Converted", humanDesc: "Converted to Cause" },
+                  ];
+
+                  const STAGE_MAX_INDEX: Record<string, number> = {
+                    "Pending Review": 0,
+                    "Under Review": 2,
+                    "Needs Info": 2,
+                    "Scheduled": 3,
+                    "Approved": 4,
+                    "Converted": 5,
+                  };
+
+                  const savedStages: Record<string, string> = (activeReport as any).timelineStages || {};
+                  const activeMaxIndex = STAGE_MAX_INDEX[activeReport.status] ?? 0;
+                  const selectedMaxIndex = takeActionStatus ? (STAGE_MAX_INDEX[takeActionStatus] ?? -1) : -1;
+                  const effectiveMaxIndex = Math.max(activeMaxIndex, selectedMaxIndex);
+
+                  const timelineSteps = TIMELINE_STAGES.map(({ label, statusTarget, humanDesc }, i) => {
+                    const completedAt = label === "Submitted" ? activeReport.createdAt : savedStages[label];
+                    const isDone = !!completedAt || effectiveMaxIndex >= i;
+                    return { label, statusTarget, humanDesc, done: isDone, date: completedAt };
+                  });
+
+                  return (
+                    <div className="space-y-0 pl-1">
+                      {timelineSteps.map((step, i) => {
+                        const isCurrent = !step.done && effectiveMaxIndex === i - 1;
+                        const isSelected = takeActionStatus === step.statusTarget;
+
+                        return (
+                          <div
+                            key={i}
+                            onClick={() => {
+                              if (step.label === "Published on Website" && activeReport.status === "Approved") {
+                                handleConvert();
+                              } else {
+                                setTakeActionStatus(step.statusTarget);
+                              }
+                            }}
+                            className={`flex gap-3 p-1.5 -ml-1 rounded-lg cursor-pointer transition-all duration-200 group ${
+                              isSelected
+                                ? "bg-[#b8860b]/15 ring-1 ring-[#b8860b]/40"
+                                : "hover:bg-white/[0.04]"
+                            }`}
+                            title={`Click to set status to ${step.humanDesc}`}
+                          >
+                            <div className="flex flex-col items-center">
+                              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-all duration-200 group-hover:scale-110 ${
+                                step.done
+                                  ? "border-[#b8860b] bg-[#b8860b]/20"
+                                  : isSelected
+                                  ? "border-emerald-400 bg-emerald-500/30 ring-4 ring-emerald-500/20"
+                                  : isCurrent
+                                  ? "border-[#b8860b] bg-[#b8860b]/10 animate-pulse"
+                                  : "border-white/20 bg-transparent group-hover:border-white/50"
+                              }`}>
+                                {step.done ? (
+                                  <CheckCircle className="w-3 h-3 text-[#b8860b]" />
+                                ) : isSelected ? (
+                                  <div className="w-2 h-2 rounded-full bg-emerald-400" />
+                                ) : isCurrent ? (
+                                  <div className="w-1.5 h-1.5 rounded-full bg-[#b8860b]" />
+                                ) : null}
+                              </div>
+                              {i < timelineSteps.length - 1 && (
+                                <div className={`w-0.5 flex-1 my-1 min-h-[20px] ${
+                                  step.done || effectiveMaxIndex > i ? "bg-[#b8860b]" : "bg-white/10"
+                                }`} />
+                              )}
+                            </div>
+                            <div className="pb-3 flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-1">
+                                <p className={`text-sm font-medium transition ${
+                                  step.done
+                                    ? "text-white font-semibold"
+                                    : isSelected
+                                    ? "text-emerald-400 font-bold"
+                                    : isCurrent
+                                    ? "text-[#b8860b]"
+                                    : "text-gray-400 group-hover:text-gray-200"
+                                }`}>{step.label}</p>
+                                {isSelected && (
+                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">SELECTED</span>
+                                )}
+                              </div>
+                              {step.done && step.date ? (
+                                <p className="text-[10px] text-gray-500 mt-0.5">
+                                  {new Date(step.date).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
+                                </p>
+                              ) : step.done ? (
+                                <p className="text-[10px] text-[#b8860b]/80 mt-0.5">Completed</p>
+                              ) : isCurrent ? (
+                                <p className="text-[10px] text-[#b8860b]/70 mt-0.5">In Progress</p>
+                              ) : (
+                                <p className="text-[10px] text-gray-600 mt-0.5">Click circle to select</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Action form — only shown for non-Converted/non-Published reports */}
+              {!['Converted'].includes(activeReport.status) && (
+                <div className="px-3.5 pb-3 flex flex-col gap-2.5 border-t border-white/[0.06] pt-3 mt-1">
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 block">Change Status To</label>
+                    <select
+                      value={takeActionStatus}
+                      onChange={e => setTakeActionStatus(e.target.value)}
+                      className="w-full bg-[#0d1410] border border-white/[0.1] text-white text-xs rounded-md px-2.5 py-2 focus:outline-none focus:border-emerald-500/40 cursor-pointer"
+                      style={{ colorScheme: 'dark' }}
+                    >
+                      <option value="" className="bg-[#0a0d0b] text-gray-400">— Select new status —</option>
+                      {activeReport.status !== 'Under Review'   && <option value="Under Review"   className="bg-[#0a0d0b] text-white">Under Review</option>}
+                      {activeReport.status !== 'Needs Info'     && !['Approved','Rejected'].includes(activeReport.status) && <option value="Needs Info"     className="bg-[#0a0d0b] text-white">Needs Info</option>}
+                      {activeReport.status !== 'Scheduled'      && !['Approved','Rejected'].includes(activeReport.status) && <option value="Scheduled"      className="bg-[#0a0d0b] text-white">Scheduled (Verification Visit)</option>}
+                      {activeReport.status !== 'Approved'       && activeReport.status !== 'Rejected' && <option value="Approved"       className="bg-[#0a0d0b] text-white">Approved ✅</option>}
+                      {activeReport.status !== 'Rejected'       && !['Approved','Converted'].includes(activeReport.status) && <option value="Rejected"       className="bg-[#0a0d0b] text-white">Rejected ❌</option>}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[10px] text-gray-500 uppercase tracking-wider font-semibold mb-1 block">Admin Notes <span className="normal-case text-gray-600">(optional)</span></label>
+                    <textarea
+                      value={takeActionNotes}
+                      onChange={e => setTakeActionNotes(e.target.value)}
+                      placeholder="Add a note for the field agent..."
+                      rows={2}
+                      className="w-full bg-[#0d1410] border border-white/[0.1] text-white text-xs rounded-md px-2.5 py-2 focus:outline-none focus:border-emerald-500/40 resize-none placeholder:text-gray-600"
+                    />
+                  </div>
+                  <button
+                    onClick={handleTakeAction}
+                    disabled={!takeActionStatus || takeActionLoading}
+                    className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold transition-all ${
+                      takeActionSuccess
+                        ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400'
+                        : takeActionStatus && !takeActionLoading
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
+                        : 'bg-white/[0.04] border border-white/[0.06] text-gray-500 cursor-not-allowed'
+                    }`}
+                  >
+                    {takeActionLoading ? (
+                      <><span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />Updating...</>
+                    ) : takeActionSuccess ? (
+                      <><CheckCircle className="w-3.5 h-3.5" />Status Updated!</>
+                    ) : (
+                      'Confirm Action'
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Quick Actions */}
             <div className="flex-shrink-0 min-w-0">
               <p className="text-xs font-bold text-white mb-1.5 ml-0.5">Quick Actions</p>
@@ -1122,38 +1465,8 @@ function FieldOperationsCenterContent() {
               </div>
             </div>
 
-            {/* Report Timeline */}
-            <div className="flex flex-col flex-1 min-h-0">
-              <p className="text-xs font-bold text-white mb-2 ml-0.5 flex-shrink-0">Report Timeline</p>
-              <div className="flex-1 overflow-y-auto custom-scrollbar relative pl-3">
-                <div className="absolute left-[16px] top-2 bottom-2 w-px bg-white/[0.08]" />
-                <div className="space-y-3 pb-2">
-                  <div className="relative flex gap-3">
-                    <div className={`w-2 h-2 rounded-full mt-1 relative z-10 ring-4 ring-[#020704] ${activeReport.status === 'Approved' ? 'bg-emerald-500' : activeReport.status === 'Rejected' ? 'bg-red-500' : activeReport.status === 'Converted' ? 'bg-purple-500' : 'bg-[#b8860b]'}`} />
-                    <div>
-                      <p className="text-xs text-white font-bold">{activeReport.status}</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">Current Status</p>
-                    </div>
-                  </div>
-                  {activeReport.assignedAdminId && (
-                    <div className="relative flex gap-3 opacity-80">
-                      <div className="w-2 h-2 rounded-full bg-blue-400 mt-1 relative z-10 ring-4 ring-[#020704]" />
-                      <div>
-                        <p className="text-xs text-white font-bold">Assigned for Review</p>
-                        <p className="text-[11px] text-gray-400 mt-0.5">Assigned to reviewer</p>
-                      </div>
-                    </div>
-                  )}
-                  <div className="relative flex gap-3 opacity-80">
-                    <div className="w-2 h-2 rounded-full bg-gray-400 mt-1 relative z-10 ring-4 ring-[#020704]" />
-                    <div>
-                      <p className="text-xs text-white font-bold">Report Submitted</p>
-                      <p className="text-[11px] text-gray-400 mt-0.5">{new Date(activeReport.createdAt).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} • By {activeReport.agentName}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+
+            </div>{/* end scrollable wrapper */}
           </div>
         ) : activeAgent ? (
           /* Agent profile when no report or Operational Conversation selected */

@@ -30,4 +30,6 @@ scratch/
 
 .vercel
 serviceAccountKey.json
-
+daaraynorg-*.json
+*.pem
+*.key

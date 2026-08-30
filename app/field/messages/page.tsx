@@ -66,11 +66,37 @@ export default function AgentMessagesPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !activeConvId || !agentData) return;
-    
+    if (!newMessage.trim() || !agentData) return;
+
+    let targetConvId = activeConvId;
+
     try {
+      // Auto-create general inquiry conversation if no active conversation exists
+      if (!targetConvId) {
+        targetConvId = `conv_${agentData.id}_general`;
+        const newConv: FieldConversation = {
+          id: targetConvId,
+          agentId: agentData.id,
+          type: "Operations",
+          lastMessage: {
+            text: newMessage,
+            timestamp: new Date().toISOString(),
+            senderRole: "Agent"
+          },
+          unreadCountAdmin: 1,
+          unreadCountAgent: 0,
+          status: "Waiting For Admin",
+          isUrgent: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        };
+
+        await setDoc(doc(db, "field_conversations", targetConvId), newConv);
+        setActiveConvId(targetConvId);
+      }
+
       const msg: Omit<FieldMessage, "id"> = {
-        conversationId: activeConvId,
+        conversationId: targetConvId,
         senderId: agentData.id,
         senderRole: "Agent",
         senderName: agentData.name,
@@ -80,7 +106,7 @@ export default function AgentMessagesPage() {
       
       await addDoc(collection(db, "field_messages"), msg);
       
-      await updateDoc(doc(db, "field_conversations", activeConvId), {
+      await updateDoc(doc(db, "field_conversations", targetConvId), {
         lastMessage: {
           text: newMessage,
           timestamp: new Date().toISOString(),
@@ -91,14 +117,14 @@ export default function AgentMessagesPage() {
         status: "Waiting For Admin"
       });
 
-      await notifyConversation.newMessage(activeConvId, agentData.id, agentData.name, newMessage);
-
-      
+      await notifyConversation.newMessage(targetConvId, agentData.id, agentData.name, newMessage);
       setNewMessage("");
     } catch (err) {
-      console.error(err);
+      console.error("Failed to send message:", err);
+      alert("Message sending failed. Please check connection and try again.");
     }
   };
+
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0 || !activeConvId || !agentData) return;

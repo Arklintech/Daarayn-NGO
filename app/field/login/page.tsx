@@ -72,21 +72,7 @@ export default function AgentLogin() {
       try {
         await signInWithEmailAndPassword(auth, email, password);
       } catch (firebaseErr: any) {
-        const c = firebaseErr?.code || "";
-        // If Firebase Auth is disabled/failing, or if credential doesn't match Firebase, fallback to checking Firestore rawPassword
-        if (c.includes("not-found") || c.includes("invalid-credential") || c.includes("wrong-password") || c.includes("configuration-not-found")) {
-           const snap = await getDocs(query(collection(db, "field_agents"), where("email", "==", email.toLowerCase())));
-           if (!snap.empty) {
-             const agentDoc = snap.docs[0].data();
-             if (agentDoc.rawPassword === password) {
-                // Successful fallback login using Firestore
-                localStorage.setItem("demoAgent", JSON.stringify(agentDoc));
-                window.location.href = "/field/dashboard";
-                return;
-             }
-           }
-        }
-        throw firebaseErr; // Throw to the outer catch if fallback fails
+        throw firebaseErr;
       }
       
     } catch (err: any) {
