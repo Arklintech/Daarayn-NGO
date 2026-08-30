@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, getDoc, query, where } from "firebase/firestore";
 import { EnterpriseProviderManager } from "@/lib/ai/providers/EnterpriseProviderManager";
 
 export async function POST(request: Request) {
@@ -15,21 +15,51 @@ export async function POST(request: Request) {
     }
 
     // 1. Fetch Cause Information
+    let cause: any = null;
     const causeRef = doc(db, "causes", causeId);
     const causeSnap = await getDoc(causeRef);
-    if (!causeSnap.exists()) {
+    if (causeSnap.exists()) {
+      cause = causeSnap.data();
+    } else {
+      // Fallback 1: Query by slug
+      const q = query(collection(db, "causes"), where("slug", "==", causeId));
+      const qSnap = await getDocs(q);
+      if (!qSnap.empty) {
+        cause = qSnap.docs[0].data();
+      } else {
+        // Fallback 2: Search all causes case-insensitively
+        const allCausesSnap = await getDocs(collection(db, "causes"));
+        allCausesSnap.forEach(d => {
+          const data = d.data();
+          if (
+            d.id === causeId ||
+            d.id.toLowerCase() === causeId.toLowerCase() ||
+            (data.slug && data.slug.toLowerCase() === causeId.toLowerCase()) ||
+            (data.name && data.name.toLowerCase() === causeId.toLowerCase()) ||
+            (data.title && data.title.toLowerCase() === causeId.toLowerCase())
+          ) {
+            cause = data;
+          }
+        });
+      }
+    }
+
+    if (!cause) {
       return NextResponse.json({
         success: false,
         error: `Khizr could not generate this communication because the selected Cause with ID "${causeId}" does not exist.`
       }, { status: 200 });
     }
-    const cause = causeSnap.data();
+
+    const causeName = cause.name || cause.title || causeId || "Selected Cause";
+    const statusLower = (cause.status || "active").toString().trim().toLowerCase();
+    const isActive = ["active", "urgent", "in progress", "open", "completed", "active causes"].includes(statusLower) || !cause.status;
 
     // Verify cause is active (unless it's a completion report)
-    if (cause.status !== "active" && type !== "completion_report") {
+    if (!isActive && type !== "completion_report") {
       return NextResponse.json({
         success: false,
-        error: `Khizr could not generate this communication because the selected Cause "${cause.name}" is currently inactive.`
+        error: `Khizr could not generate this communication because the selected Cause "${causeName}" is currently inactive.`
       }, { status: 200 });
     }
 
@@ -61,7 +91,7 @@ export async function POST(request: Request) {
     const mediaList = media || [];
 
     // 4. Data sufficiency check
-    if (!cause || !cause.name) {
+    if (!cause || (!cause.name && !cause.title && !cause.id)) {
       return NextResponse.json({
         success: false,
         error: "Khizr could not generate this communication because there is insufficient verified information available for the selected Cause. Please approve field updates or upload verified media before generating."
@@ -76,12 +106,12 @@ export async function POST(request: Request) {
     const dataContext = {
       cause: {
         id: causeId,
-        name: cause.name,
-        description: cause.description,
-        goalAmount: cause.goalAmount,
-        raisedAmount: cause.raisedAmount,
-        status: cause.status,
-        category: cause.category,
+        name: causeName,
+        description: cause.description || `Support for ${causeName}`,
+        goalAmount: cause.goalAmount || cause.targetAmount || 0,
+        raisedAmount: cause.raisedAmount || 0,
+        status: cause.status || "active",
+        category: cause.category || "General",
       },
       latestReport: latestReport ? {
         id: latestReport.id,
@@ -126,7 +156,7 @@ You must return a structured JSON response with the following keys:
 
 Response must be valid JSON matching the exact schema above. Do not output markdown code blocks wrapper.`;
 
-    let userPrompt = `Generate a donor communication of type "${type}" for the cause "${cause.name}".
+    let userPrompt = `Generate a donor communication of type "${type}" for the cause "${causeName}".
     
 Verified Database Data:
 ${JSON.stringify(dataContext, null, 2)}

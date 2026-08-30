@@ -9,6 +9,8 @@ import path from "path";
 
 import { VerifiedAnalyticsEngine } from "@/lib/ai/engines/VerifiedAnalyticsEngine";
 import { notifyDonation, notifyDonor } from "@/lib/notifications";
+import { checkRateLimit } from "@/lib/security/rate-limiter";
+import { logAuditEvent } from "@/lib/security/audit-logger";
 
 let useLocalFallback = false;
 const dbPath = path.join(process.cwd(), "data", "ledger.json");
@@ -34,6 +36,12 @@ function getLocalLedger() {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limit check (e.g. max 15 donation attempts per IP per minute)
+  const rateLimitResult = checkRateLimit(request, { limit: 15, windowMs: 60 * 1000 });
+  if (!rateLimitResult.allowed && rateLimitResult.response) {
+    return rateLimitResult.response;
+  }
+
   try {
     const formData = await request.formData();
     const donorName = formData.get("donorName")?.toString() || "";
@@ -261,6 +269,15 @@ export async function POST(request: NextRequest) {
         console.error("Failed to send email:", emailErr);
       }
     }
+
+    // Log audit event for backend security tracking
+    logAuditEvent({
+      userId: "public_donor",
+      userName: finalDonor,
+      action: "CREATE_DONATION_SUBMISSION",
+      targetResource: `publicLedger/${trackingId}`,
+      metadata: { amount: numAmount, cause, upiRef }
+    }).catch(err => console.warn("Audit log failed:", err));
 
     return NextResponse.json({ success: true, trackingId: trackingId });
   } catch (error: any) {

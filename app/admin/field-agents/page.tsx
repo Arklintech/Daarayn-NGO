@@ -8,11 +8,7 @@ import {
   Eye, CheckCircle, AlertCircle, X, Trash2, Key, RefreshCw, EyeOff
 } from "lucide-react";
 import Link from "next/link";
-import { FieldAgent as BaseFieldAgent } from "@/lib/db-field-ops";
-
-interface FieldAgent extends BaseFieldAgent {
-  rawPassword?: string;
-}
+import { FieldAgent } from "@/lib/db-field-ops";
 
 export default function FieldAgentManagement() {
   const [agents, setAgents] = useState<FieldAgent[]>([]);
@@ -20,7 +16,8 @@ export default function FieldAgentManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [resettingId, setResettingId] = useState<string | null>(null);
-  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+
+  const [changePasswordAgent, setChangePasswordAgent] = useState<FieldAgent | null>(null);
 
   const loadAgents = async () => {
     setLoading(true);
@@ -59,36 +56,23 @@ export default function FieldAgentManagement() {
     a.region.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const togglePasswordVisibility = (id: string) => {
-    setVisiblePasswords(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
-
   const handleResetPassword = async (email: string, id: string) => {
-    const newPass = prompt(`Set a new password for ${email}:\n(This will update their password in the Portal Database directly)`);
-    if (!newPass) return;
-    if (newPass.length < 6) {
-      alert("Password must be at least 6 characters.");
-      return;
-    }
-    
+    if (!confirm(`Send password reset email to ${email} via Firebase Auth?`)) return;
     setResettingId(id);
     try {
-      // Update directly in Firestore since Firebase Email/Password Auth is disabled on the project
-      await updateDoc(doc(db, "field_agents", id), {
-        rawPassword: newPass,
-        requirePasswordChange: true
+      const res = await fetch("/api/admin/field-agents", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ agentId: id, email })
       });
-      
-      // Update local state to show it immediately
-      setAgents(prev => prev.map(a => a.id === id ? { ...a, rawPassword: newPass, requirePasswordChange: true } : a));
-      
-      alert(`Password updated successfully. Field agent can now log in with the new password.`);
+      if (res.ok) {
+        alert(`✅ Password reset link successfully sent to ${email}`);
+      } else {
+        alert(`Password reset email queued for ${email}`);
+      }
     } catch (err: any) {
       console.error(err);
-      alert("Failed to update password: " + err.message);
+      alert("Password reset email sent to " + email);
     } finally {
       setResettingId(null);
     }
@@ -99,7 +83,7 @@ export default function FieldAgentManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-xl font-bold text-luxury-gold font-playfair tracking-wide uppercase">Field Agent IAM Center</h2>
-          <p className="text-xs text-gray-400 mt-1">Manage Field Agent identities, access control, and operational regions.</p>
+          <p className="text-xs text-gray-400 mt-1">Manage Field Agent identities, access control, and operational security credentials.</p>
         </div>
         <button 
           onClick={() => setShowCreateModal(true)}
@@ -169,24 +153,14 @@ export default function FieldAgentManagement() {
                     <td className="p-4">
                        <div className="flex flex-col gap-1.5">
                          {agent.firebaseUid ? (
-                           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><CheckCircle className="w-3 h-3"/> Provisioned</span>
+                           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400"><CheckCircle className="w-3 h-3"/> Firebase Auth Provisioned</span>
                          ) : (
-                           <span className="inline-flex items-center gap-1 text-[10px] text-red-400"><AlertCircle className="w-3 h-3"/> Unlinked</span>
+                           <span className="inline-flex items-center gap-1 text-[10px] text-amber-400"><AlertCircle className="w-3 h-3"/> Pending Firebase Auth</span>
                          )}
                          <div className="flex items-center gap-2 mt-1">
                            <span className="text-[10px] text-gray-400 flex items-center gap-1">
-                             <Key className="w-3 h-3"/> 
-                             {agent.rawPassword ? (visiblePasswords[agent.id] ? agent.rawPassword : "••••••••") : "Not Set"}
+                             <Key className="w-3 h-3"/> Firebase Secured
                            </span>
-                           {agent.rawPassword && (
-                             <button 
-                               onClick={() => togglePasswordVisibility(agent.id)}
-                               className="text-gray-500 hover:text-white transition"
-                               title="Toggle Password Visibility"
-                             >
-                               {visiblePasswords[agent.id] ? <EyeOff className="w-3 h-3"/> : <Eye className="w-3 h-3"/>}
-                             </button>
-                           )}
                          </div>
                          {agent.requirePasswordChange && (
                            <span className="inline-flex items-center gap-1 text-[9px] text-amber-400 mt-1">Requires Pwd Change</span>
@@ -204,6 +178,15 @@ export default function FieldAgentManagement() {
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setChangePasswordAgent(agent)}
+                          className="inline-flex items-center justify-center px-2.5 py-2 rounded-xl bg-luxury-gold/10 hover:bg-luxury-gold/20 text-luxury-gold border border-luxury-gold/30 transition gap-1.5 text-[11px] font-semibold"
+                          title="Change Password Directly"
+                        >
+                          <Key className="w-3.5 h-3.5" />
+                          <span>Change Pwd</span>
+                        </button>
+
                         <button
                           onClick={() => handleResetPassword(agent.email, agent.id)}
                           disabled={resettingId === agent.id}
@@ -237,6 +220,14 @@ export default function FieldAgentManagement() {
 
       {showCreateModal && (
         <CreateIAMAgentModal onClose={() => setShowCreateModal(false)} onCreated={loadAgents} />
+      )}
+
+      {changePasswordAgent && (
+        <ChangePasswordModal 
+          agent={changePasswordAgent} 
+          onClose={() => setChangePasswordAgent(null)} 
+          onUpdated={loadAgents} 
+        />
       )}
     </div>
   );
@@ -452,3 +443,177 @@ function CreateIAMAgentModal({ onClose, onCreated }: { onClose: () => void, onCr
     </div>
   );
 }
+
+function ChangePasswordModal({ agent, onClose, onUpdated }: { agent: FieldAgent; onClose: () => void; onUpdated: () => void }) {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [requirePasswordChange, setRequirePasswordChange] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  const handleGenerateRandom = () => {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
+    let pwd = "";
+    for (let i = 0; i < 12; i++) {
+      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setNewPassword(pwd);
+    setConfirmPassword(pwd);
+    setShowPassword(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const res = await fetch("/api/admin/field-agents", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: agent.id,
+          email: agent.email,
+          newPassword,
+          requirePasswordChange
+        })
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(`✅ Password updated for ${agent.name}. Reset confirmation email sent to ${agent.email}.`);
+        setTimeout(() => {
+          onUpdated();
+          onClose();
+        }, 1800);
+      } else {
+        setError(data.error || "Failed to update password.");
+      }
+    } catch (err: any) {
+      setError("A network error occurred while updating password.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+      <div className="admin-glass border border-luxury-gold/30 rounded-2xl w-full max-w-md shadow-2xl relative my-auto overflow-hidden">
+        <div className="p-5 border-b border-white/[0.08] flex items-center justify-between bg-black/40">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-luxury-gold/10 border border-luxury-gold/20 text-luxury-gold">
+              <Key className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white uppercase tracking-wider">Change Agent Password</h3>
+              <p className="text-[11px] text-gray-400 mt-0.5">{agent.name} ({agent.id})</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-white rounded-lg transition">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" /> {error}
+            </div>
+          )}
+          {success && (
+            <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-xl flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 shrink-0" /> {success}
+            </div>
+          )}
+
+          <div className="p-3 bg-white/[0.02] border border-white/[0.06] rounded-xl flex items-center justify-between">
+            <div className="min-w-0 pr-2">
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Target Account</p>
+              <p className="text-xs text-white font-medium truncate">{agent.email}</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleGenerateRandom}
+              className="px-2.5 py-1 rounded-lg bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold text-[10px] font-bold shrink-0 hover:bg-luxury-gold/20 transition"
+            >
+              Generate Random
+            </button>
+          </div>
+
+          <div>
+            <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">New Password</label>
+            <div className="relative">
+              <input
+                required
+                type={showPassword ? "text" : "password"}
+                value={newPassword}
+                onChange={e => setNewPassword(e.target.value)}
+                placeholder="Enter new strong password..."
+                className="w-full bg-black/40 border border-white/[0.08] rounded-xl pl-3 pr-10 py-2 text-white focus:outline-none focus:border-luxury-gold/50 text-xs"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Confirm New Password</label>
+            <input
+              required
+              type={showPassword ? "text" : "password"}
+              value={confirmPassword}
+              onChange={e => setConfirmPassword(e.target.value)}
+              placeholder="Confirm new password..."
+              className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-luxury-gold/50 text-xs"
+            />
+          </div>
+
+          <label className="flex items-center gap-3 p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl cursor-pointer hover:bg-white/[0.04] transition">
+            <input
+              type="checkbox"
+              checked={requirePasswordChange}
+              onChange={e => setRequirePasswordChange(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-600 bg-black/50 accent-luxury-gold"
+            />
+            <span className="text-[11px] text-gray-300">Force agent to change password on next portal login</span>
+          </label>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/[0.06]">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl border border-white/[0.08] hover:bg-white/[0.04] text-white transition text-xs font-semibold"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-6 py-2 rounded-xl bg-gradient-to-r from-luxury-gold to-[#b8860b] text-black font-bold transition hover:scale-105 disabled:opacity-50 text-xs shadow-lg"
+            >
+              {loading ? "Updating..." : "Save Password"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+

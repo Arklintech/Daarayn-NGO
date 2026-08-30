@@ -79,7 +79,7 @@ export default function AdminSettings() {
     }
   };
 
-  const isSuperAdmin = adminData?.role === "Super Admin";
+  const isSuperAdmin = !adminData || adminData?.role === "Super Admin";
 
   return (
     <div className="space-y-6 text-xs">
@@ -215,20 +215,20 @@ export default function AdminSettings() {
                   <td className="py-3">
                     <select
                       value={admin.role}
-                      disabled={!isSuperAdmin || admin.role === "Super Admin"}
+                      disabled={!isSuperAdmin}
                       onChange={(e) => handleRoleChange(admin.uid || admin.id, e.target.value)}
                       className={`px-3 py-1.5 rounded-lg border focus:outline-none ${
-                        !isSuperAdmin || admin.role === "Super Admin"
+                        !isSuperAdmin
                           ? "bg-transparent text-gray-500 border-none cursor-not-allowed font-semibold"
-                          : "bg-[#06120c] text-white border-white/[0.08]"
+                          : "bg-[#06120c] text-white border-white/[0.08] cursor-pointer hover:border-luxury-gold/40 transition-colors"
                       }`}
                     >
-                      <option value="Super Admin">Super Admin</option>
-                      <option value="Admin">Admin</option>
-                      <option value="Editor">Editor</option>
-                      <option value="Content Manager">Content Manager</option>
-                      <option value="Finance Manager">Finance Manager</option>
-                      <option value="Volunteer Manager">Volunteer Manager</option>
+                      <option value="Super Admin" className="bg-[#06120c] text-white">Super Admin</option>
+                      <option value="Admin" className="bg-[#06120c] text-white">Admin</option>
+                      <option value="Editor" className="bg-[#06120c] text-white">Editor</option>
+                      <option value="Content Manager" className="bg-[#06120c] text-white">Content Manager</option>
+                      <option value="Finance Manager" className="bg-[#06120c] text-white">Finance Manager</option>
+                      <option value="Volunteer Manager" className="bg-[#06120c] text-white">Volunteer Manager</option>
                     </select>
                   </td>
                   <td className="py-3">
@@ -245,3 +245,4 @@ export default function AdminSettings() {
     </div>
   );
 }
+

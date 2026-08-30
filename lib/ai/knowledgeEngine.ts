@@ -5,9 +5,10 @@
  * Queries Firestore databases and filters records dynamically to build facts.
  */
 
-import { db } from "../firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
-import { collectDonorData, collectDonationData, collectProgramData, collectAllocationData } from "./verifiedDataCollector";
+import { donorRepository } from "../repositories/donorRepository";
+import { donationRepository } from "../repositories/donationRepository";
+import { causeRepository } from "../repositories/causeRepository";
+import { collectDonorData, collectDonationData, collectProgramData } from "./verifiedDataCollector";
 
 export interface KnowledgeMatch {
   source: string;
@@ -15,7 +16,7 @@ export interface KnowledgeMatch {
 }
 
 /**
- * Searches the Firestore collections for records matching key terms in user query
+ * Searches the domain repositories for records matching key terms in user query
  */
 export async function retrieveVerifiedKnowledge(
   userQuery: string,
@@ -27,16 +28,15 @@ export async function retrieveVerifiedKnowledge(
   try {
     // 1. Search Donors (only if permitted)
     if (allowedCollections.includes("donors")) {
-      const snap = await getDocs(collection(db, "donors"));
-      snap.forEach((doc) => {
-        const data = doc.data();
-        const name = String(data.name || "").toLowerCase();
-        const email = String(data.email || "").toLowerCase();
+      const donors = await donorRepository.getAll();
+      donors.forEach((donor) => {
+        const name = String(donor.name || "").toLowerCase();
+        const email = String(donor.email || "").toLowerCase();
         
-        if (name.includes(normalizedQuery) || email.includes(normalizedQuery) || doc.id.toLowerCase().includes(normalizedQuery)) {
-          const clean = collectDonorData({ id: doc.id, ...data });
+        if (name.includes(normalizedQuery) || email.includes(normalizedQuery) || donor.id.toLowerCase().includes(normalizedQuery)) {
+          const clean = collectDonorData(donor);
           matches.push({
-            source: `Firestore: Donors CRM (${clean.id})`,
+            source: `Repository: Donors CRM (${clean.id})`,
             content: `Donor Name: ${clean.name}, Email: ${clean.email}, Lifetime Contributions: INR ${clean.totalAmountDonated.toLocaleString()}`,
           });
         }
@@ -45,58 +45,50 @@ export async function retrieveVerifiedKnowledge(
 
     // 2. Search Donations
     if (allowedCollections.includes("donations")) {
-      const snap = await getDocs(collection(db, "donations"));
-      snap.forEach((doc) => {
-        const data = doc.data();
-        const donorName = String(data.donorName || "").toLowerCase();
-        const id = doc.id.toLowerCase();
+      const donations = await donationRepository.getAll();
+      donations.forEach((donation) => {
+        const donorName = String(donation.donorName || "").toLowerCase();
+        const id = donation.id.toLowerCase();
         
         if (donorName.includes(normalizedQuery) || id.includes(normalizedQuery)) {
-          const clean = collectDonationData({ id: doc.id, ...data });
+          const clean = collectDonationData(donation);
           matches.push({
-            source: `Firestore: Donations Ledger (${clean.id})`,
-            content: `Donation: ${clean.currency} ${clean.amount.toLocaleString()} received on ${clean.date} via ${clean.paymentMethod}. Status: ${data.status || 'completed'}.`,
+            source: `Repository: Donations Ledger (${clean.id})`,
+            content: `Donation: ${clean.currency} ${clean.amount.toLocaleString()} received on ${clean.date} via ${clean.paymentMethod}. Status: ${donation.status || 'completed'}.`,
           });
         }
       });
     }
 
-    // 3. Search Programs / Cases
-    if (allowedCollections.includes("programs")) {
-      const snap = await getDocs(collection(db, "programs"));
-      snap.forEach((doc) => {
-        const data = doc.data();
-        const title = String(data.title || "").toLowerCase();
-        const desc = String(data.description || "").toLowerCase();
+    // 3. Search Causes / Programs
+    if (allowedCollections.includes("programs") || allowedCollections.includes("causes")) {
+      const causes = await causeRepository.getAll();
+      causes.forEach((cause) => {
+        const title = String(cause.title || "").toLowerCase();
+        const desc = String(cause.description || "").toLowerCase();
         
-        if (title.includes(normalizedQuery) || desc.includes(normalizedQuery) || doc.id.toLowerCase().includes(normalizedQuery)) {
-          const clean = collectProgramData({ id: doc.id, ...data });
+        if (title.includes(normalizedQuery) || desc.includes(normalizedQuery) || cause.id.toLowerCase().includes(normalizedQuery)) {
           matches.push({
-            source: `Firestore: Programs Hub (${clean.id})`,
-            content: `Program: ${clean.title}, Progress: ${clean.progress}%, Goal: INR ${clean.amountRequired.toLocaleString()}, Raised: INR ${clean.amountCollected.toLocaleString()}. Status: ${clean.status}.`,
+            source: `Repository: Causes Hub (${cause.id})`,
+            content: `Cause: ${cause.title}, Target: INR ${cause.targetAmount.toLocaleString()}, Raised: INR ${cause.raisedAmount.toLocaleString()}. Status: ${cause.status}.`,
           });
         }
       });
     }
 
-    // 4. Default FAQs (approved documents fallback)
-    const faqSnap = await getDocs(collection(db, "settings"));
-    faqSnap.forEach((doc) => {
-      if (doc.id === "homepageCMS") {
-        const data = doc.data();
-        if (Array.isArray(data.faqs)) {
-          data.faqs.forEach((faq: any) => {
-            const q = String(faq.question || "").toLowerCase();
-            const a = String(faq.answer || "").toLowerCase();
-            if (q.includes(normalizedQuery) || a.includes(normalizedQuery)) {
-              matches.push({
-                source: "Approved FAQ",
-                content: `Q: ${faq.question}
-A: ${faq.answer}`,
-              });
-            }
-          });
-        }
+    // 4. Default FAQs (approved knowledge base)
+    const defaultFaqs = [
+      { question: "What is Daarayn Foundation?", answer: "Daarayn Foundation is a global transparent NGO delivering emergency relief, water wells, and orphan care with 100% direct audit verification." },
+      { question: "How does Daarayn verify donations?", answer: "Every donation is assigned a permanent identifier (DON-YYYY-XXXXXX) and tracked in our public ledger with direct proof materials." }
+    ];
+    defaultFaqs.forEach((faq) => {
+      const q = faq.question.toLowerCase();
+      const a = faq.answer.toLowerCase();
+      if (q.includes(normalizedQuery) || a.includes(normalizedQuery)) {
+        matches.push({
+          source: "Approved FAQ",
+          content: `Q: ${faq.question}\nA: ${faq.answer}`,
+        });
       }
     });
 

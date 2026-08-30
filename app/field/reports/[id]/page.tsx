@@ -68,12 +68,23 @@ export default function ReportDetailPage() {
     "Published on Website",
   ];
 
+  const STAGE_MAX_INDEX: Record<string, number> = {
+    "Pending Review": 0,
+    "Under Review": 2,
+    "Needs Info": 2,
+    "Scheduled": 3,
+    "Approved": 4,
+    "Converted": 5,
+  };
+
   const savedStages: Record<string, string> = report.timelineStages || {};
+  const currentMaxIndex = STAGE_MAX_INDEX[report.status] ?? 0;
 
   const timelineSteps = TIMELINE_STAGE_KEYS.map((label, i) => {
     const isSubmitted = label === "Submitted";
     const completedAt = isSubmitted ? report.createdAt : savedStages[label];
-    return { label, done: !!completedAt, date: completedAt };
+    const isDone = !!completedAt || currentMaxIndex >= i;
+    return { label, done: isDone, date: completedAt };
   });
 
   return (

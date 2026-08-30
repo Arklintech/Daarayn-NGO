@@ -51,7 +51,7 @@ export default function Footer() {
                 style={{ width: '80px', height: '80px', objectFit: 'contain', mixBlendMode: 'screen', display: 'block', flexShrink: 0 }}
               />
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--font-cinzel), "Cinzel", Georgia, serif', fontSize: '28px', fontWeight: 600, letterSpacing: '4px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }}>
+                <span style={{ fontFamily: 'var(--font-cinzel), "Cinzel", Georgia, serif', fontSize: '28px', fontWeight: 600, letterSpacing: '12px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }}>
                   DAARAYN
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
@@ -127,7 +127,7 @@ export default function Footer() {
               margin: '0 0 1.1rem 0',
             }}>Contact</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-              <a href="mailto:info@daaraynaid.org" className="ft-link" style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+              <a href="mailto:info@daarayn.org" className="ft-link" style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
                 <span style={{
                   width: '28px', height: '28px', borderRadius: '6px',
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
@@ -137,9 +137,9 @@ export default function Footer() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </span>
-                info@daaraynaid.org
+                info@daarayn.org
               </a>
-              <a href="tel:+91XXXXXXXXXX" className="ft-link" style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+              <a href="tel:+919876543210" className="ft-link" style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
                 <span style={{
                   width: '28px', height: '28px', borderRadius: '6px',
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
@@ -149,7 +149,7 @@ export default function Footer() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                   </svg>
                 </span>
-                +91-XXXX-XXX-XXX
+                +91-98765-43210
               </a>
             </div>
           </div>

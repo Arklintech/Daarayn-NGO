@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, updateDoc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { Bell, CheckCircle, AlertCircle, Info, Award, Check } from "lucide-react";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 import { FieldNotification } from "@/lib/db-field-ops";
@@ -28,25 +28,23 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (!agentData?.id) return;
-    const fetchNotifications = async () => {
-      try {
-        const q = query(
-          collection(db, "field_notifications"),
-          where("agentId", "==", agentData.id)
-        );
-        const snap = await getDocs(q);
-        const list: FieldNotification[] = [];
-        snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldNotification));
-        // Sort in JS to avoid composite index requirement
-        list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-        setNotifications(list);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchNotifications();
+    setLoading(true);
+    const q = query(
+      collection(db, "field_notifications"),
+      where("agentId", "==", agentData.id)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const list: FieldNotification[] = [];
+      snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldNotification));
+      // Sort in JS to avoid composite index requirement
+      list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+      setNotifications(list);
+      setLoading(false);
+    }, (err) => {
+      console.error(err);
+      setLoading(false);
+    });
+    return () => unsub();
   }, [agentData?.id]);
 
   const markAsRead = async (id: string) => {

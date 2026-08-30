@@ -204,7 +204,8 @@ export default function AdminLedger() {
 
       {/* Ledger Table */}
       <div className="rounded-3xl admin-glass border border-white/[0.06] overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/[0.06] text-gray-500 font-semibold uppercase tracking-wider text-[10px]">

@@ -5,8 +5,9 @@
  * Non-destructively evaluates operational impact size and potential risks of a plan.
  */
 
-import { db } from "../../firebase";
-import { collection, getDocs } from "firebase/firestore";
+import { donationRepository } from "../../repositories/donationRepository";
+import { donorRepository } from "../../repositories/donorRepository";
+import { communicationRepository } from "../../repositories/communicationRepository";
 
 export interface ImpactSummary {
   affectedDonors: number;
@@ -61,14 +62,13 @@ export class ImpactAnalysisEngine {
         summary.ledgerEntriesCreated = 0;
         summary.estimatedDurationSeconds = 9;
 
-        // Try reading donations to calculate donor count safely
+        // Reading donations from Repository to calculate donor count safely
         try {
-          const donationSnap = await getDocs(collection(db, "donations"));
+          const donations = await donationRepository.getAll();
           const uniqueDonorIds = new Set<string>();
 
-          donationSnap.forEach((doc) => {
-            const data = doc.data();
-            if (data.donationType === parameters.projectTitle || data.cause === parameters.projectTitle) {
+          donations.forEach((data) => {
+            if (data.donationType === parameters.projectTitle || (data as any).causeTitle === parameters.projectTitle) {
               if (data.donorId) uniqueDonorIds.add(data.donorId);
             }
           });
@@ -94,8 +94,8 @@ export class ImpactAnalysisEngine {
         summary.estimatedDurationSeconds = 8;
 
         try {
-          const donorSnap = await getDocs(collection(db, "donors"));
-          const eligibleCount = donorSnap.docs.filter((d) => (d.data().totalAmountDonated || 0) > 0).length;
+          const donors = await donorRepository.getAll();
+          const eligibleCount = donors.filter((d) => (d.totalAmountDonated || 0) > 0).length;
 
           summary.affectedDonors = eligibleCount || 5;
           summary.emailsTriggered = eligibleCount || 5;
@@ -109,8 +109,8 @@ export class ImpactAnalysisEngine {
 
       else if (actionType === "dispatchCommunications") {
         try {
-          const draftSnap = await getDocs(collection(db, "ai_drafts"));
-          const pendingCount = draftSnap.docs.filter((d) => d.data().status === "pending").length;
+          const comms = await communicationRepository.getAll();
+          const pendingCount = comms.filter((c) => c.status === "Queued" || c.status === "Sending" || (c as any).status === "pending").length;
 
           summary.affectedDonors = pendingCount || 3;
           summary.emailsTriggered = pendingCount || 3;

@@ -202,7 +202,7 @@ This document is digitally validated and verified on the public blockchain/ledge
               </div>
               <div className="flex justify-between items-center text-gray-400">
                 <span>Email:</span>
-                <span className="text-white font-medium truncate max-w-[130px]">{donor.email}</span>
+                <span className="text-white font-medium truncate flex-1 text-right ml-2">{donor.email}</span>
               </div>
             </div>
 

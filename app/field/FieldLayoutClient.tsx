@@ -237,13 +237,64 @@ export default function FieldLayoutClient({ children }: { children: React.ReactN
   const pathname = usePathname();
   const isLoginPage = pathname === "/field/login" || pathname === "/field";
 
-  // Register SW only
+  // Inject PWA Manifest & Icons for Field Agent App
+  useEffect(() => {
+    let link = document.querySelector("link[rel~='manifest']") as HTMLLinkElement;
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'manifest';
+      document.head.appendChild(link);
+    }
+    link.href = '/api/manifest/field';
+
+    let appleIcon = document.querySelector("link[rel='apple-touch-icon']") as HTMLLinkElement;
+    if (!appleIcon) {
+      appleIcon = document.createElement('link');
+      appleIcon.rel = 'apple-touch-icon';
+      document.head.appendChild(appleIcon);
+    }
+    appleIcon.href = '/icons/field-apple-touch-icon.png?v=3';
+
+    let icon = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+    if (!icon) {
+      icon = document.createElement('link');
+      icon.rel = 'icon';
+      document.head.appendChild(icon);
+    }
+    icon.href = '/icons/field-icon-192.png?v=3';
+
+    let shortcutIcon = document.querySelector("link[rel='shortcut icon']") as HTMLLinkElement;
+    if (!shortcutIcon) {
+      shortcutIcon = document.createElement('link');
+      shortcutIcon.rel = 'shortcut icon';
+      document.head.appendChild(shortcutIcon);
+    }
+    shortcutIcon.href = '/icons/field-icon-192.png?v=3';
+  }, []);
+
+  // Register SW + detect live updates for mobile PWA
+  const [swUpdateReady, setSwUpdateReady] = useState(false);
   useEffect(() => {
     // Register single root service worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(err => {
-        console.error('Service Worker registration failed: ', err);
-      });
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then((reg) => {
+          setInterval(() => reg.update(), 60_000);
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
+            if (!newWorker) return;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                setSwUpdateReady(true);
+                setTimeout(() => {
+                  newWorker.postMessage({ type: 'SKIP_WAITING' });
+                  window.location.reload();
+                }, 3000);
+              }
+            });
+          });
+        })
+        .catch(err => console.error('SW registration failed:', err));
     }
   }, []);
 
@@ -258,6 +309,13 @@ export default function FieldLayoutClient({ children }: { children: React.ReactN
   return (
     <FieldAgentAuthProvider>
       <AgentNavigation>{children}</AgentNavigation>
+      {/* PWA Update Toast — field agents get instant update notification */}
+      {swUpdateReady && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-[#0d1410] border border-[#b8860b]/60 text-white px-5 py-3 rounded-xl shadow-2xl backdrop-blur-md">
+          <span className="w-2 h-2 rounded-full bg-[#b8860b] animate-pulse flex-shrink-0" />
+          <p className="text-xs font-semibold text-[#b8860b]">✨ Update Available — refreshing in 3s...</p>
+        </div>
+      )}
     </FieldAgentAuthProvider>
   );
 }

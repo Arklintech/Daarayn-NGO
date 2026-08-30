@@ -34,35 +34,33 @@ export function clearTestData(): void {
   _testDataRegistry = null;
 }
 
-/** Load donations from both `donations` and `publicLedger` collections. */
+import { donationRepository } from "../../repositories/donationRepository";
+
+/** Load donations from unified Repository. */
 async function fetchUnifiedDonations(max = 200): Promise<RetrievedFact[]> {
   const facts: RetrievedFact[] = [];
   const seen = new Set<string>();
 
-  for (const collName of ["donations", "publicLedger"]) {
-    try {
-      const snap = await getDocs(query(collection(db, collName), limit(max)));
-      snap.forEach((doc) => {
-        const data = doc.data();
-        const key = `${data.id || doc.id}-${data.amount}-${data.donorName || data.donor}`;
-        if (seen.has(key)) return;
-        seen.add(key);
-        facts.push({
-          source: "donations",
-          id: data.id || doc.id,
-          data: {
-            ...data,
-            id: data.id || doc.id,
-            donorName: data.donorName || data.donor || data.name,
-            amount: Number(data.amount) || 0,
-            date: normalizeDateField(data.date || data.createdAt),
-            cause: data.cause || data.programName || data.project,
-          },
-        });
+  try {
+    const list = await donationRepository.getAll();
+    list.slice(0, max).forEach((d) => {
+      const key = `${d.id}-${d.amount}-${d.donorName}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      facts.push({
+        source: "donations",
+        id: d.id,
+        data: {
+          ...d,
+          donorName: d.donorName,
+          amount: Number(d.amount) || 0,
+          date: d.date,
+          cause: (d as any).causeTitle || d.donationType || "General",
+        },
       });
-    } catch (e) {
-      console.warn(`[Retriever] Could not load ${collName}:`, e);
-    }
+    });
+  } catch (err: any) {
+    console.warn("[MKIE Retriever] Failed to fetch donations from Repository:", err.message);
   }
   return facts;
 }

@@ -24,17 +24,28 @@ const cinzel = Cinzel({
 });
 
 export const metadata: Metadata = {
-  title: "Daarayn Aid – Command Center",
-  description: "Enterprise management panel for Daarayn Foundation.",
+  title: "Daarayn Aid – Operational OS",
+  description: "Enterprise transparency ledger, campaign hub, and operational portal.",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    shortcut: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  maximumScale: 5,
+  userScalable: true,
   viewportFit: "cover",
   themeColor: "#030a06",
 };
+
 
 export default function RootLayout({
   children,

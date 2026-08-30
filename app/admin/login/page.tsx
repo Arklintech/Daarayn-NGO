@@ -81,9 +81,9 @@ export default function AdminLogin() {
       >
         <div className="text-center mb-8">
           <img 
-            className="w-16 h-16 mx-auto mb-4 object-contain brightness-110 drop-shadow-[0_0_8px_rgba(212,175,55,0.3)]" 
-            src="/brand logo1.png" 
-            alt="Daarayn Aid Logo" 
+            className="w-16 h-16 mx-auto mb-4 object-contain rounded-2xl shadow-[0_0_15px_rgba(212,175,55,0.4)] border border-luxury-gold/30" 
+            src="/admin-download-logo.png" 
+            alt="Daarayn Admin Logo" 
           />
           <h1 className="text-2xl font-semibold tracking-[0.3em] text-white font-playfair uppercase">
             DAARAYN

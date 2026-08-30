@@ -192,9 +192,14 @@ export default function NotificationCenterPage() {
               <CheckCircle2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               Mark all as read
             </button>
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] text-xs font-medium transition-colors whitespace-nowrap">
+            <button 
+              onClick={() => setFilter(filter === 'unread' ? 'all' : 'unread')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors whitespace-nowrap ${
+                filter === 'unread' ? 'bg-luxury-gold/20 border-luxury-gold/50 text-luxury-gold' : 'bg-white/[0.02] border-white/[0.06] hover:bg-white/[0.04] text-gray-300'
+              }`}
+            >
               <FilterIcon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-              Filter
+              {filter === 'unread' ? 'Filter: Unread' : 'Filter'}
             </button>
           </div>
         </div>

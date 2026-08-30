@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, limit, query, orderBy, onSnapshot } from "firebase/firestore";
+import Link from "next/link";
 import { 
   TrendingUp, 
   Users, 
@@ -246,9 +247,12 @@ export default function AdminDashboard() {
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Recent Contributions</h3>
               <p className="text-[10px] text-gray-400 mt-0.5">Verification queue from public website</p>
             </div>
-            <button className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider flex items-center hover:underline">
+            <Link 
+              href="/admin/donations" 
+              className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider flex items-center hover:underline transition-colors"
+            >
               View All <ChevronRight className="w-3.5 h-3.5" />
-            </button>
+            </Link>
           </div>
 
           <div className="overflow-x-auto">

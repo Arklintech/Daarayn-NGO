@@ -74,8 +74,9 @@ export async function POST(req: Request) {
           const recipients = Array.from(uniqueDonorsMap.values());
           
           if (recipients.length > 0) {
-            const heading = `Milestone Reached: ${reachedMilestone}% for ${cause.name}`;
-            const notes = `Alhamdulillah, thanks to your generous support, we have reached **${reachedMilestone}%** of our goal for ${cause.name}. Your contribution is actively making an impact on the ground.`;
+            const causeName = cause.name || cause.title || causeId || "Daarayn Initiative";
+            const heading = `Milestone Reached: ${reachedMilestone}% for ${causeName}`;
+            const notes = `Alhamdulillah, thanks to your generous support, we have reached **${reachedMilestone}%** of our goal for ${causeName}. Your contribution is actively making an impact on the ground.`;
             
             const logData = {
               id: `COMM-AUTO-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -98,7 +99,7 @@ export async function POST(req: Request) {
               headline: heading,
               greeting: "Assalamu Alaikum,",
               bodyParagraphs: [
-                `This communication concerns your support for **${cause.name}**.`,
+                `This communication concerns your support for **${causeName}**.`,
                 notes.replace(/\*\*(.*?)\*\*/g, "<strong style='color:#F2EEE3;'>$1</strong>"),
                 `<br><strong>Current Campaign Status:</strong> We have reached **${reachedMilestone}%** of our goal (₹${raised.toLocaleString()} / ₹${safeGoalAmount.toLocaleString()}).`
               ],
@@ -127,7 +128,7 @@ export async function POST(req: Request) {
             // Save log
             await addDoc(collection(db, "communications"), logData);
             
-            processedMilestones.push({ causeId, causeName: cause.name, milestone: reachedMilestone, recipients: recipients.length });
+            processedMilestones.push({ causeId, causeName, milestone: reachedMilestone, recipients: recipients.length });
           }
         }
       }

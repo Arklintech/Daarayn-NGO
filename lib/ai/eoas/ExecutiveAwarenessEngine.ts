@@ -5,8 +5,7 @@
  * This Engine forms the base of the EOAS (Phase 6), providing raw intelligence to the Health and Strategy engines.
  */
 
-import { db } from "../../firebase";
-import { collection, getDocs, query, where, orderBy, limit } from "firebase/firestore";
+import { causeRepository } from "../../repositories/causeRepository";
 
 export interface DonorSignals {
   totalDonors: number;
@@ -68,16 +67,15 @@ export class ExecutiveAwarenessEngine {
     let below50 = 0;
     if (process.env.NODE_ENV !== "test") {
       try {
-        const q = query(collection(db, "projects"), where("status", "==", "active"));
-        const snap = await getDocs(q);
-        activeProjects = snap.size;
-        snap.forEach(doc => {
-          const data = doc.data();
-          const percent = data.raised / data.goal;
+        const causes = await causeRepository.getAll();
+        const active = causes.filter((c) => c.status === "Active");
+        activeProjects = active.length;
+        active.forEach((cause) => {
+          const percent = cause.targetAmount > 0 ? cause.raisedAmount / cause.targetAmount : 0;
           if (percent < 0.5) below50++;
         });
       } catch (e) {
-        console.warn(`[EAE] Failed to fetch live project signals:`, e);
+        console.warn(`[EAE] Failed to fetch live project signals from Repository:`, e);
         activeProjects = 12;
         below50 = 3;
       }

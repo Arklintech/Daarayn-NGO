@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { FileText, Clock, CheckCircle, MapPin, ChevronRight, AlertCircle, Filter } from "lucide-react";
 import Link from "next/link";
 import { FieldReport } from "@/lib/db-field-ops";
@@ -25,25 +25,23 @@ export default function MyReportsPage() {
 
   useEffect(() => {
     if (!agentData?.id) return;
-    const fetchReports = async () => {
-      try {
-        const q = query(
-          collection(db, "field_reports"),
-          where("agentId", "==", agentData.id)
-        );
-        const snap = await getDocs(q);
-        const list: FieldReport[] = [];
-        snap.forEach(d => list.push(d.data() as FieldReport));
-        // Sort in JS to avoid composite index requirement
-        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setReports(list);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchReports();
+    setLoading(true);
+    const q = query(
+      collection(db, "field_reports"),
+      where("agentId", "==", agentData.id)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const list: FieldReport[] = [];
+      snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldReport));
+      // Sort in JS to avoid composite index requirement
+      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setReports(list);
+      setLoading(false);
+    }, (err) => {
+      console.error(err);
+      setLoading(false);
+    });
+    return () => unsub();
   }, [agentData?.id]);
 
   const filterTabs = ["All", "Pending Review", "Approved", "Needs Info", "Converted"];

@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { db, storage } from "@/lib/firebase";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, getDocs, doc, onSnapshot } from "firebase/firestore";
+import { collection, getDocs, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { DEFAULT_CAUSES } from "@/lib/causes";
 
 export default function CommunicationsHub() {
   const router = useRouter();
@@ -36,17 +37,30 @@ export default function CommunicationsHub() {
     async function fetchData() {
       try {
         const causesSnap = await getDocs(collection(db, "causes"));
-        const causesData = causesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        let causesData = causesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+        if (causesData.length === 0) {
+          causesData = DEFAULT_CAUSES;
+          for (const c of DEFAULT_CAUSES) {
+            setDoc(doc(db, "causes", c.id), c).catch(err => console.warn("Auto-seed cause failed:", err));
+          }
+        }
+
         setCauses(causesData);
-        if (causesData.length > 0) setSelectedCauseIds([causesData[0].id]);
+        if (causesData.length > 0) {
+          setSelectedCauseIds(causesData.map(c => c.id));
+        }
       } catch (err) {
         console.error("Failed to load causes", err);
+        setCauses(DEFAULT_CAUSES);
+        setSelectedCauseIds(DEFAULT_CAUSES.map(c => c.id));
       } finally {
         setLoading(false);
       }
     }
     fetchData();
   }, []);
+
 
   useEffect(() => {
     if (selectedCauseIds.length === 0) {
@@ -564,44 +578,44 @@ export default function CommunicationsHub() {
                 </div>
 
                 {/* Preview Draft */}
-                <div className="hidden lg:block rounded-2xl p-5 relative" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                <div className="w-full rounded-2xl p-3 sm:p-5 relative mt-6 lg:mt-0" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.07)' }}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-base font-semibold text-white">Preview Draft</h3>
+                    <h3 className="text-sm sm:text-base font-semibold text-white">Preview Draft</h3>
                     <span className="flex items-center gap-1.5 text-[10px] font-semibold px-2.5 py-1 rounded-full text-white/60" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}>
                       <CheckCircle className="w-3 h-3" /> Live Render
                     </span>
                   </div>
-                  <div className="rounded-xl overflow-hidden shadow-2xl" style={{ backgroundColor: '#080e1f' }}>
-                    <div className="px-8 pt-10 pb-8 text-center">
-                      <img src="/email logo/daarayn-emblem.png.png" alt="Daarayn" className="w-14 h-14 object-contain mx-auto mb-5" style={{ mixBlendMode: 'screen' }} />
-                      <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '26px', letterSpacing: '5px', color: '#ffffff', fontWeight: 700, marginBottom: '10px' }}>DAARAYN</div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
-                        <div style={{ flex: 1, maxWidth: '60px', height: '1px', background: 'rgba(255,255,255,0.5)' }} />
-                        <span style={{ fontFamily: 'Georgia, serif', fontSize: '9px', letterSpacing: '3px', color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase' }}>F O U N D A T I O N</span>
-                        <div style={{ flex: 1, maxWidth: '60px', height: '1px', background: 'rgba(255,255,255,0.5)' }} />
+                  <div className="rounded-xl overflow-hidden shadow-2xl w-full max-w-full" style={{ backgroundColor: '#080e1f' }}>
+                    <div className="px-4 sm:px-8 pt-6 sm:pt-10 pb-6 sm:pb-8 text-center">
+                      <img src="/email logo/daarayn-emblem.png.png" alt="Daarayn" className="w-12 h-12 sm:w-14 sm:h-14 object-contain mx-auto mb-4 sm:mb-5" style={{ mixBlendMode: 'screen' }} />
+                      <div style={{ fontFamily: "'Cinzel', Georgia, serif", fontSize: '20px', letterSpacing: '4px', color: '#ffffff', fontWeight: 700, marginBottom: '8px' }} className="sm:text-2xl sm:tracking-[5px]">DAARAYN</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                        <div style={{ flex: 1, maxWidth: '40px', height: '1px', background: 'rgba(255,255,255,0.5)' }} />
+                        <span style={{ fontFamily: 'Georgia, serif', fontSize: '8px', letterSpacing: '2px', color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase' }} className="sm:text-[9px] sm:tracking-[3px]">F O U N D A T I O N</span>
+                        <div style={{ flex: 1, maxWidth: '40px', height: '1px', background: 'rgba(255,255,255,0.5)' }} />
                       </div>
                     </div>
-                    <div className="px-8 pb-8 space-y-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-                      <div className="flex justify-center pt-6">
-                        <span className="px-4 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white/70" style={{ border: '1px solid rgba(255,255,255,0.25)' }}>
+                    <div className="px-4 sm:px-8 pb-6 sm:pb-8 space-y-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                      <div className="flex justify-center pt-4 sm:pt-6">
+                        <span className="px-3 sm:px-4 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white/70 text-center" style={{ border: '1px solid rgba(255,255,255,0.25)' }}>
                           {typeLabels[type] || type}
                         </span>
                       </div>
-                      <p className="text-white text-sm font-semibold">Assalamu Alaikum, Donor Name,</p>
-                      {notes && <p className="text-white/50 text-xs leading-relaxed">{notes.substring(0, 120)}{notes.length > 120 ? '…' : ''}</p>}
-                      <div className="rounded-lg p-4 space-y-2 mt-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                        <p className="text-[10px] font-bold uppercase tracking-widest text-white/60 mb-3">Contribution Summary</p>
-                        <div className="flex justify-between text-xs py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                          <span className="text-white/40 min-w-max mr-2">Target Causes</span>
-                          <span className="text-white font-semibold line-clamp-1 text-right" title={causeNamesText}>{causeNamesText}</span>
+                      <p className="text-white text-xs sm:text-sm font-semibold">Assalamu Alaikum, Donor Name,</p>
+                      {notes && <p className="text-white/60 text-xs leading-relaxed break-words">{notes.substring(0, 150)}{notes.length > 150 ? '…' : ''}</p>}
+                      <div className="rounded-lg p-3 sm:p-4 space-y-2 mt-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white/60 mb-2 sm:mb-3">Contribution Summary</p>
+                        <div className="flex justify-between items-center text-xs py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <span className="text-white/40 shrink-0 mr-2">Target Causes</span>
+                          <span className="text-white font-semibold truncate text-right max-w-[60%]" title={causeNamesText}>{causeNamesText}</span>
                         </div>
-                        <div className="flex justify-between text-xs py-1.5">
+                        <div className="flex justify-between items-center text-xs py-1.5">
                           <span className="text-white/40">Status</span>
                           <span className="text-white font-semibold">Active Deployment</span>
                         </div>
                       </div>
                       <div className="text-center pt-2">
-                        <span className="inline-block px-6 py-2 text-xs font-bold uppercase tracking-widest rounded text-black" style={{ background: '#EFE5C9' }}>
+                        <span className="inline-block px-5 sm:px-6 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest rounded text-black" style={{ background: '#EFE5C9' }}>
                           Track Your Impact
                         </span>
                       </div>
@@ -610,6 +624,7 @@ export default function CommunicationsHub() {
                 </div>
               </div>
             </div>
+
           )}
         </>
       )}
