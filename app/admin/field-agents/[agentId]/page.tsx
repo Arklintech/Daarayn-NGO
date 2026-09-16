@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { 
   ArrowLeft, MapPin, Phone, Mail, ShieldCheck, Clock, 
   CheckCircle, XCircle, FileText, Activity, Calendar
@@ -24,23 +22,21 @@ export default function FieldAgentCRM({ params }: { params: Promise<{ agentId: s
       setLoading(true);
       try {
         // Fetch Agent
-        const agentDoc = await getDoc(doc(db, "field_agents", agentId));
-        if (agentDoc.exists()) setAgent(agentDoc.data() as FieldAgent);
-        
+        const aRes = await fetch("/api/admin/field-agents");
+        if (aRes.ok) {
+          const aData = await aRes.json();
+          const list = Array.isArray(aData) ? aData : aData.agents || [];
+          const found = list.find((a: any) => a.id === agentId || a.firebaseUid === agentId);
+          if (found) setAgent(found);
+        }
+
         // Fetch Reports
-        const reportsQuery = query(collection(db, "field_reports"), where("agentId", "==", agentId));
-        const reportsSnap = await getDocs(reportsQuery);
-        const rList: FieldReport[] = [];
-        reportsSnap.forEach(d => rList.push(d.data() as FieldReport));
-        setReports(rList);
-
-        // Fetch Activities
-        const actQuery = query(collection(db, "field_activities"), where("agentId", "==", agentId), orderBy("timestamp", "desc"));
-        const actSnap = await getDocs(actQuery);
-        const aList: FieldActivity[] = [];
-        actSnap.forEach(d => aList.push(d.data() as FieldActivity));
-        setActivities(aList);
-
+        const rRes = await fetch("/api/field/reports");
+        if (rRes.ok) {
+          const rData = await rRes.json();
+          const rList = Array.isArray(rData) ? rData : rData.reports || [];
+          setReports(rList.filter((r: any) => r.agentId === agentId));
+        }
       } catch (err) {
         console.error("Error fetching CRM data:", err);
       } finally {

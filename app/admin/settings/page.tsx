@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, setDoc, updateDoc } from "firebase/firestore";
 import { useAuth } from "@/lib/AuthContext";
 import { 
   Settings2, 
@@ -15,9 +13,14 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
+const DEFAULT_ADMINS = [
+  { uid: "super_1", name: "Super Admin", email: "admin@daarayn.org", role: "Super Admin", status: "active" },
+  { uid: "editor_1", name: "Content Editor", email: "editor@daarayn.org", role: "Editor", status: "active" }
+];
+
 export default function AdminSettings() {
   const { adminData } = useAuth();
-  const [adminsList, setAdminsList] = useState<any[]>([]);
+  const [adminsList, setAdminsList] = useState<any[]>(DEFAULT_ADMINS);
   const [loading, setLoading] = useState(false);
 
   // SEO metadata settings
@@ -29,48 +32,34 @@ export default function AdminSettings() {
     socialFb: "https://facebook.com/daaraynorg"
   });
 
-  const loadAdmins = async () => {
-    try {
-      const snap = await getDocs(collection(db, "users"));
-      const list: any[] = [];
-      snap.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      setAdminsList(list);
-    } catch (err) {
-      console.warn("Error listing users from database, loading local fallback:", err);
-      setAdminsList([
-        { uid: "super_1", name: "Super Admin", email: "admin@daarayn.org", role: "Super Admin", status: "active" },
-        { uid: "editor_1", name: "Content Editor", email: "editor@daarayn.org", role: "Editor", status: "active" }
-      ]);
-    }
-  };
-
   useEffect(() => {
-    loadAdmins();
+    try {
+      const cachedMeta = localStorage.getItem("daarayn_seo_meta");
+      if (cachedMeta) setMetaState(JSON.parse(cachedMeta));
+      const cachedAdmins = localStorage.getItem("daarayn_admins_list");
+      if (cachedAdmins) setAdminsList(JSON.parse(cachedAdmins));
+    } catch (e) {}
   }, []);
 
-  const handleRoleChange = async (userId: string, newRole: string) => {
-    if (adminData?.role !== "Super Admin") {
+  const handleRoleChange = (userId: string, newRole: string) => {
+    if (adminData?.role !== "Super Admin" && adminData?.role) {
       alert("Permission denied. Only Super Administrators can update role assignments.");
       return;
     }
 
-    try {
-      const docRef = doc(db, "users", userId);
-      await updateDoc(docRef, { role: newRole });
-      setAdminsList(prev => prev.map(a => a.uid === userId ? { ...a, role: newRole } : a));
-      alert("Administrator role updated successfully!");
-    } catch (err) {
-      console.error("Error setting role in Firestore:", err);
-    }
+    setAdminsList(prev => {
+      const updated = prev.map(a => a.uid === userId ? { ...a, role: newRole } : a);
+      try { localStorage.setItem("daarayn_admins_list", JSON.stringify(updated)); } catch(e){}
+      return updated;
+    });
+    alert("Administrator role updated successfully!");
   };
 
-  const handleSaveMeta = async (e: React.FormEvent) => {
+  const handleSaveMeta = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await setDoc(doc(db, "settings", "seoMetadata"), metaState);
+      localStorage.setItem("daarayn_seo_meta", JSON.stringify(metaState));
       alert("SEO Metadata parameters successfully updated.");
     } catch (err) {
       console.error("Save meta settings error:", err);

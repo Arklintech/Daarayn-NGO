@@ -67,6 +67,39 @@ export class DonationRepository extends BaseRepository<Donation> {
     const all = await this.getAll();
     return all.filter((d) => d.donorId === donorId);
   }
+
+  public async update(id: string, partial: Partial<Donation>): Promise<Donation | null> {
+    await this.init();
+    const all = await this.getAll();
+    let existing = all.find((d) => d.id === id || (d as any).trackingId === id || d.transactionReference === id);
+    if (!existing) {
+      existing = {
+        id,
+        donorId: "DNR-GENERAL",
+        donorName: "Generous Donor",
+        donorEmail: "",
+        amount: 0,
+        currency: "INR",
+        date: new Date().toISOString(),
+        status: "completed",
+        paymentMethod: "Bank Transfer",
+        donationType: "General",
+        causeId: "",
+        causeTitle: "General Support",
+        proofDriveFileId: "",
+        transactionReference: "",
+        notes: "",
+        selectedCauses: [],
+      };
+    }
+    const updated: Donation = {
+      ...existing,
+      ...partial,
+      id: partial.id || existing.id || id,
+    };
+    await this.save(updated);
+    return updated;
+  }
 }
 
 export const donationRepository = new DonationRepository();

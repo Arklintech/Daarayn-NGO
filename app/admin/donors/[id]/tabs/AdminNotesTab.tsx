@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { Plus, Trash2, Edit3, Save, X, Lock } from 'lucide-react';
 
 interface Note {
@@ -24,32 +22,21 @@ export default function AdminNotesTab({ donorId }: any) {
   const storageKey = `admin_notes_${donorId}`;
 
   useEffect(() => {
-    async function load() {
+    function load() {
       try {
-        const noteDoc = await getDoc(doc(db, 'admin_notes', donorId));
-        if (noteDoc.exists()) {
-          setNotes(noteDoc.data().notes || []);
-        } else {
-          // Fall back to localStorage for offline
-          const cached = localStorage.getItem(storageKey);
-          if (cached) setNotes(JSON.parse(cached));
-        }
-      } catch {
         const cached = localStorage.getItem(storageKey);
         if (cached) setNotes(JSON.parse(cached));
-      } finally {
-        setLoading(false);
-      }
+      } catch {}
+      setLoading(false);
     }
     load();
-  }, [donorId]);
+  }, [donorId, storageKey]);
 
   const persist = async (updated: Note[]) => {
     setNotes(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
     try {
-      await setDoc(doc(db, 'admin_notes', donorId), { notes: updated, donorId });
-    } catch { /* offline graceful */ }
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+    } catch {}
   };
 
   const addNote = async () => {

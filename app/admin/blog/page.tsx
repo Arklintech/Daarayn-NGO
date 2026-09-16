@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { 
   PenTool, 
   Plus, 
@@ -17,9 +15,14 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+const INITIAL_BLOGS = [
+  { id: "blog_1", title: "Transparency in Charity: The Public Ledger Era", content: "Transparency is the bedrock of trust. In this article, we explain how decentralized validation ledger systems enable real-time tracking of public donations.", author: "Daarayn Editorial Team", tags: "Trust, Transparency", status: "Published", createdAt: "2026-07-04T10:00:00Z" },
+  { id: "blog_2", title: "Empowering Rural Communities through Clean Water Wells", content: "Clean water changes everything. Over the last quarter, we successfully built 9 clean water tube wells across Bihar villages. This is the story of our volunteers' journey.", author: "Volunteer Team", tags: "Water Projects, Rural Aid", status: "Draft", createdAt: "2026-07-02T15:00:00Z" }
+];
+
 export default function AdminBlog() {
-  const [blogs, setBlogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [blogs, setBlogs] = useState<any[]>(INITIAL_BLOGS);
+  const [loading, setLoading] = useState(false);
 
   // Editor states
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -36,24 +39,14 @@ export default function AdminBlog() {
     imageUrl: ""
   });
 
-  const loadBlogs = async () => {
-    setLoading(true);
+  const loadBlogs = () => {
     try {
-      const snap = await getDocs(collection(db, "blogs"));
-      const list: any[] = [];
-      snap.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      setBlogs(list);
-    } catch (err) {
-      console.warn("Blogs load failed, loading offline mocks:", err);
-      const mocks = [
-        { id: "blog_1", title: "Transparency in Charity: The Public Ledger Era", content: "Transparency is the bedrock of trust. In this article, we explain how decentralized validation ledger systems enable real-time tracking of public donations.", author: "Daarayn Editorial Team", tags: "Trust, Transparency", status: "Published", createdAt: "2026-07-04T10:00:00Z" },
-        { id: "blog_2", title: "Empowering Rural Communities through Clean Water Wells", content: "Clean water changes everything. Over the last quarter, we successfully built 9 clean water tube wells across Bihar villages. This is the story of our volunteers' journey.", author: "Volunteer Team", tags: "Water Projects, Rural Aid", status: "Draft", createdAt: "2026-07-02T15:00:00Z" }
-      ];
-      setBlogs(mocks);
-    } finally {
-      setLoading(false);
+      const cached = localStorage.getItem("daarayn_blogs");
+      if (cached) {
+        setBlogs(JSON.parse(cached));
+      }
+    } catch (e) {
+      // use initial
     }
   };
 
@@ -80,37 +73,36 @@ export default function AdminBlog() {
     setIsEditorOpen(true);
   };
 
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    const generatedId = currentId || `blog_${Date.now()}`;
+    const newEntry = {
+      id: generatedId,
+      ...formState,
+      createdAt: formState.createdAt || new Date().toISOString()
+    };
+    
+    setBlogs(prev => {
+      let updated;
+      if (currentId) {
+        updated = prev.map(b => b.id === currentId ? newEntry : b);
+      } else {
+        updated = [newEntry, ...prev];
+      }
+      try { localStorage.setItem("daarayn_blogs", JSON.stringify(updated)); } catch(e){}
+      return updated;
+    });
 
-    try {
-      const generatedId = currentId || `blog_${Date.now()}`;
-      await setDoc(doc(db, "blogs", generatedId), {
-        id: generatedId,
-        ...formState,
-        createdAt: formState.createdAt || new Date().toISOString()
-      });
-      setIsEditorOpen(false);
-      loadBlogs();
-    } catch (err) {
-      console.error("Save blog error:", err);
-    } finally {
-      setLoading(false);
-    }
+    setIsEditorOpen(false);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!window.confirm("Delete this blog article?")) return;
-    setLoading(true);
-    try {
-      await deleteDoc(doc(db, "blogs", id));
-      loadBlogs();
-    } catch (err) {
-      console.error("Delete error:", err);
-    } finally {
-      setLoading(false);
-    }
+    setBlogs(prev => {
+      const updated = prev.filter(b => b.id !== id);
+      try { localStorage.setItem("daarayn_blogs", JSON.stringify(updated)); } catch(e){}
+      return updated;
+    });
   };
 
   return (

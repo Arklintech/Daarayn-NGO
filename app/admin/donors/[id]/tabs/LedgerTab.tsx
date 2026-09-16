@@ -1,8 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 import { ExternalLink, Download, BookOpen } from 'lucide-react';
 
 export default function LedgerTab({ donor, donations, donorId }: any) {
@@ -12,16 +10,20 @@ export default function LedgerTab({ donor, donations, donorId }: any) {
   useEffect(() => {
     async function load() {
       try {
-        const snap = await getDocs(query(collection(db, 'ledger_entries'), where('donorId', '==', donorId)));
-        const list: any[] = [];
-        snap.forEach(d => list.push({ id: d.id, ...d.data() }));
-        setEntries(list);
-      } catch {
-        // Fallback: derive from donations
-        setEntries(donations.filter((d: any) => d.status === 'allocated' || d.allocationStatus));
-      } finally {
-        setLoading(false);
-      }
+        const res = await fetch('/api/ledger');
+        if (res.ok) {
+          const data = await res.json();
+          const all = Array.isArray(data) ? data : data.ledger || [];
+          const matched = all.filter((e: any) => e.donorId === donorId);
+          if (matched.length > 0) {
+            setEntries(matched);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {}
+      setEntries(donations ? donations.filter((d: any) => d.status === 'allocated' || d.allocationStatus || d.status === 'completed') : []);
+      setLoading(false);
     }
     load();
   }, [donorId, donations]);

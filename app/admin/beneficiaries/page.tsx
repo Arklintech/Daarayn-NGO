@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { 
   Plus, 
   Edit2, 
@@ -39,21 +37,22 @@ export default function AdminBeneficiaries() {
   const loadBeneficiaries = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, "beneficiaries"));
-      const list: any[] = [];
-      snap.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      setBeneficiaries(list);
-      setFilteredList(list);
+      const stored = typeof window !== 'undefined' ? localStorage.getItem('daarayn_beneficiaries') : null;
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        setBeneficiaries(parsed);
+        setFilteredList(parsed);
+      } else {
+        const defaultList = [
+          { id: "ben_001", name: "Zainab Bi", familyDetails: "Widowed mother with 4 kids, primary support needed for education and house rent", location: "Kalyan, Maharashtra", contact: "+919988776655", caseType: "Family Relief", status: "Verified", assistanceHistory: "₹30,000 rent grant disbursed on June 2026." },
+          { id: "ben_002", name: "Sheikh Arham", familyDetails: "Student memorizing Qur'an, belongs to underprivileged family of 6", location: "Mumbra, Thane", contact: "+918877665544", caseType: "Qur’an Endowment", status: "Verified", assistanceHistory: "₹2,000 monthly study scholarship ongoing." }
+        ];
+        setBeneficiaries(defaultList);
+        setFilteredList(defaultList);
+        if (typeof window !== 'undefined') localStorage.setItem('daarayn_beneficiaries', JSON.stringify(defaultList));
+      }
     } catch (err) {
-      console.warn("Beneficiary load error, loading mocks:", err);
-      const mocks = [
-        { id: "ben_001", name: "Zainab Bi", familyDetails: "Widowed mother with 4 kids, primary support needed for education and house rent", location: "Kalyan, Maharashtra", contact: "+919988776655", caseType: "Family Relief", status: "Verified", assistanceHistory: "₹30,000 rent grant disbursed on June 2026." },
-        { id: "ben_002", name: "Sheikh Arham", familyDetails: "Student memorizing Qur'an, belongs to underprivileged family of 6", location: "Mumbra, Thane", contact: "+918877665544", caseType: "Qur’an Endowment", status: "Verified", assistanceHistory: "₹2,000 monthly study scholarship ongoing." }
-      ];
-      setBeneficiaries(mocks);
-      setFilteredList(mocks);
+      console.warn("Beneficiary load error:", err);
     } finally {
       setLoading(false);
     }
@@ -102,12 +101,14 @@ export default function AdminBeneficiaries() {
 
     try {
       const generatedId = currentId || `ben_${Date.now()}`;
-      await setDoc(doc(db, "beneficiaries", generatedId), {
-        id: generatedId,
-        ...formState
-      });
+      const newBeneficiary = { id: generatedId, ...formState };
+      const updatedList = currentId 
+        ? beneficiaries.map(b => b.id === currentId ? newBeneficiary : b)
+        : [newBeneficiary, ...beneficiaries];
+      setBeneficiaries(updatedList);
+      setFilteredList(updatedList);
+      if (typeof window !== 'undefined') localStorage.setItem('daarayn_beneficiaries', JSON.stringify(updatedList));
       setIsEditorOpen(false);
-      loadBeneficiaries();
     } catch (err) {
       console.error("Save beneficiary error:", err);
     } finally {
@@ -119,10 +120,12 @@ export default function AdminBeneficiaries() {
     if (!window.confirm("Are you sure you want to delete this beneficiary record?")) return;
     setLoading(true);
     try {
-      await deleteDoc(doc(db, "beneficiaries", id));
-      loadBeneficiaries();
+      const updatedList = beneficiaries.filter(b => b.id !== id);
+      setBeneficiaries(updatedList);
+      setFilteredList(updatedList);
+      if (typeof window !== 'undefined') localStorage.setItem('daarayn_beneficiaries', JSON.stringify(updatedList));
     } catch (err) {
-      console.error("Delete beneficiary error:", err);
+      console.error("Delete error:", err);
     } finally {
       setLoading(false);
     }

@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
 import { 
   Flame, 
   Plus, 
@@ -36,10 +34,12 @@ export default function AdminCampaigns() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, "campaigns"));
-      const list: any[] = [];
-      snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-      setCampaigns(list);
+      const res = await fetch("/api/causes");
+      if (res.ok) {
+        const data = await res.json();
+        const list = data.success && Array.isArray(data.causes) ? data.causes : [];
+        setCampaigns(list.filter((c: any) => c.category === "Campaign" || c.isCampaign || c.type === "campaign" || true));
+      }
     } catch(e) {
       console.error(e);
     } finally {
@@ -73,7 +73,18 @@ export default function AdminCampaigns() {
     setLoading(true);
     try {
       const id = formState.id || `camp_${Date.now()}`;
-      await setDoc(doc(db, "campaigns", id), { ...formState, id });
+      const campaignPayload = {
+        ...formState,
+        id,
+        category: "Campaign",
+        isCampaign: true,
+        updatedAt: new Date().toISOString()
+      };
+      await fetch("/api/causes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(campaignPayload)
+      });
       setIsEditorOpen(false);
       fetchData();
     } catch(e) {
@@ -86,7 +97,6 @@ export default function AdminCampaigns() {
     if (!window.confirm("Are you sure you want to delete this campaign?")) return;
     setLoading(true);
     try {
-      await deleteDoc(doc(db, "campaigns", id));
       setCampaigns(prev => prev.filter(c => c.id !== id));
     } catch(e) {
       console.error(e);

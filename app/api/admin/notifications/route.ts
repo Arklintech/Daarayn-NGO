@@ -7,33 +7,37 @@ import { doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
 export async function GET(req: NextRequest) {
   try {
     const all = await notificationRepository.getAll();
-    const mapped = all.map((n) => ({
-      id: n.id,
-      notificationId: n.id,
-      category: (n.type.toLowerCase().includes("report")
-        ? "field_reports"
-        : n.type.toLowerCase().includes("donat")
-        ? "donations"
-        : n.type.toLowerCase().includes("donor")
-        ? "donors"
-        : n.type.toLowerCase().includes("comm")
-        ? "communications"
-        : "executive_reports") as any,
-      title: n.title,
-      description: n.message,
-      entityType: n.type,
-      entityId: n.relatedEntityId || "",
-      createdAt: n.createdAt,
-      createdBy: "System",
-      isRead: n.read,
-      actionUrl: n.type.toLowerCase().includes("report")
-        ? "/admin/field-ops"
-        : n.type.toLowerCase().includes("donat")
-        ? "/admin/donations"
-        : "/admin",
-      priority: (n.title.toLowerCase().includes("urgent") || n.type.toLowerCase().includes("urgent") ? "high" : "normal") as any,
-      isStarred: false,
-    }));
+    const mapped = all.map((n) => {
+      const typeStr = (n.type || "").toLowerCase();
+      const titleStr = (n.title || "").toLowerCase();
+      return {
+        id: n.id,
+        notificationId: n.id,
+        category: (typeStr.includes("report")
+          ? "field_reports"
+          : typeStr.includes("donat")
+          ? "donations"
+          : typeStr.includes("donor")
+          ? "donors"
+          : typeStr.includes("comm")
+          ? "communications"
+          : "executive_reports") as any,
+        title: n.title || "Notification",
+        description: n.message || "",
+        entityType: n.type || "SYSTEM",
+        entityId: n.relatedEntityId || "",
+        createdAt: n.createdAt || new Date().toISOString(),
+        createdBy: "System",
+        isRead: Boolean(n.read),
+        actionUrl: typeStr.includes("report")
+          ? "/admin/field-ops"
+          : typeStr.includes("donat")
+          ? "/admin/donations"
+          : "/admin",
+        priority: (titleStr.includes("urgent") || typeStr.includes("urgent") ? "high" : "normal") as any,
+        isStarred: false,
+      };
+    });
     const sorted = mapped.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return NextResponse.json({ success: true, notifications: sorted });
   } catch (error: any) {

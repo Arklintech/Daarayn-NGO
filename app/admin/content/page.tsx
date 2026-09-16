@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore";
 import { 
   FileText, 
   Save, 
@@ -47,25 +45,24 @@ export default function AdminContent() {
   const [newFaq, setNewFaq] = useState({ question: "", answer: "" });
 
   useEffect(() => {
-    async function loadCMSContent() {
+    function loadCMSContent() {
       try {
-        const docRef = doc(db, "settings", "homepageCMS");
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          setHomepageState(docSnap.data() as any);
+        const cached = localStorage.getItem("daarayn_cms_homepage");
+        if (cached) {
+          setHomepageState(JSON.parse(cached));
         }
       } catch (err) {
-        console.warn("CMS config not found in settings collection, using defaults.");
+        // default fallback
       }
     }
     loadCMSContent();
   }, []);
 
-  const handleSaveHomepage = async (e: React.FormEvent) => {
+  const handleSaveHomepage = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      await setDoc(doc(db, "settings", "homepageCMS"), homepageState);
+      localStorage.setItem("daarayn_cms_homepage", JSON.stringify(homepageState));
       alert("Homepage CMS parameters saved successfully!");
     } catch (err) {
       console.error("Save homepage settings error:", err);
