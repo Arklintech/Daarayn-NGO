@@ -1,48 +1,44 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { causeRepository } from "@/lib/repositories/causeRepository";
+import { donationRepository } from "@/lib/repositories/donationRepository";
+import { communicationRepository } from "@/lib/repositories/communicationRepository";
 import { generateLetterEmailTemplate, attachDaaraynLogo } from "@/lib/email/resend";
 import { sendEmail } from "@/lib/email/providerManager";
-import { addDoc } from "@/lib/db-sync";
 
 const MILESTONES = [25, 50, 75, 100];
 
 export async function POST(req: Request) {
   try {
-    // 1. Fetch all active causes
-    const causesSnap = await getDocs(collection(db, "causes"));
+    // 1. Fetch all active causes from Google Sheets
+    const causes = await causeRepository.getAll();
     
     // 2. Fetch all completed donations to compute stats
-    const donationsSnap = await getDocs(
-      query(collection(db, "donations"), where("status", "==", "completed"))
+    const allDonations = await donationRepository.getAll();
+    const completedDonations = allDonations.filter((d: any) => 
+      (d.status || "").toLowerCase() === "completed" || (d.status || "").toLowerCase() === "verified"
     );
     
-    const donations = donationsSnap.docs.map(d => d.data());
-    
-    // 3. Fetch past automated milestone communications to prevent duplicate sends
-    const commsSnap = await getDocs(
-      query(collection(db, "communications"), where("type", "==", "project_progress"))
-    );
-    const pastComms = commsSnap.docs.map(d => d.data());
+    // 3. Fetch past automated milestone communications
+    const pastComms = await communicationRepository.getAll();
     
     const processedMilestones: any[] = [];
 
-    for (const causeDoc of causesSnap.docs) {
-      const cause = causeDoc.data();
-      const causeId = causeDoc.id;
-      const safeGoalAmount = cause.goalAmount || 1;
+    for (const cause of causes) {
+      const causeId = cause.id;
+      const safeGoalAmount = cause.targetAmount || 1;
       
       // Compute raised amount and unique donors for this cause
       let raised = 0;
       const uniqueDonorsMap = new Map<string, any>();
       
-      for (const donation of donations) {
-        if (donation.selectedCauses && Array.isArray(donation.selectedCauses)) {
-          const matchedCause = donation.selectedCauses.find((c: any) => c.causeId === causeId);
+      for (const donation of completedDonations as any[]) {
+        const selectedCauses = donation.selectedCauses || [];
+        if (Array.isArray(selectedCauses)) {
+          const matchedCause = selectedCauses.find((c: any) => c.causeId === causeId);
           if (matchedCause) {
-            raised += matchedCause.allocatedAmount;
+            raised += Number(matchedCause.allocatedAmount || matchedCause.amount || 0);
             const email = donation.donorEmail || donation.donorId;
-            if (!uniqueDonorsMap.has(email)) {
+            if (email && !uniqueDonorsMap.has(email)) {
               uniqueDonorsMap.set(email, {
                 id: donation.donorId,
                 email: email,
@@ -65,8 +61,8 @@ export async function POST(req: Request) {
 
       if (reachedMilestone > 0) {
         // Check if we already sent a communication for this milestone for this cause
-        const alreadySent = pastComms.some(c => 
-          c.causeId === causeId && c.milestonePercentage === reachedMilestone
+        const alreadySent = pastComms.some((c: any) => 
+          c.selectedCauses?.includes(causeId) && (c as any).milestonePercentage === reachedMilestone
         );
 
         if (!alreadySent) {
@@ -74,22 +70,23 @@ export async function POST(req: Request) {
           const recipients = Array.from(uniqueDonorsMap.values());
           
           if (recipients.length > 0) {
-            const causeName = cause.name || cause.title || causeId || "Daarayn Initiative";
+            const causeName = cause.title || cause.category || causeId || "Daarayn Initiative";
             const heading = `Milestone Reached: ${reachedMilestone}% for ${causeName}`;
             const notes = `Alhamdulillah, thanks to your generous support, we have reached **${reachedMilestone}%** of our goal for ${causeName}. Your contribution is actively making an impact on the ground.`;
             
             const logData = {
               id: `COMM-AUTO-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`,
-              causeId,
               type: "project_progress",
-              milestonePercentage: reachedMilestone,
-              recipientsCount: recipients.length,
               subject: heading,
-              message: notes,
-              media: [],
-              sentDate: new Date().toISOString(),
+              bodyText: notes,
+              selectedCauses: [causeId],
+              recipientCount: recipients.length,
+              sentCount: recipients.length,
+              failedCount: 0,
+              status: "Completed" as const,
               createdBy: "Daarayn Automations",
-              status: "sent"
+              createdAt: new Date().toISOString(),
+              completedAt: new Date().toISOString(),
             };
 
             // Build HTML
@@ -125,8 +122,8 @@ export async function POST(req: Request) {
               }).catch(err => console.error(`Automation failed for ${recipient.email}:`, err));
             }
 
-            // Save log
-            await addDoc(collection(db, "communications"), logData);
+            // Save log to Google Sheets repository
+            await communicationRepository.save(logData);
             
             processedMilestones.push({ causeId, causeName, milestone: reachedMilestone, recipients: recipients.length });
           }
@@ -141,3 +138,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export const dynamic = "force-dynamic";

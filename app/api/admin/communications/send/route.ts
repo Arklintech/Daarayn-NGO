@@ -1,6 +1,4 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
 import { resolveRecipients } from "@/lib/communication-resolver";
 import { waitUntil } from "@vercel/functions";
 import { processBroadcast } from "@/lib/broadcast-worker";
@@ -94,17 +92,6 @@ export async function POST(req: Request) {
 
     // Store in active broadcast store
     broadcastStore.set(broadcastId, broadcastRecord);
-
-    // Safe dual-write mirror to Firestore with 1.5s timeout
-    try {
-      const broadcastRef = doc(db, "broadcasts", broadcastId);
-      await Promise.race([
-        setDoc(broadcastRef, broadcastRecord),
-        new Promise(res => setTimeout(res, 1500))
-      ]);
-    } catch (fsErr: any) {
-      console.warn("[SendRoute] Firestore mirror write skipped/timed out:", fsErr.message);
-    }
 
     // 2. Setup Background Processing via waitUntil
     const payload = {

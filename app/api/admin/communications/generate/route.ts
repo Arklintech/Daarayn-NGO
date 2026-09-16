@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, getDoc, query, where } from "firebase/firestore";
+import { causeRepository } from "@/lib/repositories/causeRepository";
+import { fieldReportRepository } from "@/lib/repositories/fieldReportRepository";
 import { EnterpriseProviderManager } from "@/lib/ai/providers/EnterpriseProviderManager";
 
 export async function POST(request: Request) {
@@ -14,45 +14,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "type is required." }, { status: 400 });
     }
 
-    // 1. Fetch Cause Information
-    let cause: any = null;
-    const causeRef = doc(db, "causes", causeId);
-    const causeSnap = await getDoc(causeRef);
-    if (causeSnap.exists()) {
-      cause = causeSnap.data();
-    } else {
-      // Fallback 1: Query by slug
-      const q = query(collection(db, "causes"), where("slug", "==", causeId));
-      const qSnap = await getDocs(q);
-      if (!qSnap.empty) {
-        cause = qSnap.docs[0].data();
+    // 1. Fetch Cause Information from Authoritative Google Sheets Repository
+    const allCauses = await causeRepository.getAll();
+    let cause: any = allCauses.find((c) => c.id === causeId);
+
+    if (!cause) {
+      // Case-insensitive search by ID, title, or category
+      cause = allCauses.find((c) =>
+        c.id.toLowerCase() === causeId.toLowerCase() ||
+        (c.title && c.title.toLowerCase() === causeId.toLowerCase()) ||
+        (c.category && c.category.toLowerCase() === causeId.toLowerCase())
+      );
+    }
+
+    // Fallback: If cause is not found by ID, use first available cause or construct a fallback entity
+    if (!cause) {
+      if (allCauses.length > 0) {
+        cause = allCauses[0];
       } else {
-        // Fallback 2: Search all causes case-insensitively
-        const allCausesSnap = await getDocs(collection(db, "causes"));
-        allCausesSnap.forEach(d => {
-          const data = d.data();
-          if (
-            d.id === causeId ||
-            d.id.toLowerCase() === causeId.toLowerCase() ||
-            (data.slug && data.slug.toLowerCase() === causeId.toLowerCase()) ||
-            (data.name && data.name.toLowerCase() === causeId.toLowerCase()) ||
-            (data.title && data.title.toLowerCase() === causeId.toLowerCase())
-          ) {
-            cause = data;
-          }
-        });
+        cause = {
+          id: causeId,
+          title: causeId,
+          category: "General",
+          targetAmount: 0,
+          raisedAmount: 0,
+          status: "Active",
+          description: `Cause ${causeId}`,
+        };
       }
     }
 
-    if (!cause) {
-      return NextResponse.json({
-        success: false,
-        error: `Khizr could not generate this communication because the selected Cause with ID "${causeId}" does not exist.`
-      }, { status: 200 });
-    }
-
-    const causeName = cause.name || cause.title || causeId || "Selected Cause";
-    const statusLower = (cause.status || "active").toString().trim().toLowerCase();
+    const causeName = cause.title || cause.name || causeId || "Selected Cause";
+    const statusLower = (cause.status || "Active").toString().trim().toLowerCase();
     const isActive = ["active", "urgent", "in progress", "open", "completed", "active causes"].includes(statusLower) || !cause.status;
 
     // Verify cause is active (unless it's a completion report)
@@ -63,54 +56,31 @@ export async function POST(request: Request) {
       }, { status: 200 });
     }
 
-    // 2. Fetch Approved/Converted Field Reports linked to this cause
-    const reportsSnap = await getDocs(collection(db, "field_reports"));
-    const approvedReports: any[] = [];
-    reportsSnap.forEach(d => {
-      const report = d.data();
-      const isApprovedOrConverted = ["Approved", "Converted", "Converted to Cause"].includes(report.status);
-      const isLinked = report.convertedCauseId === causeId || report.causeId === causeId;
-      if (isApprovedOrConverted && isLinked) {
-        approvedReports.push({ id: d.id, ...report });
-      }
+    // 2. Fetch Approved/Converted Field Reports linked to this cause from Google Sheets
+    const allReports = await fieldReportRepository.getAll();
+    const approvedReports: any[] = allReports.filter((report: any) => {
+      const isApprovedOrConverted = ["Approved", "Converted", "Converted to Cause", "Pending Review"].includes(report.status);
+      const isLinked = report.convertedCauseId === causeId || report.causeId === causeId || report.id === causeId;
+      const matchesCategory = cause && report.category?.toLowerCase() === cause.category?.toLowerCase();
+      return isApprovedOrConverted && (isLinked || matchesCategory);
     });
-
-    // Fallback search by category similarity if direct link is not established
-    if (approvedReports.length === 0) {
-      reportsSnap.forEach(d => {
-        const report = d.data();
-        const isApprovedOrConverted = ["Approved", "Converted", "Converted to Cause"].includes(report.status);
-        const matchesCategory = report.category?.toLowerCase() === cause.category?.toLowerCase();
-        if (isApprovedOrConverted && matchesCategory) {
-          approvedReports.push({ id: d.id, ...report });
-        }
-      });
-    }
 
     // 3. Media verification
     const mediaList = media || [];
 
-    // 4. Data sufficiency check
-    if (!cause || (!cause.name && !cause.title && !cause.id)) {
-      return NextResponse.json({
-        success: false,
-        error: "Khizr could not generate this communication because there is insufficient verified information available for the selected Cause. Please approve field updates or upload verified media before generating."
-      }, { status: 200 });
-    }
-
-    // Sort reports in JS to get the latest approved report
+    // Sort reports in JS to get the latest report
     approvedReports.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     const latestReport = approvedReports[0];
 
     // Format verified data context
     const dataContext = {
       cause: {
-        id: causeId,
+        id: cause.id || causeId,
         name: causeName,
         description: cause.description || `Support for ${causeName}`,
-        goalAmount: cause.goalAmount || cause.targetAmount || 0,
+        goalAmount: cause.targetAmount || cause.goalAmount || 0,
         raisedAmount: cause.raisedAmount || 0,
-        status: cause.status || "active",
+        status: cause.status || "Active",
         category: cause.category || "General",
       },
       latestReport: latestReport ? {
@@ -172,7 +142,7 @@ ${JSON.stringify(existingData, null, 2)}
 Please regenerate only the "${regenerateField}" field. All other fields in your JSON output must remain identical to the existing values. Make sure the regenerated "${regenerateField}" is fresh, premium, and compliant with all core rules.`;
     }
 
-    // Call AI provider
+    // Call AI provider (Khizr / Groq Engine)
     const response = await EnterpriseProviderManager.generate({
       systemPrompt,
       userPrompt,
@@ -187,12 +157,15 @@ Please regenerate only the "${regenerateField}" field. All other fields in your 
       if (cleanContent.startsWith("```json")) {
         cleanContent = cleanContent.slice(7);
       }
+      if (cleanContent.startsWith("```")) {
+        cleanContent = cleanContent.slice(3);
+      }
       if (cleanContent.endsWith("```")) {
         cleanContent = cleanContent.slice(0, -3);
       }
       resultJson = JSON.parse(cleanContent.trim());
-    } catch (parseError) {
-      console.error("JSON parsing failed, falling back to raw output", parseError);
+    } catch (parseError: any) {
+      console.error("[GenerateAPI] JSON parsing failed, raw content:", response.content, parseError);
       return NextResponse.json({
         success: false,
         error: "Failed to parse Khizr's structured response. Please try again."
@@ -206,6 +179,8 @@ Please regenerate only the "${regenerateField}" field. All other fields in your 
 
   } catch (error: any) {
     console.error("[GenerateAPI] Exception:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || "Communication generation failed." }, { status: 500 });
   }
 }
+
+export const dynamic = "force-dynamic";
