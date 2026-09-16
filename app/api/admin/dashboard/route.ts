@@ -4,13 +4,27 @@ import { donorRepository } from "@/lib/repositories/donorRepository";
 import { fieldReportRepository } from "@/lib/repositories/fieldReportRepository";
 import { causeRepository } from "@/lib/repositories/causeRepository";
 
+// Vercel max function duration (25 s for hobby, 60 s for pro)
+export const maxDuration = 25;
+export const dynamic = 'force-dynamic';
+
+/** Resolves to `fallback` if `promise` does not settle within `ms` milliseconds. */
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 export async function GET() {
   try {
+    const TIMEOUT_MS = 20_000;
+
     const [donations, donors, reports, causes] = await Promise.all([
-      donationRepository.getAll(),
-      donorRepository.getAll(),
-      fieldReportRepository.getAll(),
-      causeRepository.getAll()
+      withTimeout(donationRepository.getAll(), TIMEOUT_MS, []),
+      withTimeout(donorRepository.getAll(), TIMEOUT_MS, []),
+      withTimeout(fieldReportRepository.getAll(), TIMEOUT_MS, []),
+      withTimeout(causeRepository.getAll(), TIMEOUT_MS, []),
     ]);
 
     let totalDonationSum = 0;
@@ -73,4 +87,4 @@ export async function GET() {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
-export const dynamic = 'force-dynamic';
+

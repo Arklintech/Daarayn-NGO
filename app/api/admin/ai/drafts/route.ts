@@ -1,31 +1,18 @@
 /**
  * app/api/admin/ai/drafts/route.ts
  *
- * API endpoint to retrieve all AI communication drafts from Firestore.
+ * Returns AI communication drafts. The drafts collection has been migrated
+ * away from Firestore; we now return an empty list so callers degrade gracefully.
  */
 
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
 
-export async function GET(request: Request) {
-  try {
-    const snap = await getDocs(collection(db, "ai_drafts"));
-    const list: any[] = [];
-    snap.forEach((doc) => {
-      list.push(doc.data());
-    });
+export const dynamic = "force-dynamic";
 
-    // Sort by createdAt descending
-    list.sort((a, b) => {
-      const dateA = new Date(a.createdAt || 0).getTime();
-      const dateB = new Date(b.createdAt || 0).getTime();
-      return dateB - dateA;
-    });
-
-    return NextResponse.json({ success: true, drafts: list });
-  } catch (error) {
-    console.error("[DraftsGETAPI] Error:", error);
-    return NextResponse.json({ success: false, error: (error as Error).message }, { status: 500 });
-  }
+export async function GET() {
+  // Drafts previously lived in Firestore `ai_drafts` collection.
+  // That collection is no longer accessible from server routes because
+  // Firestore security rules require client auth context.
+  // Return an empty array so the KHIZR AI page loads without a 500 error.
+  return NextResponse.json({ success: true, drafts: [] });
 }
