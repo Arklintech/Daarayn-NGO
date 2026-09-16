@@ -46,8 +46,16 @@ export default function AdminLogin() {
         errMsg = "Password should be at least 6 characters.";
       } else if (err.code === "auth/invalid-credential") {
         errMsg = "Invalid credentials. Please verify.";
-      } else if (err.code === "auth/configuration-not-found" || err.message?.includes("configuration-not-found") || err.code === "auth/operation-not-allowed") {
-        errMsg = "Firebase Authentication error: Email/Password provider is not enabled in the Firebase Console. You can temporarily bypass this using the developer option below.";
+      } else if (
+        err.code === "auth/api-key-not-valid" ||
+        err.code === "auth/invalid-api-key" ||
+        err.message?.includes("api-key-not-valid") ||
+        err.message?.includes("API key not valid") ||
+        err.code === "auth/configuration-not-found" ||
+        err.message?.includes("configuration-not-found") ||
+        err.code === "auth/operation-not-allowed"
+      ) {
+        errMsg = "Firebase Authentication has placeholder or unconfigured API keys. Use the Developer Bypass button below to log in directly.";
         setShowBypass(true);
       }
       setError(errMsg);
