@@ -41,6 +41,7 @@ export class ContextOptimizationEngine {
     const donors = facts.filter((f) => f.source === "donors");
     const programs = facts.filter((f) => f.source === "programs");
     const communications = facts.filter((f) => f.source === "communications");
+    const fieldReports = facts.filter((f) => f.source === "field_reports");
 
     // Helper: Approximate token count of a string (1 token ≈ 4 characters)
     const getTokens = (text: string) => Math.ceil(text.length / 4);
@@ -120,6 +121,23 @@ export class ContextOptimizationEngine {
       communications.slice(0, 3).forEach((c) => {
         const item = c.data;
         const line = `- Date: ${item.sentDate || item.date} | Recipient: ${item.donorEmail} | Subject: ${item.subject} | Delivery: ${item.deliveryStatus}`;
+        const lineTokens = getTokens(line);
+
+        if (currentTokenCount + lineTokens < maxTokens) {
+          lines.push(line);
+          currentTokenCount += lineTokens;
+          filteredCount++;
+        }
+      });
+      lines.push("");
+    }
+
+    // 5. Group field reports
+    if (fieldReports.length > 0) {
+      lines.push("### COLLECTION: field_reports");
+      fieldReports.slice(0, 5).forEach((fr) => {
+        const item = fr.data;
+        const line = `- ID: ${item.id} | Agent: ${item.agentName} | Title: ${item.title} | Urgency: ${item.urgency} | Budget: ${item.estimatedBudget} | Status: ${item.status || "Pending Review"} | Location: ${item.location?.village || item.location?.city || item.location?.district || "India"}`;
         const lineTokens = getTokens(line);
 
         if (currentTokenCount + lineTokens < maxTokens) {

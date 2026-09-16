@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
-import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { BarChart2, Activity, Users, CheckCircle, XCircle, ArrowLeft, Download } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -14,11 +12,28 @@ export default function BroadcastAnalytics() {
   useEffect(() => {
     async function fetchBroadcasts() {
       try {
-        const q = query(collection(db, "broadcasts"), orderBy("createdAt", "desc"));
-        const snap = await getDocs(q);
-        setBroadcasts(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const res = await fetch("/api/admin/communications");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.communications)) {
+          // Normalize Google Sheets communication records
+          const mapped = data.communications.map((c: any) => ({
+            id: c.id,
+            createdBy: c.createdBy || "Admin",
+            createdAt: c.createdAt,
+            communicationType: c.type || "Email Broadcast",
+            causeName: (c.selectedCauses || []).join(", "),
+            totalRecipients: Number(c.recipientCount || 0),
+            status: c.status || "Completed",
+            stats: {
+              sent: Number(c.sentCount || 0),
+              failed: Number(c.failedCount || 0),
+              remaining: Math.max(0, Number(c.recipientCount || 0) - Number(c.sentCount || 0) - Number(c.failedCount || 0))
+            }
+          }));
+          setBroadcasts(mapped);
+        }
       } catch (err) {
-        console.error("Failed to fetch broadcasts", err);
+        console.error("Failed to fetch broadcasts from Google Sheets", err);
       } finally {
         setLoading(false);
       }

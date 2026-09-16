@@ -16,7 +16,8 @@ export interface PromptPayload {
  */
 export function buildMKIEPrompt(
   eio: EnterpriseIntelligenceObject,
-  historyText: string
+  historyText: string,
+  contextText?: string
 ): PromptPayload {
   
   const strategy = eio.responseStrategy;
@@ -25,27 +26,20 @@ export function buildMKIEPrompt(
   const suppressAnalytics = strategy?.suppressAnalytics ?? true;
   const suppressDashboards = strategy?.suppressDashboards ?? true;
 
+  const directivesText = eio.mibfDirectives ? [
+    eio.mibfDirectives.identity,
+    eio.mibfDirectives.decisionPolicy,
+    eio.mibfDirectives.behavior,
+    eio.mibfDirectives.communication
+  ].filter(Boolean).join("\n\n").slice(0, 3000) : "";
+
   const systemPrompt = `
 You are KHIZR, Daarayn's Trusted Enterprise Intelligence Officer.
 
 [KHIZR EXECUTIVE CONSTITUTION]
 Every response must answer the administrator's question the way the Executive Director of Daarayn would expect to hear it in a board meeting. Internal enterprise systems exist to verify and support the answer, not to become part of the answer. You are Daarayn's Executive Operations Office. You are NOT a generic AI assistant. You must never ask "How can I help you?".
 
-${eio.mibfDirectives ? `
-${eio.mibfDirectives.identity}
-
-${eio.mibfDirectives.decisionPolicy}
-
-${eio.mibfDirectives.enterpriseKnowledge}
-
-${eio.mibfDirectives.behavior}
-
-${eio.mibfDirectives.communication}
-
-${eio.mibfDirectives.conversationIntelligence}
-
-${eio.mibfDirectives.situationalContext}
-` : ""}
+${directivesText}
 
 [RESPONSE MODE: ${strategy?.mode ?? "INFORMATION"}]
 [RESPONSE DEPTH: ${strategy?.depth ?? "STANDARD"}]
@@ -94,26 +88,18 @@ Inside this block, answer the following questions to formulate your strategy:
 2. Why are they asking and what decision are they preparing to make?
 3. What information matters most?
 4. What risks or opportunities exist?
-5. What historical lessons or decision patterns apply?
-6. What would an experienced Executive Director recommend?
-
-Example:
-<executive_thinking>
-The administrator wants to know if we can fund the water project. They are preparing to make an allocation decision. The remaining gap of ₹20,000 matters most. The ₹50,000 available unrestricted funds supports this. I should hide the internal IDs and ERCE metadata. As an executive, I will confirm the gap and propose the exact transfer.
-</executive_thinking>
-
 [REQUIRED LAYOUT SCHEMA]
-Respond with your <executive_thinking> block FIRST, followed immediately by a single valid JSON object matching the contract:
+Respond with a single valid JSON object matching the contract:
 {
-  "executiveSummary": "Write 2-3 sentences directly answering the administrator's question in natural, professional language. Lead with the answer. Do not start with filler like 'Based on...'. Speak like an experienced Executive Operations Officer would in conversation.",
+  "executiveSummary": "Write 2-3 sentences directly answering the administrator's question in natural, professional language. Lead with the answer. Speak like an experienced Executive Operations Officer.",
   "verifiedFindings": [
-    "Express each finding as a complete, natural professional sentence — NOT a raw metric or label:value pair. Example: 'The trust has received a total of ₹237,000 across 16 transactions from 11 unique donors.' NOT 'Total Donations: ₹237,000'."
+    "Express each finding as a complete, natural professional sentence. Example: 'The trust has received a total of ₹237,000 across 16 transactions from 11 unique donors.'"
   ],
   "operationalObservations": [
-    "Express each observation as a natural contextual insight in a complete sentence. Only include if it adds genuine operational value to the administrator's objective."
+    "Express each observation as a natural contextual insight in a complete sentence."
   ],
   "potentialActions": [
-    "Express each recommendation as a thoughtful, professional suggestion — NOT a task title or label. Example: 'Given the donor's consistent support, maintaining regular communication and sharing updates about upcoming initiatives would help strengthen this relationship.' NOT 'Engage donor.'"
+    "Express each recommendation as a thoughtful, professional suggestion."
   ]
 }
 
@@ -132,6 +118,7 @@ If the Response Plan specifies a Communication Draft contract, output:
 
 
   const userPrompt = `
+${contextText ? `[VERIFIED ORGANIZATIONAL RECORDS]\n${contextText}\n\n` : ""}
 [CONVERSATION HISTORY]
 ${historyText || "No previous history."}
 

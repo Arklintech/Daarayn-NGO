@@ -116,7 +116,7 @@ export default function LegacySections() {
         </p>
 
         <p class="muted">
-          Your contribution funds a verified relief bundle and is logged in the public ledger with proof.
+          Your contribution funds a verified relief bundle with full proof and accountability.
         </p>
 
         <ul class="list-check">
@@ -134,18 +134,9 @@ export default function LegacySections() {
           </ul>
         </div>
 
-        <div class="status-pill">
-          Status: <span class="status-label status-pending">⏳ Pending Verification</span>
-        </div>
-
         <div class="actions-row">
           <a href="/pay?cause=Family%20Relief" class="btn btn-ivory">Fund This Case</a>
-          <a href="#ledger" class="btn btn-outline">Verify In Ledger</a>
         </div>
-
-        <p class="tiny-note">
-          Ledger row example: <em>DA001 | Family Relief | ₹8,000 | Rent + Ration + Fees | ✅ Completed | Proof Link</em>
-        </p>
       </div>
 
       <div class="section-media">
@@ -192,7 +183,6 @@ export default function LegacySections() {
 
         <div class="actions-row">
           <a href="/pay?amt=1500&cur=INR&cause=Quran%20Endowment" class="btn btn-ivory">Sponsor Monthly</a>
-          <a href="#ledger" class="btn btn-outline">View Sponsorship Ledger</a>
         </div>
       </div>
 
@@ -244,7 +234,6 @@ export default function LegacySections() {
 
           <div class="actions-row">
             <a href="/pay?cause=Masjid%20Fund" class="btn btn-ivory">Fund a Need</a>
-            <a href="#ledger" class="btn btn-outline">Verify In Ledger</a>
           </div>
         </div>
 
@@ -299,70 +288,8 @@ export default function LegacySections() {
           <ul class="list-check">
             <li>Project verification log</li>
             <li>Completion proof shared</li>
-            <li>Ledger entry published</li>
+            <li>Verified update published</li>
           </ul>
-          <a href="#ledger" class="text-link">Verify In Ledger →</a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ================= PUBLIC LEDGER ================= -->
-  <section id="ledger" class="section-alt">
-    <div class="container">
-      <h2 class="section-title">Public Contribution Ledger</h2>
-      <p class="section-subtitle">
-        Track every contribution: amount received, allocation, status, and proof links.
-      </p>
-
-      <div class="dashboard-grid">
-        <div class="dashboard-info">
-          <h3>How Tracking Works</h3>
-          <ul class="list-check">
-            <li><strong>ID</strong> — unique tracking code (e.g., DA001)</li>
-            <li><strong>Category</strong> — family relief / endowment / masjid</li>
-            <li><strong>Amount</strong> — received via UPI</li>
-            <li><strong>Allocation</strong> — 90% direct / 10% operations</li>
-            <li><strong>Status</strong> — Pending / In Progress / ✅ Completed</li>
-            <li><strong>Proof</strong> — photo/video/receipt link</li>
-          </ul>
-
-          <div class="actions-row">
-            <a href="#ledgerTable" class="btn btn-ivory" onclick="document.getElementById('ledgerSearch').focus(); return false;">
-              Search Ledger Below
-            </a>
-            <a href="/pay" class="btn btn-outline">Contribute</a>
-          </div>
-
-          <p class="tiny-note">
-            This links to your internal ledger dashboard.
-          </p>
-        </div>
-
-        <div class="dashboard-embed"
-          style="overflow-x: auto; background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: 12px; padding: 1.2rem; width: 100%;">
-          <div style="display:flex; gap:0.5rem; margin-bottom:1.2rem; width: 100%;">
-            <input type="text" id="ledgerSearch" placeholder="Search by ID, donor or cause..."
-              style="flex-grow:1; background:rgba(0,0,0,0.45); border:1px solid var(--border); padding: 0.65rem; color:#fff; border-radius: 6px; outline:none; font-family: inherit; font-size:0.88rem;" />
-          </div>
-          <table style="width:100%; border-collapse:collapse; font-size:0.85rem; text-align:left;" id="ledgerTable">
-            <thead>
-              <tr style="border-bottom:1px solid var(--border); color:var(--ivory-light);">
-                <th style="padding:0.75rem 0.5rem;">ID</th>
-                <th style="padding:0.75rem 0.5rem;">Donor</th>
-                <th style="padding:0.75rem 0.5rem;">Cause</th>
-                <th style="padding:0.75rem 0.5rem;">Amount</th>
-                <th style="padding:0.75rem 0.5rem;">Status</th>
-                <th style="padding:0.75rem 0.5rem;">Proof</th>
-              </tr>
-            </thead>
-            <tbody id="ledgerTableBody">
-              <tr>
-                <td colspan="6" style="text-align:center; padding:1.5rem; color:var(--text-muted);">Loading contribution
-                  records...</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
     </div>
@@ -387,7 +314,6 @@ export default function LegacySections() {
           <a href="/pay" class="btn btn-ivory">
             Submit Contribution Form
           </a>
-          <a href="#ledger" class="btn btn-outline">Verify Ledger</a>
         </div>
 
         <p class="tiny-note">
@@ -461,7 +387,6 @@ export default function LegacySections() {
         <div class="modal-media-side">
           <img src="images/family_relief.png" alt="Family Relief Photo" class="modal-profile-img" />
           <div class="modal-quick-meta">
-            <p><strong>Status:</strong> Active Case</p>
             <p><strong>Goal Amount:</strong> ₹8,000</p>
           </div>
         </div>

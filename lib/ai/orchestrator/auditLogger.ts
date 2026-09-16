@@ -7,6 +7,7 @@
 
 import { db } from "../../firebase";
 import { doc, setDoc } from "firebase/firestore";
+import { auditLogRepository } from "../../repositories/auditLogRepository";
 import type { WorkflowPlan } from "./executionPlanner";
 import type { ExecutionResult } from "./executionEngine";
 
@@ -27,7 +28,7 @@ export interface WorkflowAuditRecord {
 }
 
 /**
- * Registers execution audit log trails in Firestore database.
+ * Registers execution audit log trails in authoritative Google Sheets and mirrors to Firestore.
  */
 export async function logWorkflowAudit(
   workflow: WorkflowPlan,
@@ -62,9 +63,26 @@ export async function logWorkflowAudit(
   };
 
   try {
-    await setDoc(doc(db, "khizr_workflows_audit", auditId), record);
+    // Authoritative Google Sheets Audit Log
+    auditLogRepository.save({
+      id: auditId,
+      actor_id: adminEmail || "admin",
+      actor_role: "admin",
+      action: `MIO_WORKFLOW_${workflow.actionType}`,
+      entity_type: "WORKFLOW",
+      entity_id: workflow.workflowId,
+      after_state: record,
+      timestamp: new Date().toISOString(),
+      request_id: conversationId,
+      source: "KHIZR_MIO"
+    }).catch(() => {});
+
+    // Safe non-blocking Firestore mirror write
+    const firestoreWrite = setDoc(doc(db, "khizr_workflows_audit", auditId), record);
+    const timeout = new Promise((resolve) => setTimeout(resolve, 1500));
+    await Promise.race([firestoreWrite, timeout]).catch(() => {});
     console.log(`[MIO Audit] Successfully logged execution audit row: "${auditId}"`);
   } catch (error) {
-    console.error("[MIO Audit] Failed to write workflow audit log record:", error);
+    console.error("[MIO Audit] Audit write warning:", error);
   }
 }

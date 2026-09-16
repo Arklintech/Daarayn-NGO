@@ -22,8 +22,6 @@ import {
   MailOpen,
   X
 } from "lucide-react";
-import { db } from "@/lib/firebase";
-import { collection, query, orderBy, limit, onSnapshot, doc, updateDoc, writeBatch, deleteDoc } from "firebase/firestore";
 import { AdminNotification, NotificationCategory, CATEGORY_META } from "@/lib/notifications";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
@@ -74,17 +72,46 @@ export default function NotificationCenterPage() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  // Real-time Firestore listener
+  const fetchNotifications = async () => {
+    try {
+      const res = await fetch("/api/admin/notifications");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.notifications)) {
+        setNotifications(data.notifications);
+      }
+    } catch (err) {
+      console.error("[NotificationCenter] Fetch error:", err);
+    }
+  };
+
   useEffect(() => {
-    const q = query(collection(db, "admin_notifications"), orderBy("createdAt", "desc"), limit(200));
-    const unsub = onSnapshot(q, (snap) => {
-      const list: (AdminNotification & { id: string, isStarred?: boolean })[] = [];
-      snap.forEach((d) => list.push({ id: d.id, ...(d.data() as AdminNotification), isStarred: (d.data() as any).isStarred }));
-      setNotifications(list);
-      
-      // Do not auto-select on mobile to prevent hijacking the view.
-    });
-    return () => unsub();
+    fetchNotifications();
+
+    // SSE Realtime stream for live notifications
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource("/api/realtime/stream");
+      es.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (
+            payload.type === "NOTIFICATION_CREATED" ||
+            payload.type === "NOTIFICATION_UPDATED" ||
+            payload.type === "NOTIFICATION_DELETED" ||
+            payload.type === "DONATION_RECEIVED" ||
+            payload.type === "REPORT_CREATED"
+          ) {
+            fetchNotifications();
+          }
+        } catch (_) {}
+      };
+    } catch (e) {
+      console.warn("[NotificationCenter] SSE init warning:", e);
+    }
+
+    return () => {
+      if (es) es.close();
+    };
   }, []);
 
   const filtered = notifications.filter((n) => {
@@ -105,10 +132,13 @@ export default function NotificationCenterPage() {
   const totalStarred = notifications.filter((n) => n.isStarred).length;
 
   const markRead = async (id: string) => {
+    // Optimistic UI update
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
     try {
-      await updateDoc(doc(db, "admin_notifications", id), {
-        isRead: true,
-        readAt: new Date().toISOString(),
+      await fetch("/api/admin/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, read: true }),
       });
     } catch (e) {
       console.error(e);
@@ -116,42 +146,54 @@ export default function NotificationCenterPage() {
   };
 
   const markAllRead = async () => {
-    const unread = notifications.filter((n) => !n.isRead);
-    if (!unread.length) return;
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     try {
-      const batch = writeBatch(db);
-      unread.forEach((n) => {
-        batch.update(doc(db, "admin_notifications", n.id), {
-          isRead: true,
-          readAt: new Date().toISOString(),
-        });
+      await fetch("/api/admin/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ markAllRead: true }),
       });
-      await batch.commit();
     } catch (e) {
       console.error(e);
     }
   };
 
   const markUnread = async (id: string) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: false } : n)));
     try {
-      await updateDoc(doc(db, "admin_notifications", id), {
-        isRead: false,
-        readAt: null,
+      await fetch("/api/admin/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, read: false }),
       });
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const toggleStar = async (id: string, current: boolean) => {
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isStarred: !current } : n)));
     try {
-      await updateDoc(doc(db, "admin_notifications", id), { isStarred: !current });
-    } catch (e) { console.error(e); }
+      await fetch("/api/admin/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, isStarred: !current }),
+      });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const deleteNotif = async (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    if (selectedId === id) setSelectedId(null);
     try {
-      await deleteDoc(doc(db, "admin_notifications", id));
-      if (selectedId === id) setSelectedId(null);
-    } catch (e) { console.error(e); }
+      await fetch(`/api/admin/notifications?id=${id}`, {
+        method: "DELETE",
+      });
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const categories = Object.entries(CATEGORY_META) as [NotificationCategory, typeof CATEGORY_META[NotificationCategory]][];

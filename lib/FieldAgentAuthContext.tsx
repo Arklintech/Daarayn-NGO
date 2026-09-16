@@ -55,17 +55,30 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
         if (typeof document !== 'undefined') {
           document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
         }
-        // Query Firestore to find the agent with this firebaseUid
+        // Query Authoritative Google Sheets Profile via /api/field/profile
         try {
-          const q = query(collection(db, "field_agents"), where("firebaseUid", "==", firebaseUser.uid));
-          const snap = await getDocs(q);
-          if (!snap.empty) {
-            setAgentData(snap.docs[0].data() as FieldAgent);
+          const res = await fetch(
+            `/api/field/profile?uid=${firebaseUser.uid}&email=${encodeURIComponent(firebaseUser.email || "")}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            setAgentData(data as FieldAgent);
           } else {
-            setAgentData(null);
+            // Fallback mirror check
+            try {
+              const q = query(collection(db, "field_agents"), where("firebaseUid", "==", firebaseUser.uid));
+              const snap = await getDocs(q);
+              if (!snap.empty) {
+                setAgentData(snap.docs[0].data() as FieldAgent);
+              } else {
+                setAgentData(null);
+              }
+            } catch {
+              setAgentData(null);
+            }
           }
         } catch (err) {
-          console.error("Error fetching agent data", err);
+          console.error("Error fetching agent profile from API:", err);
           setAgentData(null);
         }
       } else {

@@ -27,7 +27,7 @@ export default function PublicAssistant() {
     {
       id: "welcome",
       role: "assistant",
-      content: "Assalamu Alaikum. I am the **Daarayn Foundation Assistant**, your helper for transparency, project updates, and public ledger audits. How can I assist you with your giving tracking today?"
+      content: "Assalamu Alaikum. I am the **Daarayn Foundation Assistant**, your helper for transparency and project updates. How can I assist you with your giving tracking today?"
     }
   ]);
   const [inputValue, setInputValue] = useState("");
@@ -229,7 +229,7 @@ export default function PublicAssistant() {
             type="text"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Query public ledger, program objectives, transparency split rules..."
+            placeholder="Query program objectives, transparency split rules..."
             className="flex-grow bg-transparent px-3 py-2 text-xs focus:outline-none text-white placeholder-gray-600"
           />
           <button

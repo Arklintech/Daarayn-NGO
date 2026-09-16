@@ -57,7 +57,7 @@ export class EnterpriseQueryResolutionEngine {
     );
 
     // Intent-first collection targeting — never dump all collections by default
-    switch (intent) {
+    switch (intent as string) {
       case "donationSearch":
       case "publicLedger":
       case "financialIntelligence":
@@ -74,20 +74,25 @@ export class EnterpriseQueryResolutionEngine {
         resolution.requiredCollections.push("programs");
         resolution.responseContract = "ProjectSummary";
         break;
+      case "fieldOperations":
+      case "incidentIntelligence":
+        resolution.requiredCollections.push("field_reports", "field_agents");
+        resolution.responseContract = "ExecutiveBrief";
+        break;
       case "communicationIntelligence":
         resolution.requiredCollections.push("communications", "donors");
         resolution.responseContract = isPendingQuery ? "DonorSummary" : "CommunicationDraft";
         break;
       case "executiveBriefing":
       case "operationalIntelligence":
-        resolution.requiredCollections.push("donations", "programs", "donors", "communications");
+        resolution.requiredCollections.push("donations", "programs", "donors", "communications", "field_reports");
         resolution.responseContract = "ExecutiveBrief";
         break;
       case "investigations":
       case "analytics":
       case "decisionSupport":
       case "strategicPlanning":
-        resolution.requiredCollections.push("donations", "programs", "donors", "communications");
+        resolution.requiredCollections.push("donations", "programs", "donors", "communications", "field_reports");
         resolution.responseContract = "ExecutiveBrief";
         break;
       case "complianceIntelligence":
@@ -101,10 +106,14 @@ export class EnterpriseQueryResolutionEngine {
       case "chat":
       case "globalSearch":
         resolution.isAIRequired = true;
+        resolution.requiredCollections.push("donations", "programs", "donors", "field_reports");
         resolution.responseContract = "ExecutiveBrief";
         break;
       default:
-        if (queryLower.includes("donat") || queryLower.includes("give") || queryLower.includes("gave") || queryLower.includes("contributed")) {
+        if (queryLower.includes("field") || queryLower.includes("report") || queryLower.includes("incident") || queryLower.includes("fr00")) {
+          resolution.requiredCollections.push("field_reports", "field_agents");
+          resolution.responseContract = "ExecutiveBrief";
+        } else if (queryLower.includes("donat") || queryLower.includes("give") || queryLower.includes("gave") || queryLower.includes("contributed")) {
           resolution.requiredCollections.push("donations");
           resolution.responseContract = hasSpecificDonor ? "DonorSummary" : "DonationSummary";
         } else if (queryLower.includes("donor") || queryLower.includes("contributor")) {
@@ -114,7 +123,7 @@ export class EnterpriseQueryResolutionEngine {
           resolution.requiredCollections.push("programs");
           resolution.responseContract = "ProjectSummary";
         } else {
-          resolution.requiredCollections.push("programs", "publicLedger");
+          resolution.requiredCollections.push("programs", "publicLedger", "field_reports");
           resolution.responseContract = "ExecutiveBrief";
         }
     }

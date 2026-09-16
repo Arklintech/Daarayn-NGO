@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, limit, query, orderBy, onSnapshot } from "firebase/firestore";
 import Link from "next/link";
 import { 
   TrendingUp, 
@@ -67,50 +65,48 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    const unsub = onSnapshot(collection(db, "publicLedger"), (allLedgerSnapshot) => {
+    let isMounted = true;
+    async function loadDashboard() {
       try {
-        const docs: any[] = [];
-        let totalSum = 0;
-
-        allLedgerSnapshot.forEach((doc) => {
-          const data = doc.data();
-          const amt = Number(data.amount || 0);
-          if (data.donor !== "Audit update" && amt > 0) {
-            totalSum += amt;
-            docs.push({ id: doc.id, ...data });
-          }
-        });
-
-        // Sort descending by date
-        docs.sort((a, b) => {
-          const dateA = new Date(a.createdAt || a.date || 0).getTime();
-          const dateB = new Date(b.createdAt || b.date || 0).getTime();
-          return dateB - dateA;
-        });
-
-        setRecentDonations(docs.slice(0, 5));
-        setStats(prev => ({
-          ...prev,
-          totalDonations: totalSum || 225000
-        }));
-        setLoading(false);
+        const res = await fetch("/api/admin/dashboard");
+        const data = await res.json();
+        if (data.success && isMounted) {
+          setStats(prev => ({
+            ...prev,
+            ...data.stats
+          }));
+          setRecentDonations(data.recentDonations || []);
+        }
       } catch (err) {
-        console.warn("Error processing live dashboard data:", err);
+        console.warn("Error fetching dashboard data:", err);
+      } finally {
+        if (isMounted) setLoading(false);
       }
-    }, (err) => {
-      console.warn("Error querying live dashboard data, utilizing cached profiles:", err);
-      // Load fallback static dashboard lists
-      setRecentDonations([
-        { id: "DA003", donor: "Sabir Test (UPI)", cause: "Qur’an Endowment", amount: 5000, date: "05/07/2026", status: "completed" },
-        { id: "DA002", donor: "Ahmad Malik (UPI)", cause: "Family Relief Bundle", amount: 8000, date: "04/07/2026", status: "pending" },
-        { id: "DA001", donor: "Mariam Bi (UPI)", cause: "General Support", amount: 1500, date: "02/07/2026", status: "completed" }
-      ]);
-      setStats(prev => ({ ...prev, totalDonations: 24500 }));
-      setLoading(false);
-    });
+    }
+    loadDashboard();
 
-    return () => unsub();
+    // Setup SSE listener for live donation/report updates
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource("/api/realtime/stream");
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (
+            payload.type === "DONATION_CREATED" ||
+            payload.type === "DONATION_STATUS_UPDATED" ||
+            payload.type === "FIELD_REPORT_SUBMITTED"
+          ) {
+            loadDashboard();
+          }
+        } catch {}
+      };
+    } catch {}
+
+    return () => {
+      isMounted = false;
+      if (eventSource) eventSource.close();
+    };
   }, []);
 
   const cardItems = [

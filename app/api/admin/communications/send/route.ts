@@ -4,6 +4,7 @@ import { doc, setDoc } from "firebase/firestore";
 import { resolveRecipients } from "@/lib/communication-resolver";
 import { waitUntil } from "@vercel/functions";
 import { processBroadcast } from "@/lib/broadcast-worker";
+import { broadcastStore } from "@/lib/broadcast-store";
 
 export async function POST(req: Request) {
   try {
@@ -76,9 +77,7 @@ export async function POST(req: Request) {
     const broadcastId = `BCAST-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const createdAt = new Date().toISOString();
 
-    // 1. Create Broadcast Job Document
-    const broadcastRef = doc(db, "broadcasts", broadcastId);
-    await setDoc(broadcastRef, {
+    const broadcastRecord = {
       id: broadcastId,
       createdBy: "Administrator",
       createdAt,
@@ -86,12 +85,26 @@ export async function POST(req: Request) {
       selectedCauseIds: causeIds,
       causeName,
       totalRecipients: recipients.length,
-      status: "Queued",
+      status: "Queued" as const,
       stats: { sent: 0, failed: 0, remaining: recipients.length },
       startedAt: null,
       completedAt: null,
       processingDurationMs: 0
-    });
+    };
+
+    // Store in active broadcast store
+    broadcastStore.set(broadcastId, broadcastRecord);
+
+    // Safe dual-write mirror to Firestore with 1.5s timeout
+    try {
+      const broadcastRef = doc(db, "broadcasts", broadcastId);
+      await Promise.race([
+        setDoc(broadcastRef, broadcastRecord),
+        new Promise(res => setTimeout(res, 1500))
+      ]);
+    } catch (fsErr: any) {
+      console.warn("[SendRoute] Firestore mirror write skipped/timed out:", fsErr.message);
+    }
 
     // 2. Setup Background Processing via waitUntil
     const payload = {

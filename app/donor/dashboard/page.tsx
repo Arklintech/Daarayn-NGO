@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { 
   Heart, 
   Coins, 
@@ -41,54 +39,34 @@ export default function DonorDashboard() {
     async function loadDonorData() {
       setLoading(true);
       try {
-        // 1. Fetch donor profile
-        const donorSnap = await getDoc(doc(db, "donors", donorId));
-        if (!donorSnap.exists()) {
-          // If not found in Firestore (e.g. offline fallback mock), construct mock donor
-          const fallbackDonor = {
-            id: donorId,
-            name: donorId === "DNR-2026-000002" ? "Sara Ahmed" : "Ahmed Khan",
-            email: donorId === "DNR-2026-000002" ? "sara.ahmed@example.com" : "ahmed.khan@example.com",
-            phone: donorId === "DNR-2026-000002" ? "+447711223344" : "+919876543210",
-            country: donorId === "DNR-2026-000002" ? "GB" : "IN",
-            city: donorId === "DNR-2026-000002" ? "London" : "Mumbai",
-            dateJoined: "2026-01-15",
-            totalDonations: 2,
-            totalAmountDonated: 5000,
-            projectsSupportedCount: 1,
-            casesSupportedCount: 1,
-            status: "active",
-            communicationHistory: [
-              { id: "COMM-1", subject: "Verified Project Update: Orphan Care Sponsorship (MH)", message: "Assalamu Alaikum Ahmed, we are pleased to inform you that ₹3,000 has been allocated to Irfan Shaikh's school fees. The books have been purchased.", sentDate: "2026-07-06", generatedByAI: true, approvedByAdmin: true }
-            ]
-          };
-          setDonor(fallbackDonor);
-          
-          // Mocks
-          setDonations([
-            { id: "DON-2026-000145", amount: 5000, currency: "INR", paymentMethod: "UPI", donationType: "General Support", date: "2026-07-05", status: "allocated", allocationStatus: "fully", transactionReference: "UPI998877" }
-          ]);
-          setAllocations([
-            { id: "ALC-2026-000001", targetTitle: "Orphan Care Sponsorship (MH)", allocatedAmount: 3000, allocationDate: "2026-07-06", status: "active", projectId: "fam_001" },
-            { id: "ALC-2026-000002", targetTitle: "Masjid Al-Noor Construction", allocatedAmount: 2000, allocationDate: "2026-07-06", status: "active", projectId: "masj_001" }
-          ]);
-        } else {
-          setDonor({ id: donorSnap.id, ...donorSnap.data() });
-
-          // 2. Fetch donations
-          const donQuery = query(collection(db, "donations"), where("donorId", "==", donorId));
-          const donSnap = await getDocs(donQuery);
-          const donList: any[] = [];
-          donSnap.forEach(doc => donList.push({ id: doc.id, ...doc.data() }));
-          setDonations(donList);
-
-          // 3. Fetch allocations
-          const allocQuery = query(collection(db, "allocations"), where("donorId", "==", donorId));
-          const allocSnap = await getDocs(allocQuery);
-          const allocList: any[] = [];
-          allocSnap.forEach(doc => allocList.push({ id: doc.id, ...doc.data() }));
-          setAllocations(allocList);
+        const res = await fetch(`/api/donor/dashboard?donorId=${encodeURIComponent(donorId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.donor) {
+            setDonor(data.donor);
+            setDonations(data.donations || []);
+            setAllocations(data.allocations || []);
+            return;
+          }
         }
+        
+        // Fallback default mock if newly created or offline
+        const fallbackDonor = {
+          id: donorId,
+          name: donorId === "DNR-2026-000002" ? "Sara Ahmed" : "Ahmed Khan",
+          email: donorId === "DNR-2026-000002" ? "sara.ahmed@example.com" : "ahmed.khan@example.com",
+          phone: donorId === "DNR-2026-000002" ? "+447711223344" : "+919876543210",
+          country: donorId === "DNR-2026-000002" ? "GB" : "IN",
+          city: donorId === "DNR-2026-000002" ? "London" : "Mumbai",
+          dateJoined: "2026-01-15",
+          totalDonations: 2,
+          totalAmountDonated: 5000,
+          projectsSupportedCount: 1,
+          casesSupportedCount: 1,
+          status: "active",
+          communicationHistory: []
+        };
+        setDonor(fallbackDonor);
       } catch (err) {
         console.error("Error loading donor profile workspace:", err);
       } finally {

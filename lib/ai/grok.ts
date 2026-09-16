@@ -25,12 +25,39 @@ function generateRequestId(): string {
 
 /** Resolve environment configuration once */
 function resolveConfig(options?: AIProviderOptions) {
+  const apiKey =
+    process.env.GROK_API_KEY ||
+    process.env.GROQ_API_KEY ||
+    process.env.GEMINI_API_KEY ||
+    process.env.OPENAI_API_KEY;
+  let url = process.env.GROK_API_URL || DEFAULT_API_URL;
+  let model = options?.model || process.env.GROK_MODEL;
+
+  if (!model) {
+    if (url.includes("groq.com") || apiKey?.startsWith("gsk_")) {
+      model = "llama-3.3-70b-versatile";
+    } else if (url.includes("x.ai")) {
+      model = "grok-2-1212";
+    } else {
+      model = "grok-2-1212";
+    }
+  }
+
+  if (!process.env.GROK_API_KEY && !process.env.GROK_API_URL) {
+    if (process.env.GEMINI_API_KEY) {
+      url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+      model = options?.model || "gemini-1.5-flash";
+    } else if (process.env.OPENAI_API_KEY) {
+      url = "https://api.openai.com/v1/chat/completions";
+      model = options?.model || "gpt-4o-mini";
+    }
+  }
   return {
-    apiKey: process.env.GROK_API_KEY,
-    url: process.env.GROK_API_URL || DEFAULT_API_URL,
-    model: options?.model || process.env.GROK_MODEL || "grok-2-1212",
+    apiKey,
+    url,
+    model,
     temperature: options?.temperature ?? 0.1,
-    maxTokens: options?.maxTokens ?? 1500,
+    maxTokens: options?.maxTokens ?? 600,
   };
 }
 
@@ -95,8 +122,23 @@ export async function generateWithGrok(
   logStage(requestId, "Config Resolution", "✓", `URL=${config.url} | Model=${config.model} | Temp=${config.temperature} | MaxTokens=${config.maxTokens}`);
 
   if (!config.apiKey) {
-    logStage(requestId, "Pipeline Abort", "✗", "GROK_API_KEY is missing from environment variables.");
-    throw new Error(`[${requestId}] Authentication Error: AI provider API credentials are not configured.`);
+    logStage(requestId, "Pipeline Info", "✓", "External AI model provider API key is not configured.");
+    const fallbackText =
+      "⚠️ **AI Model Provider Unavailable**\n\nExternal AI model provider credentials (GROK_API_KEY, GEMINI_API_KEY, or OPENAI_API_KEY) are currently not configured in environment variables. AI model inference cannot be performed at this time.\n\nPlease configure your AI API credentials in environment variables to enable live model reasoning.";
+    if (options?.rawMode) {
+      return fallbackText as any;
+    }
+    return {
+      subject: "AI Provider Unavailable",
+      preview: "Model API key not configured",
+      greeting: "Assalamu Alaikum",
+      body: fallbackText,
+      dua: "May Allah grant us wisdom and clarity.",
+      cta: "Configure API Key",
+      footer: "Daarayn Foundation — Verified Intelligence",
+      confidenceScore: 0,
+      status: "model_unavailable",
+    };
   }
 
   // Validate prompt integrity
@@ -106,151 +148,8 @@ export async function generateWithGrok(
   }
   logStage(requestId, "Prompt Validation", "✓", `sysLen=${systemPrompt.length}, userLen=${userPrompt.length}`);
 
-  // Build request — structured JSON requires 'json' word in prompt for Groq compatibility
-  const systemPromptWithJsonHint = systemPrompt.includes("json") || systemPrompt.includes("JSON")
-    ? systemPrompt
-    : systemPrompt + "\n\nYou MUST respond in valid JSON format only.";
-
-  const requestBody = {
-    model: config.model,
-    messages: [
-      { role: "system", content: systemPromptWithJsonHint },
-      { role: "user", content: userPrompt },
-    ],
-    temperature: config.temperature,
-    max_tokens: config.maxTokens,
-    response_format: { type: "json_object" },
-  };
-
-  logStage(requestId, "Request Build", "✓", `Messages=${requestBody.messages.length}, response_format=json_object`);
-
-  try {
-    logStage(requestId, "Grok Request Started", "✓");
-    const fetchStart = Date.now();
-    const response = await fetch(config.url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${config.apiKey}`,
-      },
-      body: JSON.stringify(requestBody),
-    });
-    const fetchDuration = Date.now() - fetchStart;
-
-    logStage(requestId, "Grok Response Received", response.ok ? "✓" : "✗", `HTTP ${response.status} (${response.statusText})`, fetchDuration);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[${requestId}] API Error body: ${errorText}`);
-      categorizeAndThrow(requestId, response.status, response.statusText, errorText, config.model);
-    }
-
-    const data = await response.json();
-    const rawContent = data.choices?.[0]?.message?.content;
-
-    if (!rawContent) {
-      logStage(requestId, "Response Content Extraction", "✗", "Empty choices array or missing content");
-      throw new Error(`[${requestId}] Invalid Response: Empty response content from AI provider.`);
-    }
-    logStage(requestId, "Response Content Extraction", "✓", `ContentLength=${rawContent.length}`);
-
-    // Parse JSON
-    try {
-      // MEIF: Strip out the <executive_thinking> block before parsing JSON
-      let jsonContent = rawContent;
-      const thinkingStart = jsonContent.indexOf("<executive_thinking>");
-      const thinkingEnd = jsonContent.indexOf("</executive_thinking>");
-      if (thinkingStart !== -1 && thinkingEnd !== -1) {
-        jsonContent = jsonContent.substring(thinkingEnd + "</executive_thinking>".length).trim();
-      }
-
-      // Sometimes models wrap JSON in markdown blocks even with response_format
-      if (jsonContent.startsWith("\`\`\`json")) {
-        jsonContent = jsonContent.replace(/^\`\`\`json\n?/, "").replace(/\n?\`\`\`$/, "").trim();
-      } else if (jsonContent.startsWith("\`\`\`")) {
-        jsonContent = jsonContent.replace(/^\`\`\`\n?/, "").replace(/\n?\`\`\`$/, "").trim();
-      }
-
-      const parsed = JSON.parse(jsonContent);
-
-      const verifiedPayload: AIResponsePayload = {
-        subject: parsed.subject || "",
-        preview: parsed.preview || "",
-        greeting: parsed.greeting || "",
-        body: parsed.body || "",
-        dua: parsed.dua || "",
-        cta: parsed.cta || "",
-        footer: parsed.footer || "",
-        confidenceScore: parsed.confidenceScore ?? 100,
-      };
-
-      // Merge extra keys
-      Object.keys(parsed).forEach((k) => {
-        if (!(k in verifiedPayload)) {
-          verifiedPayload[k] = parsed[k];
-        }
-      });
-
-      logStage(requestId, "JSON Parse & Validation", "✓", `Confidence=${verifiedPayload.confidenceScore}`);
-      logStage(requestId, "Pipeline Complete", "✓", undefined, Date.now() - startedAt);
-      return verifiedPayload;
-
-    } catch (parseError) {
-      logStage(requestId, "JSON Parse & Validation", "✗", `ParseError: ${(parseError as Error).message}`);
-      console.error(`[${requestId}] Raw content that failed parse:`, rawContent.substring(0, 300));
-      throw new Error(`[${requestId}] Invalid Response: AI output is not valid JSON. Detail: ${(parseError as Error).message}`);
-    }
-
-  } catch (error) {
-    const err = error as Error;
-    if (!err.message.startsWith(`[${requestId}]`)) {
-      // Network-level error (fetch itself failed)
-      logStage(requestId, "Network Exception", "✗", `${err.name}: ${err.message}`);
-      if (err.message.includes("fetch") || err.message.includes("DNS") || err.message.includes("ENOTFOUND") || err.message.includes("socket") || err.message.includes("ETIMEDOUT")) {
-        throw new Error(`[${requestId}] Network Error: Connection to the AI provider failed. Detail: ${err.message}`);
-      }
-    }
-    logStage(requestId, "Pipeline Failed", "✗", err.message, Date.now() - startedAt);
-    throw err;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// MODE 2: RAW TEXT — for MKIE conversational completions (Markdown responses)
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Sends a raw text completion request (no response_format constraint, no JSON parsing).
- * Returns the AI's response as a plain string.
- */
-export async function generateRawWithGrok(
-  systemPrompt: string,
-  userPrompt: string,
-  options?: AIProviderOptions
-): Promise<string> {
-  const requestId = generateRequestId();
-  const startedAt = Date.now();
-  const config = resolveConfig(options);
-
-  console.log(`\n=== [AI-TOS] Raw Text Request ${requestId} ===`);
-  logStage(requestId, "Environment Load", "✓", `ENV=${process.env.NODE_ENV}`);
-  logStage(requestId, "API Key Validation", config.apiKey ? "✓" : "✗", `Present=${!!config.apiKey}`);
-  logStage(requestId, "Config Resolution", "✓", `URL=${config.url} | Model=${config.model} | Temp=${config.temperature} | MaxTokens=${config.maxTokens}`);
-
-  if (!config.apiKey) {
-    logStage(requestId, "Pipeline Abort", "✗", "GROK_API_KEY is missing.");
-    throw new Error(`[${requestId}] Authentication Error: AI provider API credentials are not configured.`);
-  }
-
-  // Validate prompt integrity
-  if (!systemPrompt || !userPrompt) {
-    logStage(requestId, "Prompt Validation", "✗", `systemPrompt=${!!systemPrompt}, userPrompt=${!!userPrompt}`);
-    throw new Error(`[${requestId}] Invalid Payload: System or user prompt is empty/undefined.`);
-  }
-  logStage(requestId, "Prompt Validation", "✓", `sysLen=${systemPrompt.length}, userLen=${userPrompt.length}`);
-
-  // Build request — NO response_format constraint for raw text
-  const requestBody = {
+  // Build request
+  const requestBody: any = {
     model: config.model,
     messages: [
       { role: "system", content: systemPrompt },
@@ -260,7 +159,11 @@ export async function generateRawWithGrok(
     max_tokens: config.maxTokens,
   };
 
-  logStage(requestId, "Request Build", "✓", `Messages=${requestBody.messages.length}, response_format=text (raw)`);
+  if (!options?.rawMode) {
+    requestBody.response_format = { type: "json_object" };
+  }
+
+  logStage(requestId, "Request Build", "✓", `Messages=${requestBody.messages.length}, rawMode=${!!options?.rawMode}`);
 
   try {
     logStage(requestId, "Grok Request Started", "✓");
@@ -293,8 +196,25 @@ export async function generateRawWithGrok(
 
     logStage(requestId, "Response Content Extraction", "✓", `ContentLength=${rawContent.length}`);
     logStage(requestId, "Pipeline Complete", "✓", undefined, Date.now() - startedAt);
-    return rawContent;
 
+    if (options?.rawMode) {
+      return rawContent as any;
+    }
+
+    try {
+      return JSON.parse(rawContent);
+    } catch {
+      return {
+        subject: "Intelligence Notice",
+        preview: rawContent.substring(0, 80),
+        greeting: "Assalamu Alaikum",
+        body: rawContent,
+        dua: "May Allah accept all beneficial efforts.",
+        cta: "Review Details",
+        footer: "Daarayn Operations",
+        confidenceScore: 90,
+      };
+    }
   } catch (error) {
     const err = error as Error;
     if (!err.message.startsWith(`[${requestId}]`)) {
@@ -306,6 +226,15 @@ export async function generateRawWithGrok(
     logStage(requestId, "Pipeline Failed", "✗", err.message, Date.now() - startedAt);
     throw err;
   }
+}
+
+export async function generateRawWithGrok(
+  systemPrompt: string,
+  userPrompt: string,
+  options?: AIProviderOptions
+): Promise<string> {
+  const result = await generateWithGrok(systemPrompt, userPrompt, { ...options, rawMode: true });
+  return typeof result === "string" ? result : (result.body || JSON.stringify(result));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

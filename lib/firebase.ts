@@ -20,7 +20,7 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 // Initialize services
 const db = getFirestore(app);
 
-if (process.env.NODE_ENV === "test") {
+if (process.env.NODE_ENV === "test" || firebaseConfig.projectId === "dummy_project_id") {
   disableNetwork(db).catch(() => {});
 }
 

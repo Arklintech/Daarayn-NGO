@@ -203,8 +203,6 @@ export default function Footer() {
             <Link href="/#about" className="ft-small-link">Privacy Policy</Link>
             <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.6rem' }}>◆</span>
             <Link href="/#about" className="ft-small-link">Terms of Service</Link>
-            <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.6rem' }}>◆</span>
-            <Link href="/#ledger" className="ft-small-link">Transparency Ledger</Link>
           </div>
         </div>
 

@@ -1,51 +1,38 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
-import fs from "fs";
-import path from "path";
-
-let useLocalFallback = false;
-const dbPath = path.join(process.cwd(), "data", "ledger.json");
-
-function getLocalLedger() {
-  const dir = path.dirname(dbPath);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  if (!fs.existsSync(dbPath)) {
-    fs.writeFileSync(dbPath, JSON.stringify([], null, 2));
-  }
-  const data = fs.readFileSync(dbPath, "utf8");
-  return JSON.parse(data);
-}
+import { donationRepository } from "@/lib/repositories/donationRepository";
 
 export async function GET() {
-  if (!useLocalFallback) {
-    try {
-      const snapshot = await getDocs(collection(db, "publicLedger"));
-      const ledger: any[] = [];
-      snapshot.forEach((doc) => {
-        ledger.push({ id: doc.id, ...doc.data() });
-      });
-      ledger.sort((a, b) => b.id.localeCompare(a.id));
-      
-      const response = NextResponse.json(ledger);
-      response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
-      return response;
-    } catch (error: any) {
-      console.warn("Firestore API read failed, switching to local fallback:", error.message);
-      useLocalFallback = true;
-    }
-  }
-
   try {
-    const localData = getLocalLedger();
-    const response = NextResponse.json(localData);
+    const donations = await donationRepository.getAll();
+    const ledger = donations.map((d: any) => ({
+      id: d.trackingId || d.id,
+      donationId: d.id,
+      donor: d.donorName || "Generous Donor",
+      amount: Number(d.amount || 0),
+      cause: d.causeName || (d.selectedCauses?.[0]?.causeName) || "General Support",
+      date: d.createdAt ? new Date(d.createdAt).toLocaleDateString("en-IN") : "Recent",
+      createdAt: d.createdAt,
+      status: d.status || "completed",
+      refCode: d.transactionRef || "",
+      proofDriveFileId: d.proofDriveFileId || "",
+      proofUrl: d.proofDriveFileId ? `/api/media/${d.proofDriveFileId}` : null,
+      proof: d.proofDriveFileId ? "✓ Verified on Drive" : "⏳ Direct Verification"
+    }));
+
+    // Sort descending by creation date or ID
+    ledger.sort((a, b) => {
+      const dateA = new Date(a.createdAt || 0).getTime();
+      const dateB = new Date(b.createdAt || 0).getTime();
+      return dateB - dateA;
+    });
+
+    const response = NextResponse.json(ledger);
     response.headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
     return response;
-  } catch (error) {
-    console.error("Local database read error:", error);
+  } catch (error: any) {
+    console.error("[LedgerAPI] Failed to fetch donations from Google Sheets:", error);
     return NextResponse.json({ error: "Failed to read contribution ledger." }, { status: 500 });
   }
 }
 export const dynamic = 'force-dynamic';
+

@@ -85,6 +85,19 @@ export class DonorRepository extends BaseRepository<DonorProfile> {
     const all = await this.getAll();
     return all.find((d) => d.email.toLowerCase() === email.toLowerCase()) || null;
   }
+
+  public async findByContact(contact: string): Promise<DonorProfile | null> {
+    const all = await this.getAll();
+    const clean = contact.toLowerCase().trim();
+    if (!clean) return null;
+    return (
+      all.find(
+        (d) =>
+          (d.email && d.email.toLowerCase().trim() === clean) ||
+          (d.phone && d.phone.trim() === clean)
+      ) || null
+    );
+  }
 }
 
 export const donorRepository = new DonorRepository();
