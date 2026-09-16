@@ -97,21 +97,21 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
 
   <!-- HEADER -->
   <tr>
-    <td align="center" style="padding:0 0 40px;">
+    <td align="center" style="padding:0 0 32px;">
       <table role="presentation" cellpadding="0" cellspacing="0">
         <tr>
           <td valign="middle" style="padding-right: 16px;">
             <img src="${logoUrl}" alt="Daarayn Logo" width="80" height="80" style="display:block; width:80px; height:80px; object-fit:contain;" />
           </td>
           <td valign="middle">
-            <div style="font-family:'Cinzel', Georgia, serif; font-size:26px; font-weight:600; letter-spacing:4px; color:#ffffff; line-height:1.1; margin:0; padding:0; text-shadow: 0 2px 10px rgba(255,255,255,0.1); text-align: center;">
+            <div style="font-family:'Cinzel', Georgia, serif; font-size:26px; font-weight:700; letter-spacing:4px; color:#ffffff; line-height:1.1; margin:0; padding:0; text-shadow: 0 2px 10px rgba(255,255,255,0.1); text-align: center;">
               DAARAYN
             </div>
-            <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:4px;">
+            <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:6px;">
               <tr>
                 <td style="width:30px; border-bottom:1px solid rgba(255,255,255,0.5); vertical-align:middle;">&nbsp;</td>
                 <td style="padding:0 8px;">
-                  <div style="font-family:'Cinzel', Georgia, serif; font-size:11px; font-weight:300; letter-spacing:3px; color:rgba(255, 249, 221, 0.9); text-transform:uppercase; margin:0;">
+                  <div style="font-family:'Cinzel', Georgia, serif; font-size:11px; font-weight:600; letter-spacing:3px; color:#D4AF37; text-transform:uppercase; margin:0;">
                     FOUNDATION
                   </div>
                 </td>
@@ -127,11 +127,11 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
   <!-- EYEBROW (PILL) -->
   ${props.eyebrow ? `
   <tr>
-    <td align="center" style="padding:0 0 30px;">
-      <table role="presentation" cellpadding="0" cellspacing="0" style="border:1px solid #D4AF37; border-radius:24px; padding:6px 16px;">
+    <td align="center" style="padding:0 0 26px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" style="border:1px solid #D4AF37; border-radius:24px; padding:6px 18px;">
         <tr>
           <td align="center">
-            <span style="font-family:Arial, Helvetica, sans-serif; font-size:10px; font-weight:bold; letter-spacing:1.5px; color:#D4AF37; text-transform:uppercase;">${props.eyebrow}</span>
+            <span style="font-family:Arial, Helvetica, sans-serif; font-size:10.5px; font-weight:bold; letter-spacing:1.5px; color:#D4AF37; text-transform:uppercase;">${props.eyebrow}</span>
           </td>
         </tr>
       </table>
@@ -141,15 +141,15 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
 
   <!-- GREETING & INTRO -->
   <tr>
-    <td style="padding:0 0 20px;">
+    <td style="padding:0 0 16px;">
       ${props.greeting ? `
-      <p style="font-family:Arial, sans-serif; font-size:14px; color:#f3f4f6; line-height:1.6; margin:0; font-weight:bold;">
+      <p style="font-family:Georgia, serif; font-size:16px; color:#E9D9AE; line-height:1.6; margin:0 0 16px; font-weight:bold;">
         ${props.greeting}
       </p>
       ` : ''}
       
       ${props.bodyParagraphs ? props.bodyParagraphs.map(p => `
-      <p style="font-family:Arial, sans-serif; font-size:13.5px; color:#f3f4f6; line-height:1.6; margin:20px 0 0;">
+      <p style="font-family:Arial, sans-serif; font-size:13.5px; color:#f3f4f6; line-height:1.6; margin:14px 0 0;">
         ${p}
       </p>
       `).join('') : ''}
@@ -160,18 +160,18 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
   ${props.contributionSummary && props.contributionSummary.length > 0 ? `
   <tr>
     <td style="padding:10px 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:rgba(10, 28, 18, 0.6); border:1px solid rgba(255, 249, 221, 0.1); border-radius:8px; padding:20px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0A1812; border:1px solid rgba(255, 255, 255, 0.1); border-radius:8px; padding:20px;">
         <tr>
-          <td colspan="2" style="padding-bottom:16px;">
+          <td colspan="2" style="padding-bottom:14px;">
             <div style="font-family:Georgia, serif; font-weight:bold; font-size:15px; color:#D4AF37;">Contribution Summary</div>
           </td>
         </tr>
         ${props.contributionSummary.map((item, index) => `
         <tr>
-          <td style="padding:8px 0; border-bottom:${index === props.contributionSummary!.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)'}; font-family:Arial, sans-serif; font-size:13px; color:#9ca3af;">
+          <td style="padding:10px 0; border-bottom:${index === props.contributionSummary!.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.07)'}; font-family:Arial, sans-serif; font-size:13px; color:#9ca3af;">
             ${item.label}
           </td>
-          <td align="right" style="padding:8px 0; border-bottom:${index === props.contributionSummary!.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.05)'}; font-family:Arial, sans-serif; font-size:13px; color:#f3f4f6; font-weight:bold;">
+          <td align="right" style="padding:10px 0; border-bottom:${index === props.contributionSummary!.length - 1 ? 'none' : '1px solid rgba(255,255,255,0.07)'}; font-family:Arial, sans-serif; font-size:13px; color:#ffffff; font-weight:bold;">
             ${item.value}
           </td>
         </tr>
@@ -185,14 +185,14 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
   ${props.projectUpdate ? `
   <tr>
     <td style="padding:10px 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:rgba(10, 28, 18, 0.6); border:1px solid rgba(255, 249, 221, 0.1); border-radius:8px; padding:20px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0A1812; border:1px solid rgba(255, 255, 255, 0.1); border-radius:8px; padding:20px;">
         <tr>
           <td style="padding-bottom:12px;">
             <div style="font-family:Georgia, serif; font-weight:bold; font-size:15px; color:#D4AF37;">Project Update</div>
           </td>
         </tr>
         <tr>
-          <td style="font-family:Arial, sans-serif; font-size:13px; color:#f3f4f6; line-height:1.6;">
+          <td style="font-family:Arial, sans-serif; font-size:13px; color:#f3f4f6; line-height:1.7;">
             ${props.projectUpdate}
           </td>
         </tr>
@@ -205,10 +205,10 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
   ${props.transparencySummary ? `
   <tr>
     <td style="padding:10px 0;">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:rgba(10, 28, 18, 0.6); border:1px solid rgba(255, 249, 221, 0.1); border-radius:8px; padding:20px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#0A1812; border:1px solid rgba(255, 255, 255, 0.1); border-radius:8px; padding:20px;">
         <tr>
           <td style="padding-bottom:12px;">
-            <div style="font-family:Georgia, serif; font-weight:bold; font-size:15px; color:#D4AF37;">Transparency & Accountability</div>
+            <div style="font-family:Georgia, serif; font-weight:bold; font-size:15px; color:#D4AF37;">Transparency &amp; Accountability</div>
           </td>
         </tr>
         <tr>
@@ -224,11 +224,11 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
   <!-- CTA BUTTON -->
   ${props.ctaLink && props.ctaText ? `
   <tr>
-    <td align="center" style="padding:30px 0 20px;">
+    <td align="center" style="padding:28px 0 20px;">
       <table role="presentation" cellpadding="0" cellspacing="0">
         <tr>
-          <td align="center" style="background-color:#EFE5C9; border-radius:6px;">
-            <a href="${props.ctaLink}" style="display:inline-block; padding:12px 24px; font-family:Arial, Helvetica, sans-serif; font-size:12px; font-weight:bold; color:#1A1406; text-decoration:none; letter-spacing:0.5px; text-transform:uppercase;">${props.ctaText}</a>
+          <td align="center" style="background-color:#EFE5C9; border-radius:24px;">
+            <a href="${props.ctaLink}" style="display:inline-block; padding:12px 28px; font-family:Arial, Helvetica, sans-serif; font-size:11.5px; font-weight:bold; color:#1A1406; text-decoration:none; letter-spacing:1px; text-transform:uppercase;">${props.ctaText}</a>
           </td>
         </tr>
       </table>
@@ -239,9 +239,10 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
   <!-- DUA -->
   ${props.dua ? `
   <tr>
-    <td align="center" style="padding:46px 6px 0;">
-      <div style="font-family:Georgia, serif; font-size:17px; color:#E9D9AE; direction:rtl; line-height:1.6;">${props.dua.arabic}</div>
-      <div style="font-family:Georgia, serif; font-style:italic; font-size:12.5px; color:#8A93A6; margin-top:12px; line-height:1.6; max-width:420px;">${props.dua.english}</div>
+    <td align="center" style="padding:32px 6px 0;">
+      <div style="font-family:Georgia, serif; font-size:18px; font-weight:bold; color:#E9D9AE; direction:rtl; line-height:1.6;">${props.dua.arabic}</div>
+      <div style="font-family:Georgia, serif; font-style:italic; font-size:12.5px; color:#8A93A6; margin-top:10px; line-height:1.6; max-width:420px;">${props.dua.english}</div>
+      <div style="border-bottom:1px solid rgba(255,255,255,0.1); margin-top:24px; width:100%;"></div>
     </td>
   </tr>
   ` : ''}
@@ -249,7 +250,7 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
   <!-- SIGN OFF -->
   ${props.signOff ? `
   <tr>
-    <td style="padding:44px 6px 0;">
+    <td style="padding:28px 6px 0;">
       <p style="font-family:Georgia, serif; font-size:14.5px; color:#C3C7CE; margin:0;">
         ${props.signOff}
       </p>
@@ -259,12 +260,12 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
 
   <!-- FOOTER -->
   <tr>
-    <td style="padding:44px 6px 0; border-top:1px solid rgba(255,255,255,0.07);">
-      <p style="font-family:Arial, Helvetica, sans-serif; font-size:11.5px; color:#545D6E; line-height:1.7; margin:26px 0 0;">
+    <td style="padding:32px 6px 0;">
+      <p style="font-family:Arial, Helvetica, sans-serif; font-size:11.5px; color:#545D6E; line-height:1.7; margin:0;">
         This communication has been generated from verified records approved by Daarayn Foundation Trust. Amanah, transparency, and accountability are the core pillars of our foundation.
       </p>
       <p style="font-family:Arial, Helvetica, sans-serif; font-size:11.5px; color:#545D6E; margin:14px 0 0;">
-        Questions? Write to us at <a href="mailto:${process.env.SMTP_USER || "info@daarayn.org"}" style="color:#C9A24B; text-decoration:none;">${process.env.SMTP_USER || "info@daarayn.org"}</a>
+        Questions? Write to us at <a href="mailto:${process.env.SMTP_USER || "daaraynorg@gmail.com"}" style="color:#C9A24B; text-decoration:none;">${process.env.SMTP_USER || "daaraynorg@gmail.com"}</a>
       </p>
       <p style="font-family:Arial, Helvetica, sans-serif; font-size:11px; color:#3E4653; margin:18px 0 0;">
         &copy; ${new Date().getFullYear()} Daarayn Foundation. All rights reserved.
