@@ -24,10 +24,10 @@ export default function AgentMessagesPage() {
       id: `conv_${agentData?.id || 'agent_1'}_general`,
       agentId: agentData?.id || 'agent_1',
       type: "Operations",
-      lastMessage: { text: "Assalamu Alaikum, please send update on Silchar project.", timestamp: new Date().toISOString(), senderRole: "Admin" },
+      lastMessage: { text: "Assalamu Alaikum, please send update on Silchar project.", timestamp: new Date().toISOString(), senderRole: "Admin" as const },
       unreadCountAdmin: 0,
       unreadCountAgent: 0,
-      status: "Active",
+      status: "Waiting For Admin" as const,
       isUrgent: false,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -72,7 +72,7 @@ export default function AgentMessagesPage() {
       const payload = {
         conversationId: targetConvId,
         senderId: agentData.id,
-        senderRole: "Agent",
+        senderRole: "Agent" as const,
         senderName: agentData.name,
         text: newMessage,
         timestamp: new Date().toISOString()
@@ -84,7 +84,8 @@ export default function AgentMessagesPage() {
         body: JSON.stringify(payload)
       });
 
-      setMessages(prev => [...prev, { id: `msg_${Date.now()}`, ...payload }]);
+      const newMsg: FieldMessage = { id: `msg_${Date.now()}`, ...payload };
+      setMessages(prev => [...prev, newMsg]);
       setNewMessage("");
     } catch (err) {
       console.error("Failed to send message:", err);
@@ -107,54 +108,30 @@ export default function AgentMessagesPage() {
     setIsUploading(true);
 
     try {
-      let fileUrl = "";
-      try {
-        const timestamp = Date.now();
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const filename = `${timestamp}_${safeName}`;
-        const storageRef = ref(storage, `communications/${filename}`);
-        await uploadBytes(storageRef, file);
-        fileUrl = await getDownloadURL(storageRef);
-      } catch (uploadErr) {
-        console.error("Firebase Storage upload failed", uploadErr);
-        throw new Error("Failed to upload file to storage.");
-      }
-
       const isImage = file.type.startsWith("image/");
-
-      const msg: any = {
+      const payload = {
         conversationId: activeConvId,
         senderId: agentData.id,
-        senderRole: "Agent",
+        senderRole: "Agent" as const,
         senderName: agentData.name,
         text: `📎 ${file.name}`,
         isMedia: true,
-        mediaBase64: fileUrl,
         mediaType: file.type,
         mediaName: file.name,
         isImage,
         timestamp: new Date().toISOString()
       };
 
-      await addDoc(collection(db, "field_messages"), msg);
-
-      await updateDoc(doc(db, "field_conversations", activeConvId), {
-        lastMessage: {
-          text: `📎 ${file.name}`,
-          timestamp: new Date().toISOString(),
-          senderRole: "Agent"
-        },
-        unreadCountAdmin: 1,
-        updatedAt: new Date().toISOString(),
-        status: "Waiting For Admin"
+      await fetch('/api/field/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
 
-      await notifyConversation.newMessage(activeConvId, agentData.id, agentData.name, `📎 ${file.name}`);
-
-
+      const newMsg: FieldMessage = { id: `msg_${Date.now()}`, ...payload };
+      setMessages(prev => [...prev, newMsg]);
     } catch (err) {
       console.error("File upload failed", err);
-      alert("Failed to send file. Please try again.");
     } finally {
       setIsUploading(false);
       e.target.value = '';
@@ -184,49 +161,27 @@ export default function AgentMessagesPage() {
       recorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
 
-        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        let audioUrl = "";
-        try {
-          const timestamp = Date.now();
-          const filename = `${timestamp}_VoiceNote.webm`;
-          const storageRef = ref(storage, `communications/${filename}`);
-          const audioFile = new File([audioBlob], "VoiceNote.webm", { type: "audio/webm" });
-          await uploadBytes(storageRef, audioFile);
-          audioUrl = await getDownloadURL(storageRef);
-        } catch (uploadErr) {
-          console.error("Firebase Storage voice note upload failed", uploadErr);
-          alert("Failed to upload voice note.");
-          return;
-        }
-
-        const msg: any = {
+        const payload = {
           conversationId: activeConvId,
           senderId: agentData.id,
-          senderRole: "Agent",
+          senderRole: "Agent" as const,
           senderName: agentData.name,
           text: "🎤 Voice Note",
           isMedia: true,
-          mediaBase64: audioUrl,
           mediaType: "audio/webm",
           mediaName: "VoiceNote.webm",
           timestamp: new Date().toISOString()
         };
 
-          await addDoc(collection(db, "field_messages"), msg);
+        await fetch('/api/field/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
 
-          await updateDoc(doc(db, "field_conversations", activeConvId), {
-            lastMessage: {
-              text: "🎤 Voice Note",
-              timestamp: new Date().toISOString(),
-              senderRole: "Agent"
-            },
-            unreadCountAdmin: 1,
-            updatedAt: new Date().toISOString(),
-            status: "Waiting For Admin"
-          });
-
-          await notifyConversation.newMessage(activeConvId, agentData.id, agentData.name, "🎤 Voice Note");
-        };
+        const newMsg: FieldMessage = { id: `msg_${Date.now()}`, ...payload };
+        setMessages(prev => [...prev, newMsg]);
+      };
 
       recorder.start();
       setMediaRecorder(recorder);
@@ -237,7 +192,7 @@ export default function AgentMessagesPage() {
     }
   };
 
-  const handleStartOperationsConv = async () => {
+  const handleStartOperationsConv = () => {
     if (!agentData) return;
     const convId = `CONV-${new Date().getFullYear()}-${Math.floor(100000 + Math.random()*900000)}`;
     const newConv: FieldConversation = {
@@ -246,13 +201,13 @@ export default function AgentMessagesPage() {
       agentId: agentData.id,
       unreadCountAdmin: 0,
       unreadCountAgent: 0,
-      status: "Resolved",
+      status: "Waiting For Admin",
       isUrgent: false,
       lastMessage: { text: "Conversation Started", timestamp: new Date().toISOString(), senderRole: "System" },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    await setDoc(doc(db, "field_conversations", convId), newConv);
+    setConversations(prev => [newConv, ...prev]);
     setActiveConvId(convId);
     setIsMobileListVisible(false);
   };

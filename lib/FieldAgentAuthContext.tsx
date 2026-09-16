@@ -69,13 +69,29 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
               name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Field Agent",
               email: firebaseUser.email || "",
               phone: "+91 98765 43210",
+              country: "India",
+              state: "Assam",
+              district: "Silchar",
+              city: "Silchar",
+              address: "Barik Nagar",
               role: "Senior Inspector",
               region: "Assam",
-              assignedCauses: 4,
-              pendingReports: 2,
-              completedReports: 12,
               status: "Active",
-              joinedDate: new Date().toISOString()
+              joinDate: new Date().toISOString(),
+              requirePasswordChange: false,
+              permissions: {
+                submitReports: true,
+                uploadEvidence: true,
+                viewOwnReports: true,
+                replyConversations: true,
+                receiveNotifications: true
+              },
+              stats: {
+                reportsSubmitted: 14,
+                reportsApproved: 12,
+                reportsPending: 2,
+                reportsRejected: 0
+              }
             });
           }
         } catch (err) {
