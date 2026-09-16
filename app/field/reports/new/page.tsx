@@ -1,15 +1,11 @@
 'use client';
 
 import React, { useState } from "react";
-import { db } from "@/lib/firebase";
-import { doc, setDoc, collection, addDoc } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { 
   ArrowLeft, ArrowRight, CheckCircle, MapPin, Users, FileText, Camera, Upload, ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
-import { getNextFieldSerial, FieldReport } from "@/lib/db-field-ops";
-import { notifyFieldReport } from "@/lib/notifications";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 
 export default function NewReportWizard() {
@@ -40,88 +36,39 @@ export default function NewReportWizard() {
     if (!agentData) return;
     setLoading(true);
     try {
-      const reportId = await getNextFieldSerial("field_reports", "FR");
-      const agentId = agentData.id;
-      const agentName = agentData.name;
-
-      const report: FieldReport = {
-        id: reportId,
-        agentId,
-        agentName,
-        category: formData.category,
-        title: formData.title,
-        description: formData.description,
-        urgency: formData.urgency as "Low" | "Medium" | "High",
-        estimatedBudget: formData.estimatedBudget,
-        location: {
-          country: formData.country,
-          state: formData.state,
-          district: formData.district,
-          village: formData.village
-        },
-        beneficiaries: {
-          families: Number(formData.families),
-          children: Number(formData.children),
-          women: Number(formData.women),
-          elderly: Number(formData.elderly),
-          description: formData.beneficiaryDesc
-        },
-        media: [
-          "https://images.unsplash.com/photo-1548048026-5a1a941d93d3?q=80&w=400"
-        ], // Mocked image for v1
-        documents: [],
-        status: "Pending Review",
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-
-      await setDoc(doc(db, "field_reports", reportId), report);
-
-      // Create a corresponding conversation for this report so the admin can discuss it with the agent
-      const convId = `CONV-REPORT-${reportId}`;
-      const reportConv: any = {
-        id: convId,
-        type: "Report",
-        reportId: reportId,
-        agentId: agentId,
-        unreadCountAdmin: 1,
-        unreadCountAgent: 0,
-        status: "Waiting For Admin",
-        isUrgent: formData.urgency === "High",
-        lastMessage: {
-          text: `🚨 Submitted Report: ${formData.title}`,
-          timestamp: new Date().toISOString(),
-          senderRole: "Agent"
-        },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      await setDoc(doc(db, "field_conversations", convId), reportConv);
-
-      // Create an initial message in field_messages to start the discussion thread
-      const initialMessage = {
-        conversationId: convId,
-        senderId: agentId,
-        senderRole: "Agent",
-        senderName: agentName,
-        text: `Assalamu Alaikum. I have submitted the report: "${formData.title}". Please review it.\n\nDescription: ${formData.description}\n\nUrgency: ${formData.urgency}\nEstimated Budget: ${formData.estimatedBudget}`,
-        timestamp: new Date().toISOString()
-      };
-      await addDoc(collection(db, "field_messages"), initialMessage);
-
-      // Log activity
-      const actId = `ACT-${Date.now()}`;
-      await setDoc(doc(db, "field_activities", actId), {
-        id: actId,
-        reportId: reportId,
-        agentId: agentId,
-        action: "Report Submitted",
-        performedBy: agentName,
-        timestamp: new Date().toISOString()
+      const res = await fetch("/api/field/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          agentId: agentData.id,
+          agentName: agentData.name,
+          category: formData.category,
+          title: formData.title,
+          description: formData.description,
+          urgency: formData.urgency,
+          estimatedBudget: formData.estimatedBudget,
+          location: {
+            country: formData.country,
+            state: formData.state,
+            district: formData.district,
+            village: formData.village,
+          },
+          beneficiaries: {
+            families: Number(formData.families),
+            children: Number(formData.children),
+            women: Number(formData.women),
+            elderly: Number(formData.elderly),
+            description: formData.beneficiaryDesc,
+          },
+          media: [],
+          documents: [],
+        }),
       });
 
-      // Notify admin
-      await notifyFieldReport.newSubmission(reportId, agentId, formData.title, agentName, formData.urgency);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Server error submitting report.");
+      }
 
       setStep(6); // Success screen
     } catch (err) {
