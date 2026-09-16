@@ -200,4 +200,78 @@ export async function POST(request: NextRequest) {
   }
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const { reportId, status, adminNotes, assignedTo } = body;
+
+    if (!reportId) {
+      return NextResponse.json({ error: "reportId is required." }, { status: 400 });
+    }
+
+    const reports = await fieldReportRepository.getAll();
+    const existing = reports.find(r => r.id === reportId);
+    if (!existing) {
+      return NextResponse.json({ error: "Report not found." }, { status: 404 });
+    }
+
+    const nowIso = new Date().toISOString();
+    const updatedReport = {
+      ...existing,
+      status: status || existing.status,
+      adminNotes: adminNotes !== undefined ? adminNotes : existing.adminNotes,
+      assignedAdminId: assignedTo !== undefined ? assignedTo : existing.assignedAdminId,
+      updatedAt: nowIso,
+      timelineStages: {
+        ...((existing as any).timelineStages || {}),
+        [status || "update"]: { timestamp: nowIso, by: "Admin" }
+      }
+    };
+
+    // 1. Authoritative Save to Google Sheets
+    await fieldReportRepository.save(updatedReport as any);
+
+    // 2. Realtime SSE Broadcast to Field Agent & Admin
+    realtimeBroadcaster.broadcast("FIELD_REPORT_UPDATE", updatedReport);
+    realtimeBroadcaster.broadcast(`FIELD_REPORT_${reportId}`, updatedReport);
+
+    // 3. Persist Notification in Google Sheets
+    const notifId = `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    await notificationRepository.save({
+      id: notifId,
+      recipientType: "FieldAgent",
+      recipientId: existing.agentId,
+      type: "FIELD_REPORT_STATUS",
+      title: `Field Report ${status || "Updated"}`,
+      message: `Your report "${existing.title}" status is now ${status || existing.status}.`,
+      read: false,
+      relatedEntityId: reportId,
+      createdAt: nowIso,
+    });
+
+    // 4. Persist Audit Log in Google Sheets
+    const auditId = `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
+    await auditLogRepository.save({
+      id: auditId,
+      actor_id: "admin",
+      actor_role: "admin",
+      action: "UPDATE_FIELD_REPORT_STATUS",
+      entity_type: "Field_Report",
+      entity_id: reportId,
+      before_state: { status: existing.status },
+      after_state: { status: updatedReport.status, adminNotes: updatedReport.adminNotes },
+      timestamp: nowIso,
+      source: "admin_panel",
+    });
+
+    return NextResponse.json({ success: true, report: updatedReport });
+  } catch (error: any) {
+    console.error("[API/FieldReports] Status update error:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to update field report status." },
+      { status: 500 }
+    );
+  }
+}
+
 export const dynamic = "force-dynamic";

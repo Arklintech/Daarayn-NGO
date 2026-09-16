@@ -1,9 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db, storage } from "@/lib/firebase";
-import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { 
   Image, 
   Upload, 
@@ -23,25 +20,16 @@ export default function AdminMedia() {
   const [uploading, setUploading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  const DEFAULT_MEDIA = [
+    { id: "med_1", name: "student_profile.png", fileUrl: "/images/student_profile.png", size: "84 KB", type: "image/png", createdAt: "2026-07-04T12:00:00Z" },
+    { id: "med_2", name: "family_relief.png", fileUrl: "/images/family_relief.png", size: "145 KB", type: "image/png", createdAt: "2026-07-04T12:05:00Z" },
+    { id: "med_3", name: "trust_annual_report_2025.pdf", fileUrl: "", size: "1.2 MB", type: "application/pdf", createdAt: "2026-07-01T10:00:00Z" }
+  ];
+
   const fetchMedia = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, "gallery"));
-      const list: any[] = [];
-      snap.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      setMediaList(list);
-    } catch (err) {
-      console.warn("Storage registry error:", err);
-      // fallback mock list
-      const mocks = [
-        { id: "med_1", name: "student_profile.png", fileUrl: "/images/student_profile.png", size: "84 KB", type: "image/png", createdAt: "2026-07-04T12:00:00Z" },
-        { id: "med_2", name: "family_relief.png", fileUrl: "/images/family_relief.png", size: "145 KB", type: "image/png", createdAt: "2026-07-04T12:05:00Z" },
-        { id: "med_3", name: "trust_annual_report_2025.pdf", fileUrl: "", size: "1.2 MB", type: "application/pdf", createdAt: "2026-07-01T10:00:00Z" }
-      ];
-      setMediaList(mocks);
+      setMediaList(DEFAULT_MEDIA);
     } finally {
       setLoading(false);
     }
@@ -58,37 +46,31 @@ export default function AdminMedia() {
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("files", file);
+      formData.append("file", file);
+      formData.append("category", "General Media");
+      formData.append("uploadedBy", "Admin");
 
-      const res = await fetch("/api/admin/upload", {
+      const res = await fetch("/api/media", {
         method: "POST",
         body: formData,
       });
 
-      if (!res.ok) {
-        throw new Error("Upload failed. Server responded with error.");
-      }
       const data = await res.json();
-      if (!data.success || !data.urls || data.urls.length === 0) {
+      if (!res.ok || !data.success) {
         throw new Error(data.error || "Upload failed");
       }
-
-      const downloadUrl = data.urls[0];
-      const filename = downloadUrl.split('/').pop();
 
       const generatedId = `med_${Date.now()}`;
       const record = {
         id: generatedId,
         name: file.name,
-        fileUrl: downloadUrl,
+        fileUrl: data.url,
         size: `${Math.round(file.size / 1024)} KB`,
         type: file.type || "application/octet-stream",
         createdAt: new Date().toISOString(),
-        filename: filename
       };
 
-      await setDoc(doc(db, "gallery", generatedId), record);
-      fetchMedia();
+      setMediaList(prev => [record, ...prev]);
     } catch (err: any) {
       console.error("Storage upload error:", err);
       alert("Failed to upload file: " + err.message);
@@ -99,16 +81,7 @@ export default function AdminMedia() {
 
   const handleDeleteMedia = async (item: any) => {
     if (!window.confirm(`Delete ${item.name} permanently?`)) return;
-    setLoading(true);
-    try {
-      // NOTE: We only delete from firestore right now, as it's locally hosted
-      await deleteDoc(doc(db, "gallery", item.id));
-      fetchMedia();
-    } catch (err) {
-      console.error("Delete media error:", err);
-      setMediaList(prev => prev.filter(m => m.id !== item.id));
-      setLoading(false);
-    }
+    setMediaList(prev => prev.filter(m => m.id !== item.id));
   };
 
   const handleCopyLink = (item: any) => {

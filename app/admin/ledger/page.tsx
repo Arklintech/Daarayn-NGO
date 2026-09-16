@@ -1,9 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db, storage } from "@/lib/firebase";
-import { collection, getDocs, doc, setDoc, deleteDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { 
   BookMarked, 
   Plus, 
@@ -18,7 +15,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-export default function AdminLedger() {
+export default function PublicLedgerManagement() {
   const [ledger, setLedger] = useState<any[]>([]);
   const [filteredLedger, setFilteredLedger] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,31 +38,27 @@ export default function AdminLedger() {
     date: "",
     refCode: "",
     proof: "✅ Verified Ledger Entry",
-    proofUrl: ""
+    proofUrl: "",
+    createdAt: ""
   });
 
   // Load ledger on mount
   const loadLedger = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, "publicLedger"));
-      const list: any[] = [];
-      snap.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      list.sort((a, b) => b.id.localeCompare(a.id));
-      setLedger(list);
-      setFilteredLedger(list);
+      const res = await fetch("/api/ledger");
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLedger(data);
+        setFilteredLedger(data);
+      } else {
+        setLedger([]);
+        setFilteredLedger([]);
+      }
     } catch (err) {
       console.warn("Ledger query error:", err);
-      // Fallback logs
-      const mocks = [
-        { id: "DA003", donor: "Sabir Test (UPI)", cause: "Qur’an Endowment", amount: 5000, directAid: 4500, opsCost: 500, status: "completed", date: "05/07/2026", refCode: "UPI9988776655", proof: "✅ Verified Ledger Entry", proofUrl: "" },
-        { id: "DA002", donor: "Ahmad Malik (UPI)", cause: "Family Relief Bundle", amount: 8000, directAid: 7200, opsCost: 800, status: "pending", date: "04/07/2026", refCode: "UPI5544332211", proof: "⏳ Check in progress", proofUrl: "" },
-        { id: "DA001", donor: "Anonymous (UPI)", cause: "General Support", amount: 1500, directAid: 1350, opsCost: 150, status: "completed", date: "02/07/2026", refCode: "UPI1122334455", proof: "✅ Verified Ledger Entry", proofUrl: "" }
-      ];
-      setLedger(mocks);
-      setFilteredLedger(mocks);
+      setLedger([]);
+      setFilteredLedger([]);
     } finally {
       setLoading(false);
     }
@@ -83,7 +76,7 @@ export default function AdminLedger() {
     }
     const q = searchQuery.toLowerCase();
     setFilteredLedger(ledger.filter(item => 
-      item.id.toLowerCase().includes(q) ||
+      (item.id && item.id.toLowerCase().includes(q)) ||
       (item.donor && item.donor.toLowerCase().includes(q)) ||
       (item.cause && item.cause.toLowerCase().includes(q)) ||
       (item.refCode && item.refCode.toLowerCase().includes(q))
@@ -111,7 +104,8 @@ export default function AdminLedger() {
         date: formattedDate,
         refCode: "",
         proof: "✅ Verified Ledger Entry",
-        proofUrl: ""
+        proofUrl: "",
+        createdAt: new Date().toISOString()
       });
     }
     setIsEditorOpen(true);
@@ -119,47 +113,13 @@ export default function AdminLedger() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-
-    try {
-      let finalTrackingId = currentId;
-      if (!finalTrackingId) {
-        const nextIndex = ledger.length + 1;
-        finalTrackingId = 'DA' + String(nextIndex).padStart(3, '0');
-      }
-
-      const calculatedDirectAid = Math.floor(formState.amount * 0.9);
-      const calculatedOpsCost = Math.floor(formState.amount * 0.1);
-
-      const record = {
-        ...formState,
-        amount: Number(formState.amount),
-        directAid: calculatedDirectAid,
-        opsCost: calculatedOpsCost,
-        createdAt: formState.createdAt || new Date().toISOString()
-      };
-
-      await setDoc(doc(db, "publicLedger", finalTrackingId), record);
-      setIsEditorOpen(false);
-      loadLedger();
-    } catch (err) {
-      console.error("Save ledger error:", err);
-    } finally {
-      setLoading(false);
-    }
+    setIsEditorOpen(false);
+    loadLedger();
   };
 
   const handleDelete = async (id: string) => {
     if (!window.confirm(`Warning: Deleting tracking log ${id} from public transparency records is high-risk. Proceed?`)) return;
-    setLoading(true);
-    try {
-      await deleteDoc(doc(db, "publicLedger", id));
-      loadLedger();
-    } catch (err) {
-      console.error("Delete ledger error:", err);
-    } finally {
-      setLoading(false);
-    }
+    setLedger(prev => prev.filter(item => item.id !== id));
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,10 +128,19 @@ export default function AdminLedger() {
 
     setUploadingFile(true);
     try {
-      const storageRef = ref(storage, `ledger_documents/${Date.now()}_${file.name}`);
-      const snap = await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(snap.ref);
-      setFormState(prev => ({ ...prev, proofUrl: downloadUrl, proof: "📄 Receipt / Bill Uploaded" }));
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", "Ledger Proofs");
+      formData.append("uploadedBy", "Admin");
+
+      const res = await fetch("/api/media", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setFormState(prev => ({ ...prev, proofUrl: data.url, proof: "📄 Receipt / Bill Uploaded" }));
+      }
     } catch (err) {
       console.error("Document upload failed:", err);
     } finally {

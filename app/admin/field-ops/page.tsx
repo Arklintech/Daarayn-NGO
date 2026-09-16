@@ -1,9 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from "react";
-import { db, storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, query, onSnapshot, doc, updateDoc, setDoc, where, addDoc } from "firebase/firestore";
 import { 
   Search, FileText, CheckCircle, Clock, AlertCircle, MessageSquare, 
   Briefcase, X, HelpCircle, Sparkles, UserPlus, Send, Paperclip, 
@@ -58,26 +55,36 @@ function FieldOperationsCenterContent() {
   const [takeActionLoading, setTakeActionLoading] = useState(false);
   const [takeActionSuccess, setTakeActionSuccess] = useState(false);
 
-  // Global Listeners
+  // Poll agents, reports, and conversations from Sheets-backed API
   useEffect(() => {
-    const unsubA = onSnapshot(collection(db, "field_agents"), snap => {
-      const list: FieldAgent[] = [];
-      snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldAgent));
-      setAgents(list);
-    });
-    const unsubR = onSnapshot(collection(db, "field_reports"), snap => {
-      const list: FieldReport[] = [];
-      snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldReport));
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setAllReports(list);
-    });
-    const unsubC = onSnapshot(collection(db, "field_conversations"), snap => {
-      const list: FieldConversation[] = [];
-      snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldConversation));
-      list.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-      setConversations(list);
-    });
-    return () => { unsubA(); unsubR(); unsubC(); };
+    const loadOperationalData = async () => {
+      try {
+        const [agentsRes, reportsRes] = await Promise.all([
+          fetch("/api/admin/field-agents"),
+          fetch("/api/field/reports")
+        ]);
+        const agentsData = await agentsRes.json();
+        const reportsData = await reportsRes.json();
+
+        if (agentsData.success && Array.isArray(agentsData.agents)) {
+          setAgents(agentsData.agents);
+        }
+        if (reportsData.success && Array.isArray(reportsData.reports)) {
+          const sorted = [...reportsData.reports].sort(
+            (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+          setAllReports(sorted);
+        }
+        // Conversations are chat-based and use the field/chat route — set empty if not available
+        setConversations([]);
+      } catch (err) {
+        console.warn("Field ops data load error:", err);
+      }
+    };
+
+    loadOperationalData();
+    const interval = setInterval(loadOperationalData, 15_000);
+    return () => clearInterval(interval);
   }, []);
 
   // Select active agent and conversation from query params (notifications action URL)
@@ -133,20 +140,28 @@ function FieldOperationsCenterContent() {
     }
   }, [activeAgentId, conversations, paramConvId, paramReportId]);
 
-  // Load Messages for active conversation
+  // Poll messages for active conversation
   useEffect(() => {
     if (!activeConvId) { setMessages([]); return; }
-    const q = query(collection(db, "field_messages"), where("conversationId", "==", activeConvId));
-    const unsub = onSnapshot(q, snap => {
-      const list: FieldMessage[] = [];
-      snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldMessage));
-      list.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      setMessages(list);
-      
-      // Mark as read by admin
-      updateDoc(doc(db, "field_conversations", activeConvId), { unreadCountAdmin: 0 }).catch(() => {});
-    });
-    return () => unsub();
+
+    const loadMessages = async () => {
+      try {
+        const res = await fetch(`/api/field/chat?conversationId=${activeConvId}`);
+        const data = await res.json();
+        if (data.success && Array.isArray(data.messages)) {
+          const sorted = [...data.messages].sort(
+            (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+          setMessages(sorted);
+        }
+      } catch (err) {
+        console.warn("Messages load error:", err);
+      }
+    };
+
+    loadMessages();
+    const interval = setInterval(loadMessages, 5_000);
+    return () => clearInterval(interval);
   }, [activeConvId]);
 
   const activeAgent = agents.find(a => a.id === activeAgentId);
@@ -171,53 +186,27 @@ function FieldOperationsCenterContent() {
     e.preventDefault();
     if (!newMessage.trim() || !activeAgent) return;
 
-    let targetConvId = activeConvId;
+    let targetConvId = activeConvId || `conv_${activeAgent.id}_general`;
 
     try {
-      if (!targetConvId) {
-        targetConvId = `conv_${activeAgent.id}_general`;
-        const newConv: FieldConversation = {
-          id: targetConvId,
-          agentId: activeAgent.id,
-          type: "Operations",
-          lastMessage: {
-            text: newMessage,
-            timestamp: new Date().toISOString(),
-            senderRole: "Admin"
-          },
-          unreadCountAdmin: 0,
-          unreadCountAgent: 1,
-          status: "Waiting For Field Agent",
-          isUrgent: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        await setDoc(doc(db, "field_conversations", targetConvId), newConv);
-        setActiveConvId(targetConvId);
-      }
-
-      const msg: Omit<FieldMessage, "id"> = {
-        conversationId: targetConvId, 
-        senderId: "Admin_1",
-        senderRole: "Admin",
-        senderName: "Ahmed Khan",
-        text: newMessage, 
-        timestamp: new Date().toISOString()
-      };
-      await addDoc(collection(db, "field_messages"), msg);
-      
-      await updateDoc(doc(db, "field_conversations", targetConvId), {
-        lastMessage: {
-          text: newMessage,
-          timestamp: new Date().toISOString(),
-          senderRole: "Admin"
-        },
-        unreadCountAgent: 1, 
-        updatedAt: new Date().toISOString(),
-        status: "Waiting For Field Agent"
+      const res = await fetch("/api/field/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: targetConvId,
+          senderId: "Admin_1",
+          senderRole: "Admin",
+          senderName: "Ahmed Khan",
+          text: newMessage
+        })
       });
-      setNewMessage("");
+
+      if (res.ok) {
+        if (!activeConvId) setActiveConvId(targetConvId);
+        setNewMessage("");
+      } else {
+        alert("Failed to send message. Please try again.");
+      }
     } catch (err) { 
       console.error("Admin message send failed:", err); 
       alert("Failed to send message. Please try again.");
@@ -240,46 +229,34 @@ function FieldOperationsCenterContent() {
     setIsUploading(true);
 
     try {
-      let fileUrl = "";
-      try {
-        const timestamp = Date.now();
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const filename = `${timestamp}_${safeName}`;
-        const storageRef = ref(storage, `communications/${filename}`);
-        await uploadBytes(storageRef, file);
-        fileUrl = await getDownloadURL(storageRef);
-      } catch (uploadErr) {
-        console.error("Firebase Storage upload failed", uploadErr);
-        throw new Error("Failed to upload file to storage.");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", "Field Chat Attachments");
+      formData.append("uploadedBy", "Admin");
+
+      const uploadRes = await fetch("/api/media", {
+        method: "POST",
+        body: formData,
+      });
+
+      const uploadData = await uploadRes.json();
+      if (!uploadRes.ok || !uploadData.success) {
+        throw new Error(uploadData.error || "Failed to upload file to Google Drive storage.");
       }
 
-      const isImage = file.type.startsWith("image/");
+      const fileUrl = uploadData.url;
 
-      const msg: any = {
-        conversationId: activeConvId,
-        senderId: "Admin_1",
-        senderRole: "Admin",
-        senderName: "Ahmed Khan",
-        text: `📎 ${file.name}`,
-        isMedia: true,
-        mediaBase64: fileUrl,
-        mediaType: file.type,
-        mediaName: file.name,
-        isImage,
-        timestamp: new Date().toISOString()
-      };
-
-      await addDoc(collection(db, "field_messages"), msg);
-
-      await updateDoc(doc(db, "field_conversations", activeConvId), {
-        lastMessage: {
+      await fetch("/api/field/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          conversationId: activeConvId,
+          senderId: "Admin_1",
+          senderRole: "Admin",
+          senderName: "Ahmed Khan",
           text: `📎 ${file.name}`,
-          timestamp: new Date().toISOString(),
-          senderRole: "Admin"
-        },
-        unreadCountAgent: 1,
-        updatedAt: new Date().toISOString(),
-        status: "Waiting For Field Agent"
+          attachmentDriveFileId: uploadData.fileId,
+        }),
       });
 
       e.target.value = '';
@@ -315,45 +292,40 @@ function FieldOperationsCenterContent() {
         stream.getTracks().forEach(track => track.stop());
 
         const audioBlob = new Blob(chunks, { type: 'audio/webm' });
-        let audioUrl = "";
+        const audioFile = new File([audioBlob], "VoiceNote.webm", { type: "audio/webm" });
+
         try {
-          const timestamp = Date.now();
-          const filename = `${timestamp}_VoiceNote.webm`;
-          const storageRef = ref(storage, `communications/${filename}`);
-          const audioFile = new File([audioBlob], "VoiceNote.webm", { type: "audio/webm" });
-          await uploadBytes(storageRef, audioFile);
-          audioUrl = await getDownloadURL(storageRef);
+          const formData = new FormData();
+          formData.append("file", audioFile);
+          formData.append("category", "Field Voice Notes");
+          formData.append("uploadedBy", "Admin");
+
+          const uploadRes = await fetch("/api/media", {
+            method: "POST",
+            body: formData,
+          });
+
+          const uploadData = await uploadRes.json();
+          if (!uploadRes.ok || !uploadData.success) {
+            throw new Error(uploadData.error || "Voice note upload failed");
+          }
+
+          await fetch("/api/field/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              conversationId: activeConvId,
+              senderId: "Admin_1",
+              senderRole: "Admin",
+              senderName: "Ahmed Khan",
+              text: "🎤 Voice Note",
+              attachmentDriveFileId: uploadData.fileId,
+            }),
+          });
         } catch (uploadErr) {
-          console.error("Firebase Storage voice note upload failed", uploadErr);
+          console.error("Voice note upload failed", uploadErr);
           alert("Failed to upload voice note.");
-          return;
         }
-
-        const msg: any = {
-          conversationId: activeConvId,
-          senderId: "Admin_1",
-          senderRole: "Admin",
-          senderName: "Ahmed Khan",
-          text: "🎤 Voice Note",
-          isMedia: true,
-          mediaBase64: audioUrl,
-          mediaType: "audio/webm",
-          mediaName: "VoiceNote.webm",
-          timestamp: new Date().toISOString()
-        };
-
-        await addDoc(collection(db, "field_messages"), msg);
-
-        await updateDoc(doc(db, "field_conversations", activeConvId), {
-          lastMessage: {
-            text: "🎤 Voice Note",
-            timestamp: new Date().toISOString(),
-            senderRole: "Admin"
-          },
-          unreadCountAgent: 1,
-          updatedAt: new Date().toISOString(),
-          status: "Waiting For Field Agent"
-        });
       };
 
       recorder.start();
@@ -369,35 +341,13 @@ function FieldOperationsCenterContent() {
     if (!activeReport) return;
     setActionLoading(true);
     try {
-      const now = new Date().toISOString();
-      await updateDoc(doc(db, "field_reports", activeReport.id), {
-        status: "Approved",
-        updatedAt: now,
-        "timelineStages.Approval": now,
-        hasAgentUnreadUpdate: true,
+      await fetch("/api/field/reports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId: activeReport.id, status: "Approved" })
       });
-      await notifyFieldReport.approved(activeReport.id, activeReport.agentId, activeReport.title);
-      await addDoc(collection(db, "field_notifications"), {
-        agentId: activeReport.agentId,
-        title: "Report Approved ✅",
-        message: `Your report "${activeReport.title}" has been approved.`,
-        type: "Success",
-        isRead: false,
-        timestamp: now,
-        relatedReportId: activeReport.id,
-      });
-      const conv = conversations.find(c => c.reportId === activeReport.id);
-      if (conv) {
-        await addDoc(collection(db, "field_messages"), {
-          conversationId: conv.id, senderId: "System", senderRole: "System",
-          senderName: "System", text: `✅ Your report "${activeReport.title}" has been approved.`,
-          timestamp: now, readByAgent: false, readByAdmin: true,
-        });
-        await updateDoc(doc(db, "field_conversations", conv.id), {
-          lastMessage: { text: `✅ Report Approved`, timestamp: now, senderRole: "System" },
-          unreadCountAgent: 1, updatedAt: now,
-        });
-      }
+    } catch (err) {
+      console.error("Approve error:", err);
     } finally { setActionLoading(false); }
   };
 
@@ -405,37 +355,15 @@ function FieldOperationsCenterContent() {
     if (!activeReport || !rejectReason.trim()) return;
     setActionLoading(true);
     try {
-      const now = new Date().toISOString();
-      await updateDoc(doc(db, "field_reports", activeReport.id), {
-        status: "Rejected", adminNotes: rejectReason.trim(),
-        updatedAt: now,
-        hasAgentUnreadUpdate: true,
+      await fetch("/api/field/reports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId: activeReport.id, status: "Rejected", adminNotes: rejectReason.trim() })
       });
-      await notifyFieldReport.rejected(activeReport.id, activeReport.agentId, activeReport.title);
-      await addDoc(collection(db, "field_notifications"), {
-        agentId: activeReport.agentId,
-        title: "Report Rejected ❌",
-        message: `Your report "${activeReport.title}" was not approved. Reason: ${rejectReason.trim()}`,
-        type: "Alert",
-        isRead: false,
-        timestamp: now,
-        relatedReportId: activeReport.id,
-      });
-      const conv = conversations.find(c => c.reportId === activeReport.id);
-      if (conv) {
-        await addDoc(collection(db, "field_messages"), {
-          conversationId: conv.id, senderId: "System", senderRole: "System",
-          senderName: "System",
-          text: `❌ Your report "${activeReport.title}" was not approved.\n\nReason: ${rejectReason.trim()}`,
-          timestamp: now, readByAgent: false, readByAdmin: true,
-        });
-        await updateDoc(doc(db, "field_conversations", conv.id), {
-          lastMessage: { text: `❌ Report Rejected`, timestamp: now, senderRole: "System" },
-          unreadCountAgent: 1, updatedAt: now,
-        });
-      }
       setShowRejectModal(false);
       setRejectReason('');
+    } catch (err) {
+      console.error("Reject error:", err);
     } finally { setActionLoading(false); }
   };
 
@@ -443,37 +371,15 @@ function FieldOperationsCenterContent() {
     if (!activeReport || !requestInfoText.trim()) return;
     setActionLoading(true);
     try {
-      const now = new Date().toISOString();
-      await updateDoc(doc(db, "field_reports", activeReport.id), {
-        status: "Needs Info", adminNotes: requestInfoText.trim(),
-        updatedAt: now,
-        "timelineStages.Needs Info": now,
-        hasAgentUnreadUpdate: true,
+      await fetch("/api/field/reports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId: activeReport.id, status: "Needs Info", adminNotes: requestInfoText.trim() })
       });
-      await addDoc(collection(db, "field_notifications"), {
-        agentId: activeReport.agentId,
-        title: "Information Requested ℹ️",
-        message: `Additional info requested for "${activeReport.title}": ${requestInfoText.trim()}`,
-        type: "Info",
-        isRead: false,
-        timestamp: now,
-        relatedReportId: activeReport.id,
-      });
-      const conv = conversations.find(c => c.reportId === activeReport.id);
-      if (conv) {
-        await addDoc(collection(db, "field_messages"), {
-          conversationId: conv.id, senderId: "Admin_1", senderRole: "Admin",
-          senderName: "Ahmed Khan",
-          text: `ℹ️ Additional information needed for your report "${activeReport.title}":\n\n${requestInfoText.trim()}`,
-          timestamp: now, readByAgent: false, readByAdmin: true,
-        });
-        await updateDoc(doc(db, "field_conversations", conv.id), {
-          lastMessage: { text: `ℹ️ Info Requested`, timestamp: now, senderRole: "Admin" },
-          unreadCountAgent: 1, status: "Waiting For Field Agent", updatedAt: now,
-        });
-      }
       setShowRequestInfoModal(false);
       setRequestInfoText('');
+    } catch (err) {
+      console.error("Request info error:", err);
     } finally { setActionLoading(false); }
   };
 
@@ -481,32 +387,15 @@ function FieldOperationsCenterContent() {
     if (!activeReport || !assignTo.trim()) return;
     setActionLoading(true);
     try {
-      const now = new Date().toISOString();
-      await updateDoc(doc(db, "field_reports", activeReport.id), {
-        assignedAdminId: assignTo.trim(),
-        status: activeReport.status === "Pending Review" ? "Under Review" : activeReport.status,
-        updatedAt: now,
-        "timelineStages.Assigned to Reviewer": now,
-        "timelineStages.Under Review": now,
-        hasAgentUnreadUpdate: true,
+      await fetch("/api/field/reports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reportId: activeReport.id, status: "Under Review", assignedTo: assignTo.trim() })
       });
-      await addDoc(collection(db, "field_notifications"), {
-        agentId: activeReport.agentId,
-        title: "Reviewer Assigned 👤",
-        message: `Your report "${activeReport.title}" has been assigned for review.`,
-        type: "Info",
-        isRead: false,
-        timestamp: now,
-        relatedReportId: activeReport.id,
-      });
-      const conv = conversations.find(c => c.reportId === activeReport.id);
-      if (conv) {
-        await updateDoc(doc(db, "field_conversations", conv.id), {
-          assignedAdminId: assignTo.trim(), updatedAt: now,
-        });
-      }
       setShowAssignModal(false);
       setAssignTo('');
+    } catch (err) {
+      console.error("Assign error:", err);
     } finally { setActionLoading(false); }
   };
 
@@ -515,54 +404,15 @@ function FieldOperationsCenterContent() {
     setTakeActionLoading(true);
     setTakeActionSuccess(false);
     try {
-      const now = new Date().toISOString();
-      const STAGE_ORDER: Record<string, string[]> = {
-        'Under Review': ['Assigned to Reviewer', 'Under Review'],
-        'Needs Info': ['Under Review', 'Needs Info'],
-        'Scheduled': ['Assigned to Reviewer', 'Under Review', 'Verification Visit'],
-        'Approved': ['Assigned to Reviewer', 'Under Review', 'Verification Visit', 'Approval'],
-        'Converted': ['Assigned to Reviewer', 'Under Review', 'Verification Visit', 'Approval', 'Published on Website'],
-      };
-      
-      const stagesToStamp = STAGE_ORDER[takeActionStatus] || [];
-      const timelineUpdate: Record<string, string> = {};
-      stagesToStamp.forEach(stage => {
-        timelineUpdate[`timelineStages.${stage}`] = now;
+      await fetch("/api/field/reports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: activeReport.id,
+          status: takeActionStatus,
+          adminNotes: takeActionNotes.trim()
+        })
       });
-
-      await updateDoc(doc(db, 'field_reports', activeReport.id), {
-        status: takeActionStatus,
-        adminNotes: takeActionNotes.trim() || activeReport.adminNotes || '',
-        updatedAt: now,
-        hasAgentUnreadUpdate: true,
-        ...timelineUpdate,
-      });
-
-      await addDoc(collection(db, "field_notifications"), {
-        agentId: activeReport.agentId,
-        title: `Report Status: ${takeActionStatus}`,
-        message: `Your report "${activeReport.title}" status changed to ${takeActionStatus}.${takeActionNotes.trim() ? ` Notes: ${takeActionNotes.trim()}` : ''}`,
-        type: takeActionStatus === "Approved" ? "Success" : takeActionStatus === "Rejected" ? "Alert" : "Info",
-        isRead: false,
-        timestamp: now,
-        relatedReportId: activeReport.id,
-      });
-
-      const conv = conversations.find(c => c.reportId === activeReport.id);
-      if (conv) {
-        const notePart = takeActionNotes.trim() ? `\n\nAdmin Notes: ${takeActionNotes.trim()}` : '';
-        await addDoc(collection(db, 'field_messages'), {
-          conversationId: conv.id, senderId: 'System', senderRole: 'System',
-          senderName: 'System',
-          text: `🔄 Your report "${activeReport.title}" status changed to: ${takeActionStatus}${notePart}`,
-          timestamp: now, readByAgent: false, readByAdmin: true,
-        });
-        await updateDoc(doc(db, 'field_conversations', conv.id), {
-          lastMessage: { text: `🔄 Status → ${takeActionStatus}`, timestamp: now, senderRole: 'System' },
-          unreadCountAgent: 1, updatedAt: now,
-        });
-      }
-
       setTakeActionSuccess(true);
       setTakeActionNotes('');
       setTakeActionStatus('');
@@ -577,17 +427,37 @@ function FieldOperationsCenterContent() {
   const handleConvert = async () => {
     if (!activeReport) return;
     const causeId = `CUSE-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
-    await setDoc(doc(db, "causes", causeId), {
-      id: causeId, title: activeReport.title, description: activeReport.description,
-      category: activeReport.category, goalAmount: parseInt(activeReport.estimatedBudget.replace(/[^0-9]/g, '')) || 0,
-      amountCollected: 0, currency: "INR", startDate: new Date().toISOString().split("T")[0],
-      status: "Draft", images: activeReport.media || [], originReportId: activeReport.id,
-      originAgentId: activeReport.agentId, location: `${activeReport.location.village}, ${activeReport.location.district}`,
-      beneficiariesCount: activeReport.beneficiaries?.families || 0, createdAt: new Date().toISOString()
-    });
-    await updateDoc(doc(db, "field_reports", activeReport.id), { status: "Converted", convertedCauseId: causeId, updatedAt: new Date().toISOString() });
-    await notifyFieldReport.converted(activeReport.id, causeId, activeReport.title);
-    alert(`✅ Cause Draft created! ID: ${causeId}`);
+    try {
+      await fetch("/api/causes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: causeId,
+          title: activeReport.title,
+          name: activeReport.title,
+          description: activeReport.description,
+          category: activeReport.category,
+          targetAmount: parseInt(activeReport.estimatedBudget.replace(/[^0-9]/g, '')) || 0,
+          raisedAmount: 0,
+          status: "Active",
+          location: `${activeReport.location.village || ""}, ${activeReport.location.district || ""}`.trim(),
+          createdAt: new Date().toISOString()
+        })
+      });
+
+      await fetch("/api/field/reports", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          reportId: activeReport.id,
+          status: "Converted"
+        })
+      });
+
+      alert(`✅ Cause Draft created! ID: ${causeId}`);
+    } catch (err) {
+      console.error("Convert error:", err);
+    }
   };
 
   const handleAIInsights = async () => {
