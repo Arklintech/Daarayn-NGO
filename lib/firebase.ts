@@ -38,10 +38,12 @@ const storage = getStorage(app);
 
 // Client-only Analytics
 let analytics: any = null;
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && firebaseConfig.measurementId && !firebaseConfig.measurementId.includes("dummy") && !firebaseConfig.measurementId.includes("your_firebase")) {
   isSupported().then((supported) => {
     if (supported) {
-      analytics = getAnalytics(app);
+      try {
+        analytics = getAnalytics(app);
+      } catch (e) {}
     }
   });
 }

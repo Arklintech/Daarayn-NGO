@@ -33,3 +33,5 @@ serviceAccountKey.json
 daaraynorg-*.json
 *.pem
 *.key
+
+.vercel

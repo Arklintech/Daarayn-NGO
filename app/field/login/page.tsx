@@ -77,12 +77,16 @@ export default function AgentLogin() {
       
     } catch (err: any) {
       const c = err?.code || "";
-      if (c.includes("not-found") || c.includes("wrong-password") || c.includes("invalid-credential")) {
+      const msg = err?.message || "";
+      if (c.includes("api-key-not-valid") || c.includes("invalid-api-key") || msg.includes("API key not valid") || msg.includes("api-key-not-valid")) {
+        setError("Firebase Authentication has placeholder API keys. Use the Developer Bypass option below.");
+        setShowBypass(true);
+      } else if (c.includes("not-found") || c.includes("wrong-password") || c.includes("invalid-credential")) {
         setError("Invalid email or password.");
       } else if (c.includes("too-many-requests")) {
         setError("Too many attempts. Try again later.");
       } else {
-        setError(err?.message || "Authentication failed.");
+        setError(msg || "Authentication failed.");
       }
       setLoading(false);
     }
