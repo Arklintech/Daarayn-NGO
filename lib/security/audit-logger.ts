@@ -16,6 +16,7 @@ export interface AuditEventPayload {
  * Write a structured, immutable audit record to admin_audit_logs
  */
 export async function logAuditEvent(event: AuditEventPayload): Promise<void> {
+  if (!db) return;
   const record = {
     ...event,
     createdAt: new Date().toISOString(),
@@ -25,6 +26,6 @@ export async function logAuditEvent(event: AuditEventPayload): Promise<void> {
   try {
     await addDoc(collection(db, "admin_audit_logs"), record);
   } catch (err) {
-    console.warn("Audit log Firestore write fallback (offline or unauthenticated):", err, record);
+    console.warn("Audit log write fallback:", err);
   }
 }

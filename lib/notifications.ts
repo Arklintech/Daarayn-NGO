@@ -86,6 +86,7 @@ export const CATEGORY_META: Record<
 export async function publishNotification(
   payload: Omit<AdminNotification, "notificationId" | "createdAt" | "isRead">
 ): Promise<void> {
+  if (!db) return;
   try {
     const notification: Omit<AdminNotification, "notificationId"> = {
       ...payload,
