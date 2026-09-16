@@ -55,7 +55,7 @@ function FieldOperationsCenterContent() {
   const [takeActionLoading, setTakeActionLoading] = useState(false);
   const [takeActionSuccess, setTakeActionSuccess] = useState(false);
 
-  // Poll agents, reports, and conversations from Sheets-backed API
+  // Operational data loading and Realtime SSE Stream connection
   useEffect(() => {
     const loadOperationalData = async () => {
       try {
@@ -69,22 +69,37 @@ function FieldOperationsCenterContent() {
         if (agentsData.success && Array.isArray(agentsData.agents)) {
           setAgents(agentsData.agents);
         }
-        if (reportsData.success && Array.isArray(reportsData.reports)) {
-          const sorted = [...reportsData.reports].sort(
+        if (Array.isArray(reportsData)) {
+          const sorted = [...reportsData].sort(
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
           setAllReports(sorted);
         }
-        // Conversations are chat-based and use the field/chat route — set empty if not available
-        setConversations([]);
       } catch (err) {
         console.warn("Field ops data load error:", err);
       }
     };
 
     loadOperationalData();
-    const interval = setInterval(loadOperationalData, 15_000);
-    return () => clearInterval(interval);
+
+    // EventSource SSE Realtime Listener (Zero Polling)
+    const eventSource = new EventSource("/api/realtime/stream");
+    eventSource.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        if (parsed.type === "FIELD_REPORT_SUBMITTED" && parsed.payload) {
+          setAllReports(prev => [parsed.payload, ...prev.filter(r => r.id !== parsed.payload.id)]);
+        } else if (parsed.type === "FIELD_REPORT_UPDATE" && parsed.payload) {
+          setAllReports(prev => prev.map(r => r.id === parsed.payload.id ? { ...r, ...parsed.payload } : r));
+        }
+      } catch (e) {
+        console.warn("[FieldOps/SSE] Event parse error:", e);
+      }
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, []);
 
   // Select active agent and conversation from query params (notifications action URL)
@@ -102,29 +117,14 @@ function FieldOperationsCenterContent() {
     }
   }, [paramAgentId, paramReportId, paramConvId, conversations]);
 
-  // When active Agent changes, auto-select their most recent conversation (unless overridden by query param)
+  // Set active conversation for active agent
   useEffect(() => {
-    setSelectedReportId(null);
-    setTakeActionStatus('');
-    setTakeActionNotes('');
-    if (!activeAgentId) { setActiveConvId(null); return; }
-    
-    // If the currently selected conv belongs to this agent, keep it.
-    const currentConv = conversations.find(c => c.id === activeConvId);
-    if (currentConv && currentConv.agentId === activeAgentId) return;
-
-    // Check if query params specify a reportId or convId matching this agent
-    if (paramConvId) {
-      const matched = conversations.find(c => c.id === paramConvId && c.agentId === activeAgentId);
-      if (matched) {
-        setActiveConvId(paramConvId);
-        return;
-      }
-    }
-    if (paramReportId) {
-      const matched = conversations.find(c => c.reportId === paramReportId && c.agentId === activeAgentId);
-      if (matched) {
-        setActiveConvId(matched.id);
+    if (!activeAgentId) return;
+    if (paramConvId) return;
+    if (paramReportId && conversations.length > 0) {
+      const matchedConv = conversations.find(c => c.reportId === paramReportId);
+      if (matchedConv) {
+        setActiveConvId(matchedConv.id);
         return;
       }
     }
@@ -140,7 +140,7 @@ function FieldOperationsCenterContent() {
     }
   }, [activeAgentId, conversations, paramConvId, paramReportId]);
 
-  // Poll messages for active conversation
+  // Realtime Messages SSE stream listener for active conversation (Zero Polling)
   useEffect(() => {
     if (!activeConvId) { setMessages([]); return; }
 
@@ -148,8 +148,8 @@ function FieldOperationsCenterContent() {
       try {
         const res = await fetch(`/api/field/chat?conversationId=${activeConvId}`);
         const data = await res.json();
-        if (data.success && Array.isArray(data.messages)) {
-          const sorted = [...data.messages].sort(
+        if (Array.isArray(data)) {
+          const sorted = [...data].sort(
             (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
           );
           setMessages(sorted);
@@ -160,8 +160,25 @@ function FieldOperationsCenterContent() {
     };
 
     loadMessages();
-    const interval = setInterval(loadMessages, 5_000);
-    return () => clearInterval(interval);
+
+    // EventSource SSE Listener for Chat Messages
+    const eventSource = new EventSource("/api/realtime/stream");
+    eventSource.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        if (parsed.type === "CHAT_MESSAGE" && parsed.payload) {
+          if (parsed.payload.conversationId === activeConvId) {
+            setMessages(prev => [...prev.filter(m => m.id !== parsed.payload.id), parsed.payload]);
+          }
+        }
+      } catch (e) {
+        console.warn("[FieldChat/SSE] Event parse error:", e);
+      }
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, [activeConvId]);
 
   const activeAgent = agents.find(a => a.id === activeAgentId);
