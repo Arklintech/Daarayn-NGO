@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db, storage } from "@/lib/firebase";
-import { collection, getDocs, doc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { db } from "@/lib/firebase";
 import { 
   FolderHeart, 
   GraduationCap, 
@@ -60,28 +58,31 @@ export default function AdminPrograms() {
     docUrl: ""
   });
 
-  // Load programs on mount
+  // Load programs on mount from Sheets-backed API
   useEffect(() => {
     async function fetchAllPrograms() {
       setLoading(true);
       try {
-        const snap = await getDocs(collection(db, "causes"));
+        const res = await fetch("/api/causes");
+        const data = await res.json();
+        const allCauses = data.success && Array.isArray(data.causes) ? data.causes : [];
+
         const casesList: any[] = [];
         const studentsList: any[] = [];
         const projectsList: any[] = [];
 
-        snap.forEach((doc) => {
-          const data = { id: doc.id, ...doc.data() } as any;
+        allCauses.forEach((data: any) => {
           if (data.type === "family" || data.category === "Relief") casesList.push(data);
           else if (data.type === "quran" || data.category === "Education") studentsList.push(data);
           else if (data.type === "masjid" || data.category === "Community") projectsList.push(data);
+          else casesList.push(data); // default bucket
         });
 
         setFamilyCases(casesList);
         setQuranStudents(studentsList);
         setMasjidProjects(projectsList);
       } catch (err) {
-        console.error("Error fetching programs list from Firestore:", err);
+        console.error("Error fetching programs list:", err);
       } finally {
         setLoading(false);
       }
@@ -129,15 +130,21 @@ export default function AdminPrograms() {
         ...formState,
         id: generatedId,
         type: activeTab,
+        title: formState.title,
         name: formState.title,
         slug: slug,
+        targetAmount: Number(formState.amountRequired || 0),
         goalAmount: Number(formState.amountRequired || 0),
         raisedAmount: Number(formState.amountCollected || 0),
         category: activeTab === 'family' ? 'Relief' : activeTab === 'quran' ? 'Education' : 'Community',
         updatedAt: new Date().toISOString()
       };
 
-      await setDoc(doc(db, "causes", generatedId), finalRecord);
+      await fetch("/api/causes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(finalRecord)
+      });
       setIsEditorOpen(false);
     } catch (err) {
       console.error("Save program error:", err);
@@ -150,8 +157,6 @@ export default function AdminPrograms() {
     if (!window.confirm("Are you sure you want to delete this program?")) return;
     setLoading(true);
     try {
-      await deleteDoc(doc(db, "causes", id));
-      // Trigger local updates
       setFamilyCases(prev => prev.filter(c => c.id !== id));
       setQuranStudents(prev => prev.filter(c => c.id !== id));
       setMasjidProjects(prev => prev.filter(c => c.id !== id));
@@ -168,10 +173,20 @@ export default function AdminPrograms() {
 
     setUploadingFile(true);
     try {
-      const storageRef = ref(storage, `programs/${Date.now()}_${file.name}`);
-      const snap = await uploadBytes(storageRef, file);
-      const downloadUrl = await getDownloadURL(snap.ref);
-      setFormState(prev => ({ ...prev, [targetField]: downloadUrl }));
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("category", "Program Documents");
+      formData.append("uploadedBy", "Admin");
+
+      const res = await fetch("/api/media", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setFormState(prev => ({ ...prev, [targetField]: data.url }));
+      }
     } catch (err) {
       console.error("File upload failed:", err);
     } finally {

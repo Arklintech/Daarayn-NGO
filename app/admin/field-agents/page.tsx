@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import { 
   Users, UserPlus, MapPin, Search, ShieldCheck, Mail, Phone,
   Eye, CheckCircle, AlertCircle, X, Trash2, Key, RefreshCw, EyeOff
@@ -22,14 +20,17 @@ export default function FieldAgentManagement() {
   const loadAgents = async () => {
     setLoading(true);
     try {
-      const snap = await getDocs(collection(db, "field_agents"));
-      const list: FieldAgent[] = [];
-      snap.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() } as FieldAgent);
-      });
-      setAgents(list);
+      const res = await fetch("/api/admin/field-agents");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.agents)) {
+        setAgents(data.agents);
+      } else {
+        // Graceful mock fallback so table is never blank
+        setAgents([]);
+      }
     } catch (err) {
       console.warn("Agents read error", err);
+      setAgents([]);
     } finally {
       setLoading(false);
     }
@@ -38,8 +39,16 @@ export default function FieldAgentManagement() {
   const handleDeleteAgent = async (agentId: string) => {
     if (confirm("Are you sure you want to delete this field agent? This action cannot be undone.")) {
       try {
-        await deleteDoc(doc(db, "field_agents", agentId));
-        setAgents(prev => prev.filter(a => a.id !== agentId));
+        const res = await fetch("/api/admin/field-agents", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ agentId })
+        });
+        if (res.ok) {
+          setAgents(prev => prev.filter(a => a.id !== agentId));
+        } else {
+          alert("Failed to delete agent. Please try again.");
+        }
       } catch (err) {
         console.error("Error deleting agent:", err);
       }

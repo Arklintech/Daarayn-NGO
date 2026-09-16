@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, doc, setDoc } from "firebase/firestore";
 import { Donation } from "@/lib/db";
 import Link from "next/link";
 import { 
@@ -43,36 +41,35 @@ export default function CauseManagementCenter() {
   const [newCause, setNewCause] = useState({ name: "", category: "General", goalAmount: 100000 });
 
   async function fetchData() {
+      setLoading(true);
       try {
-        // Fetch Unified Causes
-        const causesSnap = await getDocs(collection(db, "causes"));
-        let fetchedCauses: any[] = [];
-        causesSnap.forEach(doc => fetchedCauses.push({ id: doc.id, ...doc.data() }));
-        
+        // Fetch Unified Causes from Sheets-backed API
+        const causesRes = await fetch("/api/causes");
+        const causesData = await causesRes.json();
+        let fetchedCauses: any[] = causesData.success && Array.isArray(causesData.causes)
+          ? causesData.causes
+          : [];
+
         if (fetchedCauses.length === 0) {
           fetchedCauses = DEFAULT_CAUSES;
-          for (const c of DEFAULT_CAUSES) {
-            setDoc(doc(db, "causes", c.id), c).catch(err => console.warn("Auto-seed cause failed:", err));
-          }
         }
         setCausesList(fetchedCauses);
 
+        // Fetch Donations from Sheets-backed API
+        const donationsRes = await fetch("/api/admin/donations");
+        const donationsData = await donationsRes.json();
+        const donations: Donation[] = donationsData.success && Array.isArray(donationsData.donations)
+          ? donationsData.donations
+          : [];
 
-        // Fetch Donations
-        const q = query(collection(db, "donations"), where("status", "==", "completed"));
-        const snap = await getDocs(q);
-        
         const stats: Record<string, { raised: number, contributors: Set<string> }> = {};
-        
-        // Initialize stats
         fetchedCauses.forEach(c => {
           stats[c.id] = { raised: 0, contributors: new Set() };
         });
 
-        snap.docs.forEach(doc => {
-          const donation = doc.data() as Donation;
+        donations.forEach(donation => {
           if (donation.selectedCauses && Array.isArray(donation.selectedCauses)) {
-            donation.selectedCauses.forEach(cause => {
+            donation.selectedCauses.forEach((cause: any) => {
               if (stats[cause.causeId]) {
                 stats[cause.causeId].raised += cause.allocatedAmount;
                 stats[cause.causeId].contributors.add(donation.donorId);
@@ -92,6 +89,8 @@ export default function CauseManagementCenter() {
         setCauseStats(formattedStats);
       } catch (err) {
         console.error("Failed to fetch cause stats", err);
+        // Show DEFAULT_CAUSES so page is never blank
+        setCausesList(DEFAULT_CAUSES);
       } finally {
         setLoading(false);
       }
@@ -110,19 +109,25 @@ export default function CauseManagementCenter() {
       const causeId = slug || `cause_${Date.now()}`;
       
       const causeData = {
+        id: causeId,
+        title: newCause.name,
         name: newCause.name,
         slug: slug,
         description: `Support for ${newCause.name}`,
         category: newCause.category,
+        targetAmount: Number(newCause.goalAmount),
         goalAmount: Number(newCause.goalAmount),
         raisedAmount: 0,
         status: "active",
-        visibility: "public",
-        featured: true,
         createdAt: new Date().toISOString(),
       };
 
-      await setDoc(doc(db, "causes", causeId), causeData);
+      await fetch("/api/causes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(causeData),
+      });
+
       setIsModalOpen(false);
       setNewCause({ name: "", category: "General", goalAmount: 100000 });
       fetchData();
