@@ -14,42 +14,64 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "dummy_measurement_id",
 };
 
-// Initialize Firebase App without duplicating
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const isFirebaseConfigValid = Boolean(
+  firebaseConfig.apiKey &&
+  firebaseConfig.apiKey !== "dummy_api_key" &&
+  !firebaseConfig.apiKey.includes("your_firebase") &&
+  firebaseConfig.projectId &&
+  firebaseConfig.projectId !== "dummy_project_id" &&
+  !firebaseConfig.projectId.includes("your_firebase")
+);
 
-// Initialize services
-const db = getFirestore(app);
-
-if (process.env.NODE_ENV === "test" || firebaseConfig.projectId === "dummy_project_id") {
-  disableNetwork(db).catch(() => {});
-}
-
-// Auth initialization may fail with mock API keys in test environments.
-// We wrap it to allow the module to load safely; auth will be null in those cases.
-let auth: ReturnType<typeof getAuth>;
-try {
-  auth = getAuth(app);
-} catch (authInitError) {
-  console.warn("[Firebase] Auth initialization skipped/failed. Continuing without auth.", authInitError);
-  auth = null as any; // Safe fallback to prevent app crash
-}
-
-const storage = getStorage(app);
-
-// Client-only Analytics
+// Initialize Firebase App only if valid configuration is present
+let app: any = null;
+let db: any = null;
+let auth: any = null;
+let storage: any = null;
 let analytics: any = null;
-if (typeof window !== "undefined" && firebaseConfig.measurementId && !firebaseConfig.measurementId.includes("dummy") && !firebaseConfig.measurementId.includes("your_firebase")) {
-  isSupported().then((supported) => {
-    if (supported) {
-      try {
-        analytics = getAnalytics(app);
-      } catch (e) {}
+
+if (isFirebaseConfigValid) {
+  try {
+    app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    db = getFirestore(app);
+
+    if (process.env.NODE_ENV === "test" || firebaseConfig.projectId === "dummy_project_id") {
+      disableNetwork(db).catch(() => {});
     }
-  });
+
+    try {
+      auth = getAuth(app);
+    } catch (authErr) {
+      console.warn("[Firebase] Auth initialization failed:", authErr);
+      auth = null;
+    }
+
+    try {
+      storage = getStorage(app);
+    } catch (storageErr) {
+      console.warn("[Firebase] Storage initialization failed:", storageErr);
+      storage = null;
+    }
+
+    if (typeof window !== "undefined" && firebaseConfig.measurementId && !firebaseConfig.measurementId.includes("dummy") && !firebaseConfig.measurementId.includes("your_firebase")) {
+      isSupported().then((supported) => {
+        if (supported) {
+          try {
+            analytics = getAnalytics(app);
+          } catch (e) {}
+        }
+      });
+    }
+  } catch (initErr) {
+    console.warn("[Firebase] Initialization skipped due to config error:", initErr);
+  }
+} else {
+  console.info("[Firebase] Placeholder or dummy credentials detected. Firebase services running in fallback/mock mode.");
 }
 
 // Preparation of Firestore collections for future development
 const createCollectionRef = <T = DocumentData>(collectionName: string) => {
+  if (!db) return null as any;
   return collection(db, collectionName) as CollectionReference<T>;
 };
 
