@@ -78,18 +78,23 @@ export default function DonorWorkspace() {
     async function load() {
       setLoading(true);
       try {
+        const decodedId = decodeURIComponent(donorId);
         const dRes = await fetch('/api/donors');
         let donorData: any = null;
         if (dRes.ok) {
           const list = await dRes.json();
           const allDonors = Array.isArray(list) ? list : list.donors || [];
-          donorData = allDonors.find((d: any) => d.id === donorId);
+          donorData = allDonors.find((d: any) => 
+            d.id === donorId || 
+            d.id === decodedId ||
+            (d.email && d.email.toLowerCase() === decodedId.toLowerCase())
+          );
         }
         if (!donorData) {
           donorData = {
-            id: donorId,
-            name: "Verified Donor",
-            email: "donor@example.com",
+            id: decodedId,
+            name: decodedId.includes('@') ? decodedId.split('@')[0] : "Verified Donor",
+            email: decodedId.includes('@') ? decodedId : "donor@example.com",
             phone: "+91 98765 43210",
             country: "India",
             city: "Mumbai",
@@ -103,8 +108,13 @@ export default function DonorWorkspace() {
         let donList: any[] = [];
         if (donRes.ok) {
           const donData = await donRes.json();
-          const allDonations = donData.success && Array.isArray(donData.donations) ? donData.donations : [];
-          donList = allDonations.filter((d: any) => d.donorId === donorId || d.donor === donorData.name || d.donorEmail === donorData.email);
+          const allDonations = donData.success && Array.isArray(donData.donations) ? donData.donations : Array.isArray(donData) ? donData : [];
+          donList = allDonations.filter((d: any) => 
+            d.donorId === donorId || 
+            d.donorId === decodedId || 
+            (d.donor && d.donor.toLowerCase() === donorData.name?.toLowerCase()) || 
+            (d.donorEmail && d.donorEmail.toLowerCase() === donorData.email?.toLowerCase())
+          );
         }
         setDonations(donList);
 
@@ -112,7 +122,7 @@ export default function DonorWorkspace() {
         let causeList: any[] = [];
         if (cRes.ok) {
           const cData = await cRes.json();
-          causeList = cData.success && Array.isArray(cData.causes) ? cData.causes : [];
+          causeList = cData.success && Array.isArray(cData.causes) ? cData.causes : Array.isArray(cData) ? cData : [];
         }
         if (causeList.length === 0) causeList = DEFAULT_CAUSES;
         setCauses(causeList);
@@ -121,8 +131,12 @@ export default function DonorWorkspace() {
         let commList: any[] = [];
         if (commRes.ok) {
           const commData = await commRes.json();
-          const allComms = commData.success && Array.isArray(commData.communications) ? commData.communications : [];
-          commList = allComms.filter((c: any) => c.donorId === donorId || c.recipientEmail === donorData.email);
+          const allComms = commData.success && Array.isArray(commData.communications) ? commData.communications : Array.isArray(commData) ? commData : [];
+          commList = allComms.filter((c: any) => 
+            c.donorId === donorId || 
+            c.donorId === decodedId || 
+            (c.recipientEmail && c.recipientEmail.toLowerCase() === donorData.email?.toLowerCase())
+          );
         }
         setCommunications(commList);
       } catch (err) {

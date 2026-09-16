@@ -469,20 +469,20 @@ export default function AdminDonors() {
 
         <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden mt-2">
           {/* Desktop Table View */}
-          <div className="hidden md:block overflow-x-auto no-scrollbar">
-            <table className="w-full text-left border-collapse whitespace-nowrap">
+          <div className="hidden md:block overflow-x-auto custom-scrollbar pb-2">
+            <table className="w-full text-left border-collapse whitespace-nowrap min-w-[1000px]">
               <thead>
                 <tr className="border-b border-white/10 text-[11px] text-gray-400">
-                  <th className="px-5 py-4 font-normal">Donor ID</th>
-                  <th className="px-5 py-4 font-normal">Name</th>
-                  <th className="px-5 py-4 font-normal">Email</th>
-                  <th className="px-5 py-4 font-normal">Phone</th>
-                  <th className="px-5 py-4 font-normal">Country / City</th>
-                  <th className="px-5 py-4 font-normal">Donations</th>
-                  <th className="px-5 py-4 font-normal">Total Donated</th>
-                  <th className="px-5 py-4 font-normal">Last Donation</th>
-                  <th className="px-5 py-4 font-normal">Verification</th>
-                  <th className="px-5 py-4 font-normal text-center">Action</th>
+                  <th className="px-4 py-3.5 font-normal">Donor ID</th>
+                  <th className="px-4 py-3.5 font-normal">Name</th>
+                  <th className="px-4 py-3.5 font-normal">Email</th>
+                  <th className="px-4 py-3.5 font-normal">Phone</th>
+                  <th className="px-4 py-3.5 font-normal">Country / City</th>
+                  <th className="px-4 py-3.5 font-normal">Donations</th>
+                  <th className="px-4 py-3.5 font-normal">Total Donated</th>
+                  <th className="px-4 py-3.5 font-normal">Last Donation</th>
+                  <th className="px-4 py-3.5 font-normal">Verification</th>
+                  <th className="px-4 py-3.5 font-normal text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/10">
@@ -491,46 +491,65 @@ export default function AdminDonors() {
                 ) : paginatedDonors.length === 0 ? (
                   <tr><td colSpan={10} className="py-20 text-center text-gray-500 text-sm">No donor records found matching filters.</td></tr>
                 ) : (
-                  paginatedDonors.map((donor, idx) => (
-                    <motion.tr
-                      key={donor.id}
-                      onClick={() => router.push(`/admin/donors/${donor.id}`)}
-                      className="hover:bg-white/5 transition group text-[13px] cursor-pointer"
-                    >
-                      <td className="px-5 py-4 text-gray-400 font-mono">{donor.id}</td>
-                      <td className="px-5 py-4 text-white font-medium flex items-center gap-2">
-                        {donor.name || "Anonymous"}
-                        {idx === 0 && <span className="bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wider">VIP</span>}
-                      </td>
-                      <td className="px-5 py-4 text-gray-400">{donor.email || "—"}</td>
-                      <td className="px-5 py-4 text-gray-400">{donor.phone || "—"}</td>
-                      <td className="px-5 py-4 text-gray-400">{donor.country || "India"} / {donor.city || "Mumbai"}</td>
-                      <td className="px-5 py-4 text-gray-400">{donor.totalDonations || 0}</td>
-                      <td className="px-5 py-4 text-white">₹{(donor.totalAmountDonated || 0).toLocaleString()}</td>
-                      <td className="px-5 py-4 text-gray-400">{donor.lastContributionDate ? new Date(donor.lastContributionDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric'}) : '10 May 2026'}</td>
-                      <td className="px-5 py-4">
-                        {donor.status === 'active' ? (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-luxury-gold/30 text-luxury-gold text-[11px] font-medium bg-luxury-gold/10">
-                            <CheckCircle className="w-3 h-3" /> Verified
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-luxury-gold/30 text-luxury-gold text-[11px] font-medium bg-luxury-gold/10">
-                            <AlertTriangle className="w-3 h-3" /> Pending
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-5 py-4">
-                        <div className="flex items-center justify-center gap-2">
-                          <button onClick={(e) => { e.stopPropagation(); router.push(`/admin/donors/${donor.id}`); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-white/10 transition" aria-label="View Donor Details" title="View Profile">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button onClick={(e) => { e.stopPropagation(); router.push(`/admin/communications?donorId=${donor.id}`); }} className="w-7 h-7 rounded border border-white/10 flex items-center justify-center text-gray-400 hover:text-luxury-gold hover:bg-white/10 transition" aria-label="Message Donor" title="Send Message">
-                            <MessageSquare className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </motion.tr>
-                  ))
+                  paginatedDonors.map((donor, idx) => {
+                    const targetId = donor.id || donor.email;
+                    return (
+                      <motion.tr
+                        key={donor.id || idx}
+                        onClick={() => targetId && router.push(`/admin/donors/${encodeURIComponent(targetId)}`)}
+                        className="hover:bg-white/5 transition group text-[13px] cursor-pointer"
+                      >
+                        <td className="px-4 py-3.5 text-gray-400 font-mono">{donor.id || "—"}</td>
+                        <td className="px-4 py-3.5 text-white font-medium flex items-center gap-2">
+                          {donor.name || "Anonymous"}
+                          {idx === 0 && <span className="bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wider">VIP</span>}
+                        </td>
+                        <td className="px-4 py-3.5 text-gray-400">{donor.email || "—"}</td>
+                        <td className="px-4 py-3.5 text-gray-400">{donor.phone || "—"}</td>
+                        <td className="px-4 py-3.5 text-gray-400">{donor.country || "India"} / {donor.city || "Mumbai"}</td>
+                        <td className="px-4 py-3.5 text-gray-400">{donor.totalDonations || 0}</td>
+                        <td className="px-4 py-3.5 text-white">₹{(donor.totalAmountDonated || 0).toLocaleString()}</td>
+                        <td className="px-4 py-3.5 text-gray-400">{donor.lastContributionDate ? new Date(donor.lastContributionDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric'}) : '10 May 2026'}</td>
+                        <td className="px-4 py-3.5">
+                          {donor.status === 'active' || donor.verificationStatus === 'verified' ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-luxury-gold/30 text-luxury-gold text-[11px] font-medium bg-luxury-gold/10">
+                              <CheckCircle className="w-3 h-3" /> Verified
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-luxury-gold/30 text-luxury-gold text-[11px] font-medium bg-luxury-gold/10">
+                              <AlertTriangle className="w-3 h-3" /> Pending
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center justify-center gap-2">
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                if (targetId) router.push(`/admin/donors/${encodeURIComponent(targetId)}`); 
+                              }} 
+                              className="w-8 h-8 rounded border border-white/10 flex items-center justify-center text-gray-300 hover:text-white hover:bg-white/10 transition" 
+                              aria-label="View Donor Details" 
+                              title="View Profile"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </button>
+                            <button 
+                              onClick={(e) => { 
+                                e.stopPropagation(); 
+                                if (targetId) router.push(`/admin/communications?donorId=${encodeURIComponent(targetId)}`); 
+                              }} 
+                              className="w-8 h-8 rounded border border-white/10 flex items-center justify-center text-gray-300 hover:text-luxury-gold hover:bg-white/10 transition" 
+                              aria-label="Message Donor" 
+                              title="Send Message"
+                            >
+                              <MessageSquare className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
