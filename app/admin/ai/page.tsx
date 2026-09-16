@@ -2,9 +2,7 @@
 /* eslint-disable react-hooks/purity, react-hooks/set-state-in-effect */
 
 import React, { useState, useEffect, useRef } from "react";
-import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/AuthContext";
-import { collection, getDocs } from "firebase/firestore";
 import { 
   Sparkles, 
   Send, 
@@ -240,32 +238,39 @@ export default function AIDashboard() {
         setStats(statsData.stats);
       }
 
-      // 3. Fetch databases
-      const donorSnap = await getDocs(collection(db, "donors"));
-      const donorsList: FirestoreRecord[] = [];
-      donorSnap.forEach(d => donorsList.push({ id: d.id, ...d.data() }));
-      setDonors(donorsList);
-
-      const donationSnap = await getDocs(collection(db, "donations"));
-      const donationsList: FirestoreRecord[] = [];
-      donationSnap.forEach(d => donationsList.push({ id: d.id, ...d.data() }));
-      setDonations(donationsList);
-
-
-
-      const progSnap = await getDocs(collection(db, "programs"));
-      const progsList: FirestoreRecord[] = [];
-      progSnap.forEach(d => progsList.push({ id: d.id, ...d.data() }));
-      setPrograms(progsList);
+      // 3. Fetch operational data from Sheets-backed API routes
+      try {
+        const donorRes = await fetch("/api/donors");
+        const donorData = await donorRes.json();
+        if (donorData.success && Array.isArray(donorData.donors)) {
+          setDonors(donorData.donors);
+        }
+      } catch (err) {
+        console.warn("Failed to load donors for KHIZR context:", err);
+      }
 
       try {
-        const commSnap = await getDocs(collection(db, "communications"));
-        const commsList: FirestoreRecord[] = [];
-        commSnap.forEach(d => commsList.push({ id: d.id, ...d.data() }));
-        setCommunications(commsList);
-      } catch (commErr) {
-        console.warn("Failed to load communications collection:", commErr);
+        const donationRes = await fetch("/api/admin/donations");
+        const donationData = await donationRes.json();
+        if (donationData.success && Array.isArray(donationData.donations)) {
+          setDonations(donationData.donations);
+        }
+      } catch (err) {
+        console.warn("Failed to load donations for KHIZR context:", err);
       }
+
+      try {
+        const causesRes = await fetch("/api/causes");
+        const causesData = await causesRes.json();
+        if (causesData.success && Array.isArray(causesData.causes)) {
+          setPrograms(causesData.causes);
+        }
+      } catch (err) {
+        console.warn("Failed to load programs/causes for KHIZR context:", err);
+      }
+
+      // Communications not yet on Sheets — skip gracefully
+      setCommunications([]);
 
       // 4. Fetch Proactive Alerts (Phase 7)
       try {

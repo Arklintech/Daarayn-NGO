@@ -32,8 +32,8 @@ import {
   PanelLeftOpen
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { db } from "@/lib/firebase";
-import { collection, query, onSnapshot, where } from "firebase/firestore";
+
+
 
 export default function AdminLayoutClient({ children }: { children: React.ReactNode }) {
   const { user, adminData, loading, logout } = useAuth();
@@ -66,18 +66,28 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     }
   }, [user, loading, pathname, router]);
 
-  // Real-time unread count
+  // Real-time unread count — poll the Sheets-backed notifications API
   React.useEffect(() => {
     if (!user) return;
-    const q = query(
-      collection(db, "admin_notifications"),
-      where("isRead", "==", false)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      setTotalUnread(snap.docs.length);
-    });
-    return () => unsub();
+
+    const fetchUnread = async () => {
+      try {
+        const res = await fetch("/api/admin/notifications");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.notifications)) {
+          const unread = data.notifications.filter((n: any) => !n.isRead).length;
+          setTotalUnread(unread);
+        }
+      } catch {
+        // Silently ignore — unread count is non-critical
+      }
+    };
+
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 30_000);
+    return () => clearInterval(interval);
   }, [user]);
+
 
   // Register SW + detect live updates for mobile PWA
   const [swUpdateReady, setSwUpdateReady] = React.useState(false);
