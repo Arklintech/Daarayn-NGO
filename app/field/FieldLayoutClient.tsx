@@ -8,8 +8,6 @@ import {
 } from "lucide-react";
 import { FieldAgentAuthProvider, useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 import { MosqueSilhouetteMini } from "@/components/MosqueSilhouette";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 const navItems = [
   { name: "Dashboard", href: "/field/dashboard", icon: Home },
@@ -39,30 +37,16 @@ function AgentNavigation({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!agentData?.id) return;
-
-    const unsubMessages = onSnapshot(query(collection(db, "field_conversations"), where("agentId", "==", agentData.id)), (snap) => {
-      let count = 0;
-      snap.forEach(d => { if (d.data().unreadCountAgent > 0) count++; });
-      setUnreadMessages(count);
-    });
-
-    const unsubAlerts = onSnapshot(query(collection(db, "field_notifications"), where("agentId", "==", agentData.id)), (snap) => {
-      let count = 0;
-      snap.forEach(d => { if (!d.data().isRead) count++; });
-      setUnreadAlerts(count);
-    });
-
-    const unsubReports = onSnapshot(query(collection(db, "field_reports"), where("agentId", "==", agentData.id)), (snap) => {
-      let count = 0;
-      snap.forEach(d => { if (d.data().hasAgentUnreadUpdate) count++; });
-      setUnreadReports(count);
-    });
-
-    return () => {
-      unsubMessages();
-      unsubAlerts();
-      unsubReports();
-    };
+    async function checkUnread() {
+      try {
+        const res = await fetch('/api/field/reports');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.reports)) {
+          setUnreadReports(data.reports.filter((r: any) => r.status === 'Pending Review').length);
+        }
+      } catch (e) {}
+    }
+    checkUnread();
   }, [agentData?.id]);
 
   const isActiveLink = (href: string) =>

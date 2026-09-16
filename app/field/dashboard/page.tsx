@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
 import { 
   FileText, Clock, CheckCircle, PlusCircle, ChevronRight, AlertCircle, MapPin
 } from "lucide-react";
@@ -20,13 +18,12 @@ export default function AgentDashboard() {
     const fetchMyReports = async () => {
       if (!agentData) return;
       try {
-        const q = query(collection(db, "field_reports"), where("agentId", "==", agentData.id));
-        const snap = await getDocs(q);
-        const list: FieldReport[] = [];
-        snap.forEach(d => list.push(d.data() as FieldReport));
-        // Sort in JS to avoid requiring a composite Firestore index
-        list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        setReports(list.slice(0, 5));
+        const res = await fetch('/api/field/reports');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.reports)) {
+          const list = data.reports.filter((r: any) => r.fieldAgentId === agentData.id || r.agentId === agentData.id);
+          setReports(list.slice(0, 5));
+        }
       } catch (err) {
         console.error("Failed to fetch reports:", err);
       } finally {

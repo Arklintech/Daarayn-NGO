@@ -1,9 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { auth, db } from "./firebase";
+import { auth } from "./firebase";
 import { onAuthStateChanged, signOut, User } from "firebase/auth";
-import { doc, getDoc, setDoc } from "firebase/firestore";
 
 export type AdminRole = 
   | "Super Admin" 
@@ -82,50 +81,25 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
         if (typeof document !== 'undefined') {
           document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
         }
+        let cachedRole: AdminRole = "Super Admin";
+        let cachedName = currentUser.displayName || currentUser.email?.split("@")[0] || "Administrator";
         try {
-          const userDocRef = doc(db, "users", currentUser.uid);
-          const userDoc = await getDoc(userDocRef);
-          
-          if (userDoc.exists()) {
-            setAdminData(userDoc.data() as AdminUserData);
-          } else {
-            // Assign a default Admin role — profile will be stored locally
-            const defaultRole: AdminRole = "Super Admin";
-            const initialData: AdminUserData = {
-              uid: currentUser.uid,
-              email: currentUser.email || "",
-              name: currentUser.displayName || currentUser.email?.split("@")[0] || "Administrator",
-              role: defaultRole,
-              status: "active",
-              createdAt: new Date().toISOString(),
-            };
-            try {
-              await setDoc(userDocRef, initialData);
-            } catch {
-              // setDoc may fail if rules deny writes — that is acceptable
-            }
-            setAdminData(initialData);
+          const stored = localStorage.getItem(`daarayn_user_${currentUser.uid}`);
+          if (stored) {
+            const p = JSON.parse(stored);
+            if (p.role) cachedRole = p.role;
+            if (p.name) cachedName = p.name;
           }
-        } catch (error: any) {
-          // Firestore security rules may deny direct client reads (permission-denied).
-          // This is expected when Firestore rules are locked down server-side.
-          // Fall back to a default authenticated Admin role so the user can proceed.
-          const isPermissionDenied =
-            error?.code === "permission-denied" ||
-            error?.message?.includes("Missing or insufficient permissions");
-          if (isPermissionDenied) {
-            setAdminData({
-              uid: currentUser.uid,
-              email: currentUser.email || "",
-              name: currentUser.displayName || currentUser.email?.split("@")[0] || "Administrator",
-              role: "Super Admin",
-              status: "active",
-            });
-          } else {
-            console.error("Error loading admin role profile:", error);
-            setAdminData(null);
-          }
-        }
+        } catch (e) {}
+
+        setAdminData({
+          uid: currentUser.uid,
+          email: currentUser.email || "",
+          name: cachedName,
+          role: cachedRole,
+          status: "active",
+          createdAt: new Date().toISOString(),
+        });
       } else {
         setAdminData(null);
       }

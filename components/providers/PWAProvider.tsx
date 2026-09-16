@@ -1,9 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { initializeApp, getApps } from 'firebase/app';
-import { initializeFirestore, enableMultiTabIndexedDbPersistence } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 
 interface PWAState {
   isOnline: boolean;
@@ -82,24 +79,6 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     document.addEventListener('visibilitychange', handleVisibilityAndFocus);
     window.addEventListener('blur', handleVisibilityAndFocus);
     window.addEventListener('focus', handleVisibilityAndFocus);
-
-    // 5. Firebase Multi-Tab Offline Persistence Bootstrapping
-    const initializeSecureFirestore = async () => {
-      // In the Daarayn architecture, db is already initialized in @/lib/firebase.
-      // But we can attempt to enable persistence on it if it hasn't been enabled already.
-      try {
-        await enableMultiTabIndexedDbPersistence(db);
-        console.log('[Firestore] Local-First Multi-Tab Persistence Ready.');
-      } catch (err: any) {
-        if (err.code === 'failed-precondition') {
-          console.warn('[Firestore] Multi-tab active elsewhere. Dynamic offline fallback active.');
-        } else if (err.code === 'unimplemented') {
-          console.error('[Firestore] Client engine does not support offline capabilities.');
-        }
-      }
-    };
-
-    initializeSecureFirestore();
 
     return () => {
       window.removeEventListener('online', evaluateConnectivity);

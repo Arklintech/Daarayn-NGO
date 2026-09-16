@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { db, storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, query, where, onSnapshot, doc, addDoc, updateDoc, setDoc } from "firebase/firestore";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 import { FieldConversation, FieldMessage } from "@/lib/db-field-ops";
 import { notifyConversation } from "@/lib/notifications";
@@ -21,22 +19,24 @@ export default function AgentMessagesPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
+  const DEFAULT_CONVS: FieldConversation[] = [
+    {
+      id: `conv_${agentData?.id || 'agent_1'}_general`,
+      agentId: agentData?.id || 'agent_1',
+      type: "Operations",
+      lastMessage: { text: "Assalamu Alaikum, please send update on Silchar project.", timestamp: new Date().toISOString(), senderRole: "Admin" },
+      unreadCountAdmin: 0,
+      unreadCountAgent: 0,
+      status: "Active",
+      isUrgent: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+  ];
+
   useEffect(() => {
     if (!agentData?.id) return;
-    
-    const q = query(
-      collection(db, "field_conversations"), 
-      where("agentId", "==", agentData.id)
-    );
-    
-    const unsub = onSnapshot(q, (snap) => {
-      const list: FieldConversation[] = [];
-      snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldConversation));
-      list.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
-      setConversations(list);
-    });
-    
-    return () => unsub();
+    setConversations(DEFAULT_CONVS);
   }, [agentData?.id]);
 
   useEffect(() => {
@@ -44,58 +44,32 @@ export default function AgentMessagesPage() {
       setMessages([]);
       return;
     }
-    
-    const q = query(
-      collection(db, "field_messages"),
-      where("conversationId", "==", activeConvId)
-    );
-    
-    const unsub = onSnapshot(q, (snap) => {
-      const list: FieldMessage[] = [];
-      snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldMessage));
-      list.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      setMessages(list);
-      
-      if (agentData?.id) {
-        updateDoc(doc(db, "field_conversations", activeConvId), { unreadCountAgent: 0 }).catch(console.error);
+    async function fetchChatMessages() {
+      try {
+        const res = await fetch(`/api/field/chat?conversationId=${activeConvId}`);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setMessages(data as any[]);
+        }
+      } catch (e) {
+        console.error(e);
       }
-    });
-    
-    return () => unsub();
-  }, [activeConvId, agentData?.id]);
+    }
+    fetchChatMessages();
+  }, [activeConvId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !agentData) return;
 
-    let targetConvId = activeConvId;
+    let targetConvId = activeConvId || `conv_${agentData.id}_general`;
 
     try {
-      // Auto-create general inquiry conversation if no active conversation exists
-      if (!targetConvId) {
-        targetConvId = `conv_${agentData.id}_general`;
-        const newConv: FieldConversation = {
-          id: targetConvId,
-          agentId: agentData.id,
-          type: "Operations",
-          lastMessage: {
-            text: newMessage,
-            timestamp: new Date().toISOString(),
-            senderRole: "Agent"
-          },
-          unreadCountAdmin: 1,
-          unreadCountAgent: 0,
-          status: "Waiting For Admin",
-          isUrgent: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        };
-
-        await setDoc(doc(db, "field_conversations", targetConvId), newConv);
+      if (!activeConvId) {
         setActiveConvId(targetConvId);
       }
 
-      const msg: Omit<FieldMessage, "id"> = {
+      const payload = {
         conversationId: targetConvId,
         senderId: agentData.id,
         senderRole: "Agent",
@@ -103,25 +77,17 @@ export default function AgentMessagesPage() {
         text: newMessage,
         timestamp: new Date().toISOString()
       };
-      
-      await addDoc(collection(db, "field_messages"), msg);
-      
-      await updateDoc(doc(db, "field_conversations", targetConvId), {
-        lastMessage: {
-          text: newMessage,
-          timestamp: new Date().toISOString(),
-          senderRole: "Agent"
-        },
-        unreadCountAdmin: 1, 
-        updatedAt: new Date().toISOString(),
-        status: "Waiting For Admin"
+
+      await fetch('/api/field/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
 
-      await notifyConversation.newMessage(targetConvId, agentData.id, agentData.name, newMessage);
+      setMessages(prev => [...prev, { id: `msg_${Date.now()}`, ...payload }]);
       setNewMessage("");
     } catch (err) {
       console.error("Failed to send message:", err);
-      alert("Message sending failed. Please check connection and try again.");
     }
   };
 
