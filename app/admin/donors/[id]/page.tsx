@@ -77,10 +77,12 @@ export default function DonorWorkspace() {
     if (!donorId) return;
     async function load() {
       setLoading(true);
+      const decodedId = decodeURIComponent(donorId);
+      let donorData: any = null;
+
+      // 1. Fetch Donors
       try {
-        const decodedId = decodeURIComponent(donorId);
         const dRes = await fetch('/api/donors');
-        let donorData: any = null;
         if (dRes.ok) {
           const list = await dRes.json();
           const allDonors = Array.isArray(list) ? list : list.donors || [];
@@ -90,57 +92,71 @@ export default function DonorWorkspace() {
             (d.email && d.email.toLowerCase() === decodedId.toLowerCase())
           );
         }
-        if (!donorData) {
-          donorData = {
-            id: decodedId,
-            name: decodedId.includes('@') ? decodedId.split('@')[0] : "Verified Donor",
-            email: decodedId.includes('@') ? decodedId : "donor@example.com",
-            phone: "+91 98765 43210",
-            country: "India",
-            city: "Mumbai",
-            dateJoined: new Date().toISOString(),
-            status: "active"
-          };
-        }
-        setDonor(donorData);
+      } catch (err) {
+        console.warn('Failed to fetch /api/donors:', err);
+      }
 
+      if (!donorData) {
+        donorData = {
+          id: decodedId,
+          name: decodedId.includes('@') ? decodedId.split('@')[0] : "Verified Donor",
+          email: decodedId.includes('@') ? decodedId : "donor@example.com",
+          phone: "+91 98765 43210",
+          country: "India",
+          city: "Mumbai",
+          dateJoined: new Date().toISOString(),
+          status: "active"
+        };
+      }
+      setDonor(donorData);
+
+      // 2. Fetch Donations
+      try {
         const donRes = await fetch('/api/admin/donations');
-        let donList: any[] = [];
         if (donRes.ok) {
           const donData = await donRes.json();
           const allDonations = donData.success && Array.isArray(donData.donations) ? donData.donations : Array.isArray(donData) ? donData : [];
-          donList = allDonations.filter((d: any) => 
+          const filtered = allDonations.filter((d: any) => 
             d.donorId === donorId || 
             d.donorId === decodedId || 
             (d.donor && d.donor.toLowerCase() === donorData.name?.toLowerCase()) || 
             (d.donorEmail && d.donorEmail.toLowerCase() === donorData.email?.toLowerCase())
           );
+          setDonations(filtered);
         }
-        setDonations(donList);
+      } catch (err) {
+        console.warn('Failed to fetch /api/admin/donations:', err);
+      }
 
+      // 3. Fetch Causes
+      try {
         const cRes = await fetch('/api/causes');
-        let causeList: any[] = [];
         if (cRes.ok) {
           const cData = await cRes.json();
-          causeList = cData.success && Array.isArray(cData.causes) ? cData.causes : Array.isArray(cData) ? cData : [];
+          const causeList = cData.success && Array.isArray(cData.causes) ? cData.causes : Array.isArray(cData) ? cData : DEFAULT_CAUSES;
+          setCauses(causeList);
+        } else {
+          setCauses(DEFAULT_CAUSES);
         }
-        if (causeList.length === 0) causeList = DEFAULT_CAUSES;
-        setCauses(causeList);
+      } catch (err) {
+        setCauses(DEFAULT_CAUSES);
+      }
 
+      // 4. Fetch Communications
+      try {
         const commRes = await fetch('/api/admin/communications');
-        let commList: any[] = [];
         if (commRes.ok) {
           const commData = await commRes.json();
           const allComms = commData.success && Array.isArray(commData.communications) ? commData.communications : Array.isArray(commData) ? commData : [];
-          commList = allComms.filter((c: any) => 
+          const filtered = allComms.filter((c: any) => 
             c.donorId === donorId || 
             c.donorId === decodedId || 
             (c.recipientEmail && c.recipientEmail.toLowerCase() === donorData.email?.toLowerCase())
           );
+          setCommunications(filtered);
         }
-        setCommunications(commList);
       } catch (err) {
-        console.error('Error loading donor workspace:', err);
+        console.warn('Failed to fetch /api/admin/communications:', err);
       } finally {
         setLoading(false);
       }
@@ -166,7 +182,7 @@ export default function DonorWorkspace() {
       a.click();
     } 
     else if (action === 'Send Communication') {
-      if (donor.email) {
+      if (donor?.email) {
         window.location.href = `mailto:${donor.email}?subject=Daarayn%20Update`;
       } else {
         alert("No email address on file for this donor.");
@@ -178,11 +194,11 @@ export default function DonorWorkspace() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `donor_profile_${donor.id}.json`;
+      a.download = `donor_profile_${donor?.id || 'export'}.json`;
       a.click();
     }
     else if (action === 'Deactivate') {
-      if (confirm(`Are you sure you want to deactivate ${donor.name}?`)) {
+      if (confirm(`Are you sure you want to deactivate ${donor?.name}?`)) {
         setDonor({ ...donor, status: 'inactive' });
         alert("Donor deactivated successfully.");
       }
@@ -197,7 +213,16 @@ export default function DonorWorkspace() {
     );
   }
 
-  if (!donor) return null;
+  if (!donor) {
+    return (
+      <div className="p-8 text-center space-y-4">
+        <p className="text-gray-400 text-sm">Donor record could not be loaded.</p>
+        <button onClick={() => router.push('/admin/donors')} className="px-4 py-2 bg-luxury-gold text-black font-semibold rounded-xl text-xs">
+          Back to Donors
+        </button>
+      </div>
+    );
+  }
 
   const initials = (donor.name || 'A').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
   const lifetimeGiving = donations.reduce((s: number, d: any) => s + (d.amount || 0), 0) || donor.totalAmountDonated || 0;
