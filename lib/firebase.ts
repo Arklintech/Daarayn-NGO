@@ -5,22 +5,19 @@ import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
 const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "dummy_api_key",
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "dummy_auth_domain",
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "dummy_project_id",
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "dummy_storage_bucket",
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "dummy_messaging_sender_id",
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "dummy_app_id",
-  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "dummy_measurement_id",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDf_6iUEtZQ6FRpg42QeDk5eakeHm4XhG8",
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "daaraynorg-9165c.firebaseapp.com",
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "daaraynorg-9165c",
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "daaraynorg-9165c.firebasestorage.app",
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "269969400623",
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:269969400623:web:bdb5613251e7524018b7da",
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-WWSBERD2KZ",
 };
 
 const isFirebaseConfigValid = Boolean(
   firebaseConfig.apiKey &&
-  firebaseConfig.apiKey !== "dummy_api_key" &&
-  !firebaseConfig.apiKey.includes("your_firebase") &&
   firebaseConfig.projectId &&
-  firebaseConfig.projectId !== "dummy_project_id" &&
-  !firebaseConfig.projectId.includes("your_firebase")
+  firebaseConfig.appId
 );
 
 // Initialize Firebase App only if valid configuration is present
