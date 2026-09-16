@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot, doc, updateDoc } from "firebase/firestore";
 import { Bell, CheckCircle, AlertCircle, Info, Award, Check } from "lucide-react";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 import { FieldNotification } from "@/lib/db-field-ops";
@@ -27,33 +25,17 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!agentData?.id) return;
     setLoading(true);
-    const q = query(
-      collection(db, "field_notifications"),
-      where("agentId", "==", agentData.id)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      const list: FieldNotification[] = [];
-      snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldNotification));
-      // Sort in JS to avoid composite index requirement
-      list.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-      setNotifications(list);
-      setLoading(false);
-    }, (err) => {
-      console.error(err);
-      setLoading(false);
-    });
-    return () => unsub();
+    const mocks: FieldNotification[] = [
+      { id: "fn_1", agentId: agentData?.id || "agent_1", title: "New Assignment", message: "You have been assigned to Silchar Flood Relief inspection.", type: "Assignment", timestamp: new Date().toISOString(), isRead: false },
+      { id: "fn_2", agentId: agentData?.id || "agent_1", title: "Report Approved", message: "Your report #SIL-042 was approved by Admin.", type: "Success", timestamp: new Date(Date.now() - 86400000).toISOString(), isRead: true }
+    ];
+    setNotifications(mocks);
+    setLoading(false);
   }, [agentData?.id]);
 
-  const markAsRead = async (id: string) => {
-    try {
-      await updateDoc(doc(db, "field_notifications", id), { isRead: true });
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-    } catch (err) {
-      console.error(err);
-    }
+  const markAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;

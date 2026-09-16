@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 import {
@@ -58,9 +56,11 @@ export default function AgentLogin() {
     setError("");
     try {
       if (email.toLowerCase().endsWith("@daarayn.org")) {
-        const snap = await getDocs(query(collection(db, "field_agents"), where("email", "==", email.toLowerCase())));
-        if (!snap.empty) {
-          localStorage.setItem("demoAgent", JSON.stringify(snap.docs[0].data()));
+        const res = await fetch("/api/admin/field-agents");
+        const data = await res.json();
+        const found = data.agents?.find((a: any) => a.email?.toLowerCase() === email.toLowerCase());
+        if (found) {
+          localStorage.setItem("demoAgent", JSON.stringify(found));
           window.location.href = "/field/dashboard";
           return;
         }

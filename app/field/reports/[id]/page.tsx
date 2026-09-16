@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import { ArrowLeft, MapPin, Users, FileText, Clock, CheckCircle, XCircle, AlertCircle, MessageSquare, ChevronRight } from "lucide-react";
 import Link from "next/link";
@@ -27,20 +25,22 @@ export default function ReportDetailPage() {
 
   useEffect(() => {
     if (!reportId) return;
-    // Real-time listener — admin timeline updates reflect instantly
-    const unsub = onSnapshot(doc(db, "field_reports", reportId), (snap) => {
-      if (snap.exists()) {
-        const data = snap.data();
-        setReport({ id: snap.id, ...data });
-        
-        // Clear unread flag if it was set by admin updates
-        if (data.hasAgentUnreadUpdate) {
-          updateDoc(doc(db, "field_reports", reportId), { hasAgentUnreadUpdate: false }).catch(console.error);
+    async function loadReport() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/field/reports');
+        const data = await res.json();
+        const found = data.reports?.find((r: any) => r.id === reportId);
+        if (found) {
+          setReport(found);
         }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    });
-    return () => unsub();
+    }
+    loadReport();
   }, [reportId]);
 
   if (loading) {

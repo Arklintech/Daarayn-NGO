@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { FileText, Clock, CheckCircle, MapPin, ChevronRight, AlertCircle, Filter } from "lucide-react";
 import Link from "next/link";
 import { FieldReport } from "@/lib/db-field-ops";
@@ -24,24 +22,22 @@ export default function MyReportsPage() {
   const [filter, setFilter] = useState<string>("All");
 
   useEffect(() => {
-    if (!agentData?.id) return;
-    setLoading(true);
-    const q = query(
-      collection(db, "field_reports"),
-      where("agentId", "==", agentData.id)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      const list: FieldReport[] = [];
-      snap.forEach(d => list.push({ id: d.id, ...d.data() } as FieldReport));
-      // Sort in JS to avoid composite index requirement
-      list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      setReports(list);
-      setLoading(false);
-    }, (err) => {
-      console.error(err);
-      setLoading(false);
-    });
-    return () => unsub();
+    async function loadReports() {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/field/reports');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.reports)) {
+          const list = agentData?.id ? data.reports.filter((r: any) => r.fieldAgentId === agentData.id || r.agentId === agentData.id) : data.reports;
+          setReports(list);
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadReports();
   }, [agentData?.id]);
 
   const filterTabs = ["All", "Pending Review", "Approved", "Needs Info", "Converted"];
