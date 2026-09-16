@@ -4,6 +4,19 @@ import { generateLetterEmailTemplate, attachDaaraynLogo } from "@/lib/email/rese
 import { sendEmail } from "@/lib/email/providerManager";
 import { communicationRepository } from "@/lib/repositories/communicationRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
+import { broadcastStore } from "@/lib/broadcast-store";
+
+// Helper for non-blocking Firestore updates
+async function safeFirestoreUpdate(docRef: any, data: any) {
+  try {
+    await Promise.race([
+      updateDoc(docRef, data),
+      new Promise(res => setTimeout(res, 1200))
+    ]);
+  } catch (err: any) {
+    // Non-blocking mirror
+  }
+}
 
 export async function processBroadcast(broadcastId: string, recipients: any[], payload: any) {
   const { heading, eyebrow, dua, projectUpdateHtml, mediaUrls, causeName, stats, createdAt } = payload;
@@ -15,7 +28,12 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
   const jobsRef = collection(db, "broadcast_email_jobs");
 
   try {
-    await updateDoc(broadcastRef, {
+    broadcastStore.update(broadcastId, {
+      status: "Processing",
+      startedAt: new Date().toISOString()
+    });
+
+    safeFirestoreUpdate(broadcastRef, {
       status: "Processing",
       startedAt: new Date().toISOString()
     });
@@ -106,50 +124,87 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
           }
         }
 
-        const jobDocRef = doc(db, "broadcast_email_jobs", job.jobId);
-        if (delivered) {
-          successCount++;
-          await updateDoc(jobDocRef, {
-            status: "Sent",
-            completedTime: new Date().toISOString(),
-            retryCount: attempts,
-            lastAttempt: new Date().toISOString()
-          });
+        if (job.jobId) {
+          const jobDocRef = doc(db, "broadcast_email_jobs", job.jobId);
+          if (delivered) {
+            successCount++;
+            safeFirestoreUpdate(jobDocRef, {
+              status: "Sent",
+              completedTime: new Date().toISOString(),
+              retryCount: attempts,
+              lastAttempt: new Date().toISOString()
+            });
+          } else {
+            failCount++;
+            safeFirestoreUpdate(jobDocRef, {
+              status: "Failed",
+              failureReason: lastError?.message || "Unknown error",
+              retryCount: attempts,
+              lastAttempt: new Date().toISOString()
+            });
+          }
         } else {
-          failCount++;
-          await updateDoc(jobDocRef, {
-            status: "Failed",
-            failureReason: lastError?.message || "Unknown error",
-            retryCount: attempts,
-            lastAttempt: new Date().toISOString()
-          });
+          if (delivered) successCount++;
+          else failCount++;
         }
       }));
 
-      // Update Live Progress Panel (Step 5)
-      await updateDoc(broadcastRef, {
+      const remainingCount = Math.max(0, jobs.length - (successCount + failCount));
+
+      // Update broadcastStore in-memory state
+      broadcastStore.update(broadcastId, {
+        stats: {
+          sent: successCount,
+          failed: failCount,
+          remaining: remainingCount
+        }
+      });
+
+      // Update Live Progress Panel via SSE Realtime Broadcaster
+      realtimeBroadcaster.broadcast("BROADCAST_PROGRESS", {
+        broadcastId,
+        sent: successCount,
+        failed: failCount,
+        remaining: remainingCount,
+        status: "Processing"
+      });
+
+      // Mirror to Firestore non-blocking
+      safeFirestoreUpdate(broadcastRef, {
         "stats.sent": successCount,
         "stats.failed": failCount,
-        "stats.remaining": jobs.length - (successCount + failCount)
+        "stats.remaining": remainingCount
       });
       
       // Delay to respect provider limits
-      await new Promise(res => setTimeout(res, 1500));
+      await new Promise(res => setTimeout(res, 800));
     }
 
     const processingDurationMs = Date.now() - new Date(createdAt).getTime();
-    try {
-      await updateDoc(broadcastRef, {
-        status: "Completed",
-        completedAt: new Date().toISOString(),
-        processingDurationMs,
-        "stats.sent": successCount,
-        "stats.failed": failCount,
-        "stats.remaining": 0
-      });
-    } catch {}
 
-    // Persist durable history to Google Sheets
+    // 1. Update in-memory broadcastStore
+    broadcastStore.update(broadcastId, {
+      status: "Completed",
+      completedAt: new Date().toISOString(),
+      processingDurationMs,
+      stats: {
+        sent: successCount,
+        failed: failCount,
+        remaining: 0
+      }
+    });
+
+    // 2. Safe Firestore mirror update
+    safeFirestoreUpdate(broadcastRef, {
+      status: "Completed",
+      completedAt: new Date().toISOString(),
+      processingDurationMs,
+      "stats.sent": successCount,
+      "stats.failed": failCount,
+      "stats.remaining": 0
+    });
+
+    // 3. Persist authoritative durable history to Google Sheets
     await communicationRepository.save({
       id: broadcastId,
       type: "Email Broadcast",
@@ -165,21 +220,24 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
       completedAt: new Date().toISOString(),
     });
 
-    // Notify connected client listeners in real-time
+    // 4. Notify connected client listeners in real-time over SSE
     realtimeBroadcaster.broadcast("BROADCAST_COMPLETED", {
       broadcastId,
       sent: successCount,
       failed: failCount,
+      status: "Completed"
     });
 
   } catch (error: any) {
     console.error("Broadcast failed globally:", error);
-    try {
-      await updateDoc(broadcastRef, {
-        status: "Failed",
-        failureReason: error?.message || "Unknown error"
-      });
-    } catch {}
+    broadcastStore.update(broadcastId, {
+      status: "Failed",
+      failureReason: error?.message || "Unknown error"
+    });
+    safeFirestoreUpdate(broadcastRef, {
+      status: "Failed",
+      failureReason: error?.message || "Unknown error"
+    });
   }
 }
 

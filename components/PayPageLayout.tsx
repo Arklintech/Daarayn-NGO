@@ -90,7 +90,7 @@ export default function PayPageLayout({ amount, currency, cause, source }: { amo
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <li style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
               <CheckCircle2 size={14} color="#2ecc71" style={{ marginTop: '2px', flexShrink: 0 }} />
-              <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)', lineHeight: '1.4' }}>Your contribution is securely recorded in our immutable ledger.</span>
+              <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)', lineHeight: '1.4' }}>Your contribution is securely logged and verified.</span>
             </li>
             <li style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
               <CheckCircle2 size={14} color="#2ecc71" style={{ marginTop: '2px', flexShrink: 0 }} />

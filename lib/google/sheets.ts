@@ -92,7 +92,21 @@ export class SheetsService {
     }
   }
 
+  public async clearRange(range: string): Promise<void> {
+    await this.sheets.spreadsheets.values.clear({
+      spreadsheetId: this.spreadsheetId,
+      range,
+    });
+  }
+
   public async setHeaders(sheetName: string, headers: string[]): Promise<void> {
+    try {
+      await this.sheets.spreadsheets.values.clear({
+        spreadsheetId: this.spreadsheetId,
+        range: `'${sheetName}'!1:1`,
+      });
+    } catch (e) {}
+
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: this.spreadsheetId,
       range: `'${sheetName}'!1:1`,

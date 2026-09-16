@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { ShieldCheck, ArrowRight, UserCheck, Heart } from "lucide-react";
 
@@ -14,27 +12,24 @@ export default function DonorAccessGate() {
   const [mockDonors, setMockDonors] = useState<any[]>([]);
   const router = useRouter();
 
-  // Load current donor emails/phone numbers to present as quick-launch options during dev
+  // Load current donor emails/phone numbers to present as quick-launch options
   useEffect(() => {
     async function fetchDonors() {
       try {
-        const snap = await getDocs(collection(db, "donors"));
-        const list: any[] = [];
-        snap.forEach(doc => {
-          list.push({ id: doc.id, ...doc.data() });
-        });
-        
-        if (list.length > 0) {
-          setMockDonors(list);
-        } else {
-          // Pre-populate if Firestore is empty
-          setMockDonors([
-            { id: "DNR-2026-000001", name: "Ahmed Khan", email: "ahmed.khan@example.com" },
-            { id: "DNR-2026-000002", name: "Sara Ahmed", email: "sara.ahmed@example.com" }
-          ]);
+        const res = await fetch("/api/donors");
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list) && list.length > 0) {
+            setMockDonors(list);
+            return;
+          }
         }
+        setMockDonors([
+          { id: "DNR-2026-000001", name: "Ahmed Khan", email: "ahmed.khan@example.com" },
+          { id: "DNR-2026-000002", name: "Sara Ahmed", email: "sara.ahmed@example.com" }
+        ]);
       } catch (err) {
-        console.warn("Firestore count load failed, fallback offline list:", err);
+        console.warn("Donors load failed, fallback offline list:", err);
         setMockDonors([
           { id: "DNR-2026-000001", name: "Ahmed Khan", email: "ahmed.khan@example.com" },
           { id: "DNR-2026-000002", name: "Sara Ahmed", email: "sara.ahmed@example.com" }
@@ -54,49 +49,20 @@ export default function DonorAccessGate() {
 
     setLoading(true);
     try {
-      const q = identifier.trim().toLowerCase();
-      const donorsRef = collection(db, "donors");
-      
-      // Search by email
-      const qEmail = query(donorsRef, where("email", "==", q));
-      const emailSnap = await getDocs(qEmail);
-      
-      if (!emailSnap.empty) {
-        const dDoc = emailSnap.docs[0];
-        localStorage.setItem("daarayn_donor_id", dDoc.id);
+      const res = await fetch("/api/donor/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: identifier.trim() }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success && data.donor) {
+        localStorage.setItem("daarayn_donor_id", data.donor.id);
         router.push("/donor/dashboard");
         return;
       }
 
-      // Search by phone
-      const qPhone = query(donorsRef, where("phone", "==", q));
-      const phoneSnap = await getDocs(qPhone);
-      
-      if (!phoneSnap.empty) {
-        const dDoc = phoneSnap.docs[0];
-        localStorage.setItem("daarayn_donor_id", dDoc.id);
-        router.push("/donor/dashboard");
-        return;
-      }
-
-      // Search by Donor ID directly
-      const qId = query(donorsRef, where("id", "==", identifier.trim()));
-      const idSnap = await getDocs(qId);
-      if (!idSnap.empty) {
-        localStorage.setItem("daarayn_donor_id", identifier.trim());
-        router.push("/donor/dashboard");
-        return;
-      }
-
-      // If not found in live Firestore, check mock donors fallback list for easy test
-      const matchedMock = mockDonors.find(d => d.email.toLowerCase() === q || d.id === identifier.trim());
-      if (matchedMock) {
-        localStorage.setItem("daarayn_donor_id", matchedMock.id);
-        router.push("/donor/dashboard");
-        return;
-      }
-
-      setError("No registered donor profile found with this identifier. Please verify with Daarayn trustees.");
+      setError(data.error || "No registered donor profile found with this identifier.");
     } catch (err) {
       console.error("Donor portal access error:", err);
       setError("Authentication network failure. Please try again.");

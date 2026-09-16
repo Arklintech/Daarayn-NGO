@@ -1,63 +1,67 @@
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, getDoc, doc } from "firebase/firestore";
-import { Donation } from "@/lib/db";
+import { causeRepository } from "@/lib/repositories/causeRepository";
+import { donationRepository } from "@/lib/repositories/donationRepository";
+import { donorRepository } from "@/lib/repositories/donorRepository";
 
 export async function resolveRecipients(causeIds: string[], type: string) {
-  if (!causeIds || causeIds.length === 0) return { uniqueDonors: [], stats: { raised: 0, goalAmount: 0, percentage: 0 }, causeNames: [] };
+  if (!causeIds || causeIds.length === 0) {
+    return { uniqueDonors: [], stats: { raised: 0, goalAmount: 0, percentage: 0 }, causeNames: [] };
+  }
 
-  // Fetch causes to calculate total goal
+  // Fetch causes to calculate total goal from Sheets
   let totalGoal = 0;
   const causeNames: string[] = [];
+  const allCauses = await causeRepository.getAll();
+  const causeMap = new Map(allCauses.map(c => [c.id, c]));
+
   for (const causeId of causeIds) {
-    const causeSnap = await getDoc(doc(db, "causes", causeId));
-    if (causeSnap.exists()) {
-      const data = causeSnap.data();
-      causeNames.push(data.name || "Unknown Cause");
-      totalGoal += data.goalAmount || 0;
+    const c = causeMap.get(causeId) as any;
+    if (c) {
+      causeNames.push(c.title || c.name || "Unknown Cause");
+      totalGoal += Number(c.goalAmount || c.targetAmount || 0);
     }
   }
 
-  // Fetch all donations
-  const q = query(collection(db, "donations"));
-  const snap = await getDocs(q);
+  // Fetch donations from Sheets repository
+  const allDonations = await donationRepository.getAll();
   
   let totalRaised = 0;
   const uniqueMap = new Map<string, any>();
 
-  snap.docs.forEach(doc => {
-    const donation = doc.data() as Donation;
-    
+  for (const donation of allDonations) {
     // Check if donation is associated with ANY of the selected causes
     let matchesCause = false;
     if (donation.selectedCauses && Array.isArray(donation.selectedCauses)) {
-      for (const cause of donation.selectedCauses) {
-        if (causeIds.includes(cause.causeId)) {
+      for (const sc of donation.selectedCauses) {
+        if (causeIds.includes(sc.causeId)) {
           matchesCause = true;
-          if (donation.status === "completed") {
-            totalRaised += cause.allocatedAmount || 0;
+          const st = String(donation.status).toLowerCase();
+          if (st === "completed" || st === "verified") {
+            totalRaised += Number(sc.allocatedAmount || 0);
           }
         }
       }
     }
 
-    if (!matchesCause) return;
+    if (!matchesCause) continue;
 
     // Apply Communication Type Rules
     let eligible = false;
+    const status = (donation.status || "").toLowerCase();
 
     if (type === "contribution_confirmation") {
-      if (donation.status === "completed" || donation.status === "pending") eligible = true;
+      if (status === "completed" || status === "verified" || status === "pending") eligible = true;
     } else if (type === "project_progress") {
-      if (donation.status === "completed") eligible = true;
+      if (status === "completed" || status === "verified") eligible = true;
     } else if (type === "allocation_confirmation") {
-      if (donation.allocationStatus === "fully" || donation.allocationStatus === "partially" || donation.status === "allocated") eligible = true;
+      const alloc = (donation.allocationStatus || "").toLowerCase();
+      if (alloc === "fully" || alloc === "partially" || status === "allocated") eligible = true;
     } else if (type === "completion_report") {
-      if (donation.status === "completed") eligible = true;
+      if (status === "completed" || status === "verified") eligible = true;
     } else if (type === "general_communication") {
       eligible = true;
     }
 
-    if (eligible) {
+    if (eligible && donation.donorId) {
       if (!uniqueMap.has(donation.donorId)) {
         uniqueMap.set(donation.donorId, {
           id: donation.donorId,
@@ -66,20 +70,19 @@ export async function resolveRecipients(causeIds: string[], type: string) {
         });
       }
     }
-  });
+  }
 
-  // Fetch emails for donors missing them
+  // Fetch emails for donors missing them from donorRepository
   const donorsList = Array.from(uniqueMap.values());
   const resolvedDonors: any[] = [];
+  const allDonors = await donorRepository.getAll();
+  const donorDbMap = new Map(allDonors.map(d => [d.id, d]));
+
   for (const d of donorsList) {
     if (!d.email) {
-      try {
-        const donorSnap = await getDoc(doc(db, "donors", d.id));
-        if (donorSnap.exists()) {
-          d.email = donorSnap.data().email;
-        }
-      } catch (e) {
-        console.error("Failed to fetch donor", d.id, e);
+      const donorRecord = donorDbMap.get(d.id);
+      if (donorRecord && donorRecord.email) {
+        d.email = donorRecord.email;
       }
     }
     // Only include valid emails

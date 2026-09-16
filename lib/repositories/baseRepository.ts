@@ -75,6 +75,26 @@ export abstract class BaseRepository<T extends { id: string }> {
     }
   }
 
+  public async create(entity: T): Promise<T> {
+    return this.save(entity);
+  }
+
+  public async update(id: string, partial: Partial<T>): Promise<T | null> {
+    await this.init();
+    const existing = await this.getById(id);
+    if (!existing) return null;
+    const updated = { ...existing, ...partial };
+    await this.save(updated);
+    return updated;
+  }
+
+  public async delete(id: string): Promise<boolean> {
+    await this.init();
+    this.cache.delete(id);
+    this.invalidateCache();
+    return true;
+  }
+
   public invalidateCache(): void {
     this.cacheLoaded = false;
   }

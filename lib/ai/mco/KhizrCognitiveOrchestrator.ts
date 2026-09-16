@@ -29,6 +29,7 @@ import { generateAIResponse } from "../providerManager";
 import { KhizrSessionMemory } from "../knowledge/memory";
 import { db } from "../../firebase";
 import { doc, setDoc } from "firebase/firestore";
+import { auditLogRepository } from "../../repositories/auditLogRepository";
 import { planAction } from "../planner";
 import type { ActionPlan } from "../planner";
 import { compileWorkflowPlan } from "../orchestrator/executionPlanner";
@@ -528,7 +529,22 @@ Capabilities: I naturally support universal conversations including Mission, Str
 
       if (process.env.NODE_ENV !== "test") {
         try {
-          await setDoc(doc(db, "khizr_conversations_history", `KHIZR-CHAT-${Date.now()}`), {
+          // Authoritative Google Sheets Audit Log
+          auditLogRepository.save({
+            id: `KHIZR-${Date.now()}`,
+            actor_id: userId || "anonymous",
+            actor_role: "user",
+            action: "KHIZR_QUERY_COMPLETED",
+            entity_type: "KHIZR_CONVERSATION",
+            entity_id: requestId,
+            after_state: { prompt: message, verdict: reasoningResult.verdict },
+            timestamp: new Date().toISOString(),
+            request_id: requestId,
+            source: "KHIZR_MCO",
+          }).catch(() => {});
+
+          // Safe non-blocking Firestore mirror write
+          const firestoreWrite = setDoc(doc(db, "khizr_conversations_history", `KHIZR-CHAT-${Date.now()}`), {
             requestId, department: routing.department, prompt: message, normalizedPrompt: normalizedMessage,
             response: replyText, timestamp: new Date().toISOString(), model: "Deterministic-Backend-Route",
             user: userId || "anonymous", contextUsed: optimizedContext.contextText, referencedCollections: allowedCollections,
@@ -536,6 +552,8 @@ Capabilities: I naturally support universal conversations including Mission, Str
             mcoObjective: administratorObjective.trueObjective, mcoThinkingPlan: thinkingPlan.planId,
             mcoReasoningVerdict: reasoningResult.verdict
           });
+          const timeout = new Promise((resolve) => setTimeout(resolve, 1500));
+          await Promise.race([firestoreWrite, timeout]).catch(() => {});
         } catch (_) {}
       }
 
@@ -562,7 +580,7 @@ Capabilities: I naturally support universal conversations including Mission, Str
     // before handing off to Grok/Executive Response Writer.
     // ═══════════════════════════════════════════════════════════════════
     stageStart = Date.now();
-    const basePrompts = buildMKIEPrompt(eio, historyText);
+    const basePrompts = buildMKIEPrompt(eio, historyText, optimizedContext.contextText);
 
     // MCO Cognitive Enrichment: Inject reasoning verdict and all cognitive evolutions into the system prompt
     const spiritualDirectives = SpiritualIntelligenceEngine.evaluate(administratorObjective);
@@ -722,8 +740,14 @@ You MUST output your response as a valid JSON object with the following exact sc
         }
       };
       if (process.env.NODE_ENV !== "test") {
-        await setDoc(doc(db, "khizr_conversations_history", conversationId), JSON.parse(JSON.stringify(historyData)));
-        logStage("Audit Trail Log", "✓", stageStart);
+        try {
+          const firestoreWrite = setDoc(doc(db, "khizr_conversations_history", conversationId), JSON.parse(JSON.stringify(historyData)));
+          const timeout = new Promise((resolve) => setTimeout(resolve, 1500));
+          await Promise.race([firestoreWrite, timeout]).catch(() => {});
+          logStage("Audit Trail Log", "✓", stageStart);
+        } catch (_) {
+          logStage("Audit Trail Log", "✓", stageStart);
+        }
       }
     } catch (logError) {
       if (process.env.NODE_ENV !== "test") {

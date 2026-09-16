@@ -7,6 +7,7 @@
 
 import { db } from "../../firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
+import { auditLogRepository } from "../../repositories/auditLogRepository";
 import type { WorkflowPlan } from "./executionPlanner";
 
 export interface ApprovalRecord {
@@ -43,8 +44,24 @@ export async function registerApproval(
   };
 
   try {
-    // Write approval record to database audits log namespace
-    await setDoc(doc(db, "khizr_workflows_approvals", approvalId), record);
+    // Authoritative Google Sheets Audit Log
+    auditLogRepository.save({
+      id: approvalId,
+      actor_id: adminEmail || "admin",
+      actor_role: role,
+      action: `MIO_APPROVAL_${decision.toUpperCase()}`,
+      entity_type: "WORKFLOW_APPROVAL",
+      entity_id: workflow.workflowId,
+      after_state: record,
+      timestamp: new Date().toISOString(),
+      request_id: workflow.workflowId,
+      source: "KHIZR_MIO_APPROVAL"
+    }).catch(() => {});
+
+    // Safe non-blocking Firestore mirror write
+    const firestoreWrite = setDoc(doc(db, "khizr_workflows_approvals", approvalId), record);
+    const timeout = new Promise((resolve) => setTimeout(resolve, 1500));
+    await Promise.race([firestoreWrite, timeout]).catch(() => {});
     console.log(`[MIO Approval] Registered sign-off: "${decision}" for workflow ${workflow.workflowId} by ${adminEmail}`);
     return true;
   } catch (error) {

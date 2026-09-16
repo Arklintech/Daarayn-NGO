@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 import Link from "next/link";
 import { 
   BadgeIndianRupee, 
@@ -32,40 +30,48 @@ export default function AdminDonations() {
   // Proof Viewer Drawer State
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
 
-  // Fetch donations list from Firestore
+  // Fetch donations list from Google Sheets API
   useEffect(() => {
+    let isMounted = true;
     async function loadDonations() {
       setLoading(true);
       try {
-        const snap = await getDocs(collection(db, "publicLedger"));
-        const list: any[] = [];
-        snap.forEach((doc) => {
-          list.push({ id: doc.id, ...doc.data() });
-        });
-        
-        // Sort descending by date
-        list.sort((a, b) => {
-          const dateA = new Date(a.createdAt || a.date || 0).getTime();
-          const dateB = new Date(b.createdAt || b.date || 0).getTime();
-          return dateB - dateA;
-        });
-        setDonations(list);
-        setFilteredDonations(list);
+        const res = await fetch("/api/admin/donations");
+        const data = await res.json();
+        if (data.success && Array.isArray(data.donations)) {
+          if (isMounted) {
+            setDonations(data.donations);
+            setFilteredDonations(data.donations);
+          }
+        } else {
+          throw new Error(data.error || "Failed to load donations");
+        }
       } catch (err) {
-        console.warn("Firestore ledger load error, rendering fallback offline mocks:", err);
-        // Pre-fill premium lists for demonstration
-        const fallbacks = [
-          { id: "DA003", donor: "Sabir Test (UPI)", cause: "Qur’an Endowment", amount: 5000, status: "completed", date: "05/07/2026", refCode: "UPI9988776655", proof: "⏳ Proof Uploaded (Check)", proofUrl: "/images/student_profile.png" },
-          { id: "DA002", donor: "Ahmad Malik (UPI)", cause: "Family Relief Bundle", amount: 8000, status: "pending", date: "04/07/2026", refCode: "UPI5544332211", proof: "⏳ Proof Uploaded (Check)", proofUrl: "/images/family_relief.png" },
-          { id: "DA001", donor: "Anonymous (UPI)", cause: "General Support", amount: 1500, status: "completed", date: "02/07/2026", refCode: "UPI1122334455", proof: "⏳ Awaiting bank check", proofUrl: null }
-        ];
-        setDonations(fallbacks);
-        setFilteredDonations(fallbacks);
+        console.warn("API donation load error, rendering fallback:", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     }
     loadDonations();
+
+    // Listen to realtime stream
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource("/api/realtime/stream");
+      eventSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === "DONATION_CREATED" || payload.type === "DONATION_STATUS_UPDATED") {
+            loadDonations();
+          }
+        } catch {}
+      };
+    } catch {}
+
+    return () => {
+      isMounted = false;
+      if (eventSource) eventSource.close();
+    };
   }, []);
 
   // Update lists based on query & selects
@@ -83,7 +89,7 @@ export default function AdminDonations() {
     }
 
     if (statusFilter !== "all") {
-      result = result.filter(item => item.status === statusFilter);
+      result = result.filter(item => item.status.toLowerCase() === statusFilter.toLowerCase());
     }
 
     if (causeFilter !== "all") {
@@ -96,15 +102,16 @@ export default function AdminDonations() {
   // Verify/Approve donation
   const handleApprove = async (id: string) => {
     try {
-      const docRef = doc(db, "publicLedger", id);
-      await updateDoc(docRef, {
-        status: "completed",
-        proof: "✅ Verified & Checked"
+      const res = await fetch("/api/admin/donations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: "completed" })
       });
-      // Update local state list
-      setDonations(prev => prev.map(item => 
-        item.id === id ? { ...item, status: "completed", proof: "✅ Verified & Checked" } : item
-      ));
+      if (res.ok) {
+        setDonations(prev => prev.map(item => 
+          item.id === id ? { ...item, status: "completed", proof: "✅ Verified & Checked" } : item
+        ));
+      }
     } catch (err) {
       console.error("Error approving donation:", err);
     }
@@ -114,14 +121,16 @@ export default function AdminDonations() {
   const handleReject = async (id: string) => {
     if (!window.confirm("Are you sure you want to reject this contribution entry?")) return;
     try {
-      const docRef = doc(db, "publicLedger", id);
-      await updateDoc(docRef, {
-        status: "rejected",
-        proof: "❌ Rejected / Refuted"
+      const res = await fetch("/api/admin/donations", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status: "rejected" })
       });
-      setDonations(prev => prev.map(item => 
-        item.id === id ? { ...item, status: "rejected", proof: "❌ Rejected / Refuted" } : item
-      ));
+      if (res.ok) {
+        setDonations(prev => prev.map(item => 
+          item.id === id ? { ...item, status: "rejected", proof: "❌ Rejected / Refuted" } : item
+        ));
+      }
     } catch (err) {
       console.error("Error rejecting donation:", err);
     }

@@ -1,9 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { db, storage } from "@/lib/firebase";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, getDocs, doc, onSnapshot, setDoc } from "firebase/firestore";
 import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { DEFAULT_CAUSES } from "@/lib/causes";
@@ -36,19 +33,15 @@ export default function CommunicationsHub() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const causesSnap = await getDocs(collection(db, "causes"));
-        let causesData = causesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
-        if (causesData.length === 0) {
-          causesData = DEFAULT_CAUSES;
-          for (const c of DEFAULT_CAUSES) {
-            setDoc(doc(db, "causes", c.id), c).catch(err => console.warn("Auto-seed cause failed:", err));
-          }
-        }
+        const res = await fetch("/api/causes");
+        const data = await res.json();
+        let causesData = (data.success && Array.isArray(data.causes) && data.causes.length > 0)
+          ? data.causes
+          : DEFAULT_CAUSES;
 
         setCauses(causesData);
         if (causesData.length > 0) {
-          setSelectedCauseIds(causesData.map(c => c.id));
+          setSelectedCauseIds(causesData.map((c: any) => c.id));
         }
       } catch (err) {
         console.error("Failed to load causes", err);
@@ -88,19 +81,69 @@ export default function CommunicationsHub() {
     fetchResolution();
   }, [selectedCauseIds, type]);
 
-  // Phase 2: Live Progress Polling
+  // Phase 2: Live Progress via SSE + Polling Fallback
   useEffect(() => {
     if ((mode === "progress" || mode === "success") && broadcastId) {
-      const unsub = onSnapshot(doc(db, "broadcasts", broadcastId), (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setBroadcastStats(data);
-          if (data.status === "Completed" && mode !== "success") {
-            setMode("success");
+      let isMounted = true;
+
+      // 1. Setup SSE stream
+      let eventSource: EventSource | null = null;
+      try {
+        eventSource = new EventSource("/api/realtime/stream");
+        eventSource.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload.type === "BROADCAST_PROGRESS" && payload.data?.broadcastId === broadcastId) {
+              setBroadcastStats((prev: any) => ({
+                ...prev,
+                status: payload.data.status,
+                stats: {
+                  sent: payload.data.sent,
+                  failed: payload.data.failed,
+                  remaining: payload.data.remaining
+                }
+              }));
+            }
+            if (payload.type === "BROADCAST_COMPLETED" && payload.data?.broadcastId === broadcastId) {
+              setBroadcastStats((prev: any) => ({
+                ...prev,
+                status: "Completed",
+                stats: {
+                  sent: payload.data.sent,
+                  failed: payload.data.failed,
+                  remaining: 0
+                }
+              }));
+              setMode("success");
+            }
+          } catch {}
+        };
+      } catch (e) {
+        console.warn("SSE connection for broadcast progress failed, falling back to polling", e);
+      }
+
+      // 2. Poll fallback
+      const pollInterval = setInterval(async () => {
+        if (!isMounted) return;
+        try {
+          const res = await fetch(`/api/admin/communications/status?id=${encodeURIComponent(broadcastId)}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success && data.broadcast) {
+              setBroadcastStats(data.broadcast);
+              if (data.broadcast.status === "Completed" && mode !== "success") {
+                setMode("success");
+              }
+            }
           }
-        }
-      });
-      return () => unsub();
+        } catch {}
+      }, 1500);
+
+      return () => {
+        isMounted = false;
+        if (eventSource) eventSource.close();
+        clearInterval(pollInterval);
+      };
     }
   }, [mode, broadcastId]);
 
@@ -117,20 +160,23 @@ export default function CommunicationsHub() {
 
     setUploading(true);
     try {
-      const urls: string[] = [];
+      const formData = new FormData();
       for (const f of files) {
-        const timestamp = Date.now();
-        const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-        const filename = `${timestamp}_${safeName}`;
-        const storageRef = ref(storage, `campaigns/${filename}`);
-        await uploadBytes(storageRef, f);
-        const url = await getDownloadURL(storageRef);
-        urls.push(url);
+        formData.append("files", f);
       }
-      
-      setUploadedFiles(prev => prev.map((f, i) =>
-        i >= startIndex ? { ...f, serverUrl: urls[i - startIndex], uploaded: true } : f
-      ));
+      const res = await fetch("/api/admin/communications/upload", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.files)) {
+        setUploadedFiles(prev => prev.map((f, i) => {
+          const uploadedItem = data.files[i - startIndex];
+          return uploadedItem ? { ...f, serverUrl: uploadedItem.url, uploaded: true } : f;
+        }));
+      } else {
+        throw new Error(data.error || "Upload to Google Drive failed");
+      }
     } catch (e) {
       console.error('Upload failed', e);
       alert('Upload failed.');

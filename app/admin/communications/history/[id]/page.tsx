@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { ArrowLeft, Download, CheckCircle, XCircle, Clock, FileText } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 
@@ -18,16 +16,15 @@ export default function BroadcastReport() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const bDoc = await getDoc(doc(db, "broadcasts", id));
-        if (bDoc.exists()) {
-          setBroadcast({ id: bDoc.id, ...bDoc.data() });
+        const res = await fetch(`/api/admin/communications/status?id=${encodeURIComponent(id)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.broadcast) {
+            setBroadcast(data.broadcast);
+          }
         }
-        
-        const q = query(collection(db, "broadcast_email_jobs"), where("broadcastId", "==", id));
-        const jSnap = await getDocs(q);
-        setJobs(jSnap.docs.map(d => ({ id: d.id, ...d.data() })));
       } catch (err) {
-        console.error("Failed to load broadcast data", err);
+        console.error("Failed to load broadcast data from Sheets/API", err);
       } finally {
         setLoading(false);
       }

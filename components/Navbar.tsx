@@ -32,7 +32,6 @@ export default function Navbar() {
     { name: 'Family Relief', href: '/#family' },
     { name: 'Qur\'an Endowment', href: '/#quran' },
     { name: 'Masjid Fund', href: '/#masjid' },
-    { name: 'Public Ledger', href: '/#ledger' },
     { name: 'About Us', href: '/#about' },
   ];
 

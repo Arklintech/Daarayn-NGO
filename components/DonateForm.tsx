@@ -3,8 +3,6 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IndianRupee, Hash, User, Mail, UploadCloud, CheckCircle2, ShieldCheck, FileImage, Loader2, ArrowRight, Heart, Stethoscope, Building2, BookOpen, GraduationCap, Droplets, Baby, AlertTriangle, Globe2 } from 'lucide-react';
-import { db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
 import DonationSuccess from './DonationSuccess';
 
 // Animation variants
@@ -23,17 +21,15 @@ const InputWrapper = ({ icon: Icon, children, label, required }: any) => (
     <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.85)', fontWeight: 500, letterSpacing: '0.3px', display: 'flex', alignItems: 'center', gap: '4px' }}>
       {label} {required && <span style={{ color: 'var(--ivory-light)' }}>*</span>}
     </label>
-    <div style={{ position: 'relative' }}>
-      <div style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)', pointerEvents: 'none' }}>
-        <Icon size={16} />
-      </div>
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+      <Icon style={{ position: 'absolute', left: '1rem', color: 'var(--gold-base)', opacity: 0.8, pointerEvents: 'none' }} size={18} />
       {children}
     </div>
   </motion.div>
 );
 
 // Safe string normalization helper
-const normStr = (str?: string) => (str || '').toLowerCase().replace(/[’']/g, "'").trim();
+const normStr = (s?: string) => (s || '').toLowerCase().trim().replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
 
 // Map common names to icons
 const getIconForCause = (title?: string) => {
@@ -74,14 +70,11 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
   useEffect(() => {
     async function loadCauses() {
       try {
-        const snap = await getDocs(collection(db, "causes"));
-        let list: any[] = [];
-        snap.forEach((doc) => {
-          const data = doc.data();
-          list.push({ id: doc.id, name: data.name || data.title || "Cause", ...data });
-        });
+        const res = await fetch("/api/causes");
+        if (!res.ok) throw new Error("Failed to fetch causes");
+        const list = await res.json();
         
-        if (list.length === 0) throw new Error("No causes found in database");
+        if (!Array.isArray(list) || list.length === 0) throw new Error("No causes found in database");
         setCauses(list);
 
         // Handle fallback if initial cause isn't found
@@ -91,7 +84,7 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
             normInit !== 'contribution' && 
             normInit !== 'general' && 
             normInit !== 'general donation' &&
-            !list.find(c => normStr(c.name) === normInit || normStr(c.title) === normInit || c.id === initialCause)
+            !list.find(c => normStr(c.name || c.title) === normInit || normStr(c.title || c.name) === normInit || c.id === initialCause)
         ) {
           const fallbackId = `custom_${Date.now()}`;
           finalList = [{ id: fallbackId, name: initialCause }, ...list];
@@ -99,18 +92,13 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
         setCauses(finalList);
 
         // Auto-select initial cause if matched
-        const initialMatch = finalList.find(c => normStr(c.name) === normInit || normStr(c.title) === normInit || c.id === initialCause);
+        const initialMatch = finalList.find(c => normStr(c.name || c.title) === normInit || normStr(c.title || c.name) === normInit || c.id === initialCause);
         if (initialMatch) {
           setSelectedCausesList([initialMatch.id]);
         }
-        
       } catch (err) {
-        console.warn("Failed to fetch causes, using fallback", err);
+        console.warn("API causes load error, using fallbacks:", err);
         const fallbacks = [
-          { id: "family-relief", name: "Family Relief" },
-          { id: "medical-assistance", name: "Medical Assistance" },
-          { id: "masjid-fund", name: "Masjid Fund" },
-          { id: "quran-endowment", name: "Qur'an Endowment" },
           { id: "education", name: "Education" },
           { id: "water-projects", name: "Water Projects" },
           { id: "orphan-support", name: "Orphan Support" },
@@ -473,7 +461,7 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
           <CheckCircle2 size={12} color="var(--ivory-light)" />
-          <span>Transparent Ledger</span>
+          <span>Amanah Guaranteed</span>
         </div>
       </motion.div>
       <style dangerouslySetInnerHTML={{

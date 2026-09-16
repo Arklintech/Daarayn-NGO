@@ -1,7 +1,5 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { db } from "@/lib/firebase";
-import { collection, getDocs } from "firebase/firestore";
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   INR: '₹',
@@ -20,10 +18,13 @@ export default function QuickDonationRibbon() {
   useEffect(() => {
     async function fetchCauses() {
       try {
-        const snap = await getDocs(collection(db, "causes"));
-        let list: any[] = [];
-        snap.forEach(doc => list.push({ id: doc.id, ...doc.data() }));
-        if (list.length > 0) setCauses(list);
+        const res = await fetch("/api/causes");
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list) && list.length > 0) {
+            setCauses(list.map(c => ({ id: c.id, name: c.name || c.title })));
+          }
+        }
       } catch (err) {
         console.warn("Failed to load causes in ribbon", err);
       }

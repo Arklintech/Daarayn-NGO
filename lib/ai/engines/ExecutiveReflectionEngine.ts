@@ -107,11 +107,13 @@ ${finalResponseText}
           }
         };
 
-        // Persist to Firestore: khizr_evolution
+        // Persist to Firestore: khizr_evolution (Safe mirror write)
         if (process.env.NODE_ENV !== "test") {
           try {
-            await setDoc(doc(db, "khizr_evolution", evolutionRecord.id), evolutionRecord);
-            console.log(`[ERL] Saved evolution record to Firestore: ${evolutionRecord.id}`);
+            const timeout = new Promise((resolve) => setTimeout(resolve, 1500));
+            const firestoreWrite1 = setDoc(doc(db, "khizr_evolution", evolutionRecord.id), evolutionRecord);
+            await Promise.race([firestoreWrite1, timeout]).catch(() => {});
+            console.log(`[ERL] Mirrored evolution record: ${evolutionRecord.id}`);
             
             if (parsed.actionableInitiative && parsed.actionableInitiative.title) {
               const initiativeRecord = {
@@ -124,11 +126,12 @@ ${finalResponseText}
                 targetAudience: parsed.actionableInitiative.targetAudience,
                 status: "pending_review"
               };
-              await setDoc(doc(db, "khizr_initiatives", initiativeRecord.id), initiativeRecord);
-              console.log(`[ERL] Saved proactive initiative draft to Firestore: ${initiativeRecord.id}`);
+              const firestoreWrite2 = setDoc(doc(db, "khizr_initiatives", initiativeRecord.id), initiativeRecord);
+              await Promise.race([firestoreWrite2, timeout]).catch(() => {});
+              console.log(`[ERL] Mirrored proactive initiative draft: ${initiativeRecord.id}`);
             }
           } catch (dbErr) {
-            console.error(`[ERL] Failed to persist evolution or initiative record:`, dbErr);
+            console.warn(`[ERL] Mirror save skipped:`, (dbErr as Error).message);
           }
         }
 

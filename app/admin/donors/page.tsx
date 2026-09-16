@@ -2,8 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, setDoc, onSnapshot } from "firebase/firestore";
 import { DEFAULT_CAUSES } from "@/lib/causes";
 import { 
   Search, RefreshCw, Filter, Download, CheckCircle, 
@@ -25,7 +23,7 @@ export default function AdminDonors() {
   const router = useRouter();
   
   const [donors, setDonors] = useState<any[]>([]);
-  const [causes, setCauses] = useState<any[]>([]);
+  const [causes, setCauses] = useState<any[]>(DEFAULT_CAUSES);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   
@@ -42,74 +40,61 @@ export default function AdminDonors() {
   const [isSaving, setIsSaving] = useState(false);
 
   const fetchData = async () => {
-    // Keep this function so that the refresh button still works
     setLoading(true);
     try {
-      const causeSnap = await getDocs(collection(db, "causes"));
-      let causeList: any[] = [];
-      causeSnap.forEach((c) => causeList.push({ id: c.id, ...c.data() }));
-      if (causeList.length === 0) causeList = DEFAULT_CAUSES;
-      setCauses(causeList);
+      // 1. Fetch Causes
+      try {
+        const cRes = await fetch("/api/causes");
+        if (cRes.ok) {
+          const cData = await cRes.json();
+          if (Array.isArray(cData) && cData.length > 0) setCauses(cData);
+        }
+      } catch {
+        setCauses(DEFAULT_CAUSES);
+      }
 
-      const snap = await getDocs(collection(db, "donors"));
-      const list: any[] = [];
-      snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
-      setDonors(list);
+      // 2. Fetch Donors from Authoritative Repository API
+      const res = await fetch("/api/donors");
+      if (res.ok) {
+        const list = await res.json();
+        setDonors(Array.isArray(list) ? list : []);
+      } else {
+        // Fallback local
+        const localRes = await fetch('/api/admin/donors-local');
+        if (localRes.ok) {
+          setDonors(await localRes.json());
+        }
+      }
       setLastUpdated(new Date());
     } catch (err) {
-      console.error("Error loading CRM data from Firestore, falling back to local:", err);
-      try {
-        const res = await fetch('/api/admin/donors-local');
-        if (res.ok) {
-          const localData = await res.json();
-          setDonors(localData);
-          setLastUpdated(new Date());
-        }
-      } catch (localErr) {
-        console.error("Local fallback also failed:", localErr);
-      }
+      console.error("Error loading CRM donors data:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    setLoading(true);
-    
-    // Load causes once
-    getDocs(collection(db, "causes")).then((causeSnap) => {
-      let causeList: any[] = [];
-      causeSnap.forEach((c) => causeList.push({ id: c.id, ...c.data() }));
-      if (causeList.length === 0) causeList = DEFAULT_CAUSES;
-      setCauses(causeList);
-    }).catch(err => {
-      console.warn("Failed to prefetch causes:", err);
-      setCauses(DEFAULT_CAUSES);
-    });
+    fetchData();
 
-    // Listen to donors real-time
-    const unsub = onSnapshot(collection(db, "donors"), (snap) => {
-      const list: any[] = [];
-      snap.forEach((d) => list.push({ id: d.id, ...d.data() }));
-      setDonors(list);
-      setLastUpdated(new Date());
-      setLoading(false);
-    }, (err) => {
-      console.error("Error listening to live donors from Firestore, using local fallback:", err);
-      fetch('/api/admin/donors-local')
-        .then(res => res.json())
-        .then(localData => {
-          setDonors(localData);
-          setLastUpdated(new Date());
-          setLoading(false);
-        })
-        .catch(localErr => {
-          console.error("Local fallback also failed:", localErr);
-          setLoading(false);
-        });
-    });
+    // Connect to Authoritative Realtime Layer (SSE)
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource("/api/realtime/stream");
+      es.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "DONATION_RECEIVED" || data.type === "DONOR_UPDATED") {
+            fetchData();
+          }
+        } catch {}
+      };
+    } catch (sseErr) {
+      console.warn("SSE connection error in AdminDonors:", sseErr);
+    }
 
-    return () => unsub();
+    return () => {
+      if (es) es.close();
+    };
   }, []);
 
   const filteredDonors = useMemo(() => {
@@ -263,23 +248,30 @@ export default function AdminDonors() {
     }
     setIsSaving(true);
     try {
-      const donorId = `DNR-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
-      const docRef = doc(db, "donors", donorId);
-      await setDoc(docRef, {
-        id: donorId,
-        ...newDonor,
-        status: "active",
-        totalDonations: 0,
-        totalAmountDonated: 0,
-        dateJoined: new Date().toISOString(),
-        createdAt: new Date().toISOString()
+      const res = await fetch("/api/donors", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...newDonor,
+          status: "active"
+        })
       });
-      setIsAddDonorOpen(false);
-      setNewDonor({ name: '', email: '', phone: '', country: 'India', city: '' });
-      fetchData(); // Refresh list
-    } catch (e) {
-      console.error(e);
-      alert("Failed to add donor");
+      const data = await res.json();
+      if (data.success) {
+        setIsAddDonorOpen(false);
+        setNewDonor({ name: '', email: '', phone: '', country: 'India', city: '' });
+        // Refresh donors list
+        const refreshedRes = await fetch("/api/donors");
+        const refreshedData = await refreshedRes.json();
+        if (refreshedData.success) {
+          setDonors(refreshedData.donors || []);
+        }
+      } else {
+        alert(data.error || "Failed to create donor");
+      }
+    } catch (err) {
+      console.error("Error creating donor:", err);
+      alert("Failed to create donor");
     } finally {
       setIsSaving(false);
     }
