@@ -3,8 +3,6 @@ import { fieldAgentRepository } from "@/lib/repositories/fieldAgentRepository";
 import { auditLogRepository } from "@/lib/repositories/auditLogRepository";
 import { notificationRepository } from "@/lib/repositories/notificationRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
-import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
 
 export async function GET() {
   try {
@@ -136,21 +134,6 @@ export async function POST(req: Request) {
       source: "admin_portal",
     });
 
-    // 8. Temporary Dual-Write to Firestore Mirror with 1.5s timeout
-    try {
-      const mirrorDoc = {
-        ...newAgent,
-        migratedToSheets: true,
-      };
-      const writePromise = setDoc(doc(db, "field_agents", newId), mirrorDoc, { merge: true });
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore write timed out")), 1500)
-      );
-      await Promise.race([writePromise, timeout]);
-    } catch (e: any) {
-      console.warn("[API/FieldAgents] Firestore dual-write skipped/timed out:", e.message);
-    }
-
     return NextResponse.json({ success: true, agent: newAgent });
   } catch (error: any) {
     console.error("[API/FieldAgents] Error creating field agent:", error);
@@ -199,17 +182,6 @@ export async function PATCH(req: Request) {
       } catch (oobErr) {
         console.warn("[API/FieldAgents] OOB password reset notice:", oobErr);
       }
-    }
-
-    // 4. Temporary Dual-Write to Firestore Mirror with timeout
-    try {
-      const mirrorWrite = setDoc(doc(db, "field_agents", agentId), updated, { merge: true });
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore write timed out")), 1500)
-      );
-      await Promise.race([mirrorWrite, timeout]);
-    } catch (e: any) {
-      console.warn("[API/FieldAgents] Firestore mirror skipped:", e.message);
     }
 
     return NextResponse.json({

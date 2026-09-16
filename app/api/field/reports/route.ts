@@ -4,8 +4,6 @@ import { auditLogRepository } from "@/lib/repositories/auditLogRepository";
 import { notificationRepository } from "@/lib/repositories/notificationRepository";
 import { driveService } from "@/lib/google/drive";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
-import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +24,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error("[API/FieldReports] Failed to fetch field reports:", error);
     return NextResponse.json(
-      { error: "Failed to retrieve field reports." },
+      { error: "Failed to retrieve field reports.", details: error?.message || String(error), stack: error?.stack },
       { status: 500 }
     );
   }
@@ -175,20 +173,6 @@ export async function POST(request: NextRequest) {
       timestamp: nowIso,
       source: "field_portal",
     });
-
-    // 5. Temporary Dual-Write to Firestore Mirror with 1.5s timeout
-    try {
-      const firestoreWrite = setDoc(doc(db, "field_reports", reportId), {
-        ...reportEntity,
-        migratedToSheets: true,
-      }, { merge: true });
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore write timed out")), 1500)
-      );
-      await Promise.race([firestoreWrite, timeout]);
-    } catch (e: any) {
-      console.warn("[API/FieldReports] Dual-write to Firestore skipped/timed out:", e.message);
-    }
 
     return NextResponse.json({ success: true, report: reportEntity });
   } catch (error: any) {

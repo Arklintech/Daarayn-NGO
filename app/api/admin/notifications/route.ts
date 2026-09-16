@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { notificationRepository, SystemNotification } from "@/lib/repositories/notificationRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
 
 export async function GET(req: NextRequest) {
   try {
@@ -56,14 +54,6 @@ export async function PATCH(req: NextRequest) {
       const unread = all.filter((n) => !n.read);
       for (const n of unread) {
         await notificationRepository.update(n.id, { read: true });
-        // Safe mirror write
-        if (process.env.NODE_ENV !== "test") {
-          try {
-            const mirrorPromise = updateDoc(doc(db, "admin_notifications", n.id), { isRead: true });
-            const timeout = new Promise((r) => setTimeout(r, 1500));
-            await Promise.race([mirrorPromise, timeout]).catch(() => {});
-          } catch (_) {}
-        }
       }
       realtimeBroadcaster.broadcast("NOTIFICATION_UPDATED", { markAllRead: true });
       return NextResponse.json({ success: true, updatedCount: unread.length });
@@ -77,18 +67,6 @@ export async function PATCH(req: NextRequest) {
     if (typeof read === "boolean") updates.read = read;
 
     await notificationRepository.update(id, updates);
-
-    // Safe Firestore mirror
-    if (process.env.NODE_ENV !== "test") {
-      try {
-        const mirrorPromise = updateDoc(doc(db, "admin_notifications", id), {
-          isRead: read,
-          isStarred: isStarred,
-        });
-        const timeout = new Promise((r) => setTimeout(r, 1500));
-        await Promise.race([mirrorPromise, timeout]).catch(() => {});
-      } catch (_) {}
-    }
 
     realtimeBroadcaster.broadcast("NOTIFICATION_UPDATED", { id, ...updates, isStarred });
     return NextResponse.json({ success: true });
@@ -108,15 +86,6 @@ export async function DELETE(req: NextRequest) {
     }
 
     await notificationRepository.delete(id);
-
-    // Safe mirror deletion
-    if (process.env.NODE_ENV !== "test") {
-      try {
-        const mirrorPromise = deleteDoc(doc(db, "admin_notifications", id));
-        const timeout = new Promise((r) => setTimeout(r, 1500));
-        await Promise.race([mirrorPromise, timeout]).catch(() => {});
-      } catch (_) {}
-    }
 
     realtimeBroadcaster.broadcast("NOTIFICATION_DELETED", { id });
     return NextResponse.json({ success: true });
