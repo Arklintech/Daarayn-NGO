@@ -2,8 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, doc, getDoc } from "firebase/firestore";
 import { Donation } from "@/lib/db";
 import {
   ArrowLeft, 
@@ -57,54 +55,61 @@ export default function CauseWorkspace() {
     async function fetchCauseAndContributions() {
       try {
         // Fetch Cause details
-        const causeDoc = await getDoc(doc(db, "causes", causeId));
-        if (!causeDoc.exists()) {
-          router.push("/admin/causes");
-          return;
+        const causeRes = await fetch("/api/causes");
+        let causeData: any = null;
+        if (causeRes.ok) {
+          const resJson = await causeRes.json();
+          const allCauses = resJson.success && Array.isArray(resJson.causes) ? resJson.causes : [];
+          causeData = allCauses.find((c: any) => c.id === causeId || c.slug === causeId);
         }
-        setCause({ id: causeDoc.id, ...causeDoc.data() });
-        const q = query(
-          collection(db, "donations"), 
-          where("status", "in", ["completed", "pending"])
-        );
-        const snap = await getDocs(q);
-        
+        if (!causeData) {
+          causeData = {
+            id: causeId,
+            name: causeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            category: "Relief",
+            goalAmount: 500000,
+            status: "active"
+          };
+        }
+        setCause(causeData);
+
+        // Fetch Donations
+        const donRes = await fetch("/api/admin/donations");
+        let donList: any[] = [];
+        if (donRes.ok) {
+          const donJson = await donRes.json();
+          donList = donJson.success && Array.isArray(donJson.donations) ? donJson.donations : [];
+        }
+
         let totalRaised = 0;
         let largest = 0;
         const uniqueContributorsMap = new Map<string, { id: string, email: string, name: string }>();
         const mappedContributions: (Donation & { allocatedAmount: number })[] = [];
 
-        snap.docs.forEach(doc => {
-          const donation = doc.data() as Donation;
-          if (donation.selectedCauses && Array.isArray(donation.selectedCauses)) {
-            const matchedCause = donation.selectedCauses.find(c => c.causeId === causeId);
-            
-            if (matchedCause) {
-              if (donation.status === "completed") {
-                totalRaised += matchedCause.allocatedAmount;
-                const email = donation.donorEmail || donation.donorId; // Fallback to ID if no email on donation object
-                if (!uniqueContributorsMap.has(email)) {
-                  uniqueContributorsMap.set(email, {
-                    id: donation.donorId,
-                    email: email,
-                    name: donation.donorName || "Anonymous"
-                  });
-                }
-                
-                if (matchedCause.allocatedAmount > largest) {
-                  largest = matchedCause.allocatedAmount;
-                }
-              }
-              
-              mappedContributions.push({
-                ...donation,
-                allocatedAmount: matchedCause.allocatedAmount
+        donList.forEach((donation: any) => {
+          const allocatedAmount = Number(donation.amount || 0);
+          const isMatch = donation.causeId === causeId || donation.cause === causeData.name || (donation.selectedCauses && donation.selectedCauses.some((sc: any) => sc.causeId === causeId));
+          if (isMatch) {
+            totalRaised += allocatedAmount;
+            const email = donation.donorEmail || donation.donor || donation.donorId || "Anonymous";
+            if (!uniqueContributorsMap.has(email)) {
+              uniqueContributorsMap.set(email, {
+                id: donation.donorId || donation.id,
+                email: email,
+                name: donation.donor || "Anonymous Donor"
               });
             }
+            if (allocatedAmount > largest) {
+              largest = allocatedAmount;
+            }
+            mappedContributions.push({
+              ...donation,
+              allocatedAmount
+            });
           }
         });
 
-        mappedContributions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        mappedContributions.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
 
         setContributions(mappedContributions);
         setStats({

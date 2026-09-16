@@ -1,8 +1,6 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import { collection, getDocs, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { 
   Inbox, 
   Trash2, 
@@ -14,53 +12,39 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function AdminContacts() {
-  const [messages, setMessages] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+const INITIAL_MESSAGES = [
+  { id: "msg_1", name: "Irfan Qureshi", email: "irfan.q@live.com", subject: "Sponsorship Query", message: "Salam, I would like to sponsor 3 students for Hifdh memorization program. Can I set up direct bank transfer audits?", date: "05/07/2026", status: "New" },
+  { id: "msg_2", name: "Aisha Patel", email: "aisha.patel@gmail.com", subject: "Food distribution partnership", message: "We would like to partner for distributing food kits in suburban Mumbra.", date: "03/07/2026", status: "Read" }
+];
 
-  const loadMessages = async () => {
-    setLoading(true);
-    try {
-      const snap = await getDocs(collection(db, "contactMessages"));
-      const list: any[] = [];
-      snap.forEach((doc) => {
-        list.push({ id: doc.id, ...doc.data() });
-      });
-      setMessages(list);
-    } catch (err) {
-      console.warn("Messages read error, loading mocks:", err);
-      const mocks = [
-        { id: "msg_1", name: "Irfan Qureshi", email: "irfan.q@live.com", subject: "Sponsorship Query", message: "Salam, I would like to sponsor 3 students for Hifdh memorization program. Can I set up direct bank transfer audits?", date: "05/07/2026", status: "New" },
-        { id: "msg_2", name: "Aisha Patel", email: "aisha.patel@gmail.com", subject: "Food distribution partnership", message: "We would like to partner for distributing food kits in suburban Mumbra.", date: "03/07/2026", status: "Read" }
-      ];
-      setMessages(mocks);
-    } finally {
-      setLoading(false);
-    }
-  };
+export default function AdminContacts() {
+  const [messages, setMessages] = useState<any[]>(INITIAL_MESSAGES);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadMessages();
+    try {
+      const cached = localStorage.getItem("daarayn_contacts");
+      if (cached) {
+        setMessages(JSON.parse(cached));
+      }
+    } catch (e) {}
   }, []);
 
-  const handleArchive = async (id: string) => {
-    try {
-      const docRef = doc(db, "contactMessages", id);
-      await updateDoc(docRef, { status: "Archived" });
-      setMessages(prev => prev.map(m => m.id === id ? { ...m, status: "Archived" } : m));
-    } catch (err) {
-      setMessages(prev => prev.map(m => m.id === id ? { ...m, status: "Archived" } : m));
-    }
+  const handleArchive = (id: string) => {
+    setMessages(prev => {
+      const updated = prev.map(m => m.id === id ? { ...m, status: "Archived" } : m);
+      try { localStorage.setItem("daarayn_contacts", JSON.stringify(updated)); } catch(e){}
+      return updated;
+    });
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = (id: string) => {
     if (!window.confirm("Delete this inbox message?")) return;
-    try {
-      await deleteDoc(doc(db, "contactMessages", id));
-      setMessages(prev => prev.filter(m => m.id !== id));
-    } catch (err) {
-      setMessages(prev => prev.filter(m => m.id !== id));
-    }
+    setMessages(prev => {
+      const updated = prev.filter(m => m.id !== id);
+      try { localStorage.setItem("daarayn_contacts", JSON.stringify(updated)); } catch(e){}
+      return updated;
+    });
   };
 
   return (

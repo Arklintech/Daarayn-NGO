@@ -9,10 +9,10 @@ import { doc, setDoc } from "firebase/firestore";
 export async function GET() {
   try {
     const agents = await fieldAgentRepository.getAll();
-    return NextResponse.json(agents);
+    return NextResponse.json({ success: true, agents });
   } catch (error: any) {
     console.error("[API/FieldAgents] Failed to retrieve agents:", error);
-    return NextResponse.json({ error: "Failed to retrieve field agents." }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Failed to retrieve field agents." }, { status: 500 });
   }
 }
 

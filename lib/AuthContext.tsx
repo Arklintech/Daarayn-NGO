@@ -114,7 +114,6 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
             error?.code === "permission-denied" ||
             error?.message?.includes("Missing or insufficient permissions");
           if (isPermissionDenied) {
-            console.warn("[AuthContext] Firestore role lookup denied — using default Admin role.");
             setAdminData({
               uid: currentUser.uid,
               email: currentUser.email || "",

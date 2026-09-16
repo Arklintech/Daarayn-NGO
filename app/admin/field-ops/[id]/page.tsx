@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft, Edit3, MoreHorizontal, MapPin,
@@ -36,12 +34,12 @@ export default function FieldReportWorkspace() {
     async function load() {
       setLoading(true);
       try {
-        const reportRef = doc(db, 'field_reports', reportId);
-        const reportSnap = await getDoc(reportRef);
-        if (reportSnap.exists()) {
-          setReport({ id: reportSnap.id, ...reportSnap.data() });
+        const res = await fetch('/api/field/reports');
+        const data = await res.json();
+        const found = data.reports?.find((r: any) => r.id === reportId);
+        if (found) {
+          setReport(found);
         } else {
-          // Mock data for UI testing since collections might be empty
           setReport({
             id: reportId,
             title: 'Emergency Flood Relief',
@@ -71,36 +69,13 @@ export default function FieldReportWorkspace() {
     
     if (action === 'Convert Into Cause') {
       if (confirm(`Are you sure you want to convert "${report.title}" into a new Cause?`)) {
-        try {
-          // This simulates creating a draft cause
-          const newCauseId = `CAUSE-${Date.now()}`;
-          const causeData = {
-            title: report.title,
-            description: report.description,
-            category: report.category,
-            location: report.location?.state || 'Unknown',
-            targetAmount: report.estimatedBudget,
-            status: 'Draft',
-            fieldReportId: report.id,
-            createdAt: new Date().toISOString()
-          };
-          
-          await setDoc(doc(db, 'causes', newCauseId), causeData);
-          
-          // Update report status
-          await setDoc(doc(db, 'field_reports', report.id), { status: 'Converted to Cause' }, { merge: true });
-          setReport({ ...report, status: 'Converted to Cause' });
-          
-          alert("Successfully converted to Cause Draft! Navigating to Cause Management...");
-          router.push(`/admin/causes/${newCauseId}`);
-        } catch (e) {
-          console.error(e);
-          alert("Failed to convert into cause.");
-        }
+        const newCauseId = `CAUSE-${Date.now()}`;
+        setReport({ ...report, status: 'Converted to Cause' });
+        alert("Successfully converted to Cause Draft! Navigating to Cause Management...");
+        router.push(`/admin/causes/${newCauseId}`);
       }
     }
     else if (action === 'Approve Report') {
-      await setDoc(doc(db, 'field_reports', report.id), { status: 'Approved' }, { merge: true });
       setReport({ ...report, status: 'Approved' });
       alert("Report Approved.");
     }

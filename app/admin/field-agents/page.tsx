@@ -22,10 +22,11 @@ export default function FieldAgentManagement() {
     try {
       const res = await fetch("/api/admin/field-agents");
       const data = await res.json();
-      if (data.success && Array.isArray(data.agents)) {
+      if (Array.isArray(data)) {
+        setAgents(data);
+      } else if (data.success && Array.isArray(data.agents)) {
         setAgents(data.agents);
       } else {
-        // Graceful mock fallback so table is never blank
         setAgents([]);
       }
     } catch (err) {
