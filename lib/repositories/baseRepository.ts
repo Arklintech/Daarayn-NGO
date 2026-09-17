@@ -6,7 +6,7 @@ export abstract class BaseRepository<T extends { id: string }> {
   private cache: Map<string, T> = new Map();
   private cacheLoaded: boolean = false;
   private lastFetchTime: number = 0;
-  private CACHE_TTL_MS = 30_000; // 30 seconds memory cache
+  private CACHE_TTL_MS = 300_000; // 5 minutes in-memory cache
 
   constructor(sheetName: string, headers: string[]) {
     this.sheetName = sheetName;

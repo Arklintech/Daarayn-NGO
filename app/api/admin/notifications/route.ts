@@ -94,3 +94,33 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+export async function POST(req: NextRequest) {
+  try {
+    const payload = await req.json();
+    const notifId = payload.id || `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+    const newNotif: SystemNotification = {
+      id: notifId,
+      recipientType: payload.recipientType || "Admin",
+      recipientId: payload.recipientId || "all",
+      type: payload.category || payload.type || "System",
+      title: payload.title || "Notification",
+      message: payload.description || payload.message || "",
+      read: false,
+      relatedEntityId: payload.entityId || "",
+      createdAt: new Date().toISOString(),
+    };
+
+    await notificationRepository.save(newNotif);
+    realtimeBroadcaster.broadcast("NOTIFICATION_CREATED", newNotif);
+
+    return NextResponse.json({ success: true, notification: newNotif });
+  } catch (error: any) {
+    console.error("[API] POST /api/admin/notifications error:", error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+export const dynamic = "force-dynamic";
+
+

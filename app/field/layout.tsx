@@ -2,6 +2,11 @@ import FieldLayoutClient from './FieldLayoutClient';
 
 export const metadata = {
   title: "Daarayn Field Operations",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
   manifest: "/api/manifest/field",
   icons: {
     icon: [

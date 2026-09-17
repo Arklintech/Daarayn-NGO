@@ -1,11 +1,18 @@
 'use client';
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { User, MapPin, Phone, Mail, ShieldCheck, BarChart2, FileText, CheckCircle, Clock, LogOut } from "lucide-react";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 
 export default function ProfilePage() {
+  const router = useRouter();
   const { agentData, logout } = useFieldAgentAuth();
+
+  const handleSignOut = async () => {
+    await logout();
+    router.replace("/field/login");
+  };
 
   if (!agentData) {
     return <div className="min-h-[300px] flex items-center justify-center text-gray-400">Loading profile...</div>;
@@ -102,7 +109,8 @@ export default function ProfilePage() {
 
       {/* Logout */}
       <button
-        onClick={logout}
+        type="button"
+        onClick={handleSignOut}
         className="w-full flex items-center justify-center gap-2 p-4 border border-red-500/20 bg-red-500/5 text-red-400 rounded-2xl hover:bg-red-500/10 transition font-bold text-sm"
       >
         <LogOut className="w-4 h-4" />

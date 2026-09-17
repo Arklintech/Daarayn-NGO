@@ -28,38 +28,39 @@ export default function Footer() {
         .ft-link:hover { color: rgba(255,249,221,0.9); }
         .ft-small-link { color: rgba(255,255,255,0.28); text-decoration: none; font-size: 0.72rem; letter-spacing: 0.03em; transition: color 0.2s; }
         .ft-small-link:hover { color: rgba(255,255,255,0.6); }
-        .footer-grid { display: grid; grid-template-columns: minmax(220px,1.7fr) 1fr 1fr 1fr; gap: 3rem; align-items: flex-start; }
+        .footer-grid { display: grid; grid-template-columns: minmax(220px,1.5fr) 1fr 1fr 1.2fr; gap: 2.5rem; align-items: flex-start; }
         @media (max-width: 768px) {
-          .footer-grid { grid-template-columns: 1fr; gap: 2rem; text-align: center; }
-          .footer-grid > div { align-items: center; }
-          .brand-logo-row { justify-content: center; }
+          .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem 1.25rem; text-align: left; }
+          .footer-brand-col { grid-column: 1 / -1; align-items: flex-start !important; }
+          .footer-contact-col { grid-column: 1 / -1; }
+          .brand-logo-row { justify-content: flex-start !important; }
         }
       `}</style>
 
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '6rem 2rem 2.5rem' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '3.5rem 1.5rem 2rem' }}>
 
         {/* ── TOP GRID ── */}
         <div className="footer-grid">
 
           {/* Brand */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }} className="footer-brand-col">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} className="footer-brand-col">
             {/* Logo row */}
-            <div className="brand-logo-row" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div className="brand-logo-row" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
               <img
                 src="/email logo/daarayn-emblem.png.png"
                 alt="Daarayn Logo"
-                style={{ width: '80px', height: '80px', objectFit: 'contain', mixBlendMode: 'screen', display: 'block', flexShrink: 0 }}
+                style={{ width: '64px', height: '64px', objectFit: 'contain', mixBlendMode: 'screen', display: 'block', flexShrink: 0 }}
               />
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--font-cinzel), "Cinzel", Georgia, serif', fontSize: '28px', fontWeight: 600, letterSpacing: '12px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }}>
+                <span style={{ fontFamily: 'var(--font-cinzel), "Cinzel", Georgia, serif', fontSize: '24px', fontWeight: 600, letterSpacing: '10px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }}>
                   DAARAYN
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                  <span style={{ display: 'block', width: '32px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
-                  <span style={{ fontFamily: 'var(--font-cinzel), "Cinzel", Georgia, serif', fontSize: '11px', fontWeight: 300, letterSpacing: '3px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px' }}>
+                  <span style={{ display: 'block', width: '24px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
+                  <span style={{ fontFamily: 'var(--font-cinzel), "Cinzel", Georgia, serif', fontSize: '10px', fontWeight: 300, letterSpacing: '2.5px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }}>
                     FOUNDATION
                   </span>
-                  <span style={{ display: 'block', width: '32px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
+                  <span style={{ display: 'block', width: '24px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
                 </div>
               </div>
             </div>
@@ -67,8 +68,8 @@ export default function Footer() {
             <p style={{
               fontFamily: 'Georgia, serif',
               fontSize: '0.82rem', fontStyle: 'italic',
-              color: 'rgba(255,255,255,0.38)', lineHeight: '1.7',
-              maxWidth: '230px', margin: 0,
+              color: 'rgba(255,255,255,0.38)', lineHeight: '1.6',
+              maxWidth: '260px', margin: 0,
             }}>
               Transparent. Accountable.<br />For the sake of Allah.
             </p>
@@ -76,7 +77,7 @@ export default function Footer() {
             {/* Trust badge */}
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: '6px',
-              padding: '6px 12px',
+              padding: '5px 10px',
               background: 'rgba(255,249,221,0.04)',
               border: '1px solid rgba(255,249,221,0.12)',
               borderRadius: '6px',
@@ -94,13 +95,13 @@ export default function Footer() {
           {/* Quick Links */}
           <div>
             <p style={{
-              fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.22em',
-              textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)',
-              margin: '0 0 1.1rem 0',
+              fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.2em',
+              textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)',
+              margin: '0 0 0.85rem 0',
             }}>Quick Links</p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
               {[['/', 'Home'], ['/#programs', 'Causes'], ['/#programs', 'Programs'], ['/#about', 'About Us']].map(([href, label]) => (
-                <li key={href}><Link href={href} className="ft-link">{label}</Link></li>
+                <li key={label}><Link href={href} className="ft-link">{label}</Link></li>
               ))}
             </ul>
           </div>
@@ -108,28 +109,28 @@ export default function Footer() {
           {/* Get Involved */}
           <div>
             <p style={{
-              fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.22em',
-              textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)',
-              margin: '0 0 1.1rem 0',
+              fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.2em',
+              textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)',
+              margin: '0 0 0.85rem 0',
             }}>Get Involved</p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
               {[['/pay', 'Donate Now'], ['/donor/dashboard', 'Donor Portal'], ['/#about', 'Volunteer'], ['/#about', 'Contact Us']].map(([href, label]) => (
-                <li key={href}><Link href={href} className="ft-link">{label}</Link></li>
+                <li key={label}><Link href={href} className="ft-link">{label}</Link></li>
               ))}
             </ul>
           </div>
 
           {/* Contact */}
-          <div>
+          <div className="footer-contact-col">
             <p style={{
-              fontSize: '0.6rem', fontWeight: 700, letterSpacing: '0.22em',
-              textTransform: 'uppercase', color: 'rgba(255,255,255,0.25)',
-              margin: '0 0 1.1rem 0',
+              fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.2em',
+              textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)',
+              margin: '0 0 0.85rem 0',
             }}>Contact</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
               <a href="mailto:info@daarayn.org" className="ft-link" style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
                 <span style={{
-                  width: '28px', height: '28px', borderRadius: '6px',
+                  width: '26px', height: '26px', borderRadius: '6px',
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
@@ -141,7 +142,7 @@ export default function Footer() {
               </a>
               <a href="tel:+919876543210" className="ft-link" style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
                 <span style={{
-                  width: '28px', height: '28px', borderRadius: '6px',
+                  width: '26px', height: '26px', borderRadius: '6px',
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                 }}>
@@ -157,30 +158,30 @@ export default function Footer() {
 
         {/* ── DIVIDER ── */}
         <div style={{
-          margin: '3.5rem 0 2.5rem',
+          margin: '2.25rem 0 1.75rem',
           height: '1px',
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent)',
         }} />
 
         {/* ── HADITH QUOTE ── */}
-        <div style={{ textAlign: 'center', marginBottom: '3rem', padding: '0 2rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '2rem', padding: '0 1rem' }}>
           <div style={{
-            fontFamily: 'Georgia, serif', fontSize: '3rem', lineHeight: 0.5,
-            color: 'rgba(255,249,221,0.12)', marginBottom: '1rem',
+            fontFamily: 'Georgia, serif', fontSize: '2rem', lineHeight: 0.5,
+            color: 'rgba(255,249,221,0.15)', marginBottom: '0.5rem',
           }}>&ldquo;</div>
           <p style={{
             fontFamily: "Georgia, 'Times New Roman', serif",
-            fontSize: '0.9rem', fontStyle: 'italic', lineHeight: '1.85',
-            color: 'rgba(255,255,255,0.42)',
+            fontSize: '0.85rem', fontStyle: 'italic', lineHeight: '1.7',
+            color: 'rgba(255,255,255,0.45)',
             maxWidth: '540px', margin: '0 auto',
           }}>
             Whoever relieves a believer&apos;s distress, Allah will relieve his distress on the Day of Judgment.
           </p>
           <div style={{
-            fontFamily: 'Georgia, serif', fontSize: '3rem', lineHeight: 0.5,
-            color: 'rgba(255,249,221,0.12)', marginTop: '1rem',
+            fontFamily: 'Georgia, serif', fontSize: '2rem', lineHeight: 0.5,
+            color: 'rgba(255,249,221,0.15)', marginTop: '0.5rem',
           }}>&rdquo;</div>
-          <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.2)', marginTop: '0.75rem', letterSpacing: '0.05em' }}>
+          <p style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.25)', marginTop: '0.5rem', letterSpacing: '0.05em' }}>
             — Sahih Muslim
           </p>
         </div>
@@ -189,7 +190,7 @@ export default function Footer() {
         <div style={{
           height: '1px',
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07) 20%, rgba(255,255,255,0.07) 80%, transparent)',
-          marginBottom: '1.75rem',
+          marginBottom: '1.25rem',
         }} />
         <div style={{
           display: 'flex', alignItems: 'center',

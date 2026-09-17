@@ -2,6 +2,8 @@ import { getSheetsClient, GOOGLE_SHEET_ID } from "./client";
 
 export class SheetsService {
   private spreadsheetId: string;
+  private verifiedSheets = new Set<string>();
+  private headersCache = new Map<string, string[]>();
 
   constructor(spreadsheetId: string = GOOGLE_SHEET_ID) {
     this.spreadsheetId = spreadsheetId;
@@ -39,6 +41,9 @@ export class SheetsService {
    * If missing, it creates the tab and writes the header row.
    */
   public async ensureSheetExists(sheetName: string, headers: string[]): Promise<void> {
+    if (this.verifiedSheets.has(sheetName)) {
+      return;
+    }
     try {
       const meta = await this.sheets.spreadsheets.get({
         spreadsheetId: this.spreadsheetId,
@@ -72,6 +77,7 @@ export class SheetsService {
           await this.setHeaders(sheetName, headers);
         }
       }
+      this.verifiedSheets.add(sheetName);
     } catch (err: any) {
       console.error(`[SheetsService] Failed to ensure sheet ${sheetName}:`, err.message);
       throw err;
@@ -79,6 +85,10 @@ export class SheetsService {
   }
 
   public async getHeaders(sheetName: string): Promise<string[]> {
+    if (this.headersCache.has(sheetName)) {
+      const cached = this.headersCache.get(sheetName)!;
+      if (cached.length > 0) return cached;
+    }
     try {
       const res = await this.sheets.spreadsheets.values.get({
         spreadsheetId: this.spreadsheetId,
@@ -86,7 +96,9 @@ export class SheetsService {
       });
       const rows = res.data.values;
       if (!rows || rows.length === 0) return [];
-      return rows[0].map((h) => String(h).trim());
+      const headers = rows[0].map((h) => String(h).trim());
+      this.headersCache.set(sheetName, headers);
+      return headers;
     } catch (err: any) {
       return [];
     }

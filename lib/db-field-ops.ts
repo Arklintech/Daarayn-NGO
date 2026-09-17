@@ -1,15 +1,3 @@
-import { db } from "./firebase";
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  query, 
-  where, 
-  orderBy,
-  limit
-} from "firebase/firestore";
-
 // --------------------------------------------------------
 // IDENTITY: FIELD AGENTS
 // --------------------------------------------------------
@@ -206,18 +194,8 @@ export interface FieldAssignment {
 // HELPER: GET SERIAL
 // --------------------------------------------------------
 export async function getNextFieldSerial(collectionName: string, prefix: string): Promise<string> {
-  try {
-    const snap = await getDocs(query(collection(db, collectionName), orderBy("createdAt", "desc"), limit(1)));
-    const year = new Date().getFullYear();
-    if (snap.empty) {
-      return `${prefix}-${year}-000001`;
-    }
-    const lastId = snap.docs[0].id; // e.g. FA-2026-000045
-    const parts = lastId.split("-");
-    const sequence = parts.length === 3 ? parseInt(parts[2], 10) + 1 : 1;
-    return `${prefix}-${year}-${String(sequence).padStart(6, "0")}`;
-  } catch (err) {
-    const rand = Math.floor(100000 + Math.random() * 900000);
-    return `${prefix}-2026-${rand}`;
-  }
+  const year = new Date().getFullYear();
+  const rand = Math.floor(100000 + Math.random() * 900000);
+  return `${prefix}-${year}-${rand}`;
 }
+

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { donationRepository } from "@/lib/repositories/donationRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
-import { db } from "@/lib/firebase";
-import { doc, updateDoc } from "firebase/firestore";
+
 
 export async function GET() {
   try {
@@ -47,19 +46,7 @@ export async function PATCH(req: NextRequest) {
     // 1. Update in Google Sheets authoritative repository
     await donationRepository.update(id, { status });
 
-    // 2. Safe non-blocking mirror to Firestore
-    try {
-      const mirrorRef = doc(db, "publicLedger", id);
-      await Promise.race([
-        updateDoc(mirrorRef, {
-          status,
-          proof: status === "completed" ? "✅ Verified & Checked" : "❌ Rejected / Refuted"
-        }),
-        new Promise(res => setTimeout(res, 1200))
-      ]);
-    } catch {}
-
-    // 3. Emit realtime event
+    // 2. Emit realtime event
     realtimeBroadcaster.broadcast("DONATION_STATUS_UPDATED", { id, status });
 
     return NextResponse.json({ success: true, id, status });

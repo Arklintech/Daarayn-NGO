@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, doc, setDoc } from "firebase/firestore";
 import fs from "fs";
 import path from "path";
 
@@ -99,34 +97,6 @@ export async function POST(request: NextRequest) {
     realtimeBroadcaster.broadcast("CHAT_MESSAGE", message);
     realtimeBroadcaster.broadcast(`CHAT_MESSAGE_${conversationId}`, message);
 
-    // 3. Temporary Dual-Write to Firestore with 1.5s timeout for migration safety
-    try {
-      const firestoreDoc = {
-        ...message,
-        migrated: true,
-      };
-      const writePromise = addDoc(collection(db, "field_messages"), firestoreDoc);
-      const updateConv = setDoc(
-        doc(db, "field_conversations", conversationId),
-        {
-          lastMessage: {
-            text: text.slice(0, 100),
-            timestamp: nowIso,
-            senderRole: senderRole || "Agent",
-          },
-          updatedAt: nowIso,
-        },
-        { merge: true }
-      );
-
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore chat mirror timed out")), 1500)
-      );
-      await Promise.race([Promise.all([writePromise, updateConv]), timeout]);
-    } catch (dualErr: any) {
-      console.warn("[API/FieldChat] Firestore dual-write skipped/timed out:", dualErr.message);
-    }
-
     return NextResponse.json({ success: true, message });
   } catch (error: any) {
     console.error("[API/FieldChat] Failed to post message:", error);
@@ -138,3 +108,4 @@ export async function POST(request: NextRequest) {
 }
 
 export const dynamic = "force-dynamic";
+

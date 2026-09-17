@@ -1,0 +1,62 @@
+[
+  {
+    "id": "MSG-1789645240838-algeub",
+    "conversationId": "conv_FA002_general",
+    "senderId": "FA002",
+    "senderRole": "Agent",
+    "senderName": "khan",
+    "text": "hi",
+    "timestamp": "2026-09-17T11:40:40.838Z",
+    "read": false
+  },
+  {
+    "id": "MSG-1789645724019-ye4f9m",
+    "conversationId": "conv_khan_general",
+    "senderId": "admin_1",
+    "senderRole": "Admin",
+    "senderName": "Operations Admin",
+    "text": "Assalamu Alaikum brother Khan, welcome to the Daarayn Field Operations team!",
+    "timestamp": "2026-09-17T11:48:44.019Z",
+    "read": false
+  },
+  {
+    "id": "MSG-1789645734047-zs1nao",
+    "conversationId": "conv_khan_general",
+    "senderId": "khan",
+    "senderRole": "Agent",
+    "senderName": "Khan",
+    "text": "Wa Alaikum Assalam! Thank you Admin, I am ready to inspect and submit field reports.",
+    "timestamp": "2026-09-17T11:48:54.047Z",
+    "read": false
+  },
+  {
+    "id": "MSG-1789646239614-6lwrs3",
+    "conversationId": "conv_khan_general",
+    "senderId": "Admin_1",
+    "senderRole": "Admin",
+    "senderName": "Ahmed Khan",
+    "text": "Assalamu Alaikum Khan, please provide an update on the field survey in Hyderabad.",
+    "timestamp": "2026-09-17T11:57:19.614Z",
+    "read": false
+  },
+  {
+    "id": "MSG-1789646251279-rvebo7",
+    "conversationId": "conv_khan_general",
+    "senderId": "khan",
+    "senderRole": "Agent",
+    "senderName": "Khan",
+    "text": "All survey targets in Hyderabad are verified. Submitting new need reports now.",
+    "timestamp": "2026-09-17T11:57:31.279Z",
+    "read": false
+  },
+  {
+    "id": "MSG-1789646611134-4s6vo0",
+    "conversationId": "conv_FA002_general",
+    "senderId": "Admin_1",
+    "senderRole": "Admin",
+    "senderName": "Ahmed Khan",
+    "text": "hi",
+    "timestamp": "2026-09-17T12:03:31.134Z",
+    "read": false
+  }
+]

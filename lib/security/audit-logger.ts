@@ -1,5 +1,4 @@
-import { db } from "../firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { auditLogRepository } from "../repositories/auditLogRepository";
 
 export interface AuditEventPayload {
   userId: string;
@@ -13,19 +12,25 @@ export interface AuditEventPayload {
 }
 
 /**
- * Write a structured, immutable audit record to admin_audit_logs
+ * Write a structured, immutable audit record to Google Sheets
  */
 export async function logAuditEvent(event: AuditEventPayload): Promise<void> {
-  if (!db) return;
-  const record = {
-    ...event,
-    createdAt: new Date().toISOString(),
-    timestamp: serverTimestamp(),
-  };
-
   try {
-    await addDoc(collection(db, "admin_audit_logs"), record);
+    const eventId = `AUDIT-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+    await auditLogRepository.createLog({
+      id: eventId,
+      event_id: eventId,
+      actor_id: event.userId || "system",
+      actor_role: event.role || "admin",
+      action: event.action,
+      entity_type: event.targetResource.split("/")[0] || "resource",
+      entity_id: event.targetResource.split("/")[1] || event.targetResource,
+      after_state: event.metadata,
+      timestamp: new Date().toISOString(),
+      source: "security_audit_logger",
+    });
   } catch (err) {
     console.warn("Audit log write fallback:", err);
   }
 }
+

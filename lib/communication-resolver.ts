@@ -9,14 +9,28 @@ export async function resolveRecipients(causeIds: string[], type: string) {
 
   const isAll = causeIds.includes("all") || causeIds.includes("all_causes") || causeIds.includes("all_donors");
 
-  // Fetch causes to calculate total goal from Sheets
+  // 1. Fetch causes to calculate total goal and map names
   let totalGoal = 0;
   const causeNames: string[] = [];
   const allCauses = await causeRepository.getAll();
   const causeMap = new Map(allCauses.map(c => [c.id, c]));
 
+  // 2. Fetch all registered donors from donorRepository
+  const allDonors = await donorRepository.getAll();
+  const donorDbMap = new Map(allDonors.map(d => [d.id, d]));
+
   for (const causeId of causeIds) {
     if (causeId === "all" || causeId === "all_causes" || causeId === "all_donors") continue;
+    
+    // Check if causeId is actually a donor ID (direct donor targeting)
+    if (donorDbMap.has(causeId) || causeId.startsWith("DNR-")) {
+      const d = donorDbMap.get(causeId);
+      if (d) {
+        causeNames.push(`Direct to: ${d.name || d.email}`);
+      }
+      continue;
+    }
+
     const c = causeMap.get(causeId) as any;
     if (c) {
       causeNames.push(c.title || c.name || "Unknown Cause");
@@ -33,11 +47,39 @@ export async function resolveRecipients(causeIds: string[], type: string) {
     });
   }
 
-  // Fetch donations from Sheets repository
+  // 3. Fetch donations from repository
   const allDonations = await donationRepository.getAll();
   
   let totalRaised = 0;
   const uniqueMap = new Map<string, any>();
+
+  // Check for direct donor targeting in causeIds list
+  for (const cid of causeIds) {
+    if (donorDbMap.has(cid)) {
+      const donor = donorDbMap.get(cid)!;
+      if (donor.email && donor.email.includes("@")) {
+        uniqueMap.set(donor.id, {
+          id: donor.id,
+          name: donor.name || "Valued Donor",
+          email: donor.email
+        });
+      }
+    }
+  }
+
+  // Helper keyword matcher for cause variations
+  const normalize = (str: string) => str.toLowerCase().replace(/[^a-z0-9]/g, " ").trim();
+  const getKeywords = (str: string) => normalize(str).split(/\s+/).filter(w => w.length > 2);
+
+  const selectedKeywords = new Set<string>();
+  for (const cid of causeIds) {
+    const c = causeMap.get(cid) as any;
+    if (c) {
+      getKeywords(c.title || c.name || "").forEach(k => selectedKeywords.add(k));
+      getKeywords(c.category || "").forEach(k => selectedKeywords.add(k));
+    }
+    getKeywords(cid).forEach(k => selectedKeywords.add(k));
+  }
 
   for (const donation of allDonations as any[]) {
     const dCauseId = String(donation.causeId || "").toLowerCase();
@@ -45,6 +87,7 @@ export async function resolveRecipients(causeIds: string[], type: string) {
 
     let matchesCause = isAll;
     if (!isAll) {
+      // Direct ID or title match
       if (causeIds.some(cid => {
         const cidLower = cid.toLowerCase();
         return (
@@ -55,6 +98,15 @@ export async function resolveRecipients(causeIds: string[], type: string) {
         matchesCause = true;
       }
 
+      // Keyword / semantic overlap match
+      if (!matchesCause && selectedKeywords.size > 0) {
+        const donationWords = getKeywords(dCauseTitle + " " + dCauseId);
+        if (donationWords.some(w => selectedKeywords.has(w))) {
+          matchesCause = true;
+        }
+      }
+
+      // Selected causes nested array match
       if (!matchesCause && donation.selectedCauses && Array.isArray(donation.selectedCauses)) {
         for (const sc of donation.selectedCauses) {
           const scId = String(sc.causeId || "").toLowerCase();
@@ -112,11 +164,30 @@ export async function resolveRecipients(causeIds: string[], type: string) {
     }
   }
 
-  // Fetch all registered donors from donorRepository
-  const allDonors = await donorRepository.getAll();
-  const donorDbMap = new Map(allDonors.map(d => [d.id, d]));
+  // Also match registered donors by their project/cause preferences
+  if (!isAll && selectedKeywords.size > 0) {
+    for (const donor of allDonors) {
+      if (donor.email && donor.email.includes('@') && !uniqueMap.has(donor.id)) {
+        const prefText = [
+          donor.donationPreference || "",
+          ...(Array.isArray(donor.projectsSupported) ? donor.projectsSupported : []),
+          ...(Array.isArray(donor.casesSupported) ? donor.casesSupported : [])
+        ].join(" ");
 
-  if (isAll) {
+        const donorKeywords = getKeywords(prefText);
+        if (donorKeywords.some(w => selectedKeywords.has(w))) {
+          uniqueMap.set(donor.id, {
+            id: donor.id,
+            name: donor.name || "Valued Donor",
+            email: donor.email,
+          });
+        }
+      }
+    }
+  }
+
+  // Universal match for 'all' or fallback for general communication
+  if (isAll || (type === "general_communication" && uniqueMap.size === 0)) {
     for (const donor of allDonors) {
       if (donor.email && donor.email.includes('@') && !uniqueMap.has(donor.id)) {
         uniqueMap.set(donor.id, {
@@ -150,7 +221,7 @@ export async function resolveRecipients(causeIds: string[], type: string) {
 
   return {
     uniqueDonors: resolvedDonors,
-    causeNames,
+    causeNames: causeNames.length > 0 ? causeNames : ["All Foundation Initiatives"],
     stats: {
       raised: totalRaised,
       goalAmount: totalGoal,

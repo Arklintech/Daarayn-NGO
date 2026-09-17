@@ -1,5 +1,4 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore, collection, CollectionReference, DocumentData, disableNetwork } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import { getAnalytics, isSupported } from "firebase/analytics";
@@ -22,19 +21,18 @@ const isFirebaseConfigValid = Boolean(
 
 // Initialize Firebase App only if valid configuration is present
 let app: any = null;
-let db: any = null;
 let auth: any = null;
 let storage: any = null;
 let analytics: any = null;
 
+// NOTE: Firestore (db) is intentionally NOT initialized here.
+// Architecture: Firebase = Authentication + Storage ONLY.
+// All operational business data lives in Google Sheets (via lib/repositories).
+const db: any = null;
+
 if (isFirebaseConfigValid) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    db = getFirestore(app);
-
-    if (process.env.NODE_ENV === "test" || firebaseConfig.projectId === "dummy_project_id") {
-      disableNetwork(db).catch(() => {});
-    }
 
     try {
       auth = getAuth(app);
@@ -66,29 +64,8 @@ if (isFirebaseConfigValid) {
   console.info("[Firebase] Placeholder or dummy credentials detected. Firebase services running in fallback/mock mode.");
 }
 
-// Preparation of Firestore collections for future development
-const createCollectionRef = <T = DocumentData>(collectionName: string) => {
-  if (!db) return null as any;
-  return collection(db, collectionName) as CollectionReference<T>;
-};
-
-export const collections = {
-  donations: createCollectionRef("donations"),
-  beneficiaries: createCollectionRef("beneficiaries"),
-  programs: createCollectionRef("programs"),
-  volunteers: createCollectionRef("volunteers"),
-  campaigns: createCollectionRef("campaigns"),
-  news: createCollectionRef("news"),
-  events: createCollectionRef("events"),
-  gallery: createCollectionRef("gallery"),
-  publicLedger: createCollectionRef("publicLedger"),
-  users: createCollectionRef("users"),
-  admins: createCollectionRef("admins"),
-  settings: createCollectionRef("settings"),
-  contactMessages: createCollectionRef("contactMessages"),
-  newsletterSubscribers: createCollectionRef("newsletterSubscribers"),
-  testimonials: createCollectionRef("testimonials"),
-  faq: createCollectionRef("faq"),
-};
+// Firestore collection references are removed — business data is in Google Sheets.
+// Kept as an empty object for backwards-compatibility with any import that references `collections`.
+export const collections = {} as const;
 
 export { app, db, auth, storage, analytics };

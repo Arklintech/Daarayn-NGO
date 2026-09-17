@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check } from "lucide-react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check, Globe } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { DEFAULT_CAUSES } from "@/lib/causes";
 
-export default function CommunicationsHub() {
+function CommunicationsHubContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const paramDonorId = searchParams.get("donorId");
+
   const [loading, setLoading] = useState(true);
   const [causes, setCauses] = useState<any[]>([]);
   const [selectedCauseIds, setSelectedCauseIds] = useState<string[]>([]);
@@ -35,24 +38,32 @@ export default function CommunicationsHub() {
       try {
         const res = await fetch("/api/causes");
         const data = await res.json();
-        let causesData = (data.success && Array.isArray(data.causes) && data.causes.length > 0)
-          ? data.causes
-          : DEFAULT_CAUSES;
-
+        let causesData = Array.isArray(data) 
+          ? data 
+          : (data.success && Array.isArray(data.causes) && data.causes.length > 0 ? data.causes : DEFAULT_CAUSES);
+        
+        if (causesData.length === 0) causesData = DEFAULT_CAUSES;
         setCauses(causesData);
-        if (causesData.length > 0) {
+
+        if (paramDonorId) {
+          setSelectedCauseIds([paramDonorId]);
+        } else if (causesData.length > 0) {
           setSelectedCauseIds(causesData.map((c: any) => c.id));
         }
       } catch (err) {
         console.error("Failed to load causes", err);
         setCauses(DEFAULT_CAUSES);
-        setSelectedCauseIds(DEFAULT_CAUSES.map(c => c.id));
+        if (paramDonorId) {
+          setSelectedCauseIds([paramDonorId]);
+        } else {
+          setSelectedCauseIds(DEFAULT_CAUSES.map(c => c.id));
+        }
       } finally {
         setLoading(false);
       }
     }
     fetchData();
-  }, []);
+  }, [paramDonorId]);
 
 
   useEffect(() => {
@@ -93,24 +104,25 @@ export default function CommunicationsHub() {
         eventSource.onmessage = (event) => {
           try {
             const payload = JSON.parse(event.data);
-            if (payload.type === "BROADCAST_PROGRESS" && payload.data?.broadcastId === broadcastId) {
+            const eventData = payload.payload || payload.data;
+            if (payload.type === "BROADCAST_PROGRESS" && eventData?.broadcastId === broadcastId) {
               setBroadcastStats((prev: any) => ({
                 ...prev,
-                status: payload.data.status,
+                status: eventData.status,
                 stats: {
-                  sent: payload.data.sent,
-                  failed: payload.data.failed,
-                  remaining: payload.data.remaining
+                  sent: eventData.sent,
+                  failed: eventData.failed,
+                  remaining: eventData.remaining
                 }
               }));
             }
-            if (payload.type === "BROADCAST_COMPLETED" && payload.data?.broadcastId === broadcastId) {
+            if (payload.type === "BROADCAST_COMPLETED" && eventData?.broadcastId === broadcastId) {
               setBroadcastStats((prev: any) => ({
                 ...prev,
                 status: "Completed",
                 stats: {
-                  sent: payload.data.sent,
-                  failed: payload.data.failed,
+                  sent: eventData.sent,
+                  failed: eventData.failed,
                   remaining: 0
                 }
               }));
@@ -191,7 +203,7 @@ export default function CommunicationsHub() {
 
   const handlePreview = () => {
     if (!heading || !notes) return alert("Heading and notes are required.");
-    if (selectedCauseIds.length === 0) return alert("Please select at least one cause.");
+    if (selectedCauseIds.length === 0) return alert("Please select at least one cause or donor.");
     setMode("summary");
   };
 
@@ -238,7 +250,7 @@ export default function CommunicationsHub() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          causeId: selectedCauseIds[0],
+          causeId: selectedCauseIds[0] || "all",
           type,
           media: uploadedFiles.filter(f => f.uploaded)
         })
@@ -265,8 +277,13 @@ export default function CommunicationsHub() {
     </div>
   );
 
+  const isAllDonorsSelected = selectedCauseIds.includes("all_donors") || selectedCauseIds.includes("all");
   const selectedCauses = causes.filter(c => selectedCauseIds.includes(c.id));
-  const causeNamesText = selectedCauses.map(c => c.name).join(', ') || '—';
+  const causeNamesText = isAllDonorsSelected 
+    ? "All Registered Donors" 
+    : (paramDonorId && selectedCauseIds.includes(paramDonorId) 
+        ? `Direct to Donor (${paramDonorId})` 
+        : (selectedCauses.map(c => c.name || c.title).join(', ') || '—'));
 
   const typeLabels: Record<string, string> = {
     contribution_confirmation: "Contribution Confirmation",
@@ -313,13 +330,33 @@ export default function CommunicationsHub() {
                       <Target className="w-5 h-5 text-[var(--color-luxury-gold)]" />
                     </div>
                     <div>
-                      <h3 className="text-base font-bold text-white tracking-wide">Target Causes</h3>
-                      <p className="text-xs text-gray-400">Click anywhere on a cause card to select or deselect it.</p>
+                      <h3 className="text-base font-bold text-white tracking-wide">Target Audience & Causes</h3>
+                      <p className="text-xs text-gray-400">Select target campaigns or choose universal broadcast to all registered donors.</p>
                     </div>
                   </div>
 
                   {/* Controls: Search, Counters & Actions */}
                   <div className="flex flex-wrap items-center gap-2.5">
+                    {/* Universal Broadcast Pill */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isAllDonorsSelected) {
+                          setSelectedCauseIds(causes.map(c => c.id));
+                        } else {
+                          setSelectedCauseIds(["all_donors"]);
+                        }
+                      }}
+                      className={`px-3.5 py-1.5 rounded-xl border text-xs font-semibold transition flex items-center gap-1.5 ${
+                        isAllDonorsSelected
+                          ? 'bg-purple-600/30 text-purple-300 border-purple-500/50 shadow-sm ring-1 ring-purple-400/40'
+                          : 'bg-white/5 text-gray-300 hover:text-white border-white/10 hover:bg-white/10'
+                      }`}
+                    >
+                      <Globe className="w-3.5 h-3.5" />
+                      All Donors (Universal)
+                    </button>
+
                     {/* Search Input */}
                     <div className="relative flex-1 sm:flex-none sm:w-60">
                       <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -343,7 +380,7 @@ export default function CommunicationsHub() {
 
                     {/* Selected Count Badge */}
                     <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-[var(--color-luxury-gold)]/10 border border-[var(--color-luxury-gold)]/30 text-[var(--color-luxury-gold)] whitespace-nowrap">
-                      {selectedCauseIds.length} / {causes.length} Selected
+                      {isAllDonorsSelected ? "All Donors" : `${selectedCauseIds.length} / ${causes.length} Causes`}
                     </span>
 
                     {/* Select All Button */}
@@ -355,12 +392,12 @@ export default function CommunicationsHub() {
                         if (allSelected) {
                           setSelectedCauseIds(prev => prev.filter(id => !filteredIds.includes(id)));
                         } else {
-                          setSelectedCauseIds(prev => Array.from(new Set([...prev, ...filteredIds])));
+                          setSelectedCauseIds(prev => Array.from(new Set([...prev.filter(x => x !== 'all_donors'), ...filteredIds])));
                         }
                       }}
                       className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-gray-200 hover:text-white transition whitespace-nowrap active:scale-95"
                     >
-                      {filteredCauses.length > 0 && filteredCauses.every(c => selectedCauseIds.includes(c.id)) ? "Deselect Filtered" : "Select All"}
+                      {filteredCauses.length > 0 && filteredCauses.every(c => selectedCauseIds.includes(c.id)) ? "Deselect Filtered" : "Select All Causes"}
                     </button>
 
                     {/* Clear Selection Button */}
@@ -400,16 +437,18 @@ export default function CommunicationsHub() {
                           aria-selected={isSelected}
                           tabIndex={0}
                           onClick={() => {
-                            setSelectedCauseIds(prev => 
-                              isSelected ? prev.filter(id => id !== c.id) : [...prev, c.id]
-                            );
+                            setSelectedCauseIds(prev => {
+                              const cleaned = prev.filter(x => x !== 'all_donors');
+                              return isSelected ? cleaned.filter(id => id !== c.id) : [...cleaned, c.id];
+                            });
                           }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
                               e.preventDefault();
-                              setSelectedCauseIds(prev => 
-                                isSelected ? prev.filter(id => id !== c.id) : [...prev, c.id]
-                              );
+                              setSelectedCauseIds(prev => {
+                                const cleaned = prev.filter(x => x !== 'all_donors');
+                                return isSelected ? cleaned.filter(id => id !== c.id) : [...cleaned, c.id];
+                              });
                             }
                           }}
                           className={`w-full p-3.5 md:p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none active:scale-[0.99] flex items-center justify-between gap-4 ${
@@ -463,14 +502,14 @@ export default function CommunicationsHub() {
                 <div className="flex items-center gap-3 px-5 py-3 rounded-xl flex-1 min-w-[200px]" style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)' }}>
                   <Users className="w-4 h-4 text-[var(--color-luxury-gold)]" />
                   <div>
-                    <p className="text-[10px] text-[var(--color-luxury-gold)]/70 uppercase tracking-widest">Recipients</p>
-                    <p className="text-lg font-bold text-white leading-none mt-0.5">{donorCount} Donors</p>
+                    <p className="text-[10px] text-[var(--color-luxury-gold)]/70 uppercase tracking-widest">Target Recipients</p>
+                    <p className="text-lg font-bold text-white leading-none mt-0.5">{donorCount} Verified Donors</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 px-5 py-3 rounded-xl flex-1 min-w-[200px]" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)' }}>
                   <Activity className="w-4 h-4 text-gray-400" />
                   <div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Progress</p>
+                    <p className="text-[10px] text-gray-500 uppercase tracking-widest">Campaign Progress</p>
                     <p className="text-lg font-bold text-white leading-none mt-0.5">{stats.percentage}% Funded</p>
                   </div>
                 </div>
@@ -619,7 +658,7 @@ export default function CommunicationsHub() {
                     Preview & Resolve <ArrowRight className="w-4 h-4" />
                   </button>
                   {donorCount === 0 && (
-                    <p className="text-xs text-red-400/80 text-center mt-3">No verified donors found for this cause.</p>
+                    <p className="text-xs text-amber-400/80 text-center mt-3">Select a cause or choose &quot;All Donors (Universal)&quot; above to include all registered supporters.</p>
                   )}
                 </div>
 
@@ -647,8 +686,9 @@ export default function CommunicationsHub() {
                           {typeLabels[type] || type}
                         </span>
                       </div>
-                      <p className="text-white text-xs sm:text-sm font-semibold">Assalamu Alaikum, Donor Name,</p>
-                      {notes && <p className="text-white/60 text-xs leading-relaxed break-words">{notes.substring(0, 150)}{notes.length > 150 ? '…' : ''}</p>}
+                      <p className="text-white text-xs sm:text-sm font-semibold">Assalamu Alaikum, Valued Donor,</p>
+                      {heading && <p className="text-amber-300 font-bold text-sm sm:text-base">{heading}</p>}
+                      {notes && <p className="text-white/80 text-xs leading-relaxed break-words">{notes.substring(0, 150)}{notes.length > 150 ? '…' : ''}</p>}
                       <div className="rounded-lg p-3 sm:p-4 space-y-2 mt-2" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
                         <p className="text-[9px] sm:text-[10px] font-bold uppercase tracking-widest text-white/60 mb-2 sm:mb-3">Contribution Summary</p>
                         <div className="flex justify-between items-center text-xs py-1.5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
@@ -735,15 +775,9 @@ export default function CommunicationsHub() {
           
           {broadcastStats ? (
             <div className="space-y-6">
-              <div className="w-full bg-gray-800 rounded-full h-4 overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.1)' }}>
-                <div 
-                  className="bg-[var(--color-luxury-gold)] h-4 transition-all duration-500 ease-out" 
-                  style={{ width: `${(broadcastStats.stats?.sent / broadcastStats.totalRecipients) * 100 || 0}%` }}
-                ></div>
-              </div>
-              <div className="flex justify-between text-sm text-gray-400 font-semibold">
-                <span>{broadcastStats.stats?.sent || 0} / {broadcastStats.totalRecipients || 0}</span>
-                <span>{Math.round((broadcastStats.stats?.sent / broadcastStats.totalRecipients) * 100 || 0)}%</span>
+              <div className="flex justify-between items-center text-sm font-semibold p-4 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                <span className="text-gray-400">Sent: <strong className="text-white">{broadcastStats.stats?.sent || 0} / {broadcastStats.totalRecipients || 0}</strong></span>
+                <span className="text-[var(--color-luxury-gold)] font-mono">{Math.round(((broadcastStats.stats?.sent || 0) / (broadcastStats.totalRecipients || 1)) * 100)}% Completed</span>
               </div>
               <div className="grid grid-cols-3 gap-4 pt-4 text-center border-t border-white/10">
                 <div>
@@ -780,7 +814,7 @@ export default function CommunicationsHub() {
             <div className="space-y-3 p-5 rounded-xl bg-white/5 border border-white/10 text-sm">
               <div className="flex justify-between"><span className="text-gray-400">Target Cause(s)</span><span className="text-white font-semibold truncate ml-2 max-w-[150px]">{causeNamesText}</span></div>
               <div className="flex justify-between"><span className="text-gray-400">Broadcast ID</span><span className="text-white font-mono text-xs">{broadcastId}</span></div>
-              <div className="flex justify-between"><span className="text-gray-400">Processing Time</span><span className="text-white">{(broadcastStats.processingDurationMs / 1000).toFixed(1)}s</span></div>
+              <div className="flex justify-between"><span className="text-gray-400">Processing Time</span><span className="text-white">{((broadcastStats.processingDurationMs || 0) / 1000).toFixed(1)}s</span></div>
             </div>
             <div className="space-y-3 p-5 rounded-xl bg-white/5 border border-white/10 text-sm">
               <div className="flex justify-between"><span className="text-gray-400">Recipients Resolved</span><span className="text-white font-bold">{broadcastStats.totalRecipients}</span></div>
@@ -806,5 +840,17 @@ export default function CommunicationsHub() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CommunicationsHub() {
+  return (
+    <Suspense fallback={
+      <div className="p-8 max-w-7xl mx-auto flex items-center justify-center min-h-[50vh]">
+        <Activity className="h-8 w-8 animate-spin text-[var(--color-luxury-gold)]" />
+      </div>
+    }>
+      <CommunicationsHubContent />
+    </Suspense>
   );
 }

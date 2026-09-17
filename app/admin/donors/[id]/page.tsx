@@ -78,12 +78,17 @@ export default function DonorWorkspace() {
     async function load() {
       setLoading(true);
       const decodedId = decodeURIComponent(donorId);
-      let donorData: any = null;
 
-      // 1. Fetch Donors
       try {
-        const dRes = await fetch('/api/donors');
-        if (dRes.ok) {
+        const [dRes, donRes, cRes, commRes] = await Promise.all([
+          fetch('/api/donors').catch(() => null),
+          fetch('/api/admin/donations').catch(() => null),
+          fetch('/api/causes').catch(() => null),
+          fetch('/api/admin/communications').catch(() => null)
+        ]);
+
+        let donorData: any = null;
+        if (dRes && dRes.ok) {
           const list = await dRes.json();
           const allDonors = Array.isArray(list) ? list : list.donors || [];
           donorData = allDonors.find((d: any) => 
@@ -92,28 +97,22 @@ export default function DonorWorkspace() {
             (d.email && d.email.toLowerCase() === decodedId.toLowerCase())
           );
         }
-      } catch (err) {
-        console.warn('Failed to fetch /api/donors:', err);
-      }
 
-      if (!donorData) {
-        donorData = {
-          id: decodedId,
-          name: decodedId.includes('@') ? decodedId.split('@')[0] : "Verified Donor",
-          email: decodedId.includes('@') ? decodedId : "donor@example.com",
-          phone: "+91 98765 43210",
-          country: "India",
-          city: "Mumbai",
-          dateJoined: new Date().toISOString(),
-          status: "active"
-        };
-      }
-      setDonor(donorData);
+        if (!donorData) {
+          donorData = {
+            id: decodedId,
+            name: decodedId.includes('@') ? decodedId.split('@')[0] : "Verified Donor",
+            email: decodedId.includes('@') ? decodedId : "donor@example.com",
+            phone: "+91 98765 43210",
+            country: "India",
+            city: "Mumbai",
+            dateJoined: new Date().toISOString(),
+            status: "active"
+          };
+        }
+        setDonor(donorData);
 
-      // 2. Fetch Donations
-      try {
-        const donRes = await fetch('/api/admin/donations');
-        if (donRes.ok) {
+        if (donRes && donRes.ok) {
           const donData = await donRes.json();
           const allDonations = donData.success && Array.isArray(donData.donations) ? donData.donations : Array.isArray(donData) ? donData : [];
           const filtered = allDonations.filter((d: any) => 
@@ -124,28 +123,16 @@ export default function DonorWorkspace() {
           );
           setDonations(filtered);
         }
-      } catch (err) {
-        console.warn('Failed to fetch /api/admin/donations:', err);
-      }
 
-      // 3. Fetch Causes
-      try {
-        const cRes = await fetch('/api/causes');
-        if (cRes.ok) {
+        if (cRes && cRes.ok) {
           const cData = await cRes.json();
           const causeList = cData.success && Array.isArray(cData.causes) ? cData.causes : Array.isArray(cData) ? cData : DEFAULT_CAUSES;
           setCauses(causeList);
         } else {
           setCauses(DEFAULT_CAUSES);
         }
-      } catch (err) {
-        setCauses(DEFAULT_CAUSES);
-      }
 
-      // 4. Fetch Communications
-      try {
-        const commRes = await fetch('/api/admin/communications');
-        if (commRes.ok) {
+        if (commRes && commRes.ok) {
           const commData = await commRes.json();
           const allComms = commData.success && Array.isArray(commData.communications) ? commData.communications : Array.isArray(commData) ? commData : [];
           const filtered = allComms.filter((c: any) => 
@@ -156,7 +143,7 @@ export default function DonorWorkspace() {
           setCommunications(filtered);
         }
       } catch (err) {
-        console.warn('Failed to fetch /api/admin/communications:', err);
+        console.warn('Error loading donor workspace data:', err);
       } finally {
         setLoading(false);
       }

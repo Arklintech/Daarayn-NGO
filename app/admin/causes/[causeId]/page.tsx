@@ -225,17 +225,9 @@ export default function CauseWorkspace() {
 
               {/* Progress Section */}
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="rounded-xl border border-white/10 bg-black/40 p-6 backdrop-blur-sm">
-                <div className="flex items-center justify-between text-sm mb-3">
+                <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-300 font-medium">Campaign Progress</span>
-                  <span className="text-[var(--gold)] font-bold">{percentage}%</span>
-                </div>
-                <div className="w-full bg-white/[0.05] rounded-full h-3 overflow-hidden shadow-inner">
-                  <motion.div 
-                    className="bg-gradient-to-r from-[#e5c158] to-[#d4af37] h-full rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${percentage}%` }}
-                    transition={{ duration: 1, delay: 0.5, ease: "easeOut" }}
-                  />
+                  <span className="text-[var(--gold)] font-bold">{percentage}% Funded</span>
                 </div>
               </motion.div>
             </div>

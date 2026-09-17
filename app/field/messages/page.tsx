@@ -1,10 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { db, storage } from "@/lib/firebase";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
-import { FieldConversation, FieldMessage } from "@/lib/db-field-ops";
-import { notifyConversation } from "@/lib/notifications";
+import { FieldConversation, FieldMessage, FieldReport } from "@/lib/db-field-ops";
 import { Search, Send, FileText, Settings, Paperclip, MessageSquare, ArrowLeft, Mic } from "lucide-react";
 
 export default function AgentMessagesPage() {
@@ -19,43 +17,114 @@ export default function AgentMessagesPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
 
-  const DEFAULT_CONVS: FieldConversation[] = [
-    {
-      id: `conv_${agentData?.id || 'agent_1'}_general`,
-      agentId: agentData?.id || 'agent_1',
-      type: "Operations",
-      lastMessage: { text: "Assalamu Alaikum, please send update on Silchar project.", timestamp: new Date().toISOString(), senderRole: "Admin" as const },
-      unreadCountAdmin: 0,
-      unreadCountAgent: 0,
-      status: "Waiting For Admin" as const,
-      isUrgent: false,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-  ];
-
+  // Load Conversations and Reports
   useEffect(() => {
     if (!agentData?.id) return;
-    setConversations(DEFAULT_CONVS);
+
+    const loadConversations = async () => {
+      const generalConvId = `conv_${agentData.id}_general`;
+      const convList: FieldConversation[] = [
+        {
+          id: generalConvId,
+          agentId: agentData.id,
+          type: "Operations",
+          lastMessage: {
+            text: "Direct Operations Support Channel",
+            timestamp: new Date().toISOString(),
+            senderRole: "Admin" as const,
+          },
+          unreadCountAdmin: 0,
+          unreadCountAgent: 0,
+          status: "Waiting For Admin" as const,
+          isUrgent: false,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ];
+
+      try {
+        const res = await fetch("/api/field/reports");
+        const data = await res.json();
+        const reportsList = Array.isArray(data) ? data : (Array.isArray(data.reports) ? data.reports : []);
+        const myReports = reportsList.filter(
+          (r: any) => r.fieldAgentId === agentData.id || r.agentId === agentData.id
+        );
+          for (const rep of myReports) {
+            convList.push({
+              id: `conv_${rep.id}`,
+              agentId: agentData.id,
+              reportId: rep.id,
+              type: "Report",
+              lastMessage: {
+                text: `Report: ${rep.title}`,
+                timestamp: rep.createdAt,
+                senderRole: "Agent" as const,
+              },
+              unreadCountAdmin: 0,
+              unreadCountAgent: 0,
+              status: "Waiting For Admin" as const,
+              isUrgent: rep.urgency === "High",
+              createdAt: rep.createdAt,
+              updatedAt: rep.updatedAt || rep.createdAt,
+            });
+          }
+      } catch (err) {
+        console.warn("Could not load reports for conversations:", err);
+      }
+
+      setConversations(convList);
+      if (!activeConvId) {
+        setActiveConvId(generalConvId);
+      }
+    };
+
+    loadConversations();
   }, [agentData?.id]);
 
+  // Load and Listen for Messages
   useEffect(() => {
     if (!activeConvId) {
       setMessages([]);
       return;
     }
+
     async function fetchChatMessages() {
       try {
         const res = await fetch(`/api/field/chat?conversationId=${activeConvId}`);
         const data = await res.json();
         if (Array.isArray(data)) {
-          setMessages(data as any[]);
+          const sorted = [...data].sort(
+            (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+          setMessages(sorted);
         }
       } catch (e) {
         console.error(e);
       }
     }
     fetchChatMessages();
+
+    // SSE Real-time Listener for instant delivery
+    const eventSource = new EventSource("/api/realtime/stream");
+    eventSource.onmessage = (event) => {
+      try {
+        const parsed = JSON.parse(event.data);
+        if (parsed.type === "CHAT_MESSAGE" && parsed.payload) {
+          if (parsed.payload.conversationId === activeConvId) {
+            setMessages((prev) => [
+              ...prev.filter((m) => m.id !== parsed.payload.id),
+              parsed.payload,
+            ]);
+          }
+        }
+      } catch (e) {
+        console.warn("[FieldAgent/SSE] Event error:", e);
+      }
+    };
+
+    return () => {
+      eventSource.close();
+    };
   }, [activeConvId]);
 
   const handleSendMessage = async (e: React.FormEvent) => {

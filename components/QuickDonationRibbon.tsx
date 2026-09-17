@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 const CURRENCY_SYMBOLS: Record<string, string> = {
   INR: '₹',
@@ -10,6 +11,7 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
 };
 
 export default function QuickDonationRibbon() {
+  const router = useRouter();
   const [amount, setAmount] = useState('500');
   const [currency, setCurrency] = useState('INR');
   const [cause, setCause] = useState('General');
@@ -104,7 +106,7 @@ export default function QuickDonationRibbon() {
           <button 
             type="button"
             className="daarayn-ribbon-donate-btn" 
-            onClick={() => window.location.href = `/pay?amt=${amount}&cur=${currency}&cause=${encodeURIComponent(cause)}&source=ribbon`}
+            onClick={() => router.push(`/pay?amt=${amount}&cur=${currency}&cause=${encodeURIComponent(cause)}&source=ribbon`)}
           >
             <span>Quick Donate</span>
             <ArrowRightIcon />

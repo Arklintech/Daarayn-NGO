@@ -176,9 +176,6 @@ export default function LegacySections() {
 
         <div class="progress-wrapper">
           <span>Juz Memorized: <strong><span id="juz-progress-text">0</span> / 30</strong></span>
-          <div class="progress-bar">
-            <div class="progress-fill" id="juz-progress-fill" style="width: 0%;"></div>
-          </div>
         </div>
 
         <div class="actions-row">
@@ -223,9 +220,6 @@ export default function LegacySections() {
 
           <div class="need-progress">
             <p>Fan Project — <span class="ivory">60%</span> funded</p>
-            <div class="progress-bar small">
-              <div class="progress-fill" style="width: 60%;"></div>
-            </div>
           </div>
 
           <p class="tiny-note">
@@ -352,9 +346,6 @@ export default function LegacySections() {
             <h3>Academic Progress</h3>
             <div class="progress-wrapper">
               <span class="modal-progress-label">Juz Memorized: <strong>5 / 30</strong></span>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: 16.67%;"></div>
-              </div>
             </div>
             <p class="modal-subtext">Sheikh Kamal reports excellent pronunciation and retention.</p>
           </div>

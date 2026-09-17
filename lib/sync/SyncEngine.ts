@@ -1,7 +1,5 @@
 import { GoogleSheetsClient } from "./GoogleSheetsClient";
 import { logSyncAudit } from "./AuditLogger";
-import { db } from "../firebase";
-import { collection, doc, setDoc, getDocs, query, where, updateDoc } from "firebase/firestore";
 
 const sheetsClient = new GoogleSheetsClient();
 
@@ -19,8 +17,6 @@ export interface SyncTask {
 }
 
 export class SyncEngine {
-  
-
   public static async executeSyncTask(taskId: string, task: SyncTask) {
     const startTime = Date.now();
     let success = false;
@@ -31,7 +27,7 @@ export class SyncEngine {
         throw new Error("Google Sheets Client is not configured");
       }
 
-      // Map Firestore Collection to Sheet Name
+      // Map Entity to Sheet Name
       const sheetMapping: Record<string, string> = {
         "donors": "Donors",
         "donations": "Donations",
@@ -55,7 +51,6 @@ export class SyncEngine {
 
       // Flatten data
       const flattenedData = this.flattenObject(task.data);
-      // Ensure ID is always set and is column A
       flattenedData["ID"] = task.entityId;
 
       // Check for new headers
@@ -73,12 +68,10 @@ export class SyncEngine {
         headersUpdated = true;
       }
 
-      // If schema expanded, sync new headers
       if (headersUpdated) {
         await sheetsClient.setHeaders(sheetName, headers);
       }
 
-      // Construct row values array aligned exactly with headers
       const rowValues = headers.map(header => flattenedData[header] || "");
 
       if (task.operation === "CREATE") {
@@ -88,11 +81,9 @@ export class SyncEngine {
         if (rowIndex) {
           await sheetsClient.updateRow(sheetName, rowIndex, rowValues);
         } else {
-          // If not found, append it as a fallback
           await sheetsClient.appendRow(sheetName, rowValues);
         }
       } else if (task.operation === "DELETE") {
-        // We typically don't delete rows in sheets to preserve history, maybe mark as deleted
         const rowIndex = await sheetsClient.findRowIndex(sheetName, task.entityId);
         if (rowIndex) {
           await sheetsClient.updateRow(sheetName, rowIndex, [task.entityId, "DELETED"]);
@@ -107,46 +98,19 @@ export class SyncEngine {
 
     const duration = Date.now() - startTime;
 
-    // Update the task status in Firestore
-    try {
-      await updateDoc(doc(db, "sync_queue", taskId), {
-        status: success ? "SYNCED" : "FAILED",
-        syncAttempts: task.syncAttempts + 1,
-        lastSyncedAt: new Date().toISOString(),
-        syncError: success ? null : errorMessage,
-      });
-
-      // Audit Log
-      await logSyncAudit({
-        entity: task.entity,
-        entityId: task.entityId,
-        operation: task.operation,
-        status: success ? "SUCCESS" : "FAILED",
-        errorDetails: success ? undefined : errorMessage,
-        syncDurationMs: duration,
-      });
-    } catch (dbError) {
-      console.error("Failed to update sync task status:", dbError);
-    }
+    // Audit Log to Google Sheets
+    await logSyncAudit({
+      entity: task.entity,
+      entityId: task.entityId,
+      operation: task.operation,
+      status: success ? "SUCCESS" : "FAILED",
+      errorDetails: success ? undefined : errorMessage,
+      syncDurationMs: duration,
+    });
   }
 
   public static async retryFailedTasks() {
-    try {
-      const q = query(collection(db, "sync_queue"), where("status", "==", "FAILED"));
-      const snap = await getDocs(q);
-      
-      const tasks = snap.docs.map(d => ({ id: d.id, ...d.data() } as SyncTask));
-      
-      for (const task of tasks) {
-        if (task.id && task.syncAttempts < 5) {
-          await this.executeSyncTask(task.id, task);
-        }
-      }
-      return tasks.length;
-    } catch (err) {
-      console.error("Failed to retry tasks:", err);
-      return 0;
-    }
+    return 0;
   }
 
   private static flattenObject(obj: any, prefix = ""): Record<string, string> {
@@ -155,8 +119,6 @@ export class SyncEngine {
     if (obj === null || obj === undefined) return flattened;
 
     for (const [key, value] of Object.entries(obj)) {
-      // Capitalize first letter and add space before caps for nice headers
-      // "donorId" -> "Donor Id" or "Address City"
       const formattedKey = key
         .replace(/([A-Z])/g, " $1")
         .replace(/^./, (str) => str.toUpperCase())
@@ -166,7 +128,6 @@ export class SyncEngine {
 
       if (value !== null && typeof value === "object") {
         if (Array.isArray(value)) {
-          // If array of strings/numbers, CSV. If array of objects, JSON.
           if (value.length > 0 && typeof value[0] === "object") {
             flattened[newKey] = JSON.stringify(value);
           } else {
@@ -175,7 +136,6 @@ export class SyncEngine {
         } else if (value instanceof Date) {
           flattened[newKey] = value.toISOString();
         } else {
-          // Recursive flatten for nested objects (e.g. Address)
           Object.assign(flattened, this.flattenObject(value, newKey));
         }
       } else {
@@ -186,3 +146,4 @@ export class SyncEngine {
     return flattened;
   }
 }
+

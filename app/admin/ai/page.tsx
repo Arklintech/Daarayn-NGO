@@ -934,20 +934,15 @@ export default function AIDashboard() {
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="p-4 bg-white/[0.01] border border-white/[0.05] rounded-xl space-y-3">
                         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
                           <Briefcase className="w-3.5 h-3.5" />
-                          Trust Program Allocations & progress
+                          Trust Program Allocations
                         </div>
-                        <div className="space-y-3.5">
+                        <div className="space-y-2.5">
                           {programs.slice(0, 4).map((p: FirestoreRecord, idx: number) => {
                             const pct = Math.round(((p.amountCollected as number) / (p.amountRequired as number)) * 100) || 0;
                             return (
-                              <div key={idx} className="space-y-1.5">
-                                <div className="flex justify-between items-center text-xs">
-                                  <span className="text-gray-300 font-semibold">{p.title as string}</span>
-                                  <span className="text-luxury-gold font-mono">{pct}%</span>
-                                </div>
-                                <div className="h-1 bg-white/[0.05] rounded-full overflow-hidden">
-                                  <div className="h-full bg-gradient-to-r from-luxury-gold to-luxury-gold-light transition-all" style={{ width: `${Math.min(pct, 100)}%` }} />
-                                </div>
+                              <div key={idx} className="flex justify-between items-center text-xs py-1 border-b border-white/[0.03] last:border-0">
+                                <span className="text-gray-300 font-semibold">{p.title as string}</span>
+                                <span className="text-luxury-gold font-mono font-bold">{pct}% Funded</span>
                               </div>
                             );
                           })}

@@ -278,15 +278,10 @@ export default function AdminPrograms() {
 
                 {/* Case Stats specific to type */}
                 <div className="space-y-3 pt-2">
-                  {/* Progress bar */}
-                  <div>
-                    <div className="flex justify-between text-[9px] font-semibold text-gray-400 mb-1">
-                      <span>FUNDING DRIVE PROGRESS</span>
-                      <span className="text-white">{item.progress || 0}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
-                      <div className="h-full bg-luxury-gold rounded-full" style={{ width: `${item.progress || 0}%` }}></div>
-                    </div>
+                  {/* Program funding status */}
+                  <div className="flex justify-between items-center text-[10px] font-semibold text-gray-400">
+                    <span className="uppercase tracking-wider">Funding Status</span>
+                    <span className="text-luxury-gold font-bold">{item.progress || 0}% Funded</span>
                   </div>
 
                   {/* Program values */}

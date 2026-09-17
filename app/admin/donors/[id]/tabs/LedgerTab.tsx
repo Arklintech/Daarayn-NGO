@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { ExternalLink, Download, BookOpen } from 'lucide-react';
 
 export default function LedgerTab({ donor, donations, donorId }: any) {
@@ -38,11 +39,11 @@ export default function LedgerTab({ donor, donations, donorId }: any) {
         <h2 className="text-base font-semibold text-white">
           Public Ledger Records <span className="text-gray-500 text-sm font-normal ml-1">({entries.length})</span>
         </h2>
-        <a href="/admin/ledger" target="_blank"
+        <Link href="/admin/ledger" target="_blank"
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs text-gray-300 hover:text-white transition"
           style={{ border: '1px solid rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.03)' }}>
           <BookOpen className="w-3.5 h-3.5" /> Open Full Ledger
-        </a>
+        </Link>
       </div>
 
       {entries.length === 0 ? (

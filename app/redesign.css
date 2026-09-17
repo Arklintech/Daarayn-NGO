@@ -166,8 +166,8 @@
 
 .daarayn-quick-donation-ribbon {
   width: 100%;
-  max-width: 1400px;
-  height: 56px;
+  max-width: 1080px;
+  height: 52px;
   background: rgba(8, 18, 34, 0.96);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -175,9 +175,9 @@
   border-radius: 12px;
   display: flex;
   align-items: center;
-  padding: 6px 8px;
+  padding: 5px 8px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-  gap: 10px;
+  gap: 8px;
   transition: all 0.3s ease;
 }
 .daarayn-quick-donation-ribbon::-webkit-scrollbar {
@@ -188,16 +188,17 @@
   display: flex;
   align-items: center;
   height: 100%;
-  flex: 1 1 auto;
-  gap: 8px;
+  flex: 0 1 auto;
+  gap: 6px;
 }
 
 .daarayn-ribbon-action-row {
   display: flex;
   align-items: center;
   height: 100%;
-  gap: 10px;
-  flex: 0 0 auto;
+  gap: 8px;
+  flex: 0 1 auto;
+  margin-left: auto;
 }
 
 .daarayn-ribbon-currency-wrapper {
@@ -657,7 +658,6 @@
 @media (max-width: 1024px) {
   .daarayn-hero-content {
     flex-direction: column;
-    padding-top: 100px;
   }
   .daarayn-hero-left, .daarayn-hero-right {
     width: 100%;
@@ -709,6 +709,12 @@
   .daarayn-quick-donation-section {
     padding: 0 14px;
     margin-bottom: 8px;
+  }
+
+  .daarayn-hero-content {
+    padding: 24px 20px 40px;
+    gap: 24px;
+    align-items: flex-start;
   }
 
   .daarayn-quick-donation-ribbon {

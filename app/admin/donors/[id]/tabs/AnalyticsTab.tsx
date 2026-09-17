@@ -18,16 +18,13 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string;
 }
 
 function MiniBar({ value, max, label }: { value: number; max: number; label: string }) {
-  const pct = max > 0 ? (value / max) * 100 : 0;
+  const pct = max > 0 ? Math.round((value / max) * 100) : 0;
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-xs">
-        <span className="text-gray-400 truncate max-w-[70%]">{label}</span>
-        <span className="text-luxury-gold font-mono">INR {value.toLocaleString()}</span>
-      </div>
-      <div className="h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.06)' }}>
-        <div className="h-full rounded-full transition-all duration-700"
-          style={{ width: `${pct}%`, background: 'linear-gradient(90deg, rgba(255,249,221,0.4), rgba(255,249,221,0.8))' }} />
+    <div className="flex justify-between items-center text-xs py-1 border-b border-white/[0.04]">
+      <span className="text-gray-400 truncate max-w-[65%]">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className="text-gray-500 text-[10px]">({pct}%)</span>
+        <span className="text-luxury-gold font-mono font-medium">₹{value.toLocaleString()}</span>
       </div>
     </div>
   );

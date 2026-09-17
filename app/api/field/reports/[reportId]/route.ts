@@ -3,8 +3,6 @@ import { fieldReportRepository } from "@/lib/repositories/fieldReportRepository"
 import { auditLogRepository } from "@/lib/repositories/auditLogRepository";
 import { notificationRepository } from "@/lib/repositories/notificationRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
-import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
 
 export async function GET(
   request: NextRequest,
@@ -77,17 +75,6 @@ export async function PATCH(
       source: "admin_field_ops",
     });
 
-    // 5. Dual-write to Firestore mirror with timeout
-    try {
-      const mirrorWrite = setDoc(doc(db, "field_reports", reportId), updated, { merge: true });
-      const timeout = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore write timed out")), 1500)
-      );
-      await Promise.race([mirrorWrite, timeout]);
-    } catch (e: any) {
-      console.warn("[API/FieldReports/[reportId]] Firestore mirror skipped:", e.message);
-    }
-
     return NextResponse.json({ success: true, report: updated });
   } catch (error: any) {
     console.error("[API/FieldReports/[reportId]] Update error:", error);
@@ -96,3 +83,4 @@ export async function PATCH(
 }
 
 export const dynamic = "force-dynamic";
+
