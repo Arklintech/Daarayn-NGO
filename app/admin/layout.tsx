@@ -2,6 +2,11 @@ import AdminLayoutClient from './AdminLayoutClient';
 
 export const metadata = {
   title: "Daarayn Admin Panel",
+  robots: {
+    index: false,
+    follow: false,
+    googleBot: { index: false, follow: false },
+  },
   manifest: "/api/manifest/admin",
   icons: {
     icon: [

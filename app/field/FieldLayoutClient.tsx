@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { 
   Home, FileText, PlusCircle, Bell, User, HelpCircle, MessageSquare, MapPin
 } from "lucide-react";
@@ -29,11 +29,18 @@ const mobileNavItems = [
 
 function AgentNavigation({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { agentData } = useFieldAgentAuth();
+  const router = useRouter();
+  const { agentData, loading: authLoading } = useFieldAgentAuth();
   
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadAlerts, setUnreadAlerts] = useState(0);
   const [unreadReports, setUnreadReports] = useState(0);
+
+  useEffect(() => {
+    if (!authLoading && !agentData && pathname !== "/field/login" && pathname !== "/field") {
+      router.replace("/field/login");
+    }
+  }, [agentData, authLoading, pathname, router]);
 
   useEffect(() => {
     if (!agentData?.id) return;
@@ -256,24 +263,18 @@ export default function FieldLayoutClient({ children }: { children: React.ReactN
     shortcutIcon.href = '/icons/field-icon-192.png?v=3';
   }, []);
 
-  // Register SW + detect live updates for mobile PWA
+  // Register SW safely without forced automatic reloads
   const [swUpdateReady, setSwUpdateReady] = useState(false);
   useEffect(() => {
-    // Register single root service worker
-    if ('serviceWorker' in navigator) {
+    if ('serviceWorker' in navigator && process.env.NODE_ENV === 'production') {
       navigator.serviceWorker.register('/sw.js', { scope: '/' })
         .then((reg) => {
-          setInterval(() => reg.update(), 60_000);
           reg.addEventListener('updatefound', () => {
             const newWorker = reg.installing;
             if (!newWorker) return;
             newWorker.addEventListener('statechange', () => {
               if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                 setSwUpdateReady(true);
-                setTimeout(() => {
-                  newWorker.postMessage({ type: 'SKIP_WAITING' });
-                  window.location.reload();
-                }, 3000);
               }
             });
           });
@@ -282,17 +283,9 @@ export default function FieldLayoutClient({ children }: { children: React.ReactN
     }
   }, []);
 
-  if (isLoginPage) {
-    return (
-      <FieldAgentAuthProvider>
-        {children}
-      </FieldAgentAuthProvider>
-    );
-  }
-
   return (
     <FieldAgentAuthProvider>
-      <AgentNavigation>{children}</AgentNavigation>
+      {isLoginPage ? children : <AgentNavigation>{children}</AgentNavigation>}
       {/* PWA Update Toast — field agents get instant update notification */}
       {swUpdateReady && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-3 bg-[#0d1410] border border-[#b8860b]/60 text-white px-5 py-3 rounded-xl shadow-2xl backdrop-blur-md">

@@ -24,15 +24,15 @@ export default function GlobalHeader({ showRibbon = false }: GlobalHeaderProps) 
   }, [scrollY]);
 
   // Desktop ribbon floating animation
-  const ribbonTop = useTransform(scrollY, [0, 100], [116, 100]);
+  const ribbonTop = useTransform(scrollY, [0, 100], [92, 80]);
 
   return (
-    <>
+    <header className="w-full relative">
       <Navbar />
       {showRibbon && (
-        <>
+        <section className="daarayn-quick-donation-section">
           {/* Desktop Floating Ribbon (Visible on md and larger screens) */}
-          <div className="hidden md:block">
+          <div className="hidden md:block w-full">
             <motion.div 
               className="daarayn-global-ribbon-wrapper"
               style={{ top: ribbonTop }}
@@ -41,25 +41,12 @@ export default function GlobalHeader({ showRibbon = false }: GlobalHeaderProps) 
             </motion.div>
           </div>
 
-          {/* Mobile Only Quick Donation Ribbon: Appears at landing page top, hides when scrolling down, reappears when returning to top */}
-          <div className="block md:hidden">
-            <AnimatePresence>
-              {isAtTop && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -25 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -25 }}
-                  transition={{ duration: 0.25, ease: 'easeOut' }}
-                  className="fixed left-0 right-0 z-40 px-2.5 pointer-events-auto"
-                  style={{ top: '88px' }}
-                >
-                  <QuickDonationRibbon />
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Mobile Quick Donation Ribbon: In natural layout flow, pushed below fixed navbar */}
+          <div className="block md:hidden w-full" style={{ paddingTop: '96px', paddingBottom: '8px', pointerEvents: 'auto' }}>
+            <QuickDonationRibbon />
           </div>
-        </>
+        </section>
       )}
-    </>
+    </header>
   );
 }

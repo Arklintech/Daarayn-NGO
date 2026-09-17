@@ -66,14 +66,66 @@ function FieldOperationsCenterContent() {
         const agentsData = await agentsRes.json();
         const reportsData = await reportsRes.json();
 
+        let loadedAgents: FieldAgent[] = [];
+        let loadedReports: FieldReport[] = [];
+
         if (agentsData.success && Array.isArray(agentsData.agents)) {
-          setAgents(agentsData.agents);
+          loadedAgents = agentsData.agents;
+          setAgents(loadedAgents);
         }
         if (Array.isArray(reportsData)) {
-          const sorted = [...reportsData].sort(
+          loadedReports = [...reportsData].sort(
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );
-          setAllReports(sorted);
+          setAllReports(loadedReports);
+        }
+
+        // Build dynamic conversations for all agents
+        const builtConvs: FieldConversation[] = [];
+        for (const ag of loadedAgents) {
+          builtConvs.push({
+            id: `conv_${ag.id}_general`,
+            agentId: ag.id,
+            type: "Operations",
+            lastMessage: {
+              text: "General Operations Channel",
+              timestamp: ag.joinDate || new Date().toISOString(),
+              senderRole: "System"
+            },
+            unreadCountAdmin: 0,
+            unreadCountAgent: 0,
+            status: "Resolved",
+            isUrgent: false,
+            createdAt: ag.joinDate || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          });
+
+          const agentReps = loadedReports.filter(r => r.agentId === ag.id || (r as any).fieldAgentId === ag.id);
+          for (const rep of agentReps) {
+            builtConvs.push({
+              id: `conv_${rep.id}`,
+              agentId: ag.id,
+              reportId: rep.id,
+              type: "Report",
+              lastMessage: {
+                text: `Report: ${rep.title}`,
+                timestamp: rep.createdAt,
+                senderRole: "Agent"
+              },
+              unreadCountAdmin: 0,
+              unreadCountAgent: 0,
+              status: rep.status === 'Needs Info' ? "Waiting For Field Agent" : "Waiting For Admin",
+              isUrgent: rep.urgency === 'High',
+              createdAt: rep.createdAt,
+              updatedAt: rep.updatedAt || rep.createdAt
+            });
+          }
+        }
+        setConversations(builtConvs);
+
+        // Default to first agent if none selected
+        if (!paramAgentId && loadedAgents.length > 0) {
+          setActiveAgentId(loadedAgents[0].id);
         }
       } catch (err) {
         console.warn("Field ops data load error:", err);
@@ -100,7 +152,7 @@ function FieldOperationsCenterContent() {
     return () => {
       eventSource.close();
     };
-  }, []);
+  }, [paramAgentId]);
 
   // Select active agent and conversation from query params (notifications action URL)
   useEffect(() => {
@@ -109,36 +161,30 @@ function FieldOperationsCenterContent() {
     }
     if (paramConvId) {
       setActiveConvId(paramConvId);
-    } else if (paramReportId && conversations.length > 0) {
-      const matchedConv = conversations.find(c => c.reportId === paramReportId);
-      if (matchedConv) {
-        setActiveConvId(matchedConv.id);
-      }
+    } else if (paramReportId) {
+      setActiveConvId(`conv_${paramReportId}`);
     }
-  }, [paramAgentId, paramReportId, paramConvId, conversations]);
+  }, [paramAgentId, paramReportId, paramConvId]);
 
   // Set active conversation for active agent
   useEffect(() => {
-    if (!activeAgentId) return;
+    if (!activeAgentId) {
+      setActiveConvId(null);
+      return;
+    }
     if (paramConvId) return;
-    if (paramReportId && conversations.length > 0) {
-      const matchedConv = conversations.find(c => c.reportId === paramReportId);
-      if (matchedConv) {
-        setActiveConvId(matchedConv.id);
-        return;
-      }
+    if (paramReportId) {
+      setActiveConvId(`conv_${paramReportId}`);
+      return;
     }
     
-    const agentConvs = conversations.filter(c => c.agentId === activeAgentId);
-    const reportConvs = agentConvs.filter(c => c.type === 'Report');
-    if (reportConvs.length > 0) {
-      setActiveConvId(reportConvs[0].id);
-    } else if (agentConvs.length > 0) {
-      setActiveConvId(agentConvs[0].id);
+    const agentReports = allReports.filter(r => r.agentId === activeAgentId || (r as any).fieldAgentId === activeAgentId);
+    if (agentReports.length > 0) {
+      setActiveConvId(`conv_${agentReports[0].id}`);
     } else {
-      setActiveConvId(null);
+      setActiveConvId(`conv_${activeAgentId}_general`);
     }
-  }, [activeAgentId, conversations, paramConvId, paramReportId]);
+  }, [activeAgentId, allReports, paramConvId, paramReportId]);
 
   // Realtime Messages SSE stream listener for active conversation (Zero Polling)
   useEffect(() => {
@@ -188,6 +234,12 @@ function FieldOperationsCenterContent() {
     : (activeConv?.reportId 
         ? allReports.find(r => r.id === activeConv?.reportId) || null
         : (activeAgentId ? allReports.find(r => r.agentId === activeAgentId) || null : null));
+
+  const isReportConv = Boolean(
+    activeConv?.type === 'Report' || 
+    activeConv?.reportId || 
+    (activeConvId && activeConvId.startsWith('conv_') && !activeConvId.endsWith('_general') && !activeConvId.includes('_general'))
+  );
   
   const filteredAgents = agents.filter(a =>
     a.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -752,109 +804,125 @@ function FieldOperationsCenterContent() {
                 View Agents
               </button>
             </div>
-
-          ) : !activeConvId ? (
-            /* Agent selected, but no conversation exists yet */
-            <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-[#06090a]">
-              <div className="w-12 h-12 rounded-full bg-white/[0.03] border border-white/[0.07] flex items-center justify-center mb-3">
-                <MessageSquare className="w-6 h-6 text-gray-500" />
-              </div>
-              <p className="text-xs font-bold text-gray-300 mb-1">No conversations yet</p>
-              <p className="text-xs text-gray-400 max-w-xs">Wait for the agent to submit a report or start an operations conversation.</p>
-            </div>
-
           ) : (
-            /* Active Conversation Selected */
             <>
               {/* Conversation Header & Switcher */}
               <div className="px-4 pt-3 pb-0 border-b border-white/[0.06] flex-shrink-0">
-                
-                {/* Rich Header for Reports */}
-                {activeConv?.type === 'Report' && activeReport ? (
-                  <>
-                    <div className="flex items-start justify-between gap-3 mb-2">
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="text-gray-400 hover:text-white transition flex-shrink-0">
+                {/* Thread Switcher Bar */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-2 no-scrollbar">
+                  <button
+                    onClick={() => setActiveConvId(`conv_${activeAgent?.id}_general`)}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                      (activeConvId || `conv_${activeAgent?.id}_general`) === `conv_${activeAgent?.id}_general`
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                        : 'bg-white/[0.03] text-gray-400 hover:text-white border border-white/[0.06]'
+                    }`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    Operations Support Chat
+                  </button>
+                  {allReports.filter(r => r.agentId === activeAgentId || (r as any).fieldAgentId === activeAgentId).map(rep => (
+                    <button
+                      key={rep.id}
+                      onClick={() => setActiveConvId(`conv_${rep.id}`)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                        activeConvId === `conv_${rep.id}`
+                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                          : 'bg-white/[0.03] text-gray-400 hover:text-white border border-white/[0.06]'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Report: {rep.title?.slice(0, 18) || rep.id}...
+                    </button>
+                  ))}
+                </div>
+
+                    {/* Rich Header for Reports */}
+                    {isReportConv && activeReport ? (
+                      <>
+                        <div className="flex items-start justify-between gap-3 mb-2">
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="text-gray-400 hover:text-white transition flex-shrink-0">
+                                <ArrowLeft className="w-4 h-4" />
+                              </button>
+                              <h2 className="text-sm sm:text-base font-extrabold text-white">Report: {activeReport.id}</h2>
+                              <span className="px-2 py-0.5 rounded-md text-xs font-bold border flex-shrink-0 bg-[#b8860b]/10 text-[#b8860b] border-[#b8860b]/30">
+                                {activeReport.status}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-1 ml-7 truncate">
+                              {activeReport.category} • {activeReport.location.village || activeReport.location.district}, {activeReport.location.state} • Agent: {activeReport.agentName}
+                            </p>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <button onClick={() => { setShowTabletDetails(true); setMobileView('details'); }} className="xl:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/[0.08] hover:bg-white/[0.05] transition text-xs text-gray-300 font-medium">
+                              <FileText className="w-3.5 h-3.5" /> Details
+                            </button>
+                            <button onClick={() => { setAssignTo(activeReport.assignedAdminId || ''); setShowAssignModal(true); }} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/[0.08] hover:bg-white/[0.05] transition text-xs text-gray-300 font-medium">
+                              <UserPlus className="w-3.5 h-3.5" /> Assign
+                            </button>
+                          </div>
+                        </div>
+                        
+                        {/* Mobile Quick Action Buttons Bar inside Chat View */}
+                        <div className="flex md:hidden items-center gap-1.5 overflow-x-auto py-1.5 mb-1 border-t border-white/[0.06] shrink-0 no-scrollbar">
+                          <button onClick={handleApprove} disabled={['Approved','Converted'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
+                            <CheckCircle className="w-3.5 h-3.5" /> Approve
+                          </button>
+                          <button onClick={() => { setRequestInfoText(''); setShowRequestInfoModal(true); }} disabled={['Approved','Converted','Rejected'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
+                            <HelpCircle className="w-3.5 h-3.5" /> Request Info
+                          </button>
+                          <button onClick={() => { setRejectReason(''); setShowRejectModal(true); }} disabled={['Approved','Converted','Rejected'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
+                            <X className="w-3.5 h-3.5" /> Reject
+                          </button>
+                          <button onClick={() => { setAssignTo(activeReport.assignedAdminId || ''); setShowAssignModal(true); }} disabled={['Converted'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
+                            <UserPlus className="w-3.5 h-3.5" /> Assign
+                          </button>
+                          <button onClick={handleConvert} disabled={activeReport.status !== 'Approved'} className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
+                            <Sparkles className="w-3.5 h-3.5" /> Convert
+                          </button>
+                        </div>
+                        
+                        {/* Tabs */}
+                        <div className="flex gap-4 mt-2 ml-7 overflow-x-auto no-scrollbar">
+                          {['Conversation','Details',`Media (${activeReport.media?.length || 0})`,`Documents (0)`,'History'].map(tab => {
+                            const key = tab.split(' ')[0];
+                            return (
+                              <button key={tab} onClick={() => setActiveTab(key)}
+                                className={`pb-2 text-xs font-medium border-b-2 transition whitespace-nowrap ${
+                                  activeTab === key ? 'border-emerald-500 text-white font-bold' : 'border-transparent text-gray-400 hover:text-gray-200'
+                                }`}>{tab}</button>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      /* Standard Header for General Chat */
+                      <div className="flex items-start justify-between gap-3 pb-2">
+                        <div className="flex items-start gap-3 min-w-0">
+                          <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="mt-0.5 text-gray-400 hover:text-white transition flex-shrink-0 lg:hidden">
                             <ArrowLeft className="w-4 h-4" />
                           </button>
-                          <h2 className="text-sm sm:text-base font-extrabold text-white">Report: {activeReport.id}</h2>
-                          <span className="px-2 py-0.5 rounded-md text-xs font-bold border flex-shrink-0 bg-[#b8860b]/10 text-[#b8860b] border-[#b8860b]/30">
-                            {activeReport.status}
-                          </span>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h2 className="text-sm sm:text-base font-extrabold text-white">Operations Support</h2>
+                              <span className="px-2 py-0.5 rounded text-xs font-bold border flex-shrink-0 bg-purple-500/10 text-purple-400 border-purple-500/30">
+                                General Chat
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-400 mt-0.5 truncate">
+                              Direct channel with {activeAgent?.name} • {activeAgent?.role || 'Field Officer'} ({activeAgent?.region || activeAgent?.state || 'Active'})
+                            </p>
+                          </div>
                         </div>
-                        <p className="text-xs text-gray-400 mt-1 ml-7 truncate">
-                          {activeReport.category} • {activeReport.location.village || activeReport.location.district}, {activeReport.location.state} • Agent: {activeReport.agentName}
-                        </p>
                       </div>
-                      
-                      <div className="flex items-center gap-2 flex-shrink-0">
-                        <button onClick={() => { setShowTabletDetails(true); setMobileView('details'); }} className="xl:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/[0.08] hover:bg-white/[0.05] transition text-xs text-gray-300 font-medium">
-                          <FileText className="w-3.5 h-3.5" /> Details
-                        </button>
-                        <button onClick={() => { setAssignTo(activeReport.assignedAdminId || ''); setShowAssignModal(true); }} className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-white/[0.08] hover:bg-white/[0.05] transition text-xs text-gray-300 font-medium">
-                          <UserPlus className="w-3.5 h-3.5" /> Assign
-                        </button>
-                      </div>
-                    </div>
-                    
-                    {/* Mobile Quick Action Buttons Bar inside Chat View */}
-                    <div className="flex md:hidden items-center gap-1.5 overflow-x-auto py-1.5 mb-1 border-t border-white/[0.06] shrink-0 no-scrollbar">
-                      <button onClick={handleApprove} disabled={['Approved','Converted'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
-                        <CheckCircle className="w-3.5 h-3.5" /> Approve
-                      </button>
-                      <button onClick={() => { setRequestInfoText(''); setShowRequestInfoModal(true); }} disabled={['Approved','Converted','Rejected'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
-                        <HelpCircle className="w-3.5 h-3.5" /> Request Info
-                      </button>
-                      <button onClick={() => { setRejectReason(''); setShowRejectModal(true); }} disabled={['Approved','Converted','Rejected'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-red-500/20 border border-red-500/40 text-red-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
-                        <X className="w-3.5 h-3.5" /> Reject
-                      </button>
-                      <button onClick={() => { setAssignTo(activeReport.assignedAdminId || ''); setShowAssignModal(true); }} disabled={['Converted'].includes(activeReport.status)} className="px-2.5 py-1.5 rounded-lg bg-blue-500/20 border border-blue-500/40 text-blue-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
-                        <UserPlus className="w-3.5 h-3.5" /> Assign
-                      </button>
-                      <button onClick={handleConvert} disabled={activeReport.status !== 'Approved'} className="px-2.5 py-1.5 rounded-lg bg-purple-500/20 border border-purple-500/40 text-purple-400 text-xs font-bold flex items-center gap-1 shrink-0 disabled:opacity-30">
-                        <Sparkles className="w-3.5 h-3.5" /> Convert
-                      </button>
-                    </div>
-                    
-                    {/* Tabs */}
-                    <div className="flex gap-4 mt-2 ml-7 overflow-x-auto no-scrollbar">
-                      {['Conversation','Details',`Media (${activeReport.media?.length || 0})`,`Documents (0)`,'History'].map(tab => {
-                        const key = tab.split(' ')[0];
-                        return (
-                          <button key={tab} onClick={() => setActiveTab(key)}
-                            className={`pb-2 text-xs font-medium border-b-2 transition whitespace-nowrap ${
-                              activeTab === key ? 'border-emerald-500 text-white font-bold' : 'border-transparent text-gray-400 hover:text-gray-200'
-                            }`}>{tab}</button>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : (
-                  /* Standard Header for General Chat */
-                  <div className="flex items-start justify-between gap-3 pb-2">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <button onClick={() => { setActiveAgentId(null); setMobileView('agents'); }} className="mt-0.5 text-gray-400 hover:text-white transition flex-shrink-0 lg:hidden">
-                        <ArrowLeft className="w-4 h-4" />
-                      </button>
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h2 className="text-sm sm:text-base font-extrabold text-white">Operations Support</h2>
-                          <span className="px-2 py-0.5 rounded text-xs font-bold border flex-shrink-0 bg-purple-500/10 text-purple-400 border-purple-500/30">
-                            General Chat
-                          </span>
-                        </div>
-                        <p className="text-xs text-gray-400 mt-0.5 truncate">
-                          {activeAgent?.name} • {activeAgent?.status}
-                        </p>
-                      </div>
-                    </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Tab Content Container */}
-              <div className="flex-1 overflow-hidden bg-[#06090a] relative flex flex-col min-h-0">
+                  {/* Tab Content Container */}
+                  <div className="flex-1 overflow-hidden bg-[#06090a] relative flex flex-col min-h-0">
               
               {/* Conversation Tab */}
               {activeTab === 'Conversation' && (

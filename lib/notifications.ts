@@ -1,6 +1,3 @@
-import { db } from "./firebase";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
-
 // ─────────────────────────────────────────────────────────
 //  TYPES
 // ─────────────────────────────────────────────────────────
@@ -79,21 +76,36 @@ export const CATEGORY_META: Record<
 };
 
 // ─────────────────────────────────────────────────────────
-//  ENGINE: publishNotification
-//  Call this from any module to emit a business event.
+//  ENGINE: publishNotification (Client & Server Universal)
 // ─────────────────────────────────────────────────────────
 
 export async function publishNotification(
   payload: Omit<AdminNotification, "notificationId" | "createdAt" | "isRead">
 ): Promise<void> {
-  if (!db) return;
   try {
-    const notification: Omit<AdminNotification, "notificationId"> = {
-      ...payload,
+    const notifId = `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
+    const notificationData = {
+      id: notifId,
+      recipientType: "Admin",
+      recipientId: "all",
+      type: payload.category,
+      title: payload.title,
+      message: payload.description,
+      read: false,
+      relatedEntityId: payload.entityId || "",
       createdAt: new Date().toISOString(),
-      isRead: false,
     };
-    await addDoc(collection(db, "admin_notifications"), notification);
+
+    try {
+      const baseUrl = typeof window !== "undefined" ? "" : (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000");
+      await fetch(`${baseUrl}/api/admin/notifications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(notificationData),
+      });
+    } catch (apiErr) {
+      console.warn("[NotificationEngine] API dispatch warning:", apiErr);
+    }
   } catch (err) {
     // Never throw — notification failures must not break primary flows
     console.warn("[NotificationEngine] Failed to publish:", err);
@@ -362,3 +374,4 @@ export const notifyExecutive = {
       priority: "low",
     }),
 };
+

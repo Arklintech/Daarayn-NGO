@@ -67,25 +67,9 @@ export const PWAProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setInstallPromptEvent(e);
     });
 
-    // 4. Client Privacy Masking (Visibility Change and OS Switcher Protection)
-    const handleVisibilityAndFocus = () => {
-      if (document.hidden || !document.hasFocus()) {
-        setBlurred(true);
-      } else {
-        setBlurred(false);
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityAndFocus);
-    window.addEventListener('blur', handleVisibilityAndFocus);
-    window.addEventListener('focus', handleVisibilityAndFocus);
-
     return () => {
       window.removeEventListener('online', evaluateConnectivity);
       window.removeEventListener('offline', evaluateConnectivity);
-      document.removeEventListener('visibilitychange', handleVisibilityAndFocus);
-      window.removeEventListener('blur', handleVisibilityAndFocus);
-      window.removeEventListener('focus', handleVisibilityAndFocus);
     };
   }, []);
 

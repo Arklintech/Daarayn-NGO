@@ -7,8 +7,7 @@ import { driveService, DriveFileMetadata } from "../google/drive";
 import { realtimeBroadcaster } from "../realtime/broadcaster";
 import { sendDonationEmail } from "../email";
 import { VerifiedAnalyticsEngine } from "../ai/engines/VerifiedAnalyticsEngine";
-import { db } from "../firebase";
-import { doc, setDoc } from "firebase/firestore";
+
 import { Donation, DonorProfile } from "../db";
 
 export interface ProcessDonationInput {
@@ -171,36 +170,8 @@ export class DonationService {
 
     await donationRepository.save(donationRecord);
 
-    // 7. Temporary Dual-Write to Firestore Mirror (Migration Safety Layer)
-    try {
-      const firestoreLedgerRecord = {
-        donor: `${donorNameClean} (UPI)`,
-        cause: input.cause,
-        selectedCauses: input.selectedCauses || [input.cause],
-        amount: numAmount,
-        directAid: directAid,
-        status: "pending",
-        date: formattedDate,
-        refCode: input.upiRef,
-        opsCost: opsCost,
-        proof: proofDriveFileId ? `Drive File: ${proofDriveFileId}` : "⏳ Awaiting bank check",
-        proofDriveFileId: proofDriveFileId,
-        proofUrl: proofDriveFileId ? `/api/media/${proofDriveFileId}` : null,
-        createdAt: nowIso,
-        migratedToSheets: true,
-      };
-
-      const writePromise = setDoc(doc(db, "publicLedger", trackingId), firestoreLedgerRecord, { merge: true });
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error("Firestore mirror write timed out (1500ms)")), 1500)
-      );
-      await Promise.race([writePromise, timeoutPromise]);
-    } catch (dualWriteErr: any) {
-      console.warn(
-        "[DonationService] Dual-write to Firestore publicLedger mirror skipped/timed out:",
-        dualWriteErr.message
-      );
-    }
+    // Step 7 (Firestore dual-write) has been removed.
+    // Google Sheets via donationRepository is the sole source of truth.
 
     // 8. Publish Realtime Operational Events
     realtimeBroadcaster.broadcast("DONATION_RECEIVED", {

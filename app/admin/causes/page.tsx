@@ -256,19 +256,11 @@ export default function CauseManagementCenter() {
                     </div>
 
                     <div className="mt-6">
-                      <div className="flex items-center justify-between text-xs mb-2">
+                      <div className="flex items-center justify-between text-xs">
                         <span className="text-[var(--gold)] font-semibold">{percentage}% Funded</span>
                         <span className="text-gray-400 flex items-center gap-1">
                           <Users className="w-3 h-3" /> {stats.contributors} {stats.contributors === 1 ? 'Contributor' : 'Contributors'}
                         </span>
-                      </div>
-                      <div className="w-full bg-white/[0.05] rounded-full h-1.5 overflow-hidden">
-                        <motion.div 
-                          className="bg-gradient-to-r from-[#e5c158] to-[#d4af37] h-full rounded-full"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${percentage}%` }}
-                          transition={{ duration: 1, ease: "easeOut" }}
-                        />
                       </div>
                     </div>
                   </div>

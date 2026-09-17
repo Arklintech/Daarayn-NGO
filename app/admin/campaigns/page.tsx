@@ -152,14 +152,9 @@ export default function AdminCampaigns() {
                 <p className="text-xs text-gray-400 mt-2 line-clamp-2">{camp.description}</p>
                 
                 <div className="mt-6 space-y-3 flex-1">
-                  <div>
-                    <div className="flex justify-between text-[10px] font-semibold text-gray-400 mb-1">
-                      <span>CAMPAIGN PROGRESS</span>
-                      <span className="text-white">{Math.round((camp.raisedAmount / (camp.targetAmount || 1)) * 100)}%</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
-                      <div className="h-full bg-luxury-gold rounded-full" style={{ width: `${Math.round((camp.raisedAmount / (camp.targetAmount || 1)) * 100)}%` }}></div>
-                    </div>
+                  <div className="flex justify-between items-center text-[10px] font-semibold text-gray-400">
+                    <span className="uppercase tracking-wider">Campaign Status</span>
+                    <span className="text-luxury-gold font-bold">{Math.round((camp.raisedAmount / (camp.targetAmount || 1)) * 100)}% Funded</span>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-3 text-[10px] font-semibold">

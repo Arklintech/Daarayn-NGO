@@ -46,6 +46,6 @@ export async function executeSecureSessionIsolation() {
   // 4. Invalidate authoritative authorization credentials
   await auth.signOut();
 
-  // Redirect back to landing with clear headers
-  window.location.href = '/?session_reset=true';
+  // Hard navigate to landing — intentional full reset after complete session isolation
+  window.location.replace('/');
 }

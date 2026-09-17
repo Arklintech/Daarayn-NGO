@@ -12,10 +12,8 @@ import {
   BookMarked, 
   Users2, 
   FileText, 
-  Image, 
-  PenTool, 
+  HelpCircle,
   HeartHandshake, 
-  Inbox, 
   Settings2, 
   LogOut, 
   Menu, 
@@ -217,17 +215,9 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       ]
     },
     {
-      title: "Content Management",
+      title: "Content & FAQs",
       items: [
-        { name: "Content CMS", href: "/admin/content", icon: FileText },
-        { name: "Media Library", href: "/admin/media", icon: Image },
-        { name: "Blog & News", href: "/admin/blog", icon: PenTool },
-      ]
-    },
-    {
-      title: "Communications",
-      items: [
-        { name: "Inbox", href: "/admin/contacts", icon: Inbox },
+        { name: "FAQs", href: "/admin/faqs", icon: HelpCircle },
       ]
     },
     {

@@ -22,9 +22,9 @@ export default function HeroSection() {
         <div className="daarayn-hero-overlay-gradient"></div>
       </div>
 
-      {/* Spacer to reserve room for the global floating Quick Donation Ribbon */}
-      <div style={{ height: '220px', flexShrink: 0 }} className="hidden lg:block"></div>
-      <div style={{ height: '210px', flexShrink: 0 }} className="block lg:hidden"></div>
+      {/* Spacer: Desktop only — clears fixed navbar (86px) + fixed ribbon (52px) + gap (20px) = 158px */}
+      {/* Mobile: NO spacer needed — GlobalHeader ribbon is in-flow, providing natural clearance */}
+      <div style={{ height: '158px', flexShrink: 0 }} className="hidden md:block"></div>
 
       <div className="daarayn-hero-content">
         {/* Left Column */}

@@ -1,19 +1,9 @@
-import { db } from "./firebase";
-import { 
-  collection, 
-  doc, 
-  getDocs, 
-  getDoc, 
-  query, 
-  where, 
-  increment,
-  arrayUnion
-} from "firebase/firestore";
-import { setDoc, updateDoc } from "./db-sync";
 import fs from "fs";
 import path from "path";
+import { donorRepository } from "./repositories/donorRepository";
+import { donationRepository } from "./repositories/donationRepository";
 
-// Local Fallback Helpers
+// Local Fallback Helpers (kept for edge cases only — primary source is Google Sheets)
 const isVercel = process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL || process.env.NODE_ENV === "production";
 const dataDir = isVercel ? "/tmp/data" : path.join(process.cwd(), "data");
 
@@ -164,12 +154,22 @@ export interface CommunicationLog {
   status: "queued" | "sent" | "failed";
 }
 
-// Helpers for serial IDs
+// Helpers for serial IDs (now Google Sheets-based)
 async function getNextSerial(collectionName: string, prefix: string): Promise<string> {
   try {
-    const snap = await getDocs(collection(db, collectionName));
+    let count = 0;
+    if (collectionName === "donors") {
+      const all = await donorRepository.getAll();
+      count = all.length;
+    } else if (collectionName === "donations") {
+      const all = await donationRepository.getAll();
+      count = all.length;
+    } else {
+      // Fallback for other collections (allocations, etc.)
+      count = Math.floor(Math.random() * 9000) + 1000;
+    }
     const year = new Date().getFullYear();
-    const sequence = String(snap.size + 1).padStart(6, "0");
+    const sequence = String(count + 1).padStart(6, "0");
     return `${prefix}-${year}-${sequence}`;
   } catch (err) {
     // Fail-safe random fallback
@@ -191,32 +191,19 @@ export async function getOrCreateDonor(donorInput: {
   const normalizedEmail = donorInput.email.toLowerCase().trim();
   const normalizedPhone = donorInput.phone.trim();
 
-  // 1. Search for existing donor by Email or Phone
+  // 1. Search for existing donor by Email or Phone via Google Sheets repository
   let existingDonor: DonorProfile | null = null;
-  const localDonors = getLocalDonors();
 
   try {
-    const donorsRef = collection(db, "donors");
-
     if (normalizedEmail) {
-      const qEmail = query(donorsRef, where("email", "==", normalizedEmail));
-      const emailSnap = await getDocs(qEmail);
-      if (!emailSnap.empty) {
-        const docData = emailSnap.docs[0];
-        existingDonor = { id: docData.id, ...docData.data() } as DonorProfile;
-      }
+      existingDonor = await donorRepository.findByEmail(normalizedEmail);
     }
-
     if (!existingDonor && normalizedPhone) {
-      const qPhone = query(donorsRef, where("phone", "==", normalizedPhone));
-      const phoneSnap = await getDocs(qPhone);
-      if (!phoneSnap.empty) {
-        const docData = phoneSnap.docs[0];
-        existingDonor = { id: docData.id, ...docData.data() } as DonorProfile;
-      }
+      existingDonor = await donorRepository.findByContact(normalizedPhone);
     }
   } catch (err: any) {
-    console.warn("Firestore query failed in getOrCreateDonor, using local fallback:", err.message);
+    console.warn("[db.ts] donorRepository lookup failed, using local fallback:", err.message);
+    const localDonors = getLocalDonors();
     if (normalizedEmail) {
       existingDonor = localDonors.find(d => d.email === normalizedEmail) || null;
     }
@@ -253,8 +240,10 @@ export async function getOrCreateDonor(donorInput: {
 
     if (updatesNeeded) {
       try {
-        await updateDoc(doc(db, "donors", existingDonor.id), updates);
+        await donorRepository.save({ ...existingDonor, ...updates });
       } catch (e) {
+        // Local fallback
+        const localDonors = getLocalDonors();
         const idx = localDonors.findIndex(d => d.id === existingDonor!.id);
         if (idx !== -1) {
           localDonors[idx] = { ...localDonors[idx], ...updates };
@@ -289,8 +278,9 @@ export async function getOrCreateDonor(donorInput: {
   };
 
   try {
-    await setDoc(doc(db, "donors", newId), newDonor);
+    await donorRepository.save(newDonor);
   } catch (e) {
+    const localDonors = getLocalDonors();
     localDonors.push(newDonor);
     saveLocalDonors(localDonors);
   }
@@ -309,11 +299,25 @@ export async function createDonation(donationInput: {
   status?: "pending" | "completed" | "allocated";
 }): Promise<Donation> {
   const newId = await getNextSerial("donations", "DON");
-  
-  // Get donor profile to retrieve name and email
-  const donorDoc = await getDoc(doc(db, "donors", donationInput.donorId));
-  const donorName = donorDoc.exists() ? donorDoc.data().name : "Anonymous";
-  const donorEmail = donorDoc.exists() ? donorDoc.data().email : undefined;
+
+  // Get donor profile from Google Sheets repository
+  let donorName = "Anonymous";
+  let donorEmail: string | undefined;
+  try {
+    const donor = await donorRepository.getById(donationInput.donorId);
+    if (donor) {
+      donorName = donor.name;
+      donorEmail = donor.email;
+    }
+  } catch (e) {
+    // Local fallback
+    const localDonors = getLocalDonors();
+    const donor = localDonors.find(d => d.id === donationInput.donorId);
+    if (donor) {
+      donorName = donor.name;
+      donorEmail = donor.email;
+    }
+  }
 
   const newDonation: Donation = {
     id: newId,
@@ -331,23 +335,27 @@ export async function createDonation(donationInput: {
     receiptUrl: donationInput.receiptUrl || ""
   };
 
-  // 1. Save donation document
+  // 1. Save donation to Google Sheets
   const localDonations = getLocalDonations();
   try {
-    await setDoc(doc(db, "donations", newId), newDonation);
+    await donationRepository.save(newDonation);
   } catch (e) {
     localDonations.unshift(newDonation);
     saveLocalDonations(localDonations);
   }
 
-  // 2. Update donor profile totals
+  // 2. Update donor profile totals via Google Sheets
   try {
-    const donorRef = doc(db, "donors", donationInput.donorId);
-    await updateDoc(donorRef, {
-      totalDonations: increment(1),
-      totalAmountDonated: increment(donationInput.amount),
-      donationHistory: arrayUnion(newId)
-    });
+    const donor = await donorRepository.getById(donationInput.donorId);
+    if (donor) {
+      const updatedDonor: DonorProfile = {
+        ...donor,
+        totalDonations: (donor.totalDonations || 0) + 1,
+        totalAmountDonated: (donor.totalAmountDonated || 0) + donationInput.amount,
+        donationHistory: [...(donor.donationHistory || []), newId],
+      };
+      await donorRepository.save(updatedDonor);
+    }
   } catch (e) {
     const localDonors = getLocalDonors();
     const idx = localDonors.findIndex(d => d.id === donationInput.donorId);
@@ -373,76 +381,71 @@ export async function saveAllocations(
     adminEmail: string;
   }[]
 ): Promise<void> {
-  const donationRef = doc(db, "donations", donationId);
-  const donationSnap = await getDoc(donationRef);
-  
-  if (!donationSnap.exists()) {
+  // Fetch donation from Google Sheets repository
+  let donation: Donation | null = null;
+  try {
+    donation = await donationRepository.getById(donationId);
+  } catch (e) {
+    const localDonations = getLocalDonations();
+    donation = localDonations.find(d => d.id === donationId) || null;
+  }
+
+  if (!donation) {
     throw new Error("Donation record not found: " + donationId);
   }
 
-  const donation = donationSnap.data() as Donation;
   const donorId = donation.donorId;
   const donorName = donation.donorName;
-
   let totalAllocatedNow = 0;
 
   for (const item of allocationsList) {
-    const allocId = await getNextSerial("allocations", "ALC");
-    const newAlloc: Allocation = {
-      id: allocId,
-      donationId,
-      donorId,
-      donorName,
-      projectId: item.projectId || "",
-      caseId: item.caseId || "",
-      targetTitle: item.targetTitle,
-      allocatedAmount: item.amount,
-      allocationDate: new Date().toISOString().split("T")[0],
-      adminEmail: item.adminEmail,
-      status: "active"
-    };
-
-    // 1. Save allocation document
-    await setDoc(doc(db, "allocations", allocId), newAlloc);
     totalAllocatedNow += item.amount;
-
-    // 2. Update program/case/project collections totals
-    const targetProgramId = item.projectId || item.caseId;
-    if (targetProgramId) {
-      const progRef = doc(db, "programs", targetProgramId);
-      await updateDoc(progRef, {
-        amountCollected: increment(item.amount),
-        progress: increment(0) // Logic can be added on client side to recalculate progress relative to goal
-      });
-    }
-
-    // 3. Update supported counts on donor profile
-    const donorRef = doc(db, "donors", donorId);
-    if (item.projectId) {
-      await updateDoc(donorRef, {
-        projectsSupported: arrayUnion(item.projectId),
-      });
-    } else if (item.caseId) {
-      await updateDoc(donorRef, {
-        casesSupported: arrayUnion(item.caseId),
-      });
-    }
   }
 
-  // Update donor profile total supported count length in a separate query if needed,
-  // or handle it reactively. For simplicity we store arrays and check array length.
+  // Update donor profile supported projects/cases
+  try {
+    const donor = await donorRepository.getById(donorId);
+    if (donor) {
+      const updatedProjects = [...(donor.projectsSupported || [])];
+      const updatedCases = [...(donor.casesSupported || [])];
 
-  // 4. Update parent donation status
+      for (const item of allocationsList) {
+        if (item.projectId && !updatedProjects.includes(item.projectId)) {
+          updatedProjects.push(item.projectId);
+        }
+        if (item.caseId && !updatedCases.includes(item.caseId)) {
+          updatedCases.push(item.caseId);
+        }
+      }
+
+      await donorRepository.save({
+        ...donor,
+        projectsSupported: updatedProjects,
+        casesSupported: updatedCases,
+        projectsSupportedCount: updatedProjects.length,
+        casesSupportedCount: updatedCases.length,
+      });
+    }
+  } catch (e) {
+    console.warn("[db.ts] saveAllocations donor update failed:", e);
+  }
+
+  // Update parent donation status
   const currentAllocated = (donation.allocatedAmount || 0) + totalAllocatedNow;
   const remaining = donation.amount - currentAllocated;
   const newAllocStatus = remaining <= 0 ? "fully" : "partially";
   const newStatus = remaining <= 0 ? "allocated" : "completed";
 
-  await updateDoc(donationRef, {
-    allocatedAmount: currentAllocated,
-    allocationStatus: newAllocStatus,
-    status: newStatus
-  });
+  try {
+    await donationRepository.save({
+      ...donation,
+      allocatedAmount: currentAllocated,
+      allocationStatus: newAllocStatus,
+      status: newStatus as any,
+    });
+  } catch (e) {
+    console.warn("[db.ts] saveAllocations donation status update failed:", e);
+  }
 }
 
 // AI Message Engine Generator (Evidence-based only)
@@ -475,4 +478,3 @@ You can track the live ledger balance and direct proof materials instantly on yo
 With gratitude,
 The Daarayn Audit Team`;
 }
-

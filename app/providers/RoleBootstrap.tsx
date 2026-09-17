@@ -1,10 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { getAuth, onIdTokenChanged, User } from 'firebase/auth';
-import { usePathname, useRouter } from 'next/navigation';
-import { initializePwaDatabase } from '@/lib/pwa/db';
+import { onIdTokenChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
+import { initializePwaDatabase } from '@/lib/pwa/db';
 
 interface BootstrapContextProps {
   user: User | null;
@@ -12,87 +11,46 @@ interface BootstrapContextProps {
   isReady: boolean;
 }
 
-const BootstrapContext = createContext<BootstrapContextProps>({ user: null, role: null, isReady: false });
+const BootstrapContext = createContext<BootstrapContextProps>({ user: null, role: null, isReady: true });
 
 export const RoleBootstrapProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<'admin' | 'field' | 'public' | null>(null);
-  const [isReady, setIsReady] = useState(false);
-  const pathname = usePathname();
-  const router = useRouter();
+  const [isReady, setIsReady] = useState(true);
 
   useEffect(() => {
     if (!auth) {
-      console.warn("Auth module not initialized. RoleBootstrapProvider falling back.");
       setIsReady(true);
       return;
     }
 
-    // Sole unified observer for auth validation and claims propagation
+    try {
+      initializePwaDatabase().catch(() => {});
+    } catch {}
+
     const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
-      setIsReady(false);
-
-      if (!currentUser) {
-        setUser(null);
-        setRole('public');
-        
-        // Guard protected admin & field sub-apps
-        if ((pathname.startsWith('/admin') && pathname !== '/admin/login') || 
-            (pathname.startsWith('/field') && pathname !== '/field/login')) {
-          router.replace(pathname.startsWith('/admin') ? '/admin/login' : '/field/login');
-        } else {
-          setIsReady(true);
-        }
-        return;
-      }
-
       try {
-        // Get current token claims (do not force refresh to avoid infinite loop with onIdTokenChanged)
+        if (!currentUser) {
+          setUser(null);
+          setRole('public');
+          setIsReady(true);
+          return;
+        }
+
         const tokenResult = await currentUser.getIdTokenResult();
-        // Note: In our current firebase setup, custom claims might not be populated immediately for dev mode.
-        // We will default to public, but if they are an admin or agent we infer from their login flow later in the specific contexts. 
-        // For the enterprise structure, we read claims:
-        const userRole = (tokenResult.claims.role as 'admin' | 'field') || 'public';
-
-        // 1. Authoritative Route Gate checks
-        // Since we are transitioning, we will temporarily allow the route if claims aren't fully set up to prevent breaking local dev,
-        // but strictly enforcing it is the goal.
-        if (pathname.startsWith('/admin') && userRole !== 'admin' && pathname !== '/admin/login') {
-          // If they aren't admin, let the inner AuthContext handle the rejection for now to preserve backwards compatibility.
-          // In a pure prod env with claims, we would `router.replace('/unauthorized')` here.
-        }
-
-        if (pathname.startsWith('/field') && userRole !== 'field' && userRole !== 'admin' && pathname !== '/field/login') {
-          // Same here, let FieldAgentAuthContext handle it for now.
-        }
-
-        // 2. Client-side isolated store initializations
-        await initializePwaDatabase();
+        const userRole = (tokenResult?.claims?.role as 'admin' | 'field') || 'public';
 
         setUser(currentUser);
         setRole(userRole);
         setIsReady(true);
-
       } catch (error) {
-        console.error('[Role Bootstrap Engine] Initialization failure:', error);
-        // Fallback for dev mode where network might block
+        console.warn('[Role Bootstrap] Non-fatal auth token check:', error);
         setIsReady(true);
       }
     });
 
     return () => unsubscribe();
-  }, [pathname, router]);
-
-  if (!isReady) {
-    return (
-      <div className="flex h-screen w-screen flex-col items-center justify-center bg-[#0A0B0D]">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-[#00B4D8] border-t-transparent" />
-          <p className="mt-6 text-xs font-mono tracking-widest text-gray-400 uppercase">BOOTSTRAPPING DAARAYN OS ENGINE...</p>
-        </div>
-      </div>
-    );
-  }
+  }, []);
 
   return (
     <BootstrapContext.Provider value={{ user, role, isReady }}>
@@ -102,3 +60,4 @@ export const RoleBootstrapProvider: React.FC<{ children: React.ReactNode }> = ({
 };
 
 export const useBootstrap = () => useContext(BootstrapContext);
+

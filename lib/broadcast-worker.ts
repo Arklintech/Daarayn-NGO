@@ -1,22 +1,8 @@
-import { db } from "@/lib/firebase";
-import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 import { generateLetterEmailTemplate, attachDaaraynLogo } from "@/lib/email/resend";
 import { sendEmail } from "@/lib/email/providerManager";
 import { communicationRepository } from "@/lib/repositories/communicationRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { broadcastStore } from "@/lib/broadcast-store";
-
-// Helper for non-blocking Firestore updates
-async function safeFirestoreUpdate(docRef: any, data: any) {
-  try {
-    await Promise.race([
-      updateDoc(docRef, data),
-      new Promise(res => setTimeout(res, 1200))
-    ]);
-  } catch (err: any) {
-    // Non-blocking mirror
-  }
-}
 
 export async function processBroadcast(broadcastId: string, recipients: any[], payload: any) {
   const { heading, eyebrow, dua, projectUpdateHtml, mediaUrls, causeName, stats, createdAt } = payload;
@@ -24,16 +10,8 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
   let failCount = 0;
   const batchSize = 25; 
 
-  const broadcastRef = doc(db, "broadcasts", broadcastId);
-  const jobsRef = collection(db, "broadcast_email_jobs");
-
   try {
     broadcastStore.update(broadcastId, {
-      status: "Processing",
-      startedAt: new Date().toISOString()
-    });
-
-    safeFirestoreUpdate(broadcastRef, {
       status: "Processing",
       startedAt: new Date().toISOString()
     });
@@ -56,23 +34,11 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
       }
     }
 
-    // Generate Email Queue (Step 3)
-    const jobs: any[] = [];
-    for (const r of recipients) {
-      if (!r.email) continue;
-      const jobDoc = await addDoc(jobsRef, {
-        broadcastId,
-        recipientId: r.id,
-        recipientEmail: r.email,
-        recipientName: r.name,
-        status: "Pending",
-        retryCount: 0,
-        lastAttempt: null,
-        completedTime: null,
-        failureReason: null
-      });
-      jobs.push({ jobId: jobDoc.id, ...r });
-    }
+    // Generate Email Queue in memory
+    const jobs: any[] = recipients.filter(r => Boolean(r.email)).map((r, idx) => ({
+      jobId: `job-${broadcastId}-${idx}`,
+      ...r
+    }));
 
     // Step 4: Batch Processing
     for (let i = 0; i < jobs.length; i += batchSize) {
@@ -98,13 +64,12 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
         let attempts = 0;
         const maxRetries = 3;
         let delivered = false;
-        let lastError: any = null;
 
         while (attempts < maxRetries && !delivered) {
           try {
             if (attempts > 0) {
                // Exponential backoff
-               await new Promise(res => setTimeout(res, 1000 * Math.pow(2, attempts)));
+               await new Promise(res => setTimeout(res, 500 * Math.pow(2, attempts)));
             }
             const result = await sendEmail({
               to: job.email,
@@ -120,32 +85,13 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
             }
           } catch (e: any) {
             attempts++;
-            lastError = e;
           }
         }
 
-        if (job.jobId) {
-          const jobDocRef = doc(db, "broadcast_email_jobs", job.jobId);
-          if (delivered) {
-            successCount++;
-            safeFirestoreUpdate(jobDocRef, {
-              status: "Sent",
-              completedTime: new Date().toISOString(),
-              retryCount: attempts,
-              lastAttempt: new Date().toISOString()
-            });
-          } else {
-            failCount++;
-            safeFirestoreUpdate(jobDocRef, {
-              status: "Failed",
-              failureReason: lastError?.message || "Unknown error",
-              retryCount: attempts,
-              lastAttempt: new Date().toISOString()
-            });
-          }
+        if (delivered) {
+          successCount++;
         } else {
-          if (delivered) successCount++;
-          else failCount++;
+          failCount++;
         }
       }));
 
@@ -168,16 +114,9 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
         remaining: remainingCount,
         status: "Processing"
       });
-
-      // Mirror to Firestore non-blocking
-      safeFirestoreUpdate(broadcastRef, {
-        "stats.sent": successCount,
-        "stats.failed": failCount,
-        "stats.remaining": remainingCount
-      });
       
       // Delay to respect provider limits
-      await new Promise(res => setTimeout(res, 800));
+      await new Promise(res => setTimeout(res, 300));
     }
 
     const processingDurationMs = Date.now() - new Date(createdAt).getTime();
@@ -194,17 +133,7 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
       }
     });
 
-    // 2. Safe Firestore mirror update
-    safeFirestoreUpdate(broadcastRef, {
-      status: "Completed",
-      completedAt: new Date().toISOString(),
-      processingDurationMs,
-      "stats.sent": successCount,
-      "stats.failed": failCount,
-      "stats.remaining": 0
-    });
-
-    // 3. Persist authoritative durable history to Google Sheets
+    // 2. Persist authoritative durable history to Google Sheets
     await communicationRepository.save({
       id: broadcastId,
       type: "Email Broadcast",
@@ -220,7 +149,7 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
       completedAt: new Date().toISOString(),
     });
 
-    // 4. Notify connected client listeners in real-time over SSE
+    // 3. Notify connected client listeners in real-time over SSE
     realtimeBroadcaster.broadcast("BROADCAST_COMPLETED", {
       broadcastId,
       sent: successCount,
@@ -234,10 +163,7 @@ export async function processBroadcast(broadcastId: string, recipients: any[], p
       status: "Failed",
       failureReason: error?.message || "Unknown error"
     });
-    safeFirestoreUpdate(broadcastRef, {
-      status: "Failed",
-      failureReason: error?.message || "Unknown error"
-    });
   }
 }
+
 

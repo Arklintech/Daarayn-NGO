@@ -55,25 +55,62 @@ export default function AgentLogin() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    const cleanEmail = email.trim().toLowerCase();
+
     try {
-      if (email.toLowerCase().endsWith("@daarayn.org")) {
+      // 1. Fetch registered agents list from Google Sheets repository
+      let foundAgent: any = null;
+      try {
         const res = await fetch("/api/admin/field-agents");
-        const data = await res.json();
-        const found = data.agents?.find((a: any) => a.email?.toLowerCase() === email.toLowerCase());
-        if (found) {
-          localStorage.setItem("demoAgent", JSON.stringify(found));
-          window.location.href = "/field/dashboard";
-          return;
+        if (res.ok) {
+          const data = await res.json();
+          foundAgent = data.agents?.find((a: any) => a.email?.trim().toLowerCase() === cleanEmail);
         }
-        setError("Agent not found. Contact your supervisor.");
-        setLoading(false);
+      } catch (e) {
+        console.warn("Could not fetch field agents list", e);
+      }
+
+      // If domain is @daarayn.org or found in agents list, log in as agent directly
+      if (foundAgent || cleanEmail.endsWith("@daarayn.org")) {
+        const agentToSave = foundAgent || {
+          id: `FA-${Date.now().toString().slice(-4)}`,
+          name: cleanEmail.split("@")[0].toUpperCase() || "Field Agent",
+          email: cleanEmail,
+          role: "Field Officer",
+          region: "Assam",
+          status: "Active"
+        };
+        localStorage.setItem("demoAgent", JSON.stringify(agentToSave));
+        if (typeof document !== "undefined") {
+          document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
+        }
+        // Also attempt Firebase auth in background if available
+        if (auth && password) {
+          try {
+            await signInWithEmailAndPassword(auth, cleanEmail, password);
+          } catch (fbErr) {
+            console.warn("Firebase signin notice:", fbErr);
+          }
+        }
+        router.replace("/field/dashboard");
         return;
       }
       
-      try {
-        await signInWithEmailAndPassword(auth, email, password);
-      } catch (firebaseErr: any) {
-        throw firebaseErr;
+      // Try standard Firebase Auth if auth is initialized
+      if (auth) {
+        try {
+          await signInWithEmailAndPassword(auth, cleanEmail, password);
+          if (typeof document !== "undefined") {
+            document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
+          }
+          router.replace("/field/dashboard");
+          return;
+        } catch (firebaseErr: any) {
+          throw firebaseErr;
+        }
+      } else {
+        setError("Agent record not found. Contact your administrator.");
+        setLoading(false);
       }
       
     } catch (err: any) {

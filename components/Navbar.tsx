@@ -1,22 +1,24 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 
 export default function Navbar() {
+  const router = useRouter();
   const { scrollY } = useScroll();
   const [activeHash, setActiveHash] = useState('');
   const [hoveredPath, setHoveredPath] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   // Dynamic Scroll Values
-  const navHeight = useTransform(scrollY, [0, 100], [80, 64]);
-  const navPadding = useTransform(scrollY, [0, 100], ['0 32px', '0 24px']);
-  const navBg = useTransform(scrollY, [0, 100], ['rgba(1, 21, 51, 0.7)', 'rgba(1, 21, 51, 1)']);
+  const navHeight = useTransform(scrollY, [0, 100], [70, 58]);
+  const navPadding = useTransform(scrollY, [0, 100], ['0 20px', '0 16px']);
+  const navBg = useTransform(scrollY, [0, 100], ['rgba(1, 21, 51, 0.75)', 'rgba(1, 21, 51, 0.98)']);
   const navBlur = useTransform(scrollY, [0, 100], ['blur(12px)', 'blur(24px)']);
-  const navShadow = useTransform(scrollY, [0, 100], ['0 10px 30px rgba(0, 0, 0, 0.15)', '0 20px 40px rgba(0, 0, 0, 0.4)']);
-  const logoScale = useTransform(scrollY, [0, 100], [1.4, 1.2]);
+  const navShadow = useTransform(scrollY, [0, 100], ['0 8px 24px rgba(0, 0, 0, 0.15)', '0 16px 36px rgba(0, 0, 0, 0.4)']);
+  const logoScale = useTransform(scrollY, [0, 100], [1.15, 1.0]);
 
   // Keep track of hash for active state
   useEffect(() => {
@@ -36,11 +38,11 @@ export default function Navbar() {
   ];
 
   return (
-    <nav style={{ position: 'fixed', top: 0, left: 0, width: '100%', padding: '24px 16px', zIndex: 100, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }} className="lg:px-8">
+    <nav style={{ position: 'fixed', top: 0, left: 0, width: '100%', padding: '16px 16px', zIndex: 100, display: 'flex', justifyContent: 'center', pointerEvents: 'none' }} className="lg:px-8">
       <motion.div 
         style={{
           width: '100%',
-          maxWidth: '1400px',
+          maxWidth: '1180px',
           height: navHeight,
           background: navBg,
           backdropFilter: navBlur,
@@ -50,8 +52,8 @@ export default function Navbar() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '32px',
-          padding: '0 16px',
+          gap: '20px',
+          padding: '0 20px',
           boxShadow: navShadow,
           pointerEvents: 'auto',
           position: 'relative'
@@ -74,39 +76,39 @@ export default function Navbar() {
         </div>
 
         {/* Left: Logo */}
-        <Link href="/#home" onClick={() => { setActiveHash('#home'); setIsOpen(false); }} style={{ textDecoration: 'none', zIndex: 10, flexShrink: 0, paddingRight: '24px' }}>
+        <Link href="/#home" onClick={() => { setActiveHash('#home'); setIsOpen(false); }} style={{ textDecoration: 'none', zIndex: 10, flexShrink: 0 }}>
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-            style={{ display: 'flex', alignItems: 'center', gap: '12px' }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
           >
             <motion.img 
               style={{ scale: logoScale, transformOrigin: 'center center', display: 'block' }}
               src="/daarayn-logo-transparent.png" 
               alt="Daarayn Logo" 
-              width={60} 
-              height={60}
-              className="lg:w-[60px] xl:w-[80px] lg:h-[60px] xl:h-[80px]"
+              width={46} 
+              height={46}
+              className="w-[42px] h-[42px] lg:w-[48px] lg:h-[48px]"
               onError={(e: any) => { e.currentTarget.src = '/brand logo .png' }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '18px', fontWeight: 400, letterSpacing: '10px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }} className="lg:text-[20px] xl:text-[24px]">
+              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '16px', fontWeight: 500, letterSpacing: '7px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 8px rgba(255,255,255,0.1)' }} className="lg:text-[18px] xl:text-[20px]">
                 DAARAYN
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }} className="lg:gap-[6px] xl:gap-[8px]">
-                <span style={{ display: 'block', width: '12px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[16px] xl:w-[24px]" />
-                <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '9px', fontWeight: 300, letterSpacing: '1.5px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }} className="lg:text-[10px] xl:text-[11px] lg:tracking-[1.5px] xl:tracking-[2px]">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }} className="lg:gap-[5px]">
+                <span style={{ display: 'block', width: '10px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[14px]" />
+                <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '8px', fontWeight: 300, letterSpacing: '1.2px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }} className="lg:text-[9px]">
                   FOUNDATION
                 </span>
-                <span style={{ display: 'block', width: '12px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[16px] xl:w-[24px]" />
+                <span style={{ display: 'block', width: '10px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[14px]" />
               </div>
             </div>
           </motion.div>
         </Link>
 
         {/* Center: Navigation Links (Desktop) */}
-        <div className="hidden lg:flex items-center gap-[16px] lg:gap-[20px] xl:gap-[32px] z-10 ml-auto" style={{ zIndex: 10 }}>
+        <div className="hidden lg:flex items-center gap-[6px] lg:gap-[10px] xl:gap-[16px] z-10" style={{ zIndex: 10 }}>
           {navItems.map((item) => {
             const isActive = activeHash === item.href.replace('/', '');
             return (
@@ -128,7 +130,8 @@ export default function Navbar() {
                       window.history.pushState(null, '', item.href);
                     } else {
                       // Navigate to target route/anchor when on payment gate or other subpages
-                      window.location.href = item.href;
+                      e.preventDefault();
+                      router.push(item.href);
                     }
                   }}
                   className="px-[8px] lg:px-[12px] xl:px-[16px] py-[8px] text-[13px] xl:text-[14px]"
@@ -228,7 +231,8 @@ export default function Navbar() {
                           element.scrollIntoView({ behavior: 'smooth' });
                           window.history.pushState(null, '', item.href);
                         } else {
-                          window.location.href = item.href;
+                          e.preventDefault();
+                          router.push(item.href);
                         }
                       }}
                       style={{
