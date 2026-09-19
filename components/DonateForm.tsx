@@ -69,51 +69,76 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
 
   useEffect(() => {
     async function loadCauses() {
+      const GENERAL_CAUSE = {
+        id: "general",
+        name: "General Donation (Where Most Needed)",
+        title: "General Donation (Where Most Needed)",
+        category: "General Support",
+        description: "Direct your contribution where the community need is greatest."
+      };
+
       try {
         const res = await fetch("/api/causes");
         if (!res.ok) throw new Error("Failed to fetch causes");
         const list = await res.json();
         
         if (!Array.isArray(list) || list.length === 0) throw new Error("No causes found in database");
-        setCauses(list);
 
-        // Handle fallback if initial cause isn't found
-        let finalList = list;
+        // Ensure General Donation is always present at top
+        const hasGeneral = list.some((c: any) => c.id === 'general' || normStr(c.name || c.title) === 'general' || normStr(c.name || c.title) === 'general donation');
+        let finalList = hasGeneral ? list : [GENERAL_CAUSE, ...list];
+
         const normInit = normStr(initialCause);
-        if (normInit && 
-            normInit !== 'contribution' && 
-            normInit !== 'general' && 
-            normInit !== 'general donation' &&
-            !list.find(c => normStr(c.name || c.title) === normInit || normStr(c.title || c.name) === normInit || c.id === initialCause)
-        ) {
+        const isGeneral = !normInit || normInit === 'general' || normInit === 'general donation' || normInit === 'contribution';
+
+        if (!isGeneral && !finalList.find((c: any) => normStr(c.name || c.title) === normInit || c.id === initialCause)) {
           const fallbackId = `custom_${Date.now()}`;
-          finalList = [{ id: fallbackId, name: initialCause }, ...list];
+          finalList = [{ id: fallbackId, name: initialCause }, ...finalList];
         }
         setCauses(finalList);
 
-        // Auto-select initial cause if matched
-        const initialMatch = finalList.find(c => normStr(c.name || c.title) === normInit || normStr(c.title || c.name) === normInit || c.id === initialCause);
-        if (initialMatch) {
-          setSelectedCausesList([initialMatch.id]);
+        // Auto-select initial cause
+        if (isGeneral) {
+          const genMatch = finalList.find((c: any) => c.id === 'general' || normStr(c.name || c.title).includes('general')) || finalList[0];
+          if (genMatch) setSelectedCausesList([genMatch.id]);
+        } else {
+          const initialMatch = finalList.find((c: any) => normStr(c.name || c.title) === normInit || c.id === initialCause);
+          if (initialMatch) {
+            setSelectedCausesList([initialMatch.id]);
+          } else {
+            setSelectedCausesList([finalList[0]?.id || 'general']);
+          }
         }
       } catch (err) {
         console.warn("API causes load error, using fallbacks:", err);
         const fallbacks = [
-          { id: "education", name: "Education" },
-          { id: "water-projects", name: "Water Projects" },
-          { id: "orphan-support", name: "Orphan Support" },
-          { id: "emergency-relief", name: "Emergency Relief" }
+          GENERAL_CAUSE,
+          { id: "clean-water-wells", name: "Clean Water Tube Wells Initiative" },
+          { id: "orphan-sponsorship", name: "Orphan & Child Care Sponsorship" },
+          { id: "emergency-food-aid", name: "Emergency Food & Relief Distribution" },
+          { id: "masjid-construction", name: "Community Masjid Construction & Repairs" },
+          { id: "healthcare-medical-fund", name: "Healthcare & Medical Aid Fund" }
         ];
         
         let finalList = [...fallbacks];
         const normInit = normStr(initialCause);
-        if (normInit && !fallbacks.find(c => normStr(c.name) === normInit || c.id === initialCause)) {
+        const isGeneral = !normInit || normInit === 'general' || normInit === 'general donation' || normInit === 'contribution';
+
+        if (!isGeneral && !fallbacks.find((c: any) => normStr(c.name) === normInit || c.id === initialCause)) {
           finalList = [{ id: `custom_${Date.now()}`, name: initialCause }, ...finalList];
         }
         setCauses(finalList);
         
-        const matched = finalList.find(c => normStr(c.name) === normInit || c.id === initialCause);
-        if (matched) setSelectedCausesList([matched.id]);
+        if (isGeneral) {
+          setSelectedCausesList(['general']);
+        } else {
+          const matched = finalList.find((c: any) => normStr(c.name) === normInit || c.id === initialCause);
+          if (matched) {
+            setSelectedCausesList([matched.id]);
+          } else {
+            setSelectedCausesList(['general']);
+          }
+        }
       }
     }
     loadCauses();
@@ -136,10 +161,12 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
       const formData = new FormData(e.currentTarget);
       const amount = Number(formData.get('amount') || 0);
 
-      if (selectedCount === 0) {
-        setError('Please select at least one cause to direct your contribution to.');
-        setLoading(false);
-        return;
+      // Safe auto-default: if nothing selected, use general or first cause
+      let effectiveSelectedIds = selectedCausesList;
+      if (effectiveSelectedIds.length === 0) {
+        const fallbackCauseId = causes.find(c => c.id === 'general')?.id || (causes.length > 0 ? causes[0].id : 'general');
+        effectiveSelectedIds = [fallbackCauseId];
+        setSelectedCausesList(effectiveSelectedIds);
       }
 
       if (amount <= 0) {
@@ -156,16 +183,25 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
 
       formData.set('screenshot', file);
       
-      const perCauseAmount = Math.floor(amount / selectedCount);
+      const perCauseAmount = Math.floor(amount / effectiveSelectedIds.length);
 
-      const selectedCauses = causes
-        .filter(c => selectedCausesList.includes(c.id))
+      let selectedCauses = causes
+        .filter(c => effectiveSelectedIds.includes(c.id))
         .map(c => ({
           causeId: c.id,
-          causeName: c.name,
+          causeName: c.name || c.title || "General Donation",
           allocatedAmount: perCauseAmount,
-          percentage: 100 / selectedCausesList.length
+          percentage: 100 / effectiveSelectedIds.length
         }));
+
+      if (selectedCauses.length === 0) {
+        selectedCauses = [{
+          causeId: "general",
+          causeName: initialCause && initialCause !== 'General' ? initialCause : "General Donation (Where Most Needed)",
+          allocatedAmount: amount,
+          percentage: 100
+        }];
+      }
 
       formData.set('selectedCauses', JSON.stringify(selectedCauses));
       formData.set('cause', selectedCauses.length === 1 ? selectedCauses[0].causeName : "Multiple Causes");
@@ -230,7 +266,23 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
       <input type="hidden" name="currency" value={initialCurrency} />
 
       {/* Cause Selection Section */}
-      {!hideCausesGrid && (
+      {hideCausesGrid ? (
+        <motion.div variants={itemVariants} style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '12px 16px',
+          background: 'rgba(212, 175, 55, 0.08)',
+          border: '1px solid rgba(212, 175, 55, 0.25)',
+          borderRadius: '12px',
+          marginBottom: '0.5rem'
+        }}>
+          <CheckCircle2 size={18} style={{ color: 'var(--gold-base)', flexShrink: 0 }} />
+          <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.9)' }}>
+            Directing contribution to: <strong style={{ color: 'var(--ivory-light)' }}>{causes.find(c => selectedCausesList.includes(c.id))?.name || (initialCause && initialCause !== 'General' ? initialCause : 'General Donation (Where Most Needed)')}</strong>
+          </span>
+        </motion.div>
+      ) : (
         <motion.div variants={itemVariants} className="space-y-3">
         <div>
           <h3 style={{ fontSize: '1.1rem', color: '#fff', fontFamily: 'var(--font-playfair)', marginBottom: '4px' }}>Choose Where Your Contribution Goes</h3>

@@ -45,7 +45,8 @@ export default function AdminLogin() {
       } else if (err.code === "auth/weak-password") {
         errMsg = "Password should be at least 6 characters.";
       } else if (err.code === "auth/invalid-credential") {
-        errMsg = "Invalid credentials. Please verify.";
+        errMsg = "Invalid credentials. Please verify your email and password.";
+        setShowBypass(true);
       } else if (
         err.code === "auth/api-key-not-valid" ||
         err.code === "auth/invalid-api-key" ||
