@@ -57,7 +57,13 @@ const filesToSync = [
   'app/sitemap.ts',
   'lib/security/session.ts',
   'lib/google/client.ts',
-  'lib/sync/GoogleSheetsClient.ts'
+  'lib/sync/GoogleSheetsClient.ts',
+  'components/DonateForm.tsx',
+  'components/PayPageLayout.tsx',
+  'app/pay/page.tsx',
+  'app/admin/login/page.tsx',
+  'app/api/donate/route.ts',
+  'next.config.ts'
 ];
 
 for (const relPath of filesToSync) {

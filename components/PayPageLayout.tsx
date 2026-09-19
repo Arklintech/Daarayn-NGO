@@ -27,7 +27,7 @@ export default function PayPageLayout({ amount, currency, cause, source }: { amo
       <div className="donate-text">
         <h2 style={{ fontSize: '2.2rem', marginBottom: '0.75rem', fontFamily: 'var(--font-playfair)' }}>Secure Contribution</h2>
         <p className="lead" style={{ fontSize: '1rem', color: 'rgba(252,251,251,0.85)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-          Your contribution to <strong style={{ color: 'var(--ivory-light)' }}>{cause}</strong> will be securely recorded and verified by our team. Every contribution receives a unique tracking ID for complete transparency.
+          Your contribution to <strong style={{ color: 'var(--ivory-light)' }}>{cause === 'General' ? 'General Donation (Where Most Needed)' : cause}</strong> will be securely recorded and verified by our team. Every contribution receives a unique tracking ID for complete transparency.
         </p>
 
         <DonateForm 

@@ -10,10 +10,6 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return [
       {
-        source: "/pay",
-        destination: "/pay.html",
-      },
-      {
         source: "/admin/manifest.webmanifest",
         destination: "/api/manifest/admin",
       },
