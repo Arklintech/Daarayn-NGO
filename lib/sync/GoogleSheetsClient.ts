@@ -7,8 +7,18 @@ export class GoogleSheetsClient {
   constructor() {
     this.sheetId = process.env.GOOGLE_SHEET_ID || "";
     
-    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL;
-    const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, "\n");
+    const clientEmail = process.env.GOOGLE_CLIENT_EMAIL?.trim().replace(/^["']|["']$/g, '');
+    let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+    if (privateKey) {
+      privateKey = privateKey.trim();
+      while ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+        privateKey = privateKey.slice(1, -1).trim();
+      }
+      privateKey = privateKey.replace(/\\n/g, "\n").replace(/\r/g, "").trim();
+      while ((privateKey.startsWith('"') && privateKey.endsWith('"')) || (privateKey.startsWith("'") && privateKey.endsWith("'"))) {
+        privateKey = privateKey.slice(1, -1).trim();
+      }
+    }
 
     if (clientEmail && privateKey && this.sheetId) {
       const auth = new google.auth.JWT({

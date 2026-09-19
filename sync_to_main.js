@@ -55,7 +55,9 @@ const filesToSync = [
   'app/field/layout.tsx',
   'app/robots.ts',
   'app/sitemap.ts',
-  'lib/security/session.ts'
+  'lib/security/session.ts',
+  'lib/google/client.ts',
+  'lib/sync/GoogleSheetsClient.ts'
 ];
 
 for (const relPath of filesToSync) {
