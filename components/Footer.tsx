@@ -28,6 +28,9 @@ export default function Footer() {
         .ft-link:hover { color: rgba(255,249,221,0.9); }
         .ft-small-link { color: rgba(255,255,255,0.28); text-decoration: none; font-size: 0.72rem; letter-spacing: 0.03em; transition: color 0.2s; }
         .ft-small-link:hover { color: rgba(255,255,255,0.6); }
+        .ft-credit-link { color: rgba(255,255,255,0.55); text-decoration: none; font-weight: 500; letter-spacing: 0.05em; transition: color 0.2s, opacity 0.2s; }
+        .ft-credit-link:hover { color: rgba(255,249,221,0.95); }
+        .ft-credit-link:focus-visible { outline: 1px solid rgba(255,249,221,0.4); outline-offset: 3px; border-radius: 2px; }
         .footer-grid { display: grid; grid-template-columns: minmax(220px,1.5fr) 1fr 1fr 1.2fr; gap: 2.5rem; align-items: flex-start; }
         @media (max-width: 768px) {
           .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem 1.25rem; text-align: left; }
@@ -186,7 +189,39 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* ── BOTTOM BAR ── */}
+        {/* ── DIVIDER ABOVE CREDIT ── */}
+        <div style={{
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07) 20%, rgba(255,255,255,0.07) 80%, transparent)',
+          marginBottom: '1rem',
+        }} />
+
+        {/* ── ARKLINTECH CREDIT STRIP ── */}
+        <div style={{
+          textAlign: 'center',
+          padding: '0.2rem 1rem',
+          marginBottom: '1rem',
+        }}>
+          <p style={{
+            fontSize: '0.72rem',
+            color: 'rgba(255,255,255,0.32)',
+            margin: 0,
+            letterSpacing: '0.03em',
+            lineHeight: 1.5,
+          }}>
+            Website crafted by{' '}
+            <a
+              href="https://arklintech.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ft-credit-link"
+            >
+              ARKLINTECH
+            </a>
+          </p>
+        </div>
+
+        {/* ── BOTTOM BAR DIVIDER ── */}
         <div style={{
           height: '1px',
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.07) 20%, rgba(255,255,255,0.07) 80%, transparent)',
