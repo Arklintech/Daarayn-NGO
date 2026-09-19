@@ -46,13 +46,26 @@ export function getGoogleAuth() {
     }
   }
 
+function cleanPrivateKey(key: string | undefined): string | null {
+  if (!key) return null;
+  let cleaned = key.trim();
+  while ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  cleaned = cleaned.replace(/\\n/g, "\n").replace(/\r/g, "").trim();
+  while ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+    cleaned = cleaned.slice(1, -1).trim();
+  }
+  return cleaned;
+}
+
   // 2. Try Environment Variables (for Production Vercel Deployment)
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL;
-  let privateKey = process.env.GOOGLE_PRIVATE_KEY;
+  const rawEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || process.env.GOOGLE_CLIENT_EMAIL;
+  const clientEmail = rawEmail ? rawEmail.trim().replace(/^["']|["']$/g, "") : null;
+  const privateKey = cleanPrivateKey(process.env.GOOGLE_PRIVATE_KEY);
 
   if (clientEmail && privateKey) {
     try {
-      privateKey = privateKey.replace(/\\n/g, "\n");
       cachedAuth = new google.auth.JWT({
         email: clientEmail,
         key: privateKey,

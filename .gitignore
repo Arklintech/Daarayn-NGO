@@ -35,3 +35,4 @@ daaraynorg-*.json
 *.key
 
 .vercel
+.env*
