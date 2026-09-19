@@ -1,19 +1,16 @@
-import { NextResponse } from "next/server";
-import { runMigration } from "@/scripts/migrate-firestore-to-sheets";
+import { NextResponse } from 'next/server';
 
+/**
+ * This endpoint has been permanently decommissioned.
+ *
+ * It was a one-time Firestore → Google Sheets migration tool used during
+ * the architecture transition. That migration is complete. Firestore is
+ * NOT the production datastore — Google Sheets is. This route has no
+ * operational purpose and is disabled to prevent confusion and errors.
+ */
 export async function POST() {
-  try {
-    const summary = await runMigration();
-    return NextResponse.json({
-      success: true,
-      message: "Firestore -> Google Sheets & Drive Migration Executed Successfully",
-      summary,
-    });
-  } catch (error: any) {
-    console.error("[SeedSheetsAPI] Migration failed:", error);
-    return NextResponse.json(
-      { success: false, error: error.message || "Migration failed" },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json(
+    { error: 'This endpoint has been permanently removed.' },
+    { status: 410 }
+  );
 }
