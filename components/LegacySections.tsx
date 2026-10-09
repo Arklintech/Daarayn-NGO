@@ -6,9 +6,9 @@ export default function LegacySections() {
   useEffect(() => {
     const handleProfileClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      
-      // Open modal
-      const card = target.closest('.clickable-profile-card');
+
+      // Open modal - optimized selector
+      let card = target.closest('.clickable-profile-card');
       if (card) {
         const modalId = card.getAttribute('data-target-modal');
         if (modalId) {
@@ -19,6 +19,7 @@ export default function LegacySections() {
             document.body.style.overflow = 'hidden';
           }
         }
+        return;
       }
 
       // Close modal on button click
@@ -30,27 +31,29 @@ export default function LegacySections() {
           modal.setAttribute('aria-hidden', 'true');
           document.body.style.overflow = '';
         }
+        return;
       }
 
       // Close modal on background click
       if (target.classList.contains('modal-overlay')) {
-        target.classList.remove('is-active');
-        target.setAttribute('aria-hidden', 'true');
+        (target as HTMLElement).classList.remove('is-active');
+        (target as HTMLElement).setAttribute('aria-hidden', 'true');
         document.body.style.overflow = '';
       }
     };
 
     const handleKeydown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        document.querySelectorAll('.modal-overlay.is-active').forEach(modal => {
+        const modals = document.querySelectorAll('.modal-overlay.is-active');
+        modals.forEach(modal => {
           modal.classList.remove('is-active');
           modal.setAttribute('aria-hidden', 'true');
-          document.body.style.overflow = '';
         });
+        document.body.style.overflow = '';
       }
     };
 
-    document.addEventListener('click', handleProfileClick);
+    document.addEventListener('click', handleProfileClick, { passive: true });
     document.addEventListener('keydown', handleKeydown);
 
     return () => {
@@ -408,9 +411,26 @@ export default function LegacySections() {
 </body>
 
 </html>` }} />
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" strategy="lazyOnload" />
-      <Script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" strategy="lazyOnload" />
-      <Script src="/script.js" strategy="lazyOnload" />
+      <Script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" strategy="lazyOnload" async />
+      <Script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" strategy="lazyOnload" async />
+      <Script src="/script.js" strategy="lazyOnload" async />
+      <script dangerouslySetInnerHTML={{ __html: `
+        // Optimize image loading
+        if ('IntersectionObserver' in window) {
+          const imgs = document.querySelectorAll('img[src]');
+          const imgObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+              if (entry.isIntersecting) {
+                const img = entry.target as HTMLImageElement;
+                img.style.maxWidth = '100%';
+                img.style.height = 'auto';
+                imgObserver.unobserve(img);
+              }
+            });
+          });
+          imgs.forEach(img => imgObserver.observe(img));
+        }
+      ` }} />
     </>
   );
 }
