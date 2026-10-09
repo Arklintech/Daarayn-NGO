@@ -9,3 +9,4 @@ export * from "./notificationRepository";
 export * from "./auditLogRepository";
 export * from "./programRepository";
 export * from "./campaignRepository";
+export * from "./fieldMessageRepository";

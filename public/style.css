@@ -455,30 +455,26 @@ a{ color: inherit; text-decoration: none; }
 
 /* ================= LAYOUTS ================= */
 .two-column {
-  display: grid;
-  grid-template-columns: repeat(12, minmax(0, 1fr));
-  gap: 4rem;
-  align-items: stretch;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4rem !important;
+  align-items: stretch !important;
 }
 .section-text {
-  grid-column: span 7;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
 }
 .section-media {
-  grid-column: span 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 .two-column.reverse .section-text {
-  grid-column: span 7;
-  order: 2;
+  order: 1;
 }
 .two-column.reverse .section-media {
-  grid-column: span 5;
-  order: 1;
+  order: 2;
 }
 
 .section-text h2{
@@ -493,6 +489,296 @@ a{ color: inherit; text-decoration: none; }
   gap: 1rem;
   flex-wrap: nowrap;
   margin-top: 2rem;
+}
+
+/* ================= QURAN SECTION LAYOUT ================= */
+.quran-single-column {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  width: 100% !important;
+}
+
+.quran-single-column h2 {
+  color: var(--ivory-light) !important;
+  font-size: 2rem !important;
+  margin-bottom: 2rem !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+.quran-hero-image {
+  width: 100% !important;
+  max-width: 600px !important;
+  margin: 0 auto 2rem auto !important;
+  align-self: center !important;
+}
+
+.quran-content {
+  width: 100% !important;
+  max-width: 800px !important;
+}
+
+.quran-content h3 {
+  color: var(--ivory-light) !important;
+  font-size: 1.3rem !important;
+  margin-top: 1.5rem !important;
+  margin-bottom: 0.8rem !important;
+}
+
+.quran-content .lead {
+  font-size: 1.1rem !important;
+  line-height: 1.6 !important;
+  margin-bottom: 1.5rem !important;
+}
+
+/* ================= FAMILY RELIEF SECTION LAYOUT ================= */
+.family-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 3rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.family-heading {
+  color: var(--ivory-light) !important;
+  font-size: 2.2rem !important;
+  margin-bottom: 0.5rem !important;
+  width: 100% !important;
+  grid-column: 1 / -1 !important;
+}
+
+.family-hero-image {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+.family-content {
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.2rem !important;
+}
+
+.family-content .lead {
+  font-size: 1rem !important;
+  line-height: 1.6 !important;
+  margin: 0 !important;
+  color: rgba(255,255,255,0.9) !important;
+}
+
+.impact-box {
+  margin: 1.5rem 0 1.5rem 0 !important;
+  padding: 1.5rem !important;
+}
+
+.impact-box p {
+  margin: 0 0 1rem 0 !important;
+  font-weight: 500 !important;
+}
+
+.impact-box ul {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.6rem !important;
+}
+
+.impact-box li {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: rgba(255,255,255,0.85) !important;
+  font-size: 0.95rem !important;
+  line-height: 1.5 !important;
+}
+
+.impact-box + .actions-row {
+  margin-top: 1.5rem !important;
+  margin: 1.5rem 0 0 0 !important;
+  padding: 0 !important;
+}
+
+/* ================= DESKTOP LAYOUT FOR SECTIONS ================= */
+@media (min-width: 1025px) {
+  .family-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4rem !important;
+    align-items: start !important;
+  }
+
+  .family-heading {
+    grid-column: 1 / -1 !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .family-content {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  .family-hero-image {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+  }
+
+  .family-content .lead {
+    font-size: 1.1rem !important;
+    line-height: 1.6 !important;
+  }
+
+  .quran-single-column {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4rem !important;
+    align-items: start !important;
+  }
+
+  .quran-single-column h2 {
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    text-align: left !important;
+    margin-bottom: 1.5rem !important;
+  }
+
+  .quran-hero-image {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+  }
+
+  .quran-content {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .quran-content .lead {
+    font-size: 1.1rem !important;
+    line-height: 1.6 !important;
+    margin-bottom: 1.5rem !important;
+  }
+}
+
+/* ================= MOBILE RESPONSIVE FOR SECTIONS ================= */
+/* Mobile-first: Extra small devices (280px - 430px) */
+@media (max-width: 430px) {
+  .family-grid,
+  .quran-single-column {
+    padding: 0 0.75rem !important;
+    gap: 1.2rem !important;
+  }
+
+  .family-heading,
+  .quran-single-column h2 {
+    font-size: 1.5rem !important;
+    margin-bottom: 0.75rem !important;
+    width: 100% !important;
+  }
+
+  .family-content .lead,
+  .quran-content .lead {
+    font-size: 0.9rem !important;
+    line-height: 1.5 !important;
+  }
+
+  .impact-box {
+    padding: 1rem !important;
+    margin: 1rem 0 1rem 0 !important;
+  }
+}
+
+/* Small devices (431px - 768px) */
+@media (min-width: 431px) and (max-width: 1024px) {
+  .family-grid,
+  .quran-single-column {
+    padding: 0 1rem !important;
+    gap: 1.5rem !important;
+    grid-template-columns: 1fr !important;
+  }
+
+  .family-heading,
+  .quran-single-column h2 {
+    font-size: 1.75rem !important;
+    margin-bottom: 1rem !important;
+    width: 100% !important;
+    grid-column: 1 / -1 !important;
+  }
+
+  .family-hero-image,
+  .quran-hero-image {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    border-radius: 16px !important;
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+  }
+
+  .family-content,
+  .quran-content {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+
+  .family-content h3,
+  .quran-content h3 {
+    font-size: 1.1rem !important;
+    margin-top: 1.2rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+
+  .family-content .lead,
+  .quran-content .lead {
+    font-size: 0.95rem !important;
+    line-height: 1.5 !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .family-content .muted,
+  .quran-content .muted {
+    font-size: 0.9rem !important;
+    margin-bottom: 1rem !important;
+  }
+
+  .family-content .list-check,
+  .quran-content .list-check {
+    margin: 1rem 0 !important;
+    gap: 0.5rem !important;
+    padding-left: 0 !important;
+  }
+
+  .family-content .list-check li,
+  .quran-content .list-check li {
+    text-align: left !important;
+    padding-left: 1.5rem !important;
+  }
+
+  .impact-box {
+    margin: 1.2rem 0 1.5rem 0 !important;
+    padding: 1.2rem !important;
+    border-radius: 12px !important;
+  }
+
+  .impact-box + .actions-row {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  .family-content,
+  .quran-content {
+    text-align: left !important;
+  }
 }
 
 /* ================= LISTS ================= */
@@ -521,15 +807,15 @@ a{ color: inherit; text-decoration: none; }
 
 /* ================= BOXES / STATUS ================= */
 .impact-box {
-  border: 1px solid rgba(255,255,255,0.14);
-  background: rgba(222,227,238,0.06);
-  border-radius: 20px;
-  padding: 1.75rem;
-  margin: 2rem 0;
-  display: block;
-  width: 100%;
-  position: relative;
-  box-sizing: border-box;
+  border: 1px solid rgba(255,255,255,0.15) !important;
+  background: rgba(13, 23, 38, 0.4) !important;
+  border-radius: 24px !important;
+  padding: 2rem !important;
+  margin: 1.5rem 0 1.5rem 0 !important;
+  display: block !important;
+  width: 100% !important;
+  position: static !important;
+  box-sizing: border-box !important;
 }
 
 .status-pill{

@@ -8,6 +8,7 @@ export interface SystemNotification {
   title: string;
   message: string;
   read: boolean;
+  isStarred?: boolean;
   relatedEntityId?: string;
   createdAt: string;
 }
@@ -20,6 +21,7 @@ const NOTIFICATION_HEADERS = [
   "title",
   "message",
   "read",
+  "isStarred",
   "relatedEntityId",
   "createdAt",
 ];
@@ -37,7 +39,8 @@ export class NotificationRepository extends BaseRepository<SystemNotification> {
       type: String(row.type || "info"),
       title: String(row.title || ""),
       message: String(row.message || ""),
-      read: String(row.read) === "true" || row.read === true,
+      read: String(row.read).toLowerCase() === "true" || row.read === true || row.read === 1 || String(row.read) === "1",
+      isStarred: String(row.isStarred).toLowerCase() === "true" || row.isStarred === true || row.isStarred === 1 || String(row.isStarred) === "1",
       relatedEntityId: String(row.relatedEntityId || ""),
       createdAt: String(row.createdAt || new Date().toISOString()),
     };
@@ -51,7 +54,8 @@ export class NotificationRepository extends BaseRepository<SystemNotification> {
       type: notif.type,
       title: notif.title,
       message: notif.message,
-      read: notif.read,
+      read: Boolean(notif.read),
+      isStarred: Boolean(notif.isStarred),
       relatedEntityId: notif.relatedEntityId || "",
       createdAt: notif.createdAt,
     };

@@ -72,9 +72,9 @@ export default function NotificationCenterPage() {
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = async (force = false) => {
     try {
-      const res = await fetch("/api/admin/notifications");
+      const res = await fetch(`/api/admin/notifications${force ? '?force=true' : ''}`);
       const data = await res.json();
       if (data.success && Array.isArray(data.notifications)) {
         setNotifications(data.notifications);
@@ -85,7 +85,7 @@ export default function NotificationCenterPage() {
   };
 
   useEffect(() => {
-    fetchNotifications();
+    fetchNotifications(true);
 
     // SSE Realtime stream for live notifications
     let es: EventSource | null = null;
@@ -101,7 +101,7 @@ export default function NotificationCenterPage() {
             payload.type === "DONATION_RECEIVED" ||
             payload.type === "REPORT_CREATED"
           ) {
-            fetchNotifications();
+            fetchNotifications(true);
           }
         } catch (_) {}
       };

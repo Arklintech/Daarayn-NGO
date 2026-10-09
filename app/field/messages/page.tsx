@@ -85,12 +85,19 @@ export default function AgentMessagesPage() {
   useEffect(() => {
     if (!activeConvId) {
       setMessages([]);
+      setNewMessage("");
       return;
+    }
+
+    // Hydrate draft for this conversation
+    if (typeof window !== 'undefined') {
+      const savedDraft = sessionStorage.getItem(`draft_field_agent_${activeConvId}`) || "";
+      setNewMessage(savedDraft);
     }
 
     async function fetchChatMessages() {
       try {
-        const res = await fetch(`/api/field/chat?conversationId=${activeConvId}`);
+        const res = await fetch(`/api/field/chat?conversationId=${activeConvId}&force=true`);
         const data = await res.json();
         if (Array.isArray(data)) {
           const sorted = [...data].sort(
@@ -110,12 +117,44 @@ export default function AgentMessagesPage() {
       try {
         const parsed = JSON.parse(event.data);
         if (parsed.type === "CHAT_MESSAGE" && parsed.payload) {
-          if (parsed.payload.conversationId === activeConvId) {
+          const msg = parsed.payload;
+          if (msg.conversationId === activeConvId) {
             setMessages((prev) => [
-              ...prev.filter((m) => m.id !== parsed.payload.id),
-              parsed.payload,
+              ...prev.filter((m) => m.id !== msg.id),
+              msg,
             ]);
           }
+
+          // Update sidebar conversations list in real-time
+          setConversations((prev) => prev.map((conv) => {
+            if (conv.id === msg.conversationId) {
+              const isCurrent = msg.conversationId === activeConvId;
+              const unreadDelta = (!isCurrent && msg.senderRole === "Admin") ? 1 : 0;
+              return {
+                ...conv,
+                lastMessage: {
+                  text: msg.text,
+                  timestamp: msg.timestamp,
+                  senderRole: msg.senderRole,
+                },
+                unreadCountAgent: isCurrent ? 0 : (conv.unreadCountAgent || 0) + unreadDelta,
+                updatedAt: msg.timestamp,
+              };
+            }
+            return conv;
+          }));
+        } else if (parsed.type === "CONVERSATION_UPDATED" && parsed.payload) {
+          const p = parsed.payload;
+          setConversations((prev) => prev.map((conv) => {
+            if (conv.id === p.conversationId) {
+              return {
+                ...conv,
+                lastMessage: p.lastMessage || conv.lastMessage,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return conv;
+          }));
         }
       } catch (e) {
         console.warn("[FieldAgent/SSE] Event error:", e);
@@ -140,6 +179,7 @@ export default function AgentMessagesPage() {
 
       const payload = {
         conversationId: targetConvId,
+        agentId: agentData.id,
         senderId: agentData.id,
         senderRole: "Agent" as const,
         senderName: agentData.name,
@@ -147,17 +187,27 @@ export default function AgentMessagesPage() {
         timestamp: new Date().toISOString()
       };
 
-      await fetch('/api/field/chat', {
+      const res = await fetch('/api/field/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
-      const newMsg: FieldMessage = { id: `msg_${Date.now()}`, ...payload };
-      setMessages(prev => [...prev, newMsg]);
-      setNewMessage("");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.message) {
+          setMessages(prev => [...prev.filter(m => m.id !== data.message.id), data.message]);
+        }
+        setNewMessage("");
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem(`draft_field_agent_${targetConvId}`);
+        }
+      } else {
+        alert("Failed to send message. Please try again.");
+      }
     } catch (err) {
       console.error("Failed to send message:", err);
+      alert("Failed to send message. Please check connection.");
     }
   };
 
@@ -424,7 +474,13 @@ export default function AgentMessagesPage() {
                 <input 
                   type="text" 
                   value={newMessage} 
-                  onChange={e => setNewMessage(e.target.value)}
+                  onChange={e => {
+                    const val = e.target.value;
+                    setNewMessage(val);
+                    if (activeConvId && typeof window !== 'undefined') {
+                      sessionStorage.setItem(`draft_field_agent_${activeConvId}`, val);
+                    }
+                  }}
                   placeholder="Type a message..."
                   className="flex-1 bg-transparent text-[13px] text-white focus:outline-none placeholder:text-gray-600"
                 />

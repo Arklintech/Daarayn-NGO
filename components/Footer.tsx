@@ -28,8 +28,16 @@ export default function Footer() {
         .ft-link:hover { color: rgba(255,249,221,0.9); }
         .ft-small-link { color: rgba(255,255,255,0.28); text-decoration: none; font-size: 0.72rem; letter-spacing: 0.03em; transition: color 0.2s; }
         .ft-small-link:hover { color: rgba(255,255,255,0.6); }
-        .ft-credit-link { color: rgba(255,255,255,0.55); text-decoration: none; font-weight: 500; letter-spacing: 0.05em; transition: color 0.2s, opacity 0.2s; }
-        .ft-credit-link:hover { color: rgba(255,249,221,0.95); }
+        .ft-credit-link {
+          color: rgba(255,249,221,0.95);
+          text-decoration: none;
+          font-weight: 600;
+          letter-spacing: 0.12em;
+          font-family: var(--font-cinzel), 'Cinzel', Georgia, serif;
+          font-size: 0.8rem;
+          transition: color 0.2s, opacity 0.2s;
+        }
+        .ft-credit-link:hover { color: rgba(255,249,221,1); }
         .ft-credit-link:focus-visible { outline: 1px solid rgba(255,249,221,0.4); outline-offset: 3px; border-radius: 2px; }
         .footer-grid { display: grid; grid-template-columns: minmax(220px,1.5fr) 1fr 1fr 1.2fr; gap: 2.5rem; align-items: flex-start; }
         @media (max-width: 768px) {

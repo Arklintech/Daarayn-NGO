@@ -108,9 +108,10 @@ export default function LegacySections() {
 
   <!-- ================= FAMILY RELIEF ================= -->
   <section id="family" class="section-alt">
-    <div class="container two-column">
-      <div class="section-text">
-        <h2>Family Relief Program</h2>
+    <div class="container family-grid">
+      <h2 class="family-heading">Family Relief Program</h2>
+
+      <div class="family-content">
         <p class="lead">
           Example Case: A family facing overdue rent, school fee backlog, and food shortage.
         </p>
@@ -139,25 +140,34 @@ export default function LegacySections() {
         </div>
       </div>
 
-      <div class="section-media">
-        <div class="image-card glass-panel clickable-profile-card" data-target-modal="familyReliefModal">
-          <div class="image-wrapper">
-            <img src="images/family_relief.png" alt="Family Relief Assistance Kit" class="profile-image" />
-            <div class="hover-overlay">
-              <span class="hover-text-badge">📂 Open Case File</span>
-            </div>
+      <div class="image-card glass-panel clickable-profile-card family-hero-image" data-target-modal="familyReliefModal">
+        <div class="image-wrapper">
+          <img src="images/family_relief.png" alt="Family Relief Assistance Kit" class="profile-image" />
+          <div class="hover-overlay">
+            <span class="hover-text-badge">📂 Open Case File</span>
           </div>
-          <p class="image-caption">Documented distribution. Trackable impact. Repeatable model.</p>
         </div>
+        <p class="image-caption">Documented distribution. Trackable impact. Repeatable model.</p>
       </div>
     </div>
   </section>
 
   <!-- ================= QURAN ENDOWMENT ================= -->
   <section id="quran" class="section">
-    <div class="container two-column reverse">
-      <div class="section-text">
-        <h2>Qur’an Memorization Endowment</h2>
+    <div class="container quran-single-column">
+      <h2>Qur’an Memorization Endowment</h2>
+
+      <div class="image-card glass-panel clickable-profile-card quran-hero-image" data-target-modal="studentProfileModal">
+        <div class="image-wrapper">
+          <img src="images/student_profile.png" alt="Qur’an Memorization Student Profile" class="profile-image" />
+          <div class="hover-overlay">
+            <span class="hover-text-badge">📂 Open Student File</span>
+          </div>
+        </div>
+        <p class="image-caption">Verified identity. Transparent funding. Documented progress.</p>
+      </div>
+
+      <div class="quran-content">
         <p class="lead">
           Sponsor a student’s memorization journey through a structured monthly commitment.
         </p>
@@ -180,18 +190,6 @@ export default function LegacySections() {
 
         <div class="actions-row">
           <a href="/pay?amt=1500&cur=INR&cause=Quran%20Endowment" class="btn btn-ivory">Sponsor Monthly</a>
-        </div>
-      </div>
-
-      <div class="section-media">
-        <div class="image-card glass-panel clickable-profile-card" data-target-modal="studentProfileModal">
-          <div class="image-wrapper">
-            <img src="images/student_profile.png" alt="Qur'an Memorization Student Profile" class="profile-image" />
-            <div class="hover-overlay">
-              <span class="hover-text-badge">📂 Open Student File</span>
-            </div>
-          </div>
-          <p class="image-caption">Verified identity. Transparent funding. Documented progress.</p>
         </div>
       </div>
     </div>

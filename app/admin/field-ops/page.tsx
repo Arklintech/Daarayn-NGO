@@ -154,15 +154,18 @@ function FieldOperationsCenterContent() {
     };
   }, [paramAgentId]);
 
-  // Select active agent and conversation from query params (notifications action URL)
+  // Select active agent and conversation from query params (notifications action URL) or session storage
   useEffect(() => {
     if (paramAgentId) {
       setActiveAgentId(paramAgentId);
     }
     if (paramConvId) {
       setActiveConvId(paramConvId);
+      if (typeof window !== 'undefined') sessionStorage.setItem("last_field_ops_conv", paramConvId);
     } else if (paramReportId) {
-      setActiveConvId(`conv_${paramReportId}`);
+      const conv = `conv_${paramReportId}`;
+      setActiveConvId(conv);
+      if (typeof window !== 'undefined') sessionStorage.setItem("last_field_ops_conv", conv);
     }
   }, [paramAgentId, paramReportId, paramConvId]);
 
@@ -177,22 +180,48 @@ function FieldOperationsCenterContent() {
       setActiveConvId(`conv_${paramReportId}`);
       return;
     }
-    
-    const agentReports = allReports.filter(r => r.agentId === activeAgentId || (r as any).fieldAgentId === activeAgentId);
-    if (agentReports.length > 0) {
-      setActiveConvId(`conv_${agentReports[0].id}`);
-    } else {
-      setActiveConvId(`conv_${activeAgentId}_general`);
+
+    // Check if there was a saved active conversation for this agent
+    const savedAgentConv = typeof window !== 'undefined' ? sessionStorage.getItem(`last_conv_${activeAgentId}`) : null;
+    if (savedAgentConv) {
+      setActiveConvId(savedAgentConv);
+      return;
     }
+
+    // Check if agent has conversations with unread messages
+    const agentConvs = conversations.filter(c => c.agentId === activeAgentId);
+    const unreadConv = agentConvs.find(c => c.unreadCountAdmin > 0);
+    if (unreadConv) {
+      setActiveConvId(unreadConv.id);
+      return;
+    }
+
+    // Default to Operations Support Chat so direct communication with agent is prioritized
+    setActiveConvId(`conv_${activeAgentId}_general`);
   }, [activeAgentId, allReports, paramConvId, paramReportId]);
 
-  // Realtime Messages SSE stream listener for active conversation (Zero Polling)
+  // Sync draft and active conversation state
   useEffect(() => {
-    if (!activeConvId) { setMessages([]); return; }
+    if (!activeConvId) {
+      setMessages([]);
+      setNewMessage("");
+      return;
+    }
+
+    // Persist active conversation
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem("last_field_ops_conv", activeConvId);
+      if (activeAgentId) {
+        sessionStorage.setItem(`last_conv_${activeAgentId}`, activeConvId);
+      }
+      // Restore draft for this conversation
+      const savedDraft = sessionStorage.getItem(`draft_field_ops_${activeConvId}`) || "";
+      setNewMessage(savedDraft);
+    }
 
     const loadMessages = async () => {
       try {
-        const res = await fetch(`/api/field/chat?conversationId=${activeConvId}`);
+        const res = await fetch(`/api/field/chat?conversationId=${activeConvId}&force=true`);
         const data = await res.json();
         if (Array.isArray(data)) {
           const sorted = [...data].sort(
@@ -207,15 +236,47 @@ function FieldOperationsCenterContent() {
 
     loadMessages();
 
-    // EventSource SSE Listener for Chat Messages
+    // EventSource SSE Listener for Chat Messages & Realtime Sync
     const eventSource = new EventSource("/api/realtime/stream");
     eventSource.onmessage = (event) => {
       try {
         const parsed = JSON.parse(event.data);
         if (parsed.type === "CHAT_MESSAGE" && parsed.payload) {
-          if (parsed.payload.conversationId === activeConvId) {
-            setMessages(prev => [...prev.filter(m => m.id !== parsed.payload.id), parsed.payload]);
+          const msg = parsed.payload;
+          if (msg.conversationId === activeConvId) {
+            setMessages(prev => [...prev.filter(m => m.id !== msg.id), msg]);
           }
+
+          // Update conversations list state (lastMessage, unreadCountAdmin) in real time
+          setConversations(prev => prev.map(conv => {
+            if (conv.id === msg.conversationId) {
+              const isCurrent = msg.conversationId === activeConvId;
+              const unreadDelta = (!isCurrent && msg.senderRole === "Agent") ? 1 : 0;
+              return {
+                ...conv,
+                lastMessage: {
+                  text: msg.text,
+                  timestamp: msg.timestamp,
+                  senderRole: msg.senderRole,
+                },
+                unreadCountAdmin: isCurrent ? 0 : (conv.unreadCountAdmin || 0) + unreadDelta,
+                updatedAt: msg.timestamp,
+              };
+            }
+            return conv;
+          }));
+        } else if (parsed.type === "CONVERSATION_UPDATED" && parsed.payload) {
+          const p = parsed.payload;
+          setConversations(prev => prev.map(conv => {
+            if (conv.id === p.conversationId) {
+              return {
+                ...conv,
+                lastMessage: p.lastMessage || conv.lastMessage,
+                updatedAt: new Date().toISOString(),
+              };
+            }
+            return conv;
+          }));
         }
       } catch (e) {
         console.warn("[FieldChat/SSE] Event parse error:", e);
@@ -225,7 +286,7 @@ function FieldOperationsCenterContent() {
     return () => {
       eventSource.close();
     };
-  }, [activeConvId]);
+  }, [activeConvId, activeAgentId]);
 
   const activeAgent = agents.find(a => a.id === activeAgentId);
   const activeConv = conversations.find(c => c.id === activeConvId);
@@ -263,6 +324,7 @@ function FieldOperationsCenterContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           conversationId: targetConvId,
+          agentId: activeAgent.id,
           senderId: "Admin_1",
           senderRole: "Admin",
           senderName: "Ahmed Khan",
@@ -272,6 +334,9 @@ function FieldOperationsCenterContent() {
 
       if (res.ok) {
         if (!activeConvId) setActiveConvId(targetConvId);
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem(`draft_field_ops_${targetConvId}`);
+        }
         setNewMessage("");
       } else {
         alert("Failed to send message. Please try again.");
@@ -631,34 +696,33 @@ function FieldOperationsCenterContent() {
       </div>
 
       {/* ── HEADER ── */}
-      <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex flex-col sm:flex-row sm:items-center justify-between flex-shrink-0 mb-2 gap-3 min-w-0`}>
-        <div>
+      <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex flex-col sm:flex-row sm:items-center justify-between flex-shrink-0 mb-2 gap-2 min-w-0 w-full`}>
+        <div className="min-w-0">
           <h1 className="text-sm sm:text-base font-bold text-white tracking-wide leading-tight">Field Operations Center</h1>
-          <p className="text-xs text-gray-400 mt-0.5">Manage field reports, communicate with field agents and track real-time progress.</p>
+          <p className="text-xs text-gray-400 mt-0.5 truncate sm:whitespace-normal">Manage field reports, communicate with field agents and track real-time progress.</p>
         </div>
-        <div className="flex items-center gap-2.5 w-full md:w-auto">
-          <div className="relative w-full max-w-sm">
+        <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 min-w-[140px] sm:w-64 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
             <input type="text" placeholder="Search reports, agents, locations..."
-              className="w-full bg-black/40 border border-white/[0.08] rounded-lg pl-8 pr-14 py-1.5 text-xs text-white focus:outline-none focus:border-luxury-gold/50 placeholder:text-gray-500 transition" />
-            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 pointer-events-none">
-              <kbd className="bg-white/[0.08] border border-white/[0.12] rounded px-1.5 py-0.5 text-[9px] font-mono text-gray-400 shadow-sm leading-none">⌘</kbd>
-              <kbd className="bg-white/[0.08] border border-white/[0.12] rounded px-1.5 py-0.5 text-[9px] font-mono text-gray-400 shadow-sm leading-none">K</kbd>
+              className="w-full bg-black/40 border border-white/[0.08] rounded-lg pl-8 pr-12 py-1.5 text-xs text-white focus:outline-none focus:border-luxury-gold/50 placeholder:text-gray-500 transition" />
+            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5 pointer-events-none">
+              <kbd className="bg-white/[0.08] border border-white/[0.12] rounded px-1 py-0.5 text-[8px] font-mono text-gray-400 shadow-sm leading-none">⌘</kbd>
+              <kbd className="bg-white/[0.08] border border-white/[0.12] rounded px-1 py-0.5 text-[8px] font-mono text-gray-400 shadow-sm leading-none">K</kbd>
             </div>
           </div>
-          <button onClick={handleAIInsights} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/20 active:scale-95 transition shrink-0">
-            <Sparkles className="w-3.5 h-3.5" /> AI Insights
+          <button onClick={handleAIInsights} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/20 active:scale-95 transition shrink-0">
+            <Sparkles className="w-3.5 h-3.5" /> AI
           </button>
           <button onClick={() => router.push('/admin/notifications')} className="relative p-2 text-gray-400 hover:text-white transition shrink-0" title="View Notifications">
             <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 border border-[#020704] rounded-full" />
+            {totalUnread > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 border border-[#020704] rounded-full" />}
           </button>
         </div>
       </div>
 
-
-      {/* ── STAT CARDS ── */}
-      <div className={`${mobileView === 'agents' ? 'flex' : 'hidden'} md:flex md:grid md:grid-cols-3 lg:grid-cols-6 gap-2 mb-2 flex-shrink-0 min-w-0 overflow-x-auto md:overflow-visible custom-scrollbar pb-1.5 md:pb-0 snap-x`}>
+      {/* ── STAT CARDS (Responsive Grid Reflow: 1-col on ultra-compact 280px, 2-col on mobile 320px-430px, 3-col on tablet, 6-col on desktop) ── */}
+      <div className={`${mobileView === 'agents' ? 'grid' : 'hidden'} md:grid grid-cols-1 min-[320px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-2 flex-shrink-0 min-w-0 w-full`}>
         {([
           { label:'Field Agents',        value: agents.length || 182, sub:'Active',           color:'blue',   Icon: Users },
           { label:'Total Reports',       value: allReports.length || 2842, sub:'All Time',    color:'emerald',Icon: FileText },
@@ -667,7 +731,7 @@ function FieldOperationsCenterContent() {
           { label:'Urgent Reports',      value: urgentCount || 3,     sub:'High Priority',    color:'red',    Icon: AlertCircle },
           { label:'Verified & Approved', value: verifiedCount || 1256,sub:'This Year',        color:'emerald',Icon: CheckCircle },
         ] as const).map(({ label, value, sub, color, Icon }) => (
-          <div key={label} className={`shrink-0 md:shrink md:snap-none snap-start min-w-[140px] md:min-w-0 bg-[#0a0d0b] border rounded-lg p-2 flex items-center gap-2 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
+          <div key={label} className={`w-full min-w-0 bg-[#0a0d0b] border rounded-lg p-2 flex items-center gap-2 ${color === 'amber' ? 'border-[#b8860b]/30' : 'border-white/[0.07]'}`}>
             <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${
               color==='blue'   ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' :
               color==='emerald'? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' :
@@ -677,10 +741,10 @@ function FieldOperationsCenterContent() {
               <Icon className="w-3.5 h-3.5" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs text-gray-400 truncate leading-none mb-1">{label}</p>
+              <p className="text-[11px] text-gray-400 truncate leading-none mb-1">{label}</p>
               <div className="flex items-baseline gap-1 overflow-hidden leading-none">
-                <span className="text-sm font-bold text-white truncate">{value.toLocaleString()}</span>
-                <span className={`text-[10px] font-semibold truncate ${
+                <span className="text-xs sm:text-sm font-bold text-white truncate">{value.toLocaleString()}</span>
+                <span className={`text-[9px] sm:text-[10px] font-semibold truncate ${
                   color==='blue' ? 'text-blue-400' : color==='emerald' ? 'text-emerald-400' :
                   color==='amber' ? 'text-[#b8860b]' : 'text-red-400'
                 }`}>{sub}</span>
@@ -808,33 +872,67 @@ function FieldOperationsCenterContent() {
             <>
               {/* Conversation Header & Switcher */}
               <div className="px-4 pt-3 pb-0 border-b border-white/[0.06] flex-shrink-0">
-                {/* Thread Switcher Bar */}
+                {/* Thread Switcher Bar with Real-Time Unread Badges */}
                 <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-2 no-scrollbar">
-                  <button
-                    onClick={() => setActiveConvId(`conv_${activeAgent?.id}_general`)}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
-                      (activeConvId || `conv_${activeAgent?.id}_general`) === `conv_${activeAgent?.id}_general`
-                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
-                        : 'bg-white/[0.03] text-gray-400 hover:text-white border border-white/[0.06]'
-                    }`}
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    Operations Support Chat
-                  </button>
-                  {allReports.filter(r => r.agentId === activeAgentId || (r as any).fieldAgentId === activeAgentId).map(rep => (
-                    <button
-                      key={rep.id}
-                      onClick={() => setActiveConvId(`conv_${rep.id}`)}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
-                        activeConvId === `conv_${rep.id}`
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
-                          : 'bg-white/[0.03] text-gray-400 hover:text-white border border-white/[0.06]'
-                      }`}
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      Report: {rep.title?.slice(0, 18) || rep.id}...
-                    </button>
-                  ))}
+                  {(() => {
+                    const genConvId = `conv_${activeAgent?.id}_general`;
+                    const genConv = conversations.find(c => c.id === genConvId);
+                    const genUnread = genConv?.unreadCountAdmin || 0;
+                    const isGenActive = (activeConvId || genConvId) === genConvId;
+                    return (
+                      <button
+                        onClick={() => {
+                          setActiveConvId(genConvId);
+                          if (typeof window !== 'undefined') {
+                            sessionStorage.setItem("last_field_ops_conv", genConvId);
+                            if (activeAgent?.id) sessionStorage.setItem(`last_conv_${activeAgent.id}`, genConvId);
+                          }
+                          setConversations(prev => prev.map(c => c.id === genConvId ? { ...c, unreadCountAdmin: 0 } : c));
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                          isGenActive
+                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
+                            : 'bg-white/[0.03] text-gray-400 hover:text-white border border-white/[0.06]'
+                        }`}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Operations Support Chat</span>
+                        {genUnread > 0 && (
+                          <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold animate-pulse">{genUnread}</span>
+                        )}
+                      </button>
+                    );
+                  })()}
+                  {allReports.filter(r => r.agentId === activeAgentId || (r as any).fieldAgentId === activeAgentId).map(rep => {
+                    const repConvId = `conv_${rep.id}`;
+                    const repConv = conversations.find(c => c.id === repConvId);
+                    const repUnread = repConv?.unreadCountAdmin || 0;
+                    const isRepActive = activeConvId === repConvId;
+                    return (
+                      <button
+                        key={rep.id}
+                        onClick={() => {
+                          setActiveConvId(repConvId);
+                          if (typeof window !== 'undefined') {
+                            sessionStorage.setItem("last_field_ops_conv", repConvId);
+                            if (activeAgent?.id) sessionStorage.setItem(`last_conv_${activeAgent.id}`, repConvId);
+                          }
+                          setConversations(prev => prev.map(c => c.id === repConvId ? { ...c, unreadCountAdmin: 0 } : c));
+                        }}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition flex items-center gap-1.5 shrink-0 ${
+                          isRepActive
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                            : 'bg-white/[0.03] text-gray-400 hover:text-white border border-white/[0.06]'
+                        }`}
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Report: {rep.title?.slice(0, 18) || rep.id}...</span>
+                        {repUnread > 0 && (
+                          <span className="bg-red-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold animate-pulse">{repUnread}</span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
 
                     {/* Rich Header for Reports */}
@@ -979,7 +1077,14 @@ function FieldOperationsCenterContent() {
               <div className="px-4 py-3 bg-[#0a0d0b] flex-shrink-0 border-t border-white/[0.06]">
                 <form onSubmit={handleSend}
                   className="flex items-center gap-2 bg-[#0c100d] border border-white/[0.08] rounded-lg px-3 py-1.5 focus-within:border-emerald-500/50 transition-colors">
-                  <input type="text" value={newMessage} onChange={e => setNewMessage(e.target.value)}
+                  <input type="text" value={newMessage}
+                    onChange={e => {
+                      const val = e.target.value;
+                      setNewMessage(val);
+                      if (activeConvId && typeof window !== 'undefined') {
+                        sessionStorage.setItem(`draft_field_ops_${activeConvId}`, val);
+                      }
+                    }}
                     placeholder="Type your message..."
                     className="flex-1 bg-transparent text-xs text-white focus:outline-none placeholder:text-gray-500 py-1" />
                   <div className="flex items-center gap-1 text-gray-400">

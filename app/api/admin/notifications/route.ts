@@ -4,7 +4,9 @@ import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 
 export async function GET(req: NextRequest) {
   try {
-    const all = await notificationRepository.getAll();
+    const { searchParams } = new URL(req.url);
+    const force = searchParams.get("force") === "true";
+    const all = await notificationRepository.getAll(force);
     const mapped = all.map((n) => {
       const typeStr = (n.type || "").toLowerCase();
       const titleStr = (n.title || "").toLowerCase();
@@ -33,7 +35,7 @@ export async function GET(req: NextRequest) {
           ? "/admin/donations"
           : "/admin",
         priority: (titleStr.includes("urgent") || typeStr.includes("urgent") ? "high" : "normal") as any,
-        isStarred: false,
+        isStarred: Boolean(n.isStarred),
       };
     });
     const sorted = mapped.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -50,11 +52,12 @@ export async function PATCH(req: NextRequest) {
     const { id, read, isStarred, markAllRead } = body;
 
     if (markAllRead) {
-      const all = await notificationRepository.getAll();
+      const all = await notificationRepository.getAll(true);
       const unread = all.filter((n) => !n.read);
       for (const n of unread) {
         await notificationRepository.update(n.id, { read: true });
       }
+      notificationRepository.invalidateCache();
       realtimeBroadcaster.broadcast("NOTIFICATION_UPDATED", { markAllRead: true });
       return NextResponse.json({ success: true, updatedCount: unread.length });
     }
@@ -65,8 +68,10 @@ export async function PATCH(req: NextRequest) {
 
     const updates: Partial<SystemNotification> = {};
     if (typeof read === "boolean") updates.read = read;
+    if (typeof isStarred === "boolean") updates.isStarred = isStarred;
 
     await notificationRepository.update(id, updates);
+    notificationRepository.invalidateCache();
 
     realtimeBroadcaster.broadcast("NOTIFICATION_UPDATED", { id, ...updates, isStarred });
     return NextResponse.json({ success: true });
