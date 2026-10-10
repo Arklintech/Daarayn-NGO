@@ -1042,6 +1042,14 @@ a{ color: inherit; text-decoration: none; }
   width: 100%;
 }
 
+/* UPI QR placement: right column on desktop, inside the form (above Payment Proof) on mobile */
+.qr-mobile{ display: none !important; }
+
+@media (max-width: 1024px){
+  .qr-mobile{ display: flex !important; }
+  .qr-desktop{ display: none !important; }
+}
+
 .donate-qr img{
   border-radius: 18px;
   border: 1px solid rgba(255,255,255,0.22);

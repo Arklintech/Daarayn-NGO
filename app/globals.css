@@ -158,3 +158,51 @@ body {
   animation: pulse-ivory 3s infinite;
 }
 
+
+/* Brand light sweep (navbar + footer): a soft ivory band glides across the logo and name, then rests */
+@keyframes brand-sweep {
+  0%   { background-position: 150% 0; }
+  100% { background-position: -50% 0; }
+}
+
+.brand-sweep-text {
+  color: #fff;
+  background: linear-gradient(100deg, #fff 0%, #fff 42%, #E9D9A6 48%, #FFF9DD 50%, #E9D9A6 52%, #fff 58%, #fff 100%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: brand-sweep 7s linear infinite;
+  animation-delay: 0.35s;
+}
+
+/* Wrap the logo <img>; set --logo-src to the same image so the band only lights the emblem's strokes */
+.brand-sweep-logo {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+}
+.brand-sweep-logo > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+.brand-sweep-logo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 42%, rgba(233, 217, 166, 0.95) 50%, transparent 58%);
+  background-size: 250% 100%;
+  animation: brand-sweep 7s linear infinite;
+  -webkit-mask: var(--logo-src) center / contain no-repeat;
+  mask: var(--logo-src) center / contain no-repeat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-sweep-text,
+  .brand-sweep-logo::after { animation: none; }
+  .brand-sweep-logo::after { display: none; }
+  .brand-sweep-text { background: none; -webkit-text-fill-color: #fff; }
+}

@@ -2,8 +2,9 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IndianRupee, User, Mail, UploadCloud, CheckCircle2, ShieldCheck, FileImage, Loader2, ArrowRight, Heart, Stethoscope, Building2, BookOpen, GraduationCap, Droplets, Baby, AlertTriangle, Globe2 } from 'lucide-react';
+import { IndianRupee, User, Mail, UploadCloud, CheckCircle2, ShieldCheck, FileImage, Loader2, Check, ChevronDown, Sparkles } from 'lucide-react';
 import DonationSuccess from './DonationSuccess';
+import { getCauseMeta } from './QuickDonationRibbon';
 
 // Animation variants
 const containerVariants = {
@@ -31,19 +32,12 @@ const InputWrapper = ({ icon: Icon, children, label, required }: any) => (
 // Safe string normalization helper
 const normStr = (s?: string) => (s || '').toLowerCase().trim().replace(/[-_]/g, ' ').replace(/\s+/g, ' ');
 
-// Map common names to icons
-const getIconForCause = (title?: string) => {
-  const t = normStr(title);
-  if (t.includes('medical') || t.includes('health')) return Stethoscope;
-  if (t.includes('masjid') || t.includes('mosque')) return Building2;
-  if (t.includes('quran') || t.includes('endowment')) return BookOpen;
-  if (t.includes('education') || t.includes('school')) return GraduationCap;
-  if (t.includes('water')) return Droplets;
-  if (t.includes('orphan')) return Baby;
-  if (t.includes('emergency') || t.includes('relief')) return AlertTriangle;
-  if (t.includes('family')) return Heart;
-  return Globe2;
-};
+const isGeneralCause = (c: any) => c.id === 'general' || normStr(c.name || c.title).startsWith('general');
+
+// Display name + subtitle for a cause row (submission still uses the full cause name)
+const getCauseLabel = (c: any) => isGeneralCause(c)
+  ? { name: 'General Donation', desc: 'Where Most Needed' }
+  : { name: c.name || c.title || 'Cause', desc: c.category };
 
 interface DonateFormProps {
   initialAmount?: string;
@@ -62,10 +56,28 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
   
   const [causes, setCauses] = useState<any[]>([]);
   const [selectedCausesList, setSelectedCausesList] = useState<string[]>([]);
-  
+  const [isCauseOpen, setIsCauseOpen] = useState(false);
+
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const causeRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!isCauseOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (causeRef.current && !causeRef.current.contains(event.target as Node)) setIsCauseOpen(false);
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsCauseOpen(false);
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isCauseOpen]);
 
   useEffect(() => {
     async function loadCauses() {
@@ -283,7 +295,7 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
           </span>
         </motion.div>
       ) : (
-        <motion.div variants={itemVariants} className="space-y-3">
+        <motion.div variants={itemVariants} className="space-y-3" style={{ position: 'relative', zIndex: 30 }}>
         <div>
           <h3 style={{ fontSize: '1.1rem', color: '#fff', fontFamily: 'var(--font-playfair)', marginBottom: '4px' }}>Choose Where Your Contribution Goes</h3>
           <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', lineHeight: '1.4' }}>
@@ -292,53 +304,119 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '12px', marginTop: '1rem' }}>
-          {causes.map((cause) => {
-            const isSelected = selectedCausesList.includes(cause.id);
-            const causeTitle = cause.name || cause.title || 'Cause';
-            const Icon = getIconForCause(causeTitle);
-            
-            return (
-              <motion.div
-                key={cause.id}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => toggleCause(cause.id)}
+        {(() => {
+          const selected = causes.filter(c => selectedCausesList.includes(c.id));
+          const first = selected[0];
+          const triggerLabel = selected.length === 0
+            ? 'Select a cause'
+            : selected.length === 1 ? getCauseLabel(first).name : `${selected.length} causes selected`;
+          const triggerMeta = getCauseMeta(selected.length === 1 ? getCauseLabel(first).name : 'general');
+          const TriggerIcon = triggerMeta.icon;
+
+          return (
+            <div ref={causeRef} style={{ position: 'relative', marginTop: '1rem' }}>
+              <button
+                type="button"
+                onClick={() => setIsCauseOpen(prev => !prev)}
+                aria-haspopup="listbox"
+                aria-expanded={isCauseOpen}
+                aria-label="Select Cause"
                 style={{
-                  background: isSelected ? 'rgba(255, 249, 221, 0.08)' : 'rgba(255,255,255,0.02)',
-                  border: `1px solid ${isSelected ? 'var(--ivory-light)' : 'rgba(255,255,255,0.05)'}`,
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  padding: '10px 14px',
+                  background: isCauseOpen ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${isCauseOpen ? 'rgba(212, 175, 55, 0.45)' : 'rgba(255,255,255,0.1)'}`,
                   borderRadius: '12px',
-                  padding: '12px',
+                  color: '#fff',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  position: 'relative',
-                  overflow: 'hidden'
+                  textAlign: 'left',
+                  transition: 'all 0.2s ease'
                 }}
               >
-                {isSelected && (
-                  <div style={{ position: 'absolute', top: 0, right: 0, width: '40px', height: '40px', background: 'radial-gradient(circle at top right, var(--ivory-light), transparent)', opacity: 0.2 }} />
-                )}
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <div style={{ 
-                    width: '32px', height: '32px', borderRadius: '8px', 
-                    background: isSelected ? 'rgba(255, 249, 221, 0.15)' : 'rgba(255,255,255,0.05)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                  }}>
-                    <Icon size={18} style={{ color: isSelected ? '#C9A24B' : 'rgba(255,255,255,0.7)', flexShrink: 0 }} />
-                  </div>
-                  <span style={{ 
-                    fontSize: '0.9rem', 
-                    fontWeight: isSelected ? '600' : '400', 
-                    color: isSelected ? '#fff' : 'rgba(255,255,255,0.8)' 
-                  }}>
-                    {cause.name}
+                <span
+                  className="daarayn-dropdown-item-icon"
+                  style={{ background: triggerMeta.bg, color: triggerMeta.color }}
+                >
+                  <TriggerIcon size={15} />
+                </span>
+                <span style={{ display: 'flex', flexDirection: 'column', gap: '2px', flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#FFF9DD', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {triggerLabel}
                   </span>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                  {selected.length === 1 && getCauseLabel(first).desc && (
+                    <span style={{ fontSize: '0.75rem', color: 'rgba(212, 175, 55, 0.85)' }}>{getCauseLabel(first).desc}</span>
+                  )}
+                </span>
+                <ChevronDown size={18} className={`daarayn-ribbon-trigger-chevron ${isCauseOpen ? 'open' : ''}`} />
+              </button>
+
+              <AnimatePresence>
+                {isCauseOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                    className="daarayn-custom-dropdown-container"
+                    style={{ left: 0, right: 0 }}
+                    role="listbox"
+                    aria-multiselectable="true"
+                  >
+                    <div className="daarayn-dropdown-header">
+                      <div className="daarayn-dropdown-header-left">
+                        <Sparkles size={11} className="text-[#D4AF37]" />
+                        <span className="daarayn-dropdown-header-title">Direct Your Contribution</span>
+                      </div>
+                      <span className="daarayn-dropdown-header-badge">100% Policy</span>
+                    </div>
+
+                    <div className="daarayn-dropdown-list">
+                      {causes.map((cause) => {
+                        const isSelected = selectedCausesList.includes(cause.id);
+                        const label = getCauseLabel(cause);
+                        const meta = getCauseMeta(label.name);
+                        const Icon = meta.icon;
+
+                        return (
+                          <button
+                            key={cause.id}
+                            type="button"
+                            role="option"
+                            aria-selected={isSelected}
+                            className={`daarayn-dropdown-item ${isSelected ? 'selected' : ''}`}
+                            onClick={() => toggleCause(cause.id)}
+                          >
+                            <div
+                              className="daarayn-dropdown-item-icon"
+                              style={{
+                                background: isSelected ? 'rgba(212, 175, 55, 0.25)' : meta.bg,
+                                color: isSelected ? '#FFF9DD' : meta.color
+                              }}
+                            >
+                              <Icon size={15} />
+                            </div>
+                            <div className="daarayn-dropdown-item-text">
+                              <span className="daarayn-dropdown-item-name">{label.name}</span>
+                              {label.desc && <span className="daarayn-dropdown-item-desc">{label.desc}</span>}
+                            </div>
+                            {isSelected && (
+                              <div className="daarayn-dropdown-item-check">
+                                <Check size={12} strokeWidth={3} />
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          );
+        })()}
       </motion.div>
       )}
 
@@ -379,6 +457,48 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
           />
         </InputWrapper>
       </div>
+
+      {/* UPI QR — mobile only, shown right before the payment proof upload (desktop shows it in the right column) */}
+      <motion.div variants={itemVariants} className="glass-panel qr-mobile" style={{
+        width: '100%',
+        maxWidth: '340px',
+        margin: '0 auto',
+        padding: '1.5rem',
+        flexDirection: 'column',
+        alignItems: 'center',
+        boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)',
+        borderRadius: '20px',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Subtle top glow */}
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'linear-gradient(90deg, transparent, var(--ivory-light), transparent)', opacity: 0.5 }} />
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#2ecc71', background: 'rgba(46, 204, 113, 0.1)', padding: '6px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, marginBottom: '1.25rem' }}>
+          <ShieldCheck size={14} />
+          Verified Secure UPI Payment
+        </div>
+
+        <div style={{
+          background: '#fff',
+          padding: '12px',
+          borderRadius: '12px',
+          marginBottom: '1rem',
+          boxShadow: '0 8px 20px rgba(0,0,0,0.3)'
+        }}>
+          <img src="/images/upi-qr.png" alt="UPI QR Code" style={{ width: '100%', maxWidth: '200px', display: 'block' }} />
+        </div>
+
+        <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.9rem', marginBottom: '0.75rem', textAlign: 'center', fontWeight: 500 }}>
+          Scan to pay using any UPI app
+        </p>
+
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', opacity: 0.7 }}>
+          <span style={{ fontSize: '0.75rem', padding: '3px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>GPay</span>
+          <span style={{ fontSize: '0.75rem', padding: '3px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>PhonePe</span>
+          <span style={{ fontSize: '0.75rem', padding: '3px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)' }}>Paytm</span>
+        </div>
+      </motion.div>
 
       <motion.div variants={itemVariants} style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
         <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.85)', fontWeight: 500, letterSpacing: '0.3px', display: 'flex', gap: '4px' }}>

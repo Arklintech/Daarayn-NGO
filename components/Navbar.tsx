@@ -18,7 +18,7 @@ export default function Navbar() {
   const navBg = useTransform(scrollY, [0, 100], ['rgba(1, 21, 51, 0.75)', 'rgba(1, 21, 51, 0.98)']);
   const navBlur = useTransform(scrollY, [0, 100], ['blur(12px)', 'blur(24px)']);
   const navShadow = useTransform(scrollY, [0, 100], ['0 8px 24px rgba(0, 0, 0, 0.15)', '0 16px 36px rgba(0, 0, 0, 0.4)']);
-  const logoScale = useTransform(scrollY, [0, 100], [1.15, 1.0]);
+  const logoScale = useTransform(scrollY, [0, 100], [1.08, 0.95]);
 
   // Keep track of hash for active state
   useEffect(() => {
@@ -81,27 +81,31 @@ export default function Navbar() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
-            style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
           >
-            <motion.img
-              style={{ scale: logoScale, transformOrigin: 'center center', display: 'block' }}
-              src="/daarayn-logo-transparent.png"
-              alt="Daarayn Logo"
-              width={52}
-              height={52}
-              className="w-[48px] h-[48px] lg:w-[52px] lg:h-[52px]"
-              onError={(e: any) => { e.currentTarget.src = '/brand logo .png' }}
-            />
+            {/* PNG has wide transparent padding: render large and pull in with negative margins so the mark reads big without growing the bar */}
+            <motion.span
+              className="brand-sweep-logo w-[74px] h-[74px] lg:w-[84px] lg:h-[84px]"
+              style={{ scale: logoScale, transformOrigin: 'center center', margin: '-14px -6px -14px -12px', ['--logo-src' as any]: 'url("/daarayn-logo-transparent.png")' }}
+            >
+              <img
+                src="/daarayn-logo-transparent.png"
+                alt="Daarayn Logo"
+                width={84}
+                height={84}
+                onError={(e: any) => { e.currentTarget.src = '/brand logo .png' }}
+              />
+            </motion.span>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '14px', fontWeight: 500, letterSpacing: '4px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 8px rgba(255,255,255,0.1)', marginRight: '-4px' }}>
+              <span className="brand-sweep-text text-[18px] lg:text-[21px]" style={{ fontFamily: 'var(--font-cinzel)', fontWeight: 700, letterSpacing: '4px', lineHeight: 1.1, marginRight: '-4px' }}>
                 DAARAYN
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
-                <span style={{ display: 'block', width: '8px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
-                <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '8px', fontWeight: 300, letterSpacing: '1.5px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '4px' }}>
+                <span style={{ display: 'block', width: '10px', height: '1px', background: 'rgba(255,249,221,0.6)', flexShrink: 0 }} />
+                <span className="text-[9.5px] lg:text-[10.5px]" style={{ fontFamily: 'var(--font-cinzel)', fontWeight: 400, letterSpacing: '2px', color: '#FFF9DD', textTransform: 'uppercase' }}>
                   FOUNDATION
                 </span>
-                <span style={{ display: 'block', width: '8px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
+                <span style={{ display: 'block', width: '10px', height: '1px', background: 'rgba(255,249,221,0.6)', flexShrink: 0 }} />
               </div>
             </div>
           </motion.div>

@@ -56,22 +56,24 @@ export default function Footer() {
           {/* Brand */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }} className="footer-brand-col">
             {/* Logo row */}
-            <div className="brand-logo-row" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-              <img
-                src="/email logo/daarayn-emblem.png.png"
-                alt="Daarayn Logo"
-                style={{ width: '64px', height: '64px', objectFit: 'contain', mixBlendMode: 'screen', display: 'block', flexShrink: 0 }}
-              />
+            <div className="brand-logo-row" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              {/* Emblem PNG has wide transparent padding: render large and pull in with negative margins */}
+              <span
+                className="brand-sweep-logo"
+                style={{ width: '100px', height: '100px', margin: '-18px -8px -18px -16px', ['--logo-src' as any]: 'url("/email logo/daarayn-emblem.png.png")' }}
+              >
+                <img src="/email logo/daarayn-emblem.png.png" alt="Daarayn Logo" />
+              </span>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                <span style={{ fontFamily: 'var(--font-cinzel), "Cinzel", Georgia, serif', fontSize: '24px', fontWeight: 600, letterSpacing: '10px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 10px rgba(255,255,255,0.1)' }}>
+                <span className="brand-sweep-text" style={{ fontFamily: 'var(--font-cinzel), "Cinzel", Georgia, serif', fontSize: '28px', fontWeight: 700, letterSpacing: '10px', lineHeight: 1.1 }}>
                   DAARAYN
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px' }}>
-                  <span style={{ display: 'block', width: '24px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
-                  <span style={{ fontFamily: 'var(--font-cinzel), "Cinzel", Georgia, serif', fontSize: '10px', fontWeight: 300, letterSpacing: '2.5px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '5px' }}>
+                  <span style={{ display: 'block', width: '28px', height: '1px', background: 'rgba(255,249,221,0.6)', flexShrink: 0 }} />
+                  <span style={{ fontFamily: 'var(--font-cinzel), "Cinzel", Georgia, serif', fontSize: '12px', fontWeight: 400, letterSpacing: '3px', color: '#FFF9DD', textTransform: 'uppercase' }}>
                     FOUNDATION
                   </span>
-                  <span style={{ display: 'block', width: '24px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
+                  <span style={{ display: 'block', width: '28px', height: '1px', background: 'rgba(255,249,221,0.6)', flexShrink: 0 }} />
                 </div>
               </div>
             </div>

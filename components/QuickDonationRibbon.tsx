@@ -41,7 +41,7 @@ const DEFAULT_CAUSES_LIST = [
   { id: 'healthcare-medical-fund', name: 'Healthcare & Medical Aid Fund', category: 'Healthcare' }
 ];
 
-function getCauseMeta(title: string) {
+export function getCauseMeta(title: string) {
   const t = (title || '').toLowerCase();
   if (t.includes('water') || t.includes('well')) {
     return { icon: Droplets, color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.12)' };
