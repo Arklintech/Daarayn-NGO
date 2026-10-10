@@ -111,14 +111,24 @@ export default function LegacySections() {
 
   <!-- ================= FAMILY RELIEF ================= -->
   <section id="family" class="section-alt">
-    <div class="container family-grid">
-      <h2 class="family-heading">Family Relief Program</h2>
+    <div class="container quran-single-column">
+      <h2>Family Relief Program</h2>
 
-      <div class="family-content">
-        <p class="lead">
-          Example Case: A family facing overdue rent, school fee backlog, and food shortage.
-        </p>
+      <p class="lead section-intro">
+        Example Case: A family facing overdue rent, school fee backlog, and food shortage.
+      </p>
 
+      <div class="image-card glass-panel clickable-profile-card quran-hero-image" data-target-modal="familyReliefModal">
+        <div class="image-wrapper">
+          <img src="images/family_relief.png" alt="Family Relief Assistance Kit" class="profile-image" />
+          <div class="hover-overlay">
+            <span class="hover-text-badge">📂 Open Case File</span>
+          </div>
+        </div>
+        <p class="image-caption">Documented distribution. Trackable impact. Repeatable model.</p>
+      </div>
+
+      <div class="quran-content">
         <p class="muted">
           Your contribution funds a verified relief bundle with full proof and accountability.
         </p>
@@ -142,16 +152,6 @@ export default function LegacySections() {
           <a href="/pay?cause=Family%20Relief" class="btn btn-ivory">Fund This Case</a>
         </div>
       </div>
-
-      <div class="image-card glass-panel clickable-profile-card family-hero-image" data-target-modal="familyReliefModal">
-        <div class="image-wrapper">
-          <img src="images/family_relief.png" alt="Family Relief Assistance Kit" class="profile-image" />
-          <div class="hover-overlay">
-            <span class="hover-text-badge">📂 Open Case File</span>
-          </div>
-        </div>
-        <p class="image-caption">Documented distribution. Trackable impact. Repeatable model.</p>
-      </div>
     </div>
   </section>
 
@@ -159,6 +159,10 @@ export default function LegacySections() {
   <section id="quran" class="section">
     <div class="container quran-single-column">
       <h2>Qur’an Memorization Endowment</h2>
+
+      <p class="lead section-intro">
+        Sponsor a student’s memorization journey through a structured monthly commitment.
+      </p>
 
       <div class="image-card glass-panel clickable-profile-card quran-hero-image" data-target-modal="studentProfileModal">
         <div class="image-wrapper">
@@ -171,10 +175,6 @@ export default function LegacySections() {
       </div>
 
       <div class="quran-content">
-        <p class="lead">
-          Sponsor a student’s memorization journey through a structured monthly commitment.
-        </p>
-
         <h3>Example Student: Arham (Age 12)</h3>
         <p class="muted">
           Monthly commitment: <strong class="ivory">₹1,500</strong> — meals, books, and teacher support with monthly
@@ -293,14 +293,14 @@ export default function LegacySections() {
   <!-- ================= DONATE ================= -->
   <section id="donate" class="donate-section">
     <div class="container donate-container">
-      <div class="donate-text">
+      <div class="donate-text" style="grid-column: 1 / -1;">
         <h2>Contribute via UPI</h2>
         <p class="lead">
-          Scan the QR code and submit the form to generate a tracking entry for your contribution.
+          Open the contribution form, pay via UPI, and submit the form to generate a tracking entry for your contribution.
         </p>
 
         <ol class="donate-steps">
-          <li>Scan the QR code using PhonePe / GPay / Paytm etc.</li>
+          <li>Open the contribution form and pay using PhonePe / GPay / Paytm etc.</li>
           <li>In remarks write: “Daarayn Aid — [Program Name]”.</li>
           <li>Submit the form with your name and payment screenshot.</li>
         </ol>
@@ -314,11 +314,6 @@ export default function LegacySections() {
         <p class="tiny-note">
           You’ll receive your <strong>tracking ID</strong> via WhatsApp/email within 24–48 hours.
         </p>
-      </div>
-
-      <div class="donate-qr">
-        <img src="images/upi-qr.png" alt="UPI QR Code" />
-        <p class="image-caption">Scan to contribute.</p>
       </div>
     </div>
   </section>

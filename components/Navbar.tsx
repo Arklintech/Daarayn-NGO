@@ -83,25 +83,25 @@ export default function Navbar() {
             transition={{ duration: 0.8, ease: 'easeOut' }}
             style={{ display: 'flex', alignItems: 'center', gap: '10px' }}
           >
-            <motion.img 
+            <motion.img
               style={{ scale: logoScale, transformOrigin: 'center center', display: 'block' }}
-              src="/daarayn-logo-transparent.png" 
-              alt="Daarayn Logo" 
-              width={46} 
-              height={46}
-              className="w-[42px] h-[42px] lg:w-[48px] lg:h-[48px]"
+              src="/daarayn-logo-transparent.png"
+              alt="Daarayn Logo"
+              width={52}
+              height={52}
+              className="w-[48px] h-[48px] lg:w-[52px] lg:h-[52px]"
               onError={(e: any) => { e.currentTarget.src = '/brand logo .png' }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '16px', fontWeight: 500, letterSpacing: '7px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 8px rgba(255,255,255,0.1)' }} className="lg:text-[18px] xl:text-[20px]">
+              <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '14px', fontWeight: 500, letterSpacing: '4px', color: '#fff', lineHeight: 1.1, textShadow: '0 2px 8px rgba(255,255,255,0.1)', marginRight: '-4px' }}>
                 DAARAYN
               </span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }} className="lg:gap-[5px]">
-                <span style={{ display: 'block', width: '10px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[14px]" />
-                <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '8px', fontWeight: 300, letterSpacing: '1.2px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }} className="lg:text-[9px]">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '3px' }}>
+                <span style={{ display: 'block', width: '8px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
+                <span style={{ fontFamily: 'var(--font-cinzel)', fontSize: '8px', fontWeight: 300, letterSpacing: '1.5px', color: 'rgba(255, 249, 221, 0.9)', textTransform: 'uppercase' }}>
                   FOUNDATION
                 </span>
-                <span style={{ display: 'block', width: '10px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} className="lg:w-[14px]" />
+                <span style={{ display: 'block', width: '8px', height: '1px', background: 'rgba(255,249,221,0.5)', flexShrink: 0 }} />
               </div>
             </div>
           </motion.div>

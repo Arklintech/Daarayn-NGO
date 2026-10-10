@@ -370,12 +370,12 @@ a{ color: inherit; text-decoration: none; }
 
 /* ================= SECTIONS ================= */
 .section{
-  padding: 100px 0;
+  padding: 56px 0;
   background: var(--black-soft);
 }
 
 .section-alt{
-  padding: 100px 0;
+  padding: 56px 0;
   background: var(--black);
   border-top: 1px solid rgba(255,255,255,0.10);
   border-bottom: 1px solid rgba(255,255,255,0.10);
@@ -392,7 +392,7 @@ a{ color: inherit; text-decoration: none; }
   text-align: center;
   color: rgba(252,251,251,0.72);
   max-width: 44rem;
-  margin: 0 auto 2.8rem;
+  margin: 0 auto 2.25rem;
   font-size: 0.95rem;
 }
 
@@ -407,7 +407,7 @@ a{ color: inherit; text-decoration: none; }
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 2rem;
-  margin-top: 3rem;
+  margin-top: 0;
 }
 
 .program-card{
@@ -532,6 +532,17 @@ a{ color: inherit; text-decoration: none; }
   margin-bottom: 1.5rem !important;
 }
 
+/* Intro line between the section heading and the hero image */
+.quran-single-column .section-intro {
+  width: 100% !important;
+  max-width: 800px !important;
+  margin: -0.5rem auto 1.5rem auto !important;
+  text-align: center !important;
+  font-size: 1.05rem !important;
+  line-height: 1.6 !important;
+  color: rgba(255,255,255,0.9) !important;
+}
+
 /* ================= FAMILY RELIEF SECTION LAYOUT ================= */
 .family-grid {
   display: grid !important;
@@ -634,7 +645,8 @@ a{ color: inherit; text-decoration: none; }
   .quran-single-column {
     display: grid !important;
     grid-template-columns: 1fr 1fr !important;
-    gap: 4rem !important;
+    column-gap: 4rem !important;
+    row-gap: 1.25rem !important;
     align-items: start !important;
   }
 
@@ -642,12 +654,20 @@ a{ color: inherit; text-decoration: none; }
     grid-column: 1 / -1 !important;
     width: 100% !important;
     text-align: left !important;
-    margin-bottom: 1.5rem !important;
+    margin-bottom: 0 !important;
+  }
+
+  .quran-single-column .section-intro {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    max-width: 100% !important;
+    margin: 0 0 0.75rem 0 !important;
+    text-align: left !important;
   }
 
   .quran-hero-image {
     grid-column: 2 !important;
-    grid-row: 2 !important;
+    grid-row: 3 !important;
     width: 100% !important;
     max-width: 100% !important;
     margin: 0 !important;
@@ -655,7 +675,7 @@ a{ color: inherit; text-decoration: none; }
 
   .quran-content {
     grid-column: 1 !important;
-    grid-row: 2 !important;
+    grid-row: 3 !important;
     width: 100% !important;
     max-width: 100% !important;
   }
@@ -684,9 +704,14 @@ a{ color: inherit; text-decoration: none; }
   }
 
   .family-content .lead,
-  .quran-content .lead {
+  .quran-content .lead,
+  .quran-single-column .section-intro {
     font-size: 0.9rem !important;
     line-height: 1.5 !important;
+  }
+
+  .quran-single-column .section-intro {
+    margin: 0 auto 0.25rem auto !important;
   }
 
   .impact-box {
@@ -779,6 +804,20 @@ a{ color: inherit; text-decoration: none; }
   .quran-content {
     text-align: left !important;
   }
+}
+
+/* Stacked (mobile/tablet) layout: the flex gap owns the spacing, so drop
+   the extra margins that otherwise stack up into empty bands */
+@media (max-width: 1024px) {
+  .quran-single-column h2,
+  .quran-single-column .section-intro,
+  .quran-hero-image {
+    margin-bottom: 0 !important;
+  }
+}
+
+.quran-content > :first-child {
+  margin-top: 0 !important;
 }
 
 /* ================= LISTS ================= */
@@ -877,7 +916,7 @@ a{ color: inherit; text-decoration: none; }
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 2rem;
-  margin-top: 3rem;
+  margin-top: 0;
   align-items: stretch;
 }
 
@@ -913,7 +952,7 @@ a{ color: inherit; text-decoration: none; }
   display: grid;
   grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 2rem;
-  margin-top: 3rem;
+  margin-top: 0;
   align-items: stretch;
 }
 
@@ -979,7 +1018,7 @@ a{ color: inherit; text-decoration: none; }
 
 /* ================= DONATE ================= */
 .donate-section{
-  padding: 5rem 0;
+  padding: 56px 0;
   background: linear-gradient(180deg, #0f172a, var(--black));
   border-top: 1px solid rgba(255,255,255,0.10);
 }
@@ -1421,11 +1460,11 @@ a{ color: inherit; text-decoration: none; }
   .section,
   .section-alt,
   .donate-section{
-    padding: 3.5rem 0;
+    padding: 2.25rem 0;
   }
 
   .section-title{ font-size: 1.7rem; }
-  .section-subtitle{ font-size: 0.92rem; margin-bottom: 1.8rem; }
+  .section-subtitle{ font-size: 0.92rem; margin-bottom: 1.25rem; }
 
   /* Navbar tweaks */
   .nav-container{ padding: 0.85rem 0; }

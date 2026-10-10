@@ -18,7 +18,7 @@ export default async function PayPage({
     <main className="main-home-container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <GlobalHeader showRibbon={false} />
 
-      <section className="donate-section" style={{ paddingTop: '140px', flex: 1, paddingBottom: '80px' }}>
+      <section className="donate-section" style={{ paddingTop: '120px', flex: 1, paddingBottom: '40px' }}>
         <PayPageLayout amount={amount} currency={currency} cause={cause} source={source} />
       </section>
 

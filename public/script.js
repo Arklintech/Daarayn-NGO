@@ -279,12 +279,15 @@ onDOMReady(() => {
     // Fade up sections
     const sections = gsap.utils.toArray('.section, .section-alt, .donate-section');
     sections.forEach(sec => {
+      // Keep the slide small (smaller than the tightest mobile gap) so cards never
+      // overlap their neighbours mid-animation, and clear transforms afterwards.
       gsap.from(sec.querySelectorAll('.section-title, .section-subtitle, .lead, .program-card, .masjid-card, .testimonial-card, .glass-panel'), {
-        y: 40,
+        y: 12,
         opacity: 0,
-        duration: 0.8,
-        stagger: 0.15,
+        duration: 0.7,
+        stagger: 0.1,
         ease: "power3.out",
+        clearProps: "transform",
         scrollTrigger: {
           trigger: sec,
           start: "top 85%",

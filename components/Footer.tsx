@@ -48,7 +48,7 @@ export default function Footer() {
         }
       `}</style>
 
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '3.5rem 1.5rem 2rem' }}>
+      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '2.5rem 1.5rem 1.5rem' }}>
 
         {/* ── TOP GRID ── */}
         <div className="footer-grid">
@@ -169,13 +169,13 @@ export default function Footer() {
 
         {/* ── DIVIDER ── */}
         <div style={{
-          margin: '2.25rem 0 1.75rem',
+          margin: '1.75rem 0 1.25rem',
           height: '1px',
           background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08) 20%, rgba(255,255,255,0.08) 80%, transparent)',
         }} />
 
         {/* ── HADITH QUOTE ── */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem', padding: '0 1rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.25rem', padding: '0 1rem' }}>
           <div style={{
             fontFamily: 'Georgia, serif', fontSize: '2rem', lineHeight: 0.5,
             color: 'rgba(255,249,221,0.15)', marginBottom: '0.5rem',
