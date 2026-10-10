@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { IndianRupee, Hash, User, Mail, UploadCloud, CheckCircle2, ShieldCheck, FileImage, Loader2, ArrowRight, Heart, Stethoscope, Building2, BookOpen, GraduationCap, Droplets, Baby, AlertTriangle, Globe2 } from 'lucide-react';
+import { IndianRupee, User, Mail, UploadCloud, CheckCircle2, ShieldCheck, FileImage, Loader2, ArrowRight, Heart, Stethoscope, Building2, BookOpen, GraduationCap, Droplets, Baby, AlertTriangle, Globe2 } from 'lucide-react';
 import DonationSuccess from './DonationSuccess';
 
 // Animation variants
@@ -349,18 +349,6 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
           defaultValue={initialAmount}
           required
           placeholder="e.g. 1500"
-          style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.75rem 1rem 0.75rem 2.6rem', color: '#fff', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s ease' }}
-          onFocus={(e) => { e.target.style.borderColor = 'var(--ivory-light)'; e.target.style.background = 'rgba(255,255,255,0.06)'; e.target.style.boxShadow = '0 0 0 4px rgba(255, 249, 221, 0.1)'; }}
-          onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; e.target.style.boxShadow = 'none'; }}
-        />
-      </InputWrapper>
-
-      <InputWrapper icon={Hash} label="UPI Reference Code" required>
-        <input
-          type="text"
-          name="upiRef"
-          required
-          placeholder="12-digit transaction ID"
           style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '10px', padding: '0.75rem 1rem 0.75rem 2.6rem', color: '#fff', fontSize: '0.95rem', outline: 'none', transition: 'all 0.3s ease' }}
           onFocus={(e) => { e.target.style.borderColor = 'var(--ivory-light)'; e.target.style.background = 'rgba(255,255,255,0.06)'; e.target.style.boxShadow = '0 0 0 4px rgba(255, 249, 221, 0.1)'; }}
           onBlur={(e) => { e.target.style.borderColor = 'rgba(255,255,255,0.1)'; e.target.style.background = 'rgba(255,255,255,0.03)'; e.target.style.boxShadow = 'none'; }}

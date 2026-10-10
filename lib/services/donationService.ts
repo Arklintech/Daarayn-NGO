@@ -13,7 +13,7 @@ import { Donation, DonorProfile } from "../db";
 export interface ProcessDonationInput {
   donorName: string;
   donorContact: string;
-  upiRef: string;
+  upiRef?: string;
   amount: number;
   currency?: string;
   cause: string;
@@ -41,9 +41,6 @@ export class DonationService {
     const numAmount = Number(input.amount);
     if (!numAmount || numAmount <= 0) {
       throw new Error("Invalid donation amount.");
-    }
-    if (!input.upiRef) {
-      throw new Error("UPI reference code is required.");
     }
 
     // 1. Generate Authoritative Sequence / Tracking ID
@@ -161,7 +158,7 @@ export class DonationService {
       causeId: matchedCause?.id || "",
       causeTitle: input.cause,
       proofDriveFileId: proofDriveFileId,
-      transactionReference: input.upiRef,
+      transactionReference: input.upiRef || "",
       notes: `Allocated via VerifiedAnalyticsEngine. Direct Aid: INR ${directAid}, Ops: INR ${opsCost}`,
       selectedCauses: (Array.isArray(input.selectedCauses) && typeof input.selectedCauses[0] === "object"
         ? input.selectedCauses
@@ -193,7 +190,7 @@ export class DonationService {
       recipientId: "all",
       type: "DONATION",
       title: "New Donation Received",
-      message: `Received ₹${numAmount.toLocaleString()} for ${input.cause} from ${donorNameClean} (Ref: ${input.upiRef})`,
+      message: `Received ₹${numAmount.toLocaleString()} for ${input.cause} from ${donorNameClean}${input.upiRef ? ` (Ref: ${input.upiRef})` : ''}`,
       read: false,
       relatedEntityId: trackingId,
       createdAt: nowIso,
@@ -214,7 +211,7 @@ export class DonationService {
         cause: input.cause,
         trackingId,
         proofDriveFileId,
-        transactionReference: input.upiRef,
+        transactionReference: input.upiRef || "",
       },
       timestamp: nowIso,
       source: "web_donation_gateway",

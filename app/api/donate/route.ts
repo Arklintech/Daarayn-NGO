@@ -31,9 +31,9 @@ export async function POST(request: NextRequest) {
 
     const screenshot = formData.get("screenshot") as File | null;
 
-    if (!upiRef || !amountStr || !screenshot || screenshot.size === 0) {
+    if (!amountStr || !screenshot || screenshot.size === 0) {
       return NextResponse.json(
-        { error: "Required fields (Amount, UPI Ref Code, Payment Screenshot) are missing." },
+        { error: "Required fields (Amount, Payment Screenshot) are missing." },
         { status: 400 }
       );
     }
