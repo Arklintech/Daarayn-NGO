@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { 
@@ -34,6 +35,9 @@ interface ProjectUpdate {
 }
 
 export async function POST(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     console.log("[1] API called for dispatch-updates");
     const { programId, updateState, approvedMessageTemplate } = await request.json();

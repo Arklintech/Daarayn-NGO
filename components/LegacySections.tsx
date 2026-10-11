@@ -409,23 +409,6 @@ export default function LegacySections() {
       <Script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js" strategy="lazyOnload" async />
       <Script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js" strategy="lazyOnload" async />
       <Script src="/script.js" strategy="lazyOnload" async />
-      <script dangerouslySetInnerHTML={{ __html: `
-        // Optimize image loading
-        if ('IntersectionObserver' in window) {
-          const imgs = document.querySelectorAll('img[src]');
-          const imgObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-              if (entry.isIntersecting) {
-                const img = entry.target as HTMLImageElement;
-                img.style.maxWidth = '100%';
-                img.style.height = 'auto';
-                imgObserver.unobserve(img);
-              }
-            });
-          });
-          imgs.forEach(img => imgObserver.observe(img));
-        }
-      ` }} />
     </>
   );
 }

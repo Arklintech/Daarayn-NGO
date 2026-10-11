@@ -5,11 +5,15 @@
  * Ensures admin authentication session, filters requests by role permissions, and runs conversation manager.
  */
 
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { processKhizrChatMessage } from "@/lib/ai/knowledge/conversationManager";
 import { normalizeKhizrRole } from "@/lib/ai/roleNormalizer";
 
 export async function POST(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const { message, history, sessionId, adminEmail, adminRole } = await request.json();
 

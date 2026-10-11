@@ -1,9 +1,13 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, getCountFromServer } from "firebase/firestore";
 import { GoogleSheetsClient } from "@/lib/sync/GoogleSheetsClient";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const sheetsClient = new GoogleSheetsClient();
     const isGoogleSheetsConfigured = sheetsClient.isConfigured();

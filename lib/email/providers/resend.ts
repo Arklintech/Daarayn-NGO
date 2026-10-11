@@ -7,6 +7,7 @@
  */
 
 import type { EmailResult, EmailPayload } from "../providerManager";
+import { getReplyToAddress, getStandardHeaders, htmlToPlainText } from "../deliverability";
 
 const resendApiKey = process.env.RESEND_API_KEY;
 
@@ -82,6 +83,9 @@ export async function sendViaResend(payload: EmailPayload): Promise<EmailResult>
       to: [payload.to],
       subject: payload.subject,
       html: payload.html,
+      text: htmlToPlainText(payload.html),
+      reply_to: getReplyToAddress(),
+      headers: getStandardHeaders(),
       ...(formattedAttachments && formattedAttachments.length > 0 && { attachments: formattedAttachments })
     });
 

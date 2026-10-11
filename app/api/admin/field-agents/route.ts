@@ -3,9 +3,36 @@ import { fieldAgentRepository } from "@/lib/repositories/fieldAgentRepository";
 import { auditLogRepository } from "@/lib/repositories/auditLogRepository";
 import { notificationRepository } from "@/lib/repositories/notificationRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
+import { requireAdmin } from "@/lib/server/auth";
+import { nextSequentialId } from "@/lib/repositories/ids";
 
-export async function GET() {
+// Profile fields an admin may edit; id, firebaseUid, email and joinDate stay fixed.
+const EDITABLE_FIELDS = [
+  "name", "phone", "country", "state", "district", "city", "address", "role", "region",
+  "status", "assignedSupervisor", "avatarUrl", "requirePasswordChange", "permissions",
+] as const;
+
+async function sendPasswordResetEmail(email: string): Promise<string | null> {
+  const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+  if (!apiKey) return "Missing NEXT_PUBLIC_FIREBASE_API_KEY environment variable.";
+  const res = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ requestType: "PASSWORD_RESET", email }),
+    }
+  );
+  if (res.ok) return null;
+  const data = await res.json().catch(() => ({}));
+  return data.error?.message || "Firebase rejected the password reset request.";
+}
+
+export async function GET(req: Request) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const agents = await fieldAgentRepository.getAll();
     return NextResponse.json({ success: true, agents });
   } catch (error: any) {
@@ -16,6 +43,9 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const body = await req.json();
     const {
       name,
@@ -33,8 +63,11 @@ export async function POST(req: Request) {
       password,
       requirePasswordChange,
       permissions,
-      adminId,
     } = body;
+
+    if (!name || !email || !password) {
+      return NextResponse.json({ success: false, error: "Name, email and password are required." }, { status: 400 });
+    }
 
     // 1. Create Firebase Auth Account via REST API
     // (Firebase Auth is the credential authority - NO passwords in Google Sheets)
@@ -58,10 +91,9 @@ export async function POST(req: Request) {
     }
     const firebaseUid = authData.localId;
 
-    // 2. Generate Authoritative Field Agent ID
-    const existingAgents = await fieldAgentRepository.getAll();
-    const nextIdx = existingAgents.length + 1;
-    const newId = `FA${String(nextIdx).padStart(3, "0")}`;
+    // 2. Generate Authoritative Field Agent ID from fresh data
+    const existingAgents = await fieldAgentRepository.getAll(true);
+    const newId = nextSequentialId("FA", existingAgents.map((a) => a.id));
 
     const nowIso = new Date().toISOString();
 
@@ -123,7 +155,7 @@ export async function POST(req: Request) {
     const auditId = `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
     await auditLogRepository.save({
       id: auditId,
-      actor_id: adminId || "admin",
+      actor_id: admin.email,
       actor_role: "admin",
       action: "CREATE_FIELD_AGENT",
       entity_type: "Field_Agent",
@@ -143,8 +175,11 @@ export async function POST(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
+    const admin = await requireAdmin(req);
+    if (admin instanceof NextResponse) return admin;
+
     const body = await req.json();
-    const { agentId, email, requirePasswordChange, ...otherUpdates } = body;
+    const { agentId, sendPasswordReset } = body;
 
     if (!agentId) {
       return NextResponse.json({ success: false, error: "Agent ID is required." }, { status: 400 });
@@ -155,38 +190,31 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ success: false, error: "Agent not found" }, { status: 404 });
     }
 
-    const updated = {
-      ...agent,
-      ...otherUpdates,
-      ...(requirePasswordChange !== undefined ? { requirePasswordChange } : {}),
-    };
+    const updates: Record<string, unknown> = {};
+    for (const key of EDITABLE_FIELDS) {
+      if (body[key] !== undefined) updates[key] = body[key];
+    }
 
-    // 1. Authoritative Save to Google Sheets
-    await fieldAgentRepository.save(updated);
+    let updated = agent;
+    if (Object.keys(updates).length > 0) {
+      updated = { ...agent, ...updates };
+      // 1. Authoritative Save to Google Sheets
+      await fieldAgentRepository.save(updated);
+      // 2. Realtime SSE Broadcast
+      realtimeBroadcaster.broadcast("FIELD_AGENT_UPDATED", updated);
+    }
 
-    // 2. Realtime SSE Broadcast
-    realtimeBroadcaster.broadcast("FIELD_AGENT_UPDATED", updated);
-
-    // 3. Send Firebase Auth Password Reset Email if requested
-    const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-    if (apiKey && email) {
-      try {
-        await fetch(
-          `https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=${apiKey}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ requestType: "PASSWORD_RESET", email }),
-          }
-        );
-      } catch (oobErr) {
-        console.warn("[API/FieldAgents] OOB password reset notice:", oobErr);
+    // 3. Firebase Auth password reset email, only when explicitly requested
+    if (sendPasswordReset) {
+      const resetError = await sendPasswordResetEmail(agent.email);
+      if (resetError) {
+        return NextResponse.json({ success: false, error: `Password reset email failed: ${resetError}` }, { status: 502 });
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: "Agent credentials and profile updated successfully.",
+      message: sendPasswordReset ? "Password reset link sent." : "Agent profile updated successfully.",
       agent: updated,
     });
   } catch (error: any) {

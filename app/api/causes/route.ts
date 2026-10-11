@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { causeRepository } from "@/lib/repositories/causeRepository";
 import { DEFAULT_CAUSES } from "@/lib/causes";
@@ -49,6 +50,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const body = await request.json();
     if (!body.title) {

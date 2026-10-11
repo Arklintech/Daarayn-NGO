@@ -7,9 +7,13 @@
 
 import { NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email/providerManager";
-import { generateLetterEmailTemplate } from "@/lib/email/resend";
+import { requireAdmin } from "@/lib/server/auth";
+import { attachDaaraynLogo, generateLetterEmailTemplate } from "@/lib/email/resend";
 
 export async function POST(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const body = await request.json();
     const recipient = body.recipient || process.env.SMTP_USER || "test@example.com";
@@ -43,7 +47,7 @@ export async function POST(request: Request) {
       bodyParagraphs: [textContent]
     });
 
-    const result = await sendEmail({ to: recipient, subject, html });
+    const result = await sendEmail({ to: recipient, subject, html, attachments: attachDaaraynLogo() });
 
     if (!result.success) {
       return NextResponse.json({

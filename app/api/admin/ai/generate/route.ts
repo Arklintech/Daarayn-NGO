@@ -5,12 +5,16 @@
  * Safe collects data, calls context builder, Grok API, performs audits, and saves to drafts log.
  */
 
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { draftCommunication } from "@/lib/ai/services/communication";
 
 export async function POST(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const {
       category,

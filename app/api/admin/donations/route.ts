@@ -1,9 +1,13 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { donationRepository } from "@/lib/repositories/donationRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 
 
-export async function GET() {
+export async function GET(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const donations = await donationRepository.getAll();
     const mapped = donations.map((d: any) => ({
@@ -35,6 +39,9 @@ export async function GET() {
 }
 
 export async function PATCH(req: NextRequest) {
+  const adminAuth = await requireAdmin(req);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const body = await req.json();
     const { id, status } = body;

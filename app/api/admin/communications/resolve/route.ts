@@ -1,7 +1,11 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { resolveRecipients } from "@/lib/communication-resolver";
 
 export async function POST(req: Request) {
+  const adminAuth = await requireAdmin(req);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const { causeIds, type } = await req.json();
 

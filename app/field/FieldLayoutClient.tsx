@@ -48,8 +48,8 @@ function AgentNavigation({ children }: { children: React.ReactNode }) {
       try {
         const res = await fetch('/api/field/reports');
         const data = await res.json();
-        if (data.success && Array.isArray(data.reports)) {
-          setUnreadReports(data.reports.filter((r: any) => r.status === 'Pending Review').length);
+        if (res.ok && Array.isArray(data)) {
+          setUnreadReports(data.filter((r: any) => r.status === 'Pending Review').length);
         }
       } catch (e) {}
     }
@@ -174,7 +174,11 @@ function AgentNavigation({ children }: { children: React.ReactNode }) {
         "pb-[72px] md:pb-0",
       ].join(" ")}>
         <div className="max-w-3xl mx-auto px-4 py-6 md:px-6 md:py-8">
-          {children}
+          {agentData ? children : (
+            <div className="flex justify-center py-20">
+              <div className="w-8 h-8 rounded-full border-2 border-luxury-gold border-t-transparent animate-spin" />
+            </div>
+          )}
         </div>
       </main>
 

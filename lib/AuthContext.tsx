@@ -1,15 +1,17 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import { auth } from "./firebase";
-import { onAuthStateChanged, signOut, User } from "firebase/auth";
+import { onIdTokenChanged, signOut, User } from "firebase/auth";
+import { clearAuthCookies, writeAuthCookies } from "./authCookies";
 
-export type AdminRole = 
-  | "Super Admin" 
-  | "Admin" 
-  | "Editor" 
-  | "Content Manager" 
-  | "Finance Manager" 
+export type AdminRole =
+  | "Super Admin"
+  | "Admin"
+  | "Editor"
+  | "Content Manager"
+  | "Finance Manager"
   | "Volunteer Manager";
 
 export interface AdminUserData {
@@ -24,120 +26,113 @@ export interface AdminUserData {
 interface AuthContextType {
   user: User | null;
   adminData: AdminUserData | null;
+  /** Why the signed-in account was refused admin access, if it was. */
+  adminError: string | null;
   loading: boolean;
   role: AdminRole | null;
   logout: () => Promise<void>;
   hasPermission: (requiredRoles: AdminRole[]) => boolean;
-  loginAsMock: (email: string, name: string, role: AdminRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   adminData: null,
+  adminError: null,
   loading: true,
   role: null,
   logout: async () => {},
   hasPermission: () => false,
-  loginAsMock: () => {},
 });
 
 export function AuthContextProvider({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const isAdminRoute = pathname?.startsWith("/admin") ?? false;
+
   const [user, setUser] = useState<User | null>(null);
+  const [tokenReady, setTokenReady] = useState(false);
   const [adminData, setAdminData] = useState<AdminUserData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [adminError, setAdminError] = useState<string | null>(null);
+  const [adminCheckedFor, setAdminCheckedFor] = useState<string | null>(null);
 
+  // Keep the session cookie in step with Firebase's ID token (refreshed hourly).
   useEffect(() => {
-    // Check local mock storage first
-    if (typeof window !== "undefined") {
-      const cachedMock = localStorage.getItem("daarayn_mock_auth");
-      if (cachedMock) {
-        try {
-          const parsed = JSON.parse(cachedMock);
-          setUser({ email: parsed.email, uid: "mock-uid-123" } as User);
-          setAdminData({
-            uid: "mock-uid-123",
-            email: parsed.email,
-            name: parsed.name,
-            role: parsed.role,
-            status: "active",
-          });
-          setLoading(false);
-          return;
-        } catch (e) {
-          localStorage.removeItem("daarayn_mock_auth");
-        }
-      }
-    }
-
     if (!auth) {
       console.warn("Auth module not initialized. Falling back to unauthenticated state.");
-      setLoading(false);
+      setTokenReady(true);
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
+    const unsubscribe = onIdTokenChanged(auth, async (currentUser) => {
       if (currentUser) {
-        if (typeof document !== 'undefined') {
-          document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
-        }
-        let cachedRole: AdminRole = "Super Admin";
-        let cachedName = currentUser.displayName || currentUser.email?.split("@")[0] || "Administrator";
         try {
-          const stored = localStorage.getItem(`daarayn_user_${currentUser.uid}`);
-          if (stored) {
-            const p = JSON.parse(stored);
-            if (p.role) cachedRole = p.role;
-            if (p.name) cachedName = p.name;
-          }
-        } catch (e) {}
-
-        setAdminData({
-          uid: currentUser.uid,
-          email: currentUser.email || "",
-          name: cachedName,
-          role: cachedRole,
-          status: "active",
-          createdAt: new Date().toISOString(),
-        });
+          writeAuthCookies(await currentUser.getIdToken());
+        } catch (err) {
+          console.error("[Auth] Could not read ID token:", err);
+        }
       } else {
+        clearAuthCookies();
         setAdminData(null);
+        setAdminError(null);
+        setAdminCheckedFor(null);
       }
-      setLoading(false);
+      setUser(currentUser);
+      setTokenReady(true);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const loginAsMock = (email: string, name: string, role: AdminRole) => {
-    const mockUser = { email, uid: "mock-uid-123" } as User;
-    const mockData: AdminUserData = {
-      uid: "mock-uid-123",
-      email,
-      name,
-      role,
-      status: "active"
+  // Admin access is decided by the server (ADMIN_EMAILS), only on admin routes.
+  useEffect(() => {
+    if (!isAdminRoute || !user || adminCheckedFor === user.uid) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const token = await user.getIdToken();
+        const res = await fetch("/api/admin/session", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+
+        if (res.ok && data.success) {
+          setAdminData({
+            uid: user.uid,
+            email: data.admin.email,
+            name: user.displayName || data.admin.email.split("@")[0] || "Administrator",
+            role: "Super Admin",
+            status: "active",
+          });
+          setAdminError(null);
+        } else {
+          setAdminData(null);
+          setAdminError(data.error || "This account is not authorized for the admin panel.");
+        }
+      } catch {
+        if (cancelled) return;
+        setAdminData(null);
+        setAdminError("Could not verify administrator access. Check your connection and try again.");
+      }
+      if (!cancelled) setAdminCheckedFor(user.uid);
+    })();
+
+    return () => {
+      cancelled = true;
     };
-    if (typeof window !== "undefined") {
-      localStorage.setItem("daarayn_mock_auth", JSON.stringify({ email, name, role }));
-      document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
-    }
-    setUser(mockUser);
-    setAdminData(mockData);
-  };
+  }, [isAdminRoute, user, adminCheckedFor]);
+
+  const loading = !tokenReady || (isAdminRoute && !!user && adminCheckedFor !== user.uid);
 
   const logout = async () => {
-    setLoading(true);
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("daarayn_mock_auth");
-      document.cookie = "daarayn_session=; path=/; max-age=0; SameSite=Strict";
-    }
+    clearAuthCookies();
     if (auth) {
       await signOut(auth);
     }
     setUser(null);
     setAdminData(null);
-    setLoading(false);
+    setAdminError(null);
+    setAdminCheckedFor(null);
   };
 
   const hasPermission = (requiredRoles: AdminRole[]): boolean => {
@@ -149,7 +144,7 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
   const role = adminData ? adminData.role : null;
 
   return (
-    <AuthContext.Provider value={{ user, adminData, loading, role, logout, hasPermission, loginAsMock }}>
+    <AuthContext.Provider value={{ user, adminData, adminError, loading, role, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

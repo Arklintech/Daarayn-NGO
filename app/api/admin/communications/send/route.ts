@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { resolveRecipients } from "@/lib/communication-resolver";
 import { waitUntil } from "@vercel/functions";
@@ -5,6 +6,9 @@ import { processBroadcast } from "@/lib/broadcast-worker";
 import { broadcastStore } from "@/lib/broadcast-store";
 
 export async function POST(req: Request) {
+  const adminAuth = await requireAdmin(req);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const body = await req.json();
     const { causeIds, type, heading, notes, media } = body;

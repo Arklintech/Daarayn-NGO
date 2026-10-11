@@ -25,17 +25,30 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    const mocks: FieldNotification[] = [
-      { id: "fn_1", agentId: agentData?.id || "agent_1", title: "New Assignment", message: "You have been assigned to Silchar Flood Relief inspection.", type: "Assignment", timestamp: new Date().toISOString(), isRead: false },
-      { id: "fn_2", agentId: agentData?.id || "agent_1", title: "Report Approved", message: "Your report #SIL-042 was approved by Admin.", type: "Success", timestamp: new Date(Date.now() - 86400000).toISOString(), isRead: true }
-    ];
-    setNotifications(mocks);
-    setLoading(false);
+    if (!agentData?.id) return;
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await fetch("/api/field/notifications");
+        const data = await res.json();
+        if (!cancelled && res.ok && Array.isArray(data)) setNotifications(data);
+      } catch (err) {
+        console.error("Failed to load notifications:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [agentData?.id]);
 
   const markAsRead = (id: string) => {
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
+    fetch("/api/field/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    }).catch(err => console.error("Failed to mark notification as read:", err));
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;

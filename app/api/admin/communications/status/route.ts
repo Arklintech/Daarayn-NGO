@@ -1,8 +1,12 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { broadcastStore } from "@/lib/broadcast-store";
 import { communicationRepository } from "@/lib/repositories/communicationRepository";
 
 export async function GET(req: NextRequest) {
+  const adminAuth = await requireAdmin(req);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   const { searchParams } = new URL(req.url);
   const broadcastId = searchParams.get("id");
 

@@ -4,6 +4,7 @@
  * Endpoint to manage individual AI drafts: Approve, Edit, Regenerate, Cancel/Reject.
  */
 
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, setDoc, arrayUnion } from "firebase/firestore";
@@ -17,6 +18,9 @@ export async function PATCH(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const { id } = await params;
     const body = await request.json();

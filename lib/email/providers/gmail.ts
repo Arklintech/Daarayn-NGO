@@ -10,8 +10,20 @@
 import nodemailer from "nodemailer";
 import type Mail from "nodemailer/lib/mailer";
 import type { EmailResult, EmailPayload } from "../providerManager";
+import {
+  getFromHeader,
+  getReplyToAddress,
+  getStandardHeaders,
+  htmlToPlainText,
+} from "../deliverability";
 
-function createTransport() {
+// Reused across sends: logging in to Gmail for every message is slow and
+// repeated logins from cloud IPs can make Google treat the account as suspicious.
+let cachedTransport: nodemailer.Transporter | null = null;
+
+function getTransport() {
+  if (cachedTransport) return cachedTransport;
+
   const smtpUser = process.env.SMTP_USER;
   const smtpPass = process.env.SMTP_PASS;
   const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
@@ -24,10 +36,13 @@ function createTransport() {
     );
   }
 
-  return nodemailer.createTransport({
+  cachedTransport = nodemailer.createTransport({
     host: smtpHost,
     port: smtpPort,
     secure: smtpSecure,
+    requireTLS: !smtpSecure,
+    pool: true,
+    maxConnections: 3,
     auth: {
       user: smtpUser,
       pass: smtpPass,
@@ -37,22 +52,19 @@ function createTransport() {
     greetingTimeout: 10000,
     socketTimeout: 15000,
   });
+
+  return cachedTransport;
 }
 
 export async function sendViaGmail(payload: EmailPayload): Promise<EmailResult> {
-  const envFrom = (process.env.FROM_EMAIL || "").replace(/^["']|["']$/g, '');
-  const from = envFrom || `"Daarayn Foundation" <${process.env.SMTP_USER}>`;
-
   const mailOptions: Mail.Options = {
-    from,
+    from: getFromHeader(process.env.SMTP_USER),
+    replyTo: getReplyToAddress(),
     to: payload.to,
     subject: payload.subject,
     html: payload.html,
-    text: payload.html
-      .replace(/<style[^>]*>.*?<\/style>/gi, '')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim(),
+    text: htmlToPlainText(payload.html),
+    headers: getStandardHeaders(),
     ...(payload.attachments && { attachments: payload.attachments }),
   };
 
@@ -60,14 +72,11 @@ export async function sendViaGmail(payload: EmailPayload): Promise<EmailResult> 
   console.log("  Host:", process.env.SMTP_HOST || "smtp.gmail.com");
   console.log("  User:", process.env.SMTP_USER ? "Present" : "MISSING");
   console.log("  Pass:", process.env.SMTP_PASS ? "Present" : "MISSING");
+  console.log("  From:", mailOptions.from);
   console.log("  To:", payload.to);
 
   try {
-    const transport = createTransport();
-
-    // Verify SMTP connection before sending
-    await transport.verify();
-    console.log("[Gmail] SMTP connection verified ✓");
+    const transport = getTransport();
 
     const info = await transport.sendMail(mailOptions);
 
@@ -90,6 +99,10 @@ export async function sendViaGmail(payload: EmailPayload): Promise<EmailResult> 
     };
   } catch (err) {
     const error = err as NodeJS.ErrnoException & { responseCode?: number; response?: string };
+
+    // Drop the pooled transport so the next send starts with a fresh connection
+    cachedTransport?.close();
+    cachedTransport = null;
 
     let reason = error.message || "Unknown SMTP error";
 

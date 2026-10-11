@@ -1,8 +1,12 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const isVercel = process.env.VERCEL || process.env.NEXT_PUBLIC_VERCEL || process.env.NODE_ENV === "production";
     const file = isVercel 

@@ -1,9 +1,13 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { causeRepository } from "@/lib/repositories/causeRepository";
 import { fieldReportRepository } from "@/lib/repositories/fieldReportRepository";
 import { EnterpriseProviderManager } from "@/lib/ai/providers/EnterpriseProviderManager";
 
 export async function POST(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const { causeId, type, media, regenerateField, existingData } = await request.json();
 

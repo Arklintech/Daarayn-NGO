@@ -1,6 +1,6 @@
 'use client';
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { User, MapPin, Phone, Mail, ShieldCheck, BarChart2, FileText, CheckCircle, Clock, LogOut } from "lucide-react";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
@@ -8,6 +8,26 @@ import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 export default function ProfilePage() {
   const router = useRouter();
   const { agentData, logout } = useFieldAgentAuth();
+  const [reportStats, setReportStats] = useState({ total: 0, approved: 0, pending: 0, rejected: 0 });
+
+  // Statistics come from the agent's actual reports rather than a stored counter
+  useEffect(() => {
+    if (!agentData?.id) return;
+    fetch("/api/field/reports")
+      .then(res => res.ok ? res.json() : [])
+      .then((reports: { status?: string }[]) => {
+        if (!Array.isArray(reports)) return;
+        const count = (pred: (s: string) => boolean) =>
+          reports.filter(r => pred((r.status || "").toLowerCase())).length;
+        setReportStats({
+          total: reports.length,
+          approved: count(s => s.includes("approv") || s.includes("fund") || s.includes("complet")),
+          pending: count(s => s.includes("pending") || s.includes("review")),
+          rejected: count(s => s.includes("reject")),
+        });
+      })
+      .catch(err => console.error("Failed to load report statistics:", err));
+  }, [agentData?.id]);
 
   const handleSignOut = async () => {
     await logout();
@@ -19,6 +39,14 @@ export default function ProfilePage() {
   }
 
   const initials = agentData.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase();
+  const isActive = String(agentData.status).toLowerCase() === "active";
+  // Permissions are stored either as a list of granted names or as a name → enabled map
+  const rawPermissions = agentData.permissions as unknown;
+  const permissionEntries: [string, boolean][] = Array.isArray(rawPermissions)
+    ? rawPermissions.map((name: string) => [name, true])
+    : rawPermissions && typeof rawPermissions === "object"
+      ? Object.entries(rawPermissions as Record<string, boolean>)
+      : [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -40,11 +68,11 @@ export default function ProfilePage() {
         <p className="text-sm text-luxury-gold mt-1">{agentData.role}</p>
         
         <div className={`inline-flex items-center gap-2 mt-3 px-3 py-1 rounded-full border text-[11px] font-bold ${
-          agentData.status === "Active"
+          isActive
             ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
             : "text-red-400 bg-red-500/10 border-red-500/20"
         }`}>
-          <div className={`w-1.5 h-1.5 rounded-full ${agentData.status === "Active" ? "bg-emerald-400" : "bg-red-400"}`} />
+          <div className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-emerald-400" : "bg-red-400"}`} />
           {agentData.status}
         </div>
 
@@ -78,10 +106,10 @@ export default function ProfilePage() {
         <h3 className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-4">My Statistics</h3>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { icon: FileText, label: "Total Reports", value: agentData.stats?.reportsSubmitted || 0, color: "text-gray-400" },
-            { icon: CheckCircle, label: "Approved", value: agentData.stats?.reportsApproved || 0, color: "text-emerald-400" },
-            { icon: Clock, label: "Pending", value: agentData.stats?.reportsPending || 0, color: "text-amber-400" },
-            { icon: BarChart2, label: "Rejected", value: agentData.stats?.reportsRejected || 0, color: "text-red-400" },
+            { icon: FileText, label: "Total Reports", value: reportStats.total, color: "text-gray-400" },
+            { icon: CheckCircle, label: "Approved", value: reportStats.approved, color: "text-emerald-400" },
+            { icon: Clock, label: "Pending", value: reportStats.pending, color: "text-amber-400" },
+            { icon: BarChart2, label: "Rejected", value: reportStats.rejected, color: "text-red-400" },
           ].map(s => (
             <div key={s.label} className="bg-white/[0.02] border border-white/[0.05] rounded-xl p-3">
               <s.icon className={`w-4 h-4 ${s.color} mb-2`} />
@@ -96,7 +124,7 @@ export default function ProfilePage() {
       <div className="admin-glass border border-luxury-border rounded-2xl p-5">
         <h3 className="text-xs text-gray-400 uppercase tracking-wider font-semibold mb-3">Permissions</h3>
         <div className="space-y-2">
-          {agentData.permissions && Object.entries(agentData.permissions).map(([key, val]) => (
+          {permissionEntries.map(([key, val]) => (
             <div key={key} className="flex items-center justify-between">
               <span className="text-xs text-gray-300 capitalize">{key.replace(/([A-Z])/g, " $1")}</span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${val ? "text-emerald-400 border-emerald-500/20 bg-emerald-500/10" : "text-gray-500 border-white/10 bg-white/5"}`}>

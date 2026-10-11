@@ -1,7 +1,11 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { donationRepository } from "@/lib/repositories/donationRepository";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const donations = await donationRepository.getAll();
     const ledger = donations.map((d: any) => ({

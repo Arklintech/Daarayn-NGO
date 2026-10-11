@@ -1,13 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword, signOut, sendPasswordResetEmail,
+  setPersistence, browserLocalPersistence, browserSessionPersistence,
+} from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 import {
   Mail, Lock, Eye, EyeOff, ShieldCheck, AlertCircle,
-  Users, FileText, Headphones, CheckCircle
+  Users, FileText, CheckCircle
 } from "lucide-react";
 
 // ─── Gold Divider ────────────────────────────────────────────────────────────
@@ -38,96 +41,73 @@ export default function AgentLogin() {
   const [password, setPassword]       = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe]   = useState(false);
+  const [notice, setNotice]           = useState("");
   const [error, setError]             = useState("");
   const [loading, setLoading]         = useState(false);
   const [mounted, setMounted]         = useState(false);
-  const [showBypass, setShowBypass]   = useState(!auth);
   const router = useRouter();
-  const { user, agentData, loading: authLoading, loginAsMock } = useFieldAgentAuth();
+  const { user, agentData, agentError, loading: authLoading } = useFieldAgentAuth();
 
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
-    if (user && agentData && !authLoading) router.push("/field/dashboard");
-  }, [user, agentData, authLoading, router]);
+    if (authLoading || !user) return;
+    if (agentData) {
+      router.push("/field/dashboard");
+    } else if (agentError) {
+      // Password was correct but the account is not an active field agent.
+      setError(agentError);
+      if (auth) signOut(auth);
+    }
+  }, [user, agentData, agentError, authLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError("");
-    const cleanEmail = email.trim().toLowerCase();
 
+    if (!auth) {
+      setError("Authentication is not configured. Contact your administrator.");
+      return;
+    }
+
+    setLoading(true);
+    setNotice("");
     try {
-      // 1. Fetch registered agents list from Google Sheets repository
-      let foundAgent: any = null;
-      try {
-        const res = await fetch("/api/admin/field-agents");
-        if (res.ok) {
-          const data = await res.json();
-          foundAgent = data.agents?.find((a: any) => a.email?.trim().toLowerCase() === cleanEmail);
-        }
-      } catch (e) {
-        console.warn("Could not fetch field agents list", e);
-      }
-
-      // If domain is @daarayn.org or found in agents list, log in as agent directly
-      if (foundAgent || cleanEmail.endsWith("@daarayn.org")) {
-        const agentToSave = foundAgent || {
-          id: `FA-${Date.now().toString().slice(-4)}`,
-          name: cleanEmail.split("@")[0].toUpperCase() || "Field Agent",
-          email: cleanEmail,
-          role: "Field Officer",
-          region: "Assam",
-          status: "Active"
-        };
-        localStorage.setItem("demoAgent", JSON.stringify(agentToSave));
-        if (typeof document !== "undefined") {
-          document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
-        }
-        // Also attempt Firebase auth in background if available
-        if (auth && password) {
-          try {
-            await signInWithEmailAndPassword(auth, cleanEmail, password);
-          } catch (fbErr) {
-            console.warn("Firebase signin notice:", fbErr);
-          }
-        }
-        router.replace("/field/dashboard");
-        return;
-      }
-      
-      // Try standard Firebase Auth if auth is initialized
-      if (auth) {
-        try {
-          await signInWithEmailAndPassword(auth, cleanEmail, password);
-          if (typeof document !== "undefined") {
-            document.cookie = "daarayn_session=active; path=/; max-age=86400; SameSite=Strict";
-          }
-          router.replace("/field/dashboard");
-          return;
-        } catch (firebaseErr: any) {
-          throw firebaseErr;
-        }
-      } else {
-        setError("Agent record not found. Contact your administrator.");
-        setLoading(false);
-      }
-      
+      // "Remember me" keeps the session after the browser closes; otherwise it ends with the tab session.
+      await setPersistence(auth, rememberMe ? browserLocalPersistence : browserSessionPersistence);
+      await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+      // The auth context then loads the agent profile; the effect above redirects or shows why not.
     } catch (err: any) {
       const c = err?.code || "";
-      const msg = err?.message || "";
-      if (c.includes("api-key-not-valid") || c.includes("invalid-api-key") || msg.includes("API key not valid") || msg.includes("api-key-not-valid")) {
-        setError("Firebase Authentication has placeholder API keys. Use the Developer Bypass option below.");
-        setShowBypass(true);
-      } else if (c.includes("not-found") || c.includes("wrong-password") || c.includes("invalid-credential")) {
-        setError("Invalid email or password.");
-      } else if (c.includes("too-many-requests")) {
+      if (c.includes("too-many-requests")) {
         setError("Too many attempts. Try again later.");
       } else {
-        setError(msg || "Authentication failed.");
+        setError("Invalid email or password.");
       }
+    } finally {
       setLoading(false);
     }
+  };
+
+  const handleForgotPassword = async () => {
+    setError("");
+    setNotice("");
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setError("Enter your email address first, then tap Forgot Password.");
+      return;
+    }
+    if (!auth) {
+      setError("Authentication is not configured. Contact your administrator.");
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, cleanEmail);
+    } catch (err) {
+      console.warn("Password reset request failed:", err);
+    }
+    // Same message either way, so the form does not reveal which emails have accounts.
+    setNotice(`If an agent account exists for ${cleanEmail}, a password reset link has been sent.`);
   };
 
   if (authLoading) {
@@ -246,6 +226,12 @@ export default function AgentLogin() {
                 <p className="text-[11px] text-red-300 leading-relaxed">{error}</p>
               </div>
             )}
+            {notice && (
+              <div className="flex items-start gap-2.5 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                <p className="text-[11px] text-emerald-300 leading-relaxed">{notice}</p>
+              </div>
+            )}
 
             {/* Email */}
             <div>
@@ -285,7 +271,7 @@ export default function AgentLogin() {
                 </div>
                 <span className="text-[11px] text-gray-400">Remember me</span>
               </label>
-              <button type="button" className="text-[11px] text-luxury-gold hover:text-white transition-colors">Forgot Password?</button>
+              <button type="button" onClick={handleForgotPassword} className="text-[11px] text-luxury-gold hover:text-white transition-colors">Forgot Password?</button>
             </div>
 
             {/* Login Button */}
@@ -305,44 +291,12 @@ export default function AgentLogin() {
               )}
             </button>
 
-            {/* Developer Bypass Option */}
-            {showBypass && (
-              <div className="mt-5 pt-5 border-t border-white/[0.06] text-center">
-                <p className="text-[10px] text-amber-300/80 font-medium leading-normal mb-3">
-                  Developer option: You can temporarily bypass Firebase Authentication setup to test field features locally.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => loginAsMock(email || "agent@daarayn.org", "Demo Agent")}
-                  className="w-full py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-semibold text-xs tracking-wider transition active:scale-[0.98]"
-                >
-                  Bypass Auth (Developer Mode)
-                </button>
-              </div>
-            )}
-
-            {/* OR */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px bg-white/[0.06]" />
-              <span className="text-[9px] text-gray-600 font-medium uppercase tracking-widest">or</span>
-              <div className="flex-1 h-px bg-white/[0.06]" />
-            </div>
-
-            {/* Support Code */}
-            <button
-              type="button"
-              className="w-full py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.02] text-[12px] text-gray-300 font-medium flex items-center justify-center gap-2 hover:bg-white/[0.05] hover:text-white hover:border-white/20 transition-all"
-            >
-              <Headphones className="w-3.5 h-3.5 text-luxury-gold" />
-              Login with Support Code
-            </button>
-
             {/* Terms */}
             <p className="text-center text-[10px] text-gray-600 leading-relaxed">
               By continuing, you agree to Daarayn's{" "}
-              <button type="button" className="text-luxury-gold/70 hover:text-luxury-gold transition-colors underline underline-offset-2">Data Policy</button>
+              <span className="text-luxury-gold/70">Data Policy</span>
               {" & "}
-              <button type="button" className="text-luxury-gold/70 hover:text-luxury-gold transition-colors underline underline-offset-2">Terms of Use</button>
+              <span className="text-luxury-gold/70">Terms of Use</span>
             </p>
           </form>
         </div>

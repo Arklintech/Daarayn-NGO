@@ -5,11 +5,15 @@
  * away from Firestore; we now return an empty list so callers degrade gracefully.
  */
 
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   // Drafts previously lived in Firestore `ai_drafts` collection.
   // That collection is no longer accessible from server routes because
   // Firestore security rules require client auth context.

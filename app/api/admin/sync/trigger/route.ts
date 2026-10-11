@@ -1,9 +1,13 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { SyncEngine } from "@/lib/sync/SyncEngine";
 import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
 export async function POST(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const body = await request.json();
     const { taskId } = body;

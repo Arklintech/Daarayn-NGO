@@ -1,7 +1,12 @@
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest } from "next/server";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 
 export async function GET(request: NextRequest) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   const stream = new ReadableStream({
     start(controller) {
       const encoder = new TextEncoder();

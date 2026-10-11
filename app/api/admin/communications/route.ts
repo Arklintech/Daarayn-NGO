@@ -1,7 +1,11 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { communicationRepository } from "@/lib/repositories/communicationRepository";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const communications = await communicationRepository.getAll();
     return NextResponse.json({

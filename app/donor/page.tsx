@@ -1,43 +1,15 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ShieldCheck, ArrowRight, UserCheck, Heart } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function DonorAccessGate() {
   const [identifier, setIdentifier] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mockDonors, setMockDonors] = useState<any[]>([]);
   const router = useRouter();
-
-  // Load current donor emails/phone numbers to present as quick-launch options
-  useEffect(() => {
-    async function fetchDonors() {
-      try {
-        const res = await fetch("/api/donors");
-        if (res.ok) {
-          const list = await res.json();
-          if (Array.isArray(list) && list.length > 0) {
-            setMockDonors(list);
-            return;
-          }
-        }
-        setMockDonors([
-          { id: "DNR-2026-000001", name: "Ahmed Khan", email: "ahmed.khan@example.com" },
-          { id: "DNR-2026-000002", name: "Sara Ahmed", email: "sara.ahmed@example.com" }
-        ]);
-      } catch (err) {
-        console.warn("Donors load failed, fallback offline list:", err);
-        setMockDonors([
-          { id: "DNR-2026-000001", name: "Ahmed Khan", email: "ahmed.khan@example.com" },
-          { id: "DNR-2026-000002", name: "Sara Ahmed", email: "sara.ahmed@example.com" }
-        ]);
-      }
-    }
-    fetchDonors();
-  }, []);
 
   const handleAccess = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,11 +41,6 @@ export default function DonorAccessGate() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleLaunchMock = (id: string) => {
-    localStorage.setItem("daarayn_donor_id", id);
-    router.push("/donor/dashboard");
   };
 
   return (
@@ -137,34 +104,6 @@ export default function DonorAccessGate() {
           </button>
         </form>
 
-        {/* Developer Sandbox Bypass Box */}
-        <div className="mt-8 pt-6 border-t border-white/[0.06] text-left">
-          <div className="flex items-center gap-2 mb-3 text-xs font-semibold text-amber-300">
-            <ShieldCheck className="w-4 h-4" />
-            <span>Developer Sandbox Quick Access</span>
-          </div>
-          <p className="text-[10px] text-gray-400 leading-normal mb-4">
-            Click any active donor profile below to bypass verification and preview their transparent dashboard workspace.
-          </p>
-          <div className="space-y-2.5">
-            {mockDonors.map(donor => (
-              <button 
-                key={donor.id}
-                type="button"
-                onClick={() => handleLaunchMock(donor.id)}
-                className="w-full p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-luxury-gold/5 hover:border-luxury-gold flex justify-between items-center text-xs text-gray-300 font-medium transition"
-              >
-                <div>
-                  <span className="text-white block font-semibold">{donor.name}</span>
-                  <span className="font-mono text-[9px] text-gray-500">{donor.id}</span>
-                </div>
-                <span className="flex items-center gap-1 text-[10px] text-luxury-gold font-bold font-mono">
-                  PREVIEW <UserCheck className="w-3.5 h-3.5" />
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
       </motion.div>
     </div>
   );

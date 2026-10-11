@@ -38,17 +38,17 @@ export default function FieldAgentManagement() {
   };
 
   const handleDeleteAgent = async (agentId: string) => {
-    if (confirm("Are you sure you want to delete this field agent? This action cannot be undone.")) {
+    if (confirm("Deactivate this field agent? They will lose portal access immediately. Their reports and history are kept.")) {
       try {
         const res = await fetch("/api/admin/field-agents", {
-          method: "DELETE",
+          method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ agentId })
+          body: JSON.stringify({ agentId, status: "Suspended" })
         });
         if (res.ok) {
-          setAgents(prev => prev.filter(a => a.id !== agentId));
+          setAgents(prev => prev.map(a => a.id === agentId ? { ...a, status: "Suspended" as const } : a));
         } else {
-          alert("Failed to delete agent. Please try again.");
+          alert("Failed to deactivate agent. Please try again.");
         }
       } catch (err) {
         console.error("Error deleting agent:", err);
@@ -73,16 +73,17 @@ export default function FieldAgentManagement() {
       const res = await fetch("/api/admin/field-agents", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ agentId: id, email })
+        body: JSON.stringify({ agentId: id, sendPasswordReset: true })
       });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        alert(`✅ Password reset link successfully sent to ${email}`);
+        alert(`✅ Password reset link sent to ${email}`);
       } else {
-        alert(`Password reset email queued for ${email}`);
+        alert(`Could not send the reset link: ${data.error || "unknown error"}`);
       }
     } catch (err: any) {
       console.error(err);
-      alert("Password reset email sent to " + email);
+      alert("A network error occurred — the reset link was not sent.");
     } finally {
       setResettingId(null);
     }
@@ -214,7 +215,7 @@ export default function FieldAgentManagement() {
                         <button
                           onClick={() => handleDeleteAgent(agent.id)}
                           className="inline-flex items-center justify-center p-2 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 transition"
-                          title="Delete Agent"
+                          title="Deactivate Agent"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -455,36 +456,13 @@ function CreateIAMAgentModal({ onClose, onCreated }: { onClose: () => void, onCr
 }
 
 function ChangePasswordModal({ agent, onClose, onUpdated }: { agent: FieldAgent; onClose: () => void; onUpdated: () => void }) {
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [requirePasswordChange, setRequirePasswordChange] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  const handleGenerateRandom = () => {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
-    let pwd = "";
-    for (let i = 0; i < 12; i++) {
-      pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    setNewPassword(pwd);
-    setConfirmPassword(pwd);
-    setShowPassword(true);
-  };
-
+  // Passwords live in Firebase Auth, which only lets the agent set a new one via a reset link.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
-    if (newPassword.length < 6) {
-      setError("Password must be at least 6 characters long.");
-      return;
-    }
-
     setLoading(true);
     setError("");
     setSuccess("");
@@ -493,26 +471,21 @@ function ChangePasswordModal({ agent, onClose, onUpdated }: { agent: FieldAgent;
       const res = await fetch("/api/admin/field-agents", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          agentId: agent.id,
-          email: agent.email,
-          newPassword,
-          requirePasswordChange
-        })
+        body: JSON.stringify({ agentId: agent.id, sendPasswordReset: true })
       });
 
       const data = await res.json();
       if (res.ok) {
-        setSuccess(`✅ Password updated for ${agent.name}. Reset confirmation email sent to ${agent.email}.`);
+        setSuccess(`Password reset link sent to ${agent.email}. The agent sets a new password from that email.`);
         setTimeout(() => {
           onUpdated();
           onClose();
-        }, 1800);
+        }, 2500);
       } else {
-        setError(data.error || "Failed to update password.");
+        setError(data.error || "Failed to send the password reset link.");
       }
     } catch (err: any) {
-      setError("A network error occurred while updating password.");
+      setError("A network error occurred while sending the reset link.");
     } finally {
       setLoading(false);
     }
@@ -527,7 +500,7 @@ function ChangePasswordModal({ agent, onClose, onUpdated }: { agent: FieldAgent;
               <Key className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-white uppercase tracking-wider">Change Agent Password</h3>
+              <h3 className="text-base font-bold text-white uppercase tracking-wider">Reset Agent Password</h3>
               <p className="text-[11px] text-gray-400 mt-0.5">{agent.name} ({agent.id})</p>
             </div>
           </div>
@@ -548,62 +521,14 @@ function ChangePasswordModal({ agent, onClose, onUpdated }: { agent: FieldAgent;
             </div>
           )}
 
-          <div className="p-3 bg-white/[0.02] border border-white/[0.06] rounded-xl flex items-center justify-between">
-            <div className="min-w-0 pr-2">
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider">Target Account</p>
-              <p className="text-xs text-white font-medium truncate">{agent.email}</p>
-            </div>
-            <button
-              type="button"
-              onClick={handleGenerateRandom}
-              className="px-2.5 py-1 rounded-lg bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold text-[10px] font-bold shrink-0 hover:bg-luxury-gold/20 transition"
-            >
-              Generate Random
-            </button>
+          <div className="p-3 bg-white/[0.02] border border-white/[0.06] rounded-xl">
+            <p className="text-[10px] text-gray-400 uppercase tracking-wider">Target Account</p>
+            <p className="text-xs text-white font-medium truncate">{agent.email}</p>
           </div>
 
-          <div>
-            <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">New Password</label>
-            <div className="relative">
-              <input
-                required
-                type={showPassword ? "text" : "password"}
-                value={newPassword}
-                onChange={e => setNewPassword(e.target.value)}
-                placeholder="Enter new strong password..."
-                className="w-full bg-black/40 border border-white/[0.08] rounded-xl pl-3 pr-10 py-2 text-white focus:outline-none focus:border-luxury-gold/50 text-xs"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-              >
-                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[10px] text-gray-400 uppercase tracking-wider mb-1">Confirm New Password</label>
-            <input
-              required
-              type={showPassword ? "text" : "password"}
-              value={confirmPassword}
-              onChange={e => setConfirmPassword(e.target.value)}
-              placeholder="Confirm new password..."
-              className="w-full bg-black/40 border border-white/[0.08] rounded-xl px-3 py-2 text-white focus:outline-none focus:border-luxury-gold/50 text-xs"
-            />
-          </div>
-
-          <label className="flex items-center gap-3 p-3 bg-white/[0.02] border border-white/[0.05] rounded-xl cursor-pointer hover:bg-white/[0.04] transition">
-            <input
-              type="checkbox"
-              checked={requirePasswordChange}
-              onChange={e => setRequirePasswordChange(e.target.checked)}
-              className="w-4 h-4 rounded border-gray-600 bg-black/50 accent-luxury-gold"
-            />
-            <span className="text-[11px] text-gray-300">Force agent to change password on next portal login</span>
-          </label>
+          <p className="text-[11px] text-gray-300 leading-relaxed">
+            A secure password reset link will be emailed to this agent. Their current password keeps working until they choose a new one from that link.
+          </p>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-white/[0.06]">
             <button
@@ -615,10 +540,10 @@ function ChangePasswordModal({ agent, onClose, onUpdated }: { agent: FieldAgent;
             </button>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !!success}
               className="px-6 py-2 rounded-xl bg-gradient-to-r from-luxury-gold to-[#b8860b] text-black font-bold transition hover:scale-105 disabled:opacity-50 text-xs shadow-lg"
             >
-              {loading ? "Updating..." : "Save Password"}
+              {loading ? "Sending..." : "Send Reset Link"}
             </button>
           </div>
         </form>
@@ -626,4 +551,3 @@ function ChangePasswordModal({ agent, onClose, onUpdated }: { agent: FieldAgent;
     </div>
   );
 }
-

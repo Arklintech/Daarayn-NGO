@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from "react";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/AuthContext";
@@ -12,54 +12,41 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isRegisterMode, setIsRegisterMode] = useState(false); // Enable easy registration of first admin
-  const [showBypass, setShowBypass] = useState(!auth);
 
   const router = useRouter();
-  const { user, loading: authLoading, loginAsMock } = useAuth();
+  const { user, adminData, adminError, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    if (!authLoading && user) {
+    if (authLoading || !user) return;
+    if (adminData) {
       router.push("/admin/dashboard");
+    } else if (adminError) {
+      // Signed in, but the server refused admin access — show why and end the session.
+      setError(adminError);
+      if (auth) signOut(auth);
     }
-  }, [user, authLoading, router]);
+  }, [user, adminData, adminError, authLoading, router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    setLoading(true);
-    setShowBypass(false);
 
+    if (!auth) {
+      setError("Authentication is not configured. Contact the system administrator.");
+      return;
+    }
+
+    setLoading(true);
     try {
-      if (isRegisterMode) {
-        await createUserWithEmailAndPassword(auth, email, password);
-      } else {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-      router.push("/admin/dashboard");
+      await signInWithEmailAndPassword(auth, email, password);
+      // Redirect happens in the effect above once the server confirms admin access.
     } catch (err: any) {
       console.error("Auth error:", err);
-      let errMsg = "Invalid email or password.";
-      if (err.code === "auth/email-already-in-use") {
-        errMsg = "This email is already registered.";
-      } else if (err.code === "auth/weak-password") {
-        errMsg = "Password should be at least 6 characters.";
-      } else if (err.code === "auth/invalid-credential") {
-        errMsg = "Invalid credentials. Please verify your email and password.";
-        setShowBypass(true);
-      } else if (
-        err.code === "auth/api-key-not-valid" ||
-        err.code === "auth/invalid-api-key" ||
-        err.message?.includes("api-key-not-valid") ||
-        err.message?.includes("API key not valid") ||
-        err.code === "auth/configuration-not-found" ||
-        err.message?.includes("configuration-not-found") ||
-        err.code === "auth/operation-not-allowed"
-      ) {
-        errMsg = "Firebase Authentication has placeholder or unconfigured API keys. Use the Developer Bypass button below to log in directly.";
-        setShowBypass(true);
+      if (err.code === "auth/too-many-requests") {
+        setError("Too many attempts. Please wait a few minutes and try again.");
+      } else {
+        setError("Invalid email or password.");
       }
-      setError(errMsg);
     } finally {
       setLoading(false);
     }
@@ -98,7 +85,7 @@ export default function AdminLogin() {
             DAARAYN
           </h1>
           <p className="text-xs text-luxury-gold font-medium tracking-widest mt-1 uppercase">
-            {isRegisterMode ? "Register First Admin Account" : "Secure Administrator Portal"}
+            Secure Administrator Portal
           </p>
         </div>
 
@@ -145,43 +132,11 @@ export default function AdminLogin() {
             {loading ? (
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-black border-t-transparent"></div>
             ) : (
-              isRegisterMode ? "REGISTER & SIGN IN" : "SECURE AUTHORIZE"
+              "SECURE AUTHORIZE"
             )}
           </button>
         </form>
 
-        <div className="mt-6 text-center">
-          <button 
-            type="button"
-            onClick={() => {
-              setIsRegisterMode(!isRegisterMode);
-              setError("");
-              setShowBypass(false);
-            }}
-            className="text-[11px] text-gray-400 hover:text-luxury-gold transition font-medium tracking-wide uppercase"
-          >
-            {isRegisterMode ? "Back to secure administrator login" : "No admin user? Register initial account"}
-          </button>
-        </div>
-
-        {showBypass && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mt-5 pt-5 border-t border-white/[0.06] text-center"
-          >
-            <p className="text-[10px] text-amber-300/80 font-medium leading-normal mb-3">
-              Developer option: You can temporarily bypass Firebase Authentication setup to test all dashboard features locally.
-            </p>
-            <button
-              type="button"
-              onClick={() => loginAsMock(email || "admin@daarayn.org", "Developer Admin", "Super Admin")}
-              className="w-full py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-300 font-semibold text-xs tracking-wider transition active:scale-[0.98]"
-            >
-              Bypass Auth (Developer Mode)
-            </button>
-          </motion.div>
-        )}
       </motion.div>
     </div>
   );

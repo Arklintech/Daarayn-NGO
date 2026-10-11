@@ -4,11 +4,17 @@ import { auditLogRepository } from "@/lib/repositories/auditLogRepository";
 import { notificationRepository } from "@/lib/repositories/notificationRepository";
 import { driveService } from "@/lib/google/drive";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
+import { requireAdmin, requireAdminOrAgent } from "@/lib/server/auth";
+import { nextSequentialId } from "@/lib/repositories/ids";
 
 export async function GET(request: NextRequest) {
   try {
+    const principal = await requireAdminOrAgent(request);
+    if (principal instanceof NextResponse) return principal;
+
     const { searchParams } = new URL(request.url);
-    const agentId = searchParams.get("agentId");
+    // Agents only ever see their own reports
+    const agentId = principal.kind === "agent" ? principal.agent.id : searchParams.get("agentId");
     const status = searchParams.get("status");
 
     let reports = await fieldReportRepository.getAll();
@@ -24,7 +30,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error("[API/FieldReports] Failed to fetch field reports:", error);
     return NextResponse.json(
-      { error: "Failed to retrieve field reports.", details: error?.message || String(error), stack: error?.stack },
+      { error: "Failed to retrieve field reports." },
       { status: 500 }
     );
   }
@@ -32,6 +38,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const principal = await requireAdminOrAgent(request);
+    if (principal instanceof NextResponse) return principal;
+
     const contentType = request.headers.get("content-type") || "";
     let body: any = {};
     const mediaDriveIds: string[] = [];
@@ -103,6 +112,12 @@ export async function POST(request: NextRequest) {
       body = await request.json();
     }
 
+    // Reports filed by an agent are always attributed to that agent
+    if (principal.kind === "agent") {
+      body.agentId = principal.agent.id;
+      body.agentName = principal.agent.name;
+    }
+
     if (!body.title || !body.agentId) {
       return NextResponse.json(
         { error: "Title and Agent ID are required." },
@@ -110,10 +125,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate Report ID
-    const existing = await fieldReportRepository.getAll();
-    const nextIdx = existing.length + 1;
-    const reportId = `FR${String(nextIdx).padStart(3, "0")}`;
+    // Generate Report ID from fresh data so a stale cache cannot reuse an existing ID
+    const existing = await fieldReportRepository.getAll(true);
+    const reportId = nextSequentialId("FR", existing.map((r) => r.id));
 
     const nowIso = new Date().toISOString();
 
@@ -186,6 +200,9 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const admin = await requireAdmin(request);
+    if (admin instanceof NextResponse) return admin;
+
     const body = await request.json();
     const { reportId, status, adminNotes, assignedTo } = body;
 
@@ -237,7 +254,7 @@ export async function PATCH(request: NextRequest) {
     const auditId = `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
     await auditLogRepository.save({
       id: auditId,
-      actor_id: "admin",
+      actor_id: admin.email,
       actor_role: "admin",
       action: "UPDATE_FIELD_REPORT_STATUS",
       entity_type: "Field_Report",

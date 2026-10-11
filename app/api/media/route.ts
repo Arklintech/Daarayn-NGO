@@ -1,7 +1,11 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { driveService } from "@/lib/google/drive";
 
 export async function POST(request: NextRequest) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;

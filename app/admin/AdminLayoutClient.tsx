@@ -57,16 +57,16 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     });
   };
 
-  // Guard: if no user is signed in, redirect to login
+  // Guard: only server-verified administrators may stay on admin pages
   React.useEffect(() => {
-    if (!loading && !user && pathname !== "/admin/login") {
+    if (!loading && (!user || !adminData) && pathname !== "/admin/login") {
       router.replace("/admin/login");
     }
-  }, [user, loading, pathname, router]);
+  }, [user, adminData, loading, pathname, router]);
 
   // Real-time unread count — poll the Sheets-backed notifications API
   React.useEffect(() => {
-    if (!user) return;
+    if (!adminData) return;
 
     const fetchUnread = async () => {
       try {
@@ -84,7 +84,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     fetchUnread();
     const interval = setInterval(fetchUnread, 30_000);
     return () => clearInterval(interval);
-  }, [user]);
+  }, [adminData]);
 
 
   // Register SW + detect live updates for mobile PWA
@@ -160,8 +160,8 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     );
   }
 
-  // Guard: if no user is signed in, wait for redirect
-  if (!user) {
+  // Guard: not a verified administrator, wait for redirect
+  if (!user || !adminData) {
     return null;
   }
 

@@ -7,6 +7,7 @@
 
 import { sendEmail } from "./providerManager";
 import type { EmailResult } from "./providerManager";
+import { getReplyToAddress, getSiteUrl } from "./deliverability";
 import path from "path";
 
 // ─────────────────────────────────────────────
@@ -35,6 +36,7 @@ export interface LetterEmailProps {
 export function generateLetterEmailTemplate(props: LetterEmailProps): string {
   // Use CID attachment instead of Base64 to prevent Spam flagging by Gmail
   const logoUrl = 'cid:logo@daarayn.org';
+  const contactEmail = getReplyToAddress();
   
   return `
 <!DOCTYPE html>
@@ -45,7 +47,6 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
 <meta name="color-scheme" content="light dark">
 <meta name="supported-color-schemes" content="light dark">
 <title>${props.title || "Daarayn Foundation"}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&display=swap" rel="stylesheet" />
 <style>
   :root {
     color-scheme: light dark;
@@ -261,13 +262,16 @@ export function generateLetterEmailTemplate(props: LetterEmailProps): string {
   <!-- FOOTER -->
   <tr>
     <td style="padding:32px 6px 0;">
-      <p style="font-family:Arial, Helvetica, sans-serif; font-size:11.5px; color:#545D6E; line-height:1.7; margin:0;">
+      <p style="font-family:Arial, Helvetica, sans-serif; font-size:11.5px; color:#9ca3af; line-height:1.7; margin:0;">
         This communication has been generated from verified records approved by Daarayn Foundation Trust. Amanah, transparency, and accountability are the core pillars of our foundation.
       </p>
-      <p style="font-family:Arial, Helvetica, sans-serif; font-size:11.5px; color:#545D6E; margin:14px 0 0;">
-        Questions? Write to us at <a href="mailto:${process.env.SMTP_USER || "daaraynorg@gmail.com"}" style="color:#C9A24B; text-decoration:none;">${process.env.SMTP_USER || "daaraynorg@gmail.com"}</a>
+      <p style="font-family:Arial, Helvetica, sans-serif; font-size:11.5px; color:#9ca3af; margin:14px 0 0;">
+        Questions? Write to us at <a href="mailto:${contactEmail}" style="color:#C9A24B; text-decoration:none;">${contactEmail}</a>
       </p>
-      <p style="font-family:Arial, Helvetica, sans-serif; font-size:11px; color:#3E4653; margin:18px 0 0;">
+      <p style="font-family:Arial, Helvetica, sans-serif; font-size:11px; color:#9ca3af; line-height:1.6; margin:14px 0 0;">
+        You are receiving this email because you donated to or registered with Daarayn Foundation. To stop receiving these emails, <a href="mailto:${contactEmail}?subject=Unsubscribe" style="color:#C9A24B; text-decoration:underline;">unsubscribe here</a>.
+      </p>
+      <p style="font-family:Arial, Helvetica, sans-serif; font-size:11px; color:#8A93A6; margin:18px 0 0;">
         &copy; ${new Date().getFullYear()} Daarayn Foundation. All rights reserved.
       </p>
     </td>
@@ -320,7 +324,7 @@ export async function sendProjectUpdateEmail(
     bodyParagraphs: message.split('\n\n').map(p => p.replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong style='color:#F2EEE3;'>$1</strong>")),
     pullQuote: "Every rupee you donate is tracked, documented, and permanently recorded on our public ledger — ensuring complete transparency.",
     postQuoteParagraph: "You can view the full progress details and field notes on your dashboard.",
-    ctaLink: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/donor/dashboard`,
+    ctaLink: `${getSiteUrl()}/donor/dashboard`,
     ctaText: "View update details &rarr;",
     dua: {
       arabic: "رَبَّنَا تَقَبَّلْ مِنَّا ۖ إِنَّكَ أَنتَ السَّمِيعُ الْعَلِيمُ",
@@ -365,7 +369,7 @@ export async function sendAcknowledgementEmail(
     ],
     pullQuote: "Indeed, those who give charity, men and women, and lend to Allah a goodly loan — it will be multiplied for them, and they will have a noble reward.",
     postQuoteParagraph: "You can track your donation history and upcoming allocations at any time.",
-    ctaLink: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/donor/dashboard`,
+    ctaLink: `${getSiteUrl()}/donor/dashboard`,
     ctaText: "View your donor profile &rarr;",
     dua: {
       arabic: "بَارَكَ اللَّهُ لَكَ فِي أَهْلِكَ وَمَالِكَ",
@@ -376,7 +380,7 @@ export async function sendAcknowledgementEmail(
 
   return sendEmail({
     to: recipientEmail,
-    subject: `Thank You for Your Sadaqah — Daarayn ${donationId ? `(${donationId})` : ""}`,
+    subject: `Thank You for Your Sadaqah — Daarayn${donationId ? ` (${donationId})` : ""}`,
     html,
     attachments: attachDaaraynLogo()
   });
@@ -410,7 +414,7 @@ export async function sendAllocationEmail(
     ],
     pullQuote: "Every rupee you donate is tracked, documented, and permanently recorded on our public ledger — so this contribution, and every one before it, remains fully accountable to you.",
     postQuoteParagraph: "You can follow this allocation from here, including field notes and disbursement records, at any time.",
-    ctaLink: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/donor/dashboard`,
+    ctaLink: `${getSiteUrl()}/donor/dashboard`,
     ctaText: "Track your impact &rarr;",
     dua: {
       arabic: "رَبَّنَا آتِنَا فِى الدُّنْيَا حَسَنَةً وَفِى الْآخِرَةِ حَسَنَةً وَقِنَا عَذَابَ النَّارِ",
@@ -455,7 +459,7 @@ export async function sendCertificateEmail(
     ],
     pullQuote: "Amanah and transparency are the core pillars of our foundation. Every transaction is meticulously recorded to honor your trust.",
     postQuoteParagraph: "You can view and download all your past certificates directly from your dashboard.",
-    ctaLink: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/donor/dashboard`,
+    ctaLink: `${getSiteUrl()}/donor/dashboard`,
     ctaText: "View your certificates &rarr;",
     dua: {
       arabic: "أَجَرَكَ اللَّهُ فِيمَا أَعْطَيْتَ، وَبَارَكَ لَكَ فِيمَا أَبْقَيْتَ، وَجَعَلَهُ لَكَ طَهُورًا",
@@ -494,7 +498,7 @@ export async function sendAnnualReportEmail(
     ],
     pullQuote: "And whatever you spend of good - it will be fully repaid to you, and you will not be wronged.",
     postQuoteParagraph: "We hold ourselves strictly accountable. Our Annual Report is thoroughly vetted to guarantee absolute transparency in every endeavor.",
-    ctaLink: reportUrl || `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/reports/${reportYear}`,
+    ctaLink: reportUrl || `${getSiteUrl()}/reports/${reportYear}`,
     ctaText: "Read the full report &rarr;",
     dua: {
       arabic: "رَبَّنَا تَقَبَّلْ مِنَّا ۖ إِنَّكَ أَنتَ السَّمِيعُ الْعَلِيمُ",

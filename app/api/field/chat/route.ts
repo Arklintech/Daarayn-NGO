@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { fieldMessageRepository, FieldChatMessageEntity } from "@/lib/repositories/fieldMessageRepository";
+import { fieldReportRepository } from "@/lib/repositories/fieldReportRepository";
+import { requireAdminOrAgent, type AgentPrincipal } from "@/lib/server/auth";
 import fs from "fs";
 import path from "path";
 
@@ -18,6 +20,15 @@ function getLocalFallback(): FieldChatMessageEntity[] {
   return [];
 }
 
+/** Agents may only use their own general thread and threads of reports they submitted. */
+async function agentOwnsConversation(principal: AgentPrincipal, conversationId: string): Promise<boolean> {
+  const agentId = principal.agent.id;
+  if (conversationId === `conv_${agentId}_general`) return true;
+  if (!conversationId.startsWith("conv_")) return false;
+  const report = await fieldReportRepository.getById(conversationId.slice("conv_".length));
+  return !!report && report.agentId === agentId;
+}
+
 function saveLocalFallback(history: FieldChatMessageEntity[]) {
   try {
     const dir = path.dirname(chatStorageFile);
@@ -28,9 +39,21 @@ function saveLocalFallback(history: FieldChatMessageEntity[]) {
 
 export async function GET(request: NextRequest) {
   try {
+    const principal = await requireAdminOrAgent(request);
+    if (principal instanceof NextResponse) return principal;
+
     const { searchParams } = new URL(request.url);
     const conversationId = searchParams.get("conversationId");
     const force = searchParams.get("force") === "true";
+
+    if (principal.kind === "agent") {
+      if (!conversationId) {
+        return NextResponse.json({ error: "conversationId is required." }, { status: 400 });
+      }
+      if (!(await agentOwnsConversation(principal, conversationId))) {
+        return NextResponse.json({ error: "You do not have access to this conversation." }, { status: 403 });
+      }
+    }
 
     let all: FieldChatMessageEntity[] = [];
     try {
@@ -53,14 +76,32 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { conversationId, senderId, senderRole, senderName, text, attachmentDriveFileId, reportId, agentId } = body;
+    const principal = await requireAdminOrAgent(request);
+    if (principal instanceof NextResponse) return principal;
 
-    if (!conversationId || !senderId || !text) {
+    const body = await request.json();
+    const { conversationId, text, attachmentDriveFileId, reportId, agentId } = body;
+    let { senderId, senderRole, senderName } = body;
+
+    if (!conversationId || !text) {
       return NextResponse.json(
-        { error: "conversationId, senderId, and text are required." },
+        { error: "conversationId and text are required." },
         { status: 400 }
       );
+    }
+
+    // Sender identity comes from the verified session, never from the request body.
+    if (principal.kind === "agent") {
+      if (!(await agentOwnsConversation(principal, conversationId))) {
+        return NextResponse.json({ error: "You do not have access to this conversation." }, { status: 403 });
+      }
+      senderId = principal.agent.id;
+      senderRole = "Agent";
+      senderName = principal.agent.name;
+    } else {
+      senderId = senderId || principal.email;
+      senderRole = "Admin";
+      senderName = senderName || "Daarayn Admin";
     }
 
     // Derive reportId and agentId if not explicitly passed

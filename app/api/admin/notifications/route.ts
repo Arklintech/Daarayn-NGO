@@ -1,8 +1,12 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { notificationRepository, SystemNotification } from "@/lib/repositories/notificationRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 
 export async function GET(req: NextRequest) {
+  const adminAuth = await requireAdmin(req);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const { searchParams } = new URL(req.url);
     const force = searchParams.get("force") === "true";
@@ -47,6 +51,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  const adminAuth = await requireAdmin(req);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const body = await req.json();
     const { id, read, isStarred, markAllRead } = body;
@@ -82,6 +89,9 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
+  const adminAuth = await requireAdmin(req);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
@@ -101,6 +111,9 @@ export async function DELETE(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const adminAuth = await requireAdmin(req);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const payload = await req.json();
     const notifId = payload.id || `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;

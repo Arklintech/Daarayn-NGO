@@ -6,6 +6,7 @@
  * handles rollback on failure, and triggers notifications.
  */
 
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, updateDoc, setDoc } from "firebase/firestore";
@@ -20,6 +21,9 @@ import { registerApproval } from "@/lib/ai/orchestrator/approvalManager";
 import { MissionControlEngine } from "@/lib/ai/engines/MissionControlEngine";
 
 export async function POST(request: Request) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   const startedAt = Date.now();
 
   try {

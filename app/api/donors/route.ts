@@ -1,7 +1,11 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { donorRepository } from "@/lib/repositories/donorRepository";
 
 export async function GET(request: NextRequest) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get("q")?.toLowerCase().trim();
@@ -35,6 +39,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const adminAuth = await requireAdmin(request);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     const body = await request.json();
     if (!body.name) {

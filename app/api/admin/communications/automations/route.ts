@@ -1,3 +1,4 @@
+import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { causeRepository } from "@/lib/repositories/causeRepository";
 import { donationRepository } from "@/lib/repositories/donationRepository";
@@ -8,6 +9,9 @@ import { sendEmail } from "@/lib/email/providerManager";
 const MILESTONES = [25, 50, 75, 100];
 
 export async function POST(req: Request) {
+  const adminAuth = await requireAdmin(req);
+  if (adminAuth instanceof NextResponse) return adminAuth;
+
   try {
     // 1. Fetch all active causes from Google Sheets
     const causes = await causeRepository.getAll();
