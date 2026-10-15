@@ -1,63 +1,49 @@
 /**
  * lib/email/providers/resend.ts
  *
- * Resend provider — kept intact for future use.
- * Uses direct IP (104.20.29.242) to bypass DNS issues on this machine.
- * Switch back by setting EMAIL_PROVIDER=resend in .env.local.
+ * Resend provider. Enable by setting EMAIL_PROVIDER=resend.
  */
 
 import type { EmailResult, EmailPayload } from "../providerManager";
 import { getReplyToAddress, getStandardHeaders, htmlToPlainText } from "../deliverability";
 
-const resendApiKey = process.env.RESEND_API_KEY;
+const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
-function sendViaResendIP(payload: object): Promise<{ ok: boolean; body: Record<string, unknown> }> {
-  return new Promise((resolve, reject) => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const https = require("https");
-    const body = JSON.stringify(payload);
+function cleanEnv(value: string | undefined): string {
+  return (value || "").trim().replace(/^["']|["']$/g, "").trim();
+}
 
-    const options = {
-      hostname: "104.20.29.242", // Resend's Cloudflare IP — bypasses local DNS failure
-      port: 443,
-      path: "/emails",
-      method: "POST",
-      headers: {
-        "Host": "api.resend.com",
-        "Authorization": `Bearer ${resendApiKey}`,
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(body),
-      },
-    };
+function getFromEmail(): string {
+  return cleanEnv(process.env.FROM_EMAIL) || "onboarding@resend.dev";
+}
 
-    const req = https.request(options, (res: import("http").IncomingMessage) => {
-      let data = "";
-      res.on("data", (chunk: Buffer) => { data += chunk; });
-      res.on("end", () => {
-        try {
-          resolve({ ok: (res.statusCode ?? 500) < 300, body: JSON.parse(data) });
-        } catch {
-          resolve({ ok: false, body: { message: data } });
-        }
-      });
-    });
+/**
+ * Resend's shared test sender only delivers to the Resend account owner, so a
+ * broadcast from it would report success while donors receive nothing.
+ */
+function sandboxSenderError(): string | null {
+  if (/@resend\.dev\b/i.test(getFromEmail())) {
+    return "FROM_EMAIL uses Resend's test sender (resend.dev), which only delivers to the Resend account owner. Set FROM_EMAIL to an address on a domain verified in Resend.";
+  }
+  return null;
+}
 
-    req.on("error", reject);
-    req.write(body);
-    req.end();
-  });
+export async function verifyResend(): Promise<{ ok: boolean; error?: string }> {
+  if (!cleanEnv(process.env.RESEND_API_KEY)) {
+    return { ok: false, error: "RESEND_API_KEY is not set on this deployment." };
+  }
+  const sandbox = sandboxSenderError();
+  return sandbox ? { ok: false, error: sandbox } : { ok: true };
 }
 
 export async function sendViaResend(payload: EmailPayload): Promise<EmailResult> {
-  const fromEmail = process.env.FROM_EMAIL || "onboarding@resend.dev";
-
-  console.log("[Resend] Sending via direct IP (bypassing DNS)...");
-  console.log("  API Key:", resendApiKey ? "Present" : "MISSING");
-  console.log("  From:", fromEmail);
-  console.log("  To:", payload.to);
-
-  if (!resendApiKey) {
-    return { success: false, error: "RESEND_API_KEY is not defined in environment variables." };
+  const apiKey = cleanEnv(process.env.RESEND_API_KEY);
+  if (!apiKey) {
+    return { success: false, retryable: false, error: "RESEND_API_KEY is not set on this deployment." };
+  }
+  const sandbox = sandboxSenderError();
+  if (sandbox) {
+    return { success: false, retryable: false, error: sandbox };
   }
 
   try {
@@ -70,36 +56,46 @@ export async function sendViaResend(payload: EmailPayload): Promise<EmailResult>
             ? att.content
             : Buffer.from(att.content).toString("base64");
       }
-      
+
       return {
         filename: att.filename,
         content: contentBase64,
-        id: att.cid
+        ...(att.cid && { content_id: att.cid }),
       };
     });
 
-    const result = await sendViaResendIP({
-      from: fromEmail,
-      to: [payload.to],
-      subject: payload.subject,
-      html: payload.html,
-      text: htmlToPlainText(payload.html),
-      reply_to: getReplyToAddress(),
-      headers: getStandardHeaders(),
-      ...(formattedAttachments && formattedAttachments.length > 0 && { attachments: formattedAttachments })
+    const res = await fetch(RESEND_ENDPOINT, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: getFromEmail(),
+        to: [payload.to],
+        subject: payload.subject,
+        html: payload.html,
+        text: htmlToPlainText(payload.html),
+        reply_to: getReplyToAddress(),
+        headers: getStandardHeaders(),
+        ...(formattedAttachments && formattedAttachments.length > 0 && { attachments: formattedAttachments }),
+      }),
+      signal: AbortSignal.timeout(20000),
     });
 
-    console.log("[Resend] Response:", JSON.stringify(result.body, null, 2));
+    const body = (await res.json().catch(() => ({}))) as { id?: string; message?: string };
 
-    if (!result.ok) {
-      const errMsg = (result.body as { message?: string }).message || JSON.stringify(result.body);
-      return { success: false, error: errMsg };
+    if (!res.ok) {
+      const errMsg = body.message || `Resend responded with HTTP ${res.status}`;
+      console.error("[Resend] Send failed:", errMsg);
+      // 429 and 5xx are temporary; other 4xx (bad key, unverified domain) are not
+      return { success: false, error: errMsg, retryable: res.status === 429 || res.status >= 500 };
     }
 
-    return { success: true, providerMessageId: (result.body as { id?: string }).id };
+    return { success: true, providerMessageId: body.id };
   } catch (err) {
     const msg = (err as Error).message;
     console.error("[Resend] Exception:", msg);
-    return { success: false, error: msg };
+    return { success: false, error: msg, retryable: true };
   }
 }

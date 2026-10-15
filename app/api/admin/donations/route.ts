@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   if (adminAuth instanceof NextResponse) return adminAuth;
 
   try {
-    const donations = await donationRepository.getAll();
+    const donations = await donationRepository.getAll(true);
     const mapped = donations.map((d: any) => ({
       id: d.trackingId || d.id,
       donationId: d.id,
@@ -51,7 +51,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     // 1. Update in Google Sheets authoritative repository
-    await donationRepository.update(id, { status });
+    const updated = await donationRepository.update(id, { status });
+    if (!updated) {
+      return NextResponse.json({ success: false, error: `Donation ${id} not found` }, { status: 404 });
+    }
 
     // 2. Emit realtime event
     realtimeBroadcaster.broadcast("DONATION_STATUS_UPDATED", { id, status });

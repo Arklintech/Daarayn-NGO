@@ -13,6 +13,7 @@ export interface CommunicationRecord {
   createdBy: string;
   createdAt: string;
   completedAt?: string;
+  errorSummary?: string;
 }
 
 const COMMUNICATION_HEADERS = [
@@ -28,6 +29,7 @@ const COMMUNICATION_HEADERS = [
   "createdBy",
   "createdAt",
   "completedAt",
+  "errorSummary",
 ];
 
 export class CommunicationRepository extends BaseRepository<CommunicationRecord> {
@@ -59,6 +61,7 @@ export class CommunicationRepository extends BaseRepository<CommunicationRecord>
       createdBy: String(row.createdBy || "Admin"),
       createdAt: String(row.createdAt || new Date().toISOString()),
       completedAt: String(row.completedAt || ""),
+      errorSummary: String(row.errorSummary || ""),
     };
   }
 
@@ -76,6 +79,7 @@ export class CommunicationRepository extends BaseRepository<CommunicationRecord>
       createdBy: comm.createdBy,
       createdAt: comm.createdAt,
       completedAt: comm.completedAt || "",
+      errorSummary: comm.errorSummary || "",
     };
   }
 }

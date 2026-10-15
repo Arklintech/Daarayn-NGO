@@ -92,73 +92,6 @@ function CommunicationsHubContent() {
     fetchResolution();
   }, [selectedCauseIds, type]);
 
-  // Phase 2: Live Progress via SSE + Polling Fallback
-  useEffect(() => {
-    if ((mode === "progress" || mode === "success") && broadcastId) {
-      let isMounted = true;
-
-      // 1. Setup SSE stream
-      let eventSource: EventSource | null = null;
-      try {
-        eventSource = new EventSource("/api/realtime/stream");
-        eventSource.onmessage = (event) => {
-          try {
-            const payload = JSON.parse(event.data);
-            const eventData = payload.payload || payload.data;
-            if (payload.type === "BROADCAST_PROGRESS" && eventData?.broadcastId === broadcastId) {
-              setBroadcastStats((prev: any) => ({
-                ...prev,
-                status: eventData.status,
-                stats: {
-                  sent: eventData.sent,
-                  failed: eventData.failed,
-                  remaining: eventData.remaining
-                }
-              }));
-            }
-            if (payload.type === "BROADCAST_COMPLETED" && eventData?.broadcastId === broadcastId) {
-              setBroadcastStats((prev: any) => ({
-                ...prev,
-                status: "Completed",
-                stats: {
-                  sent: eventData.sent,
-                  failed: eventData.failed,
-                  remaining: 0
-                }
-              }));
-              setMode("success");
-            }
-          } catch {}
-        };
-      } catch (e) {
-        console.warn("SSE connection for broadcast progress failed, falling back to polling", e);
-      }
-
-      // 2. Poll fallback
-      const pollInterval = setInterval(async () => {
-        if (!isMounted) return;
-        try {
-          const res = await fetch(`/api/admin/communications/status?id=${encodeURIComponent(broadcastId)}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success && data.broadcast) {
-              setBroadcastStats(data.broadcast);
-              if (data.broadcast.status === "Completed" && mode !== "success") {
-                setMode("success");
-              }
-            }
-          }
-        } catch {}
-      }, 1500);
-
-      return () => {
-        isMounted = false;
-        if (eventSource) eventSource.close();
-        clearInterval(pollInterval);
-      };
-    }
-  }, [mode, broadcastId]);
-
   const handleFileUpload = async (files: File[]) => {
     const newEntries = files.map(f => ({
       name: f.name,
@@ -219,10 +152,13 @@ function CommunicationsHubContent() {
         })
       });
       const result = await response.json();
-      if (result.success) {
+      if (result.broadcast) {
+        // The server returns only after every email has been attempted
         setBroadcastId(result.broadcastId);
+        setBroadcastStats(result.broadcast);
+        setMode("success");
       } else {
-        alert("Failed to start broadcast: " + result.error);
+        alert("Broadcast was not sent: " + (result.error || `HTTP ${response.status}`));
         setMode("compose");
       }
     } catch (err) {
@@ -773,7 +709,11 @@ function CommunicationsHubContent() {
             <h2 className="text-2xl font-bold text-white">Broadcast In Progress</h2>
           </div>
           
-          {broadcastStats ? (
+          {!broadcastStats ? (
+            <div className="text-center text-gray-400 text-sm">
+              Sending to {donorCount} recipient{donorCount === 1 ? "" : "s"}… keep this page open until the summary appears.
+            </div>
+          ) : (
             <div className="space-y-6">
               <div className="flex justify-between items-center text-sm font-semibold p-4 rounded-xl bg-white/[0.02] border border-white/[0.05]">
                 <span className="text-gray-400">Sent: <strong className="text-white">{broadcastStats.stats?.sent || 0} / {broadcastStats.totalRecipients || 0}</strong></span>
@@ -794,21 +734,41 @@ function CommunicationsHubContent() {
                 </div>
               </div>
             </div>
-          ) : (
-            <div className="text-center text-gray-400 text-sm">Initializing Queue...</div>
           )}
         </div>
       )}
 
       {/* Final Broadcast Summary */}
       {mode === "success" && broadcastStats && (
-        <div className="rounded-2xl p-6 md:p-10 max-w-3xl mx-auto" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(74,222,128,0.3)' }}>
+        <div className="rounded-2xl p-6 md:p-10 max-w-3xl mx-auto" style={{ background: 'rgba(255,255,255,0.02)', border: `1px solid ${(broadcastStats.stats?.failed || 0) === 0 ? 'rgba(74,222,128,0.3)' : 'rgba(248,113,113,0.35)'}` }}>
           <div className="text-center mb-8">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(74,222,128,0.1)' }}>
-              <CheckCircle className="w-8 h-8 text-green-400" />
-            </div>
-            <h2 className="text-2xl font-bold text-white">Broadcast Completed Successfully</h2>
+            {(broadcastStats.stats?.failed || 0) === 0 ? (
+              <>
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(74,222,128,0.1)' }}>
+                  <CheckCircle className="w-8 h-8 text-green-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">Broadcast Completed Successfully</h2>
+              </>
+            ) : (
+              <>
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(248,113,113,0.1)' }}>
+                  <AlertTriangle className="w-8 h-8 text-red-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white">
+                  {(broadcastStats.stats?.sent || 0) === 0 ? "Broadcast Failed — No Emails Delivered" : "Broadcast Completed With Failures"}
+                </h2>
+              </>
+            )}
           </div>
+
+          {Array.isArray(broadcastStats.errors) && broadcastStats.errors.length > 0 && (
+            <div className="mb-8 p-5 rounded-xl text-sm space-y-2" style={{ background: 'rgba(248,113,113,0.06)', border: '1px solid rgba(248,113,113,0.25)' }}>
+              <p className="text-red-300 font-semibold">Why emails failed</p>
+              {broadcastStats.errors.map((e: { reason: string; count: number }, i: number) => (
+                <p key={i} className="text-gray-300 break-words"><span className="text-red-400 font-mono mr-2">{e.count}×</span>{e.reason}</p>
+              ))}
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div className="space-y-3 p-5 rounded-xl bg-white/5 border border-white/10 text-sm">

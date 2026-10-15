@@ -44,9 +44,9 @@ export class DonationService {
     }
 
     // 1. Generate Authoritative Sequence / Tracking ID
-    const existingDonations = await donationRepository.getAll();
-    const nextIdx = existingDonations.length + 1;
-    const trackingId = "DA" + String(nextIdx).padStart(3, "0");
+    // Read fresh rows and continue from the highest number: a cached or
+    // count-based sequence reissued IDs already taken (e.g. two DA006 rows).
+    let trackingId = await this.nextTrackingId();
 
     // 2. Process & Upload Payment Proof to Google Drive (Authoritative File Storage)
     let proofMetadata: DriveFileMetadata | null = null;
@@ -76,7 +76,8 @@ export class DonationService {
     // 3. Resolve or Create Donor Profile in Google Sheets
     const contact = (input.donorContact || "").trim();
     const isEmail = contact.includes("@");
-    let donor = await donorRepository.findByContact(contact);
+    const normalizedContact = isEmail ? contact.toLowerCase() : contact;
+    let donor = await donorRepository.findByContact(contact, true);
 
     const nowIso = new Date().toISOString();
     const today = new Date();
@@ -95,7 +96,7 @@ export class DonationService {
       donor = {
         id: newDonorId,
         name: donorNameClean,
-        email: isEmail ? contact : "",
+        email: isEmail ? normalizedContact : "",
         phone: !isEmail ? contact : "",
         country: "India",
         city: "",
@@ -144,6 +145,16 @@ export class DonationService {
     }
 
     // 6. Create Authoritative Donation Record in Google Sheets
+    // Another donation may have claimed this ID during the Drive upload above
+    const latestId = await this.nextTrackingId();
+    if (latestId !== trackingId && parseInt(latestId.slice(2), 10) > parseInt(trackingId.slice(2), 10)) {
+      if (donor.donationHistory) {
+        donor.donationHistory = donor.donationHistory.map((id) => (id === trackingId ? latestId : id));
+        await donorRepository.save(donor);
+      }
+      trackingId = latestId;
+    }
+
     const donationRecord: Donation = {
       id: trackingId,
       donorId: donor.id,
@@ -250,6 +261,19 @@ export class DonationService {
       donationId: trackingId,
       proofDriveFileId,
     };
+  }
+
+  /**
+   * Next DA### ID from fresh sheet rows, continuing from the highest number.
+   * A cached or count-based sequence reissued IDs already taken (two DA006 rows).
+   */
+  private async nextTrackingId(): Promise<string> {
+    const existingDonations = await donationRepository.getAll(true);
+    const highestIdx = existingDonations.reduce((max, d) => {
+      const match = /^DA(\d+)$/.exec(String(d.id || ""));
+      return match ? Math.max(max, parseInt(match[1], 10)) : max;
+    }, 0);
+    return "DA" + String(highestIdx + 1).padStart(3, "0");
   }
 }
 

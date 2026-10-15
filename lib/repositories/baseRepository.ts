@@ -6,7 +6,10 @@ export abstract class BaseRepository<T extends { id: string }> {
   private cache: Map<string, T> = new Map();
   private cacheLoaded: boolean = false;
   private lastFetchTime: number = 0;
-  private CACHE_TTL_MS = 300_000; // 5 minutes in-memory cache
+  // Each serverless instance holds its own copy, so a long TTL hides rows
+  // written by other instances (new donations, verifications) for minutes.
+  private CACHE_TTL_MS = 30_000;
+  private MISS_REFRESH_INTERVAL_MS = 3_000;
 
   constructor(sheetName: string, headers: string[]) {
     this.sheetName = sheetName;
@@ -44,7 +47,16 @@ export abstract class BaseRepository<T extends { id: string }> {
   }
 
   public async getById(id: string): Promise<T | null> {
-    const all = await this.getAll();
+    await this.getAll();
+    const cached = this.cache.get(id);
+    if (cached) return cached;
+
+    // The row may have been written by another instance after our cache was
+    // filled; without this, save() appends a duplicate and update() silently
+    // does nothing. Throttled so lookups of unknown ids can't hammer Sheets.
+    if (Date.now() - this.lastFetchTime >= this.MISS_REFRESH_INTERVAL_MS) {
+      await this.getAll(true);
+    }
     return this.cache.get(id) || null;
   }
 

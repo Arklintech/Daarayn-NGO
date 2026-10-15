@@ -59,6 +59,12 @@ const nextConfig: NextConfig = {
     ];
   },
 
+  // Emails attach the logo by reading it from disk; make sure serverless
+  // functions ship with it instead of silently sending without a logo.
+  outputFileTracingIncludes: {
+    "/api/**/*": ["./public/email logo/**/*"],
+  },
+
   // Allow local network IP for HMR
   allowedDevOrigins: ['192.168.0.125', 'localhost'],
 };

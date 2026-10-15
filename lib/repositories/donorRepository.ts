@@ -86,8 +86,8 @@ export class DonorRepository extends BaseRepository<DonorProfile> {
     return all.find((d) => d.email.toLowerCase() === email.toLowerCase()) || null;
   }
 
-  public async findByContact(contact: string): Promise<DonorProfile | null> {
-    const all = await this.getAll();
+  public async findByContact(contact: string, forceRefresh = false): Promise<DonorProfile | null> {
+    const all = await this.getAll(forceRefresh);
     const clean = contact.toLowerCase().trim();
     if (!clean) return null;
     return (

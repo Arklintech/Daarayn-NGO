@@ -1,29 +1,53 @@
 import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
 import { resolveRecipients } from "@/lib/communication-resolver";
-import { waitUntil } from "@vercel/functions";
-import { processBroadcast } from "@/lib/broadcast-worker";
+import { dedupeRecipients, processBroadcast } from "@/lib/broadcast-worker";
 import { broadcastStore } from "@/lib/broadcast-store";
+import { verifyEmailProvider } from "@/lib/email/providerManager";
+import { getSiteUrl } from "@/lib/email/deliverability";
+
+// The broadcast is sent inside this request. Work scheduled after the response
+// (waitUntil) was being frozen by the platform before any email went out.
+export const maxDuration = 300;
+export const dynamic = "force-dynamic";
+
+// Leave headroom under maxDuration to save the result and respond
+const SEND_BUDGET_MS = 250_000;
 
 export async function POST(req: Request) {
   const adminAuth = await requireAdmin(req);
   if (adminAuth instanceof NextResponse) return adminAuth;
 
+  const requestStartedAt = Date.now();
+
   try {
     const body = await req.json();
     const { causeIds, type, heading, notes, media } = body;
+
+    if (!heading || !notes || typeof notes !== "string") {
+      return NextResponse.json({ success: false, error: "Heading and message are required." }, { status: 400 });
+    }
 
     if (!causeIds || !Array.isArray(causeIds) || causeIds.length === 0) {
       return NextResponse.json({ success: false, error: `Missing selected causes. Received: ${JSON.stringify(causeIds)}` }, { status: 400 });
     }
 
+    // Fail fast on bad credentials instead of reporting every donor as failed
+    const providerCheck = await verifyEmailProvider();
+    if (!providerCheck.ok) {
+      return NextResponse.json({
+        success: false,
+        error: `Email provider "${providerCheck.provider}" is not ready: ${providerCheck.error}`,
+      }, { status: 503 });
+    }
+
     const { uniqueDonors, stats, causeNames } = await resolveRecipients(causeIds, type || "general_communication");
-    
-    if (uniqueDonors.length === 0) {
+    const recipients = dedupeRecipients(uniqueDonors);
+
+    if (recipients.length === 0) {
       return NextResponse.json({ success: false, error: `No eligible recipients found for causes ${JSON.stringify(causeIds)} and type ${type}.` }, { status: 400 });
     }
 
-    const recipients = uniqueDonors;
     const causeName = causeNames.join(", ");
 
     // Map communication type to institutional formatting
@@ -70,8 +94,10 @@ export async function POST(req: Request) {
     if (media && Array.isArray(media) && media.length > 0) {
       projectUpdateHtml += '<br><br><hr style="border:none; border-top:1px solid rgba(255,255,255,0.07); margin:20px 0;"><strong style="color:#D4AF37; font-family:Georgia, serif; font-size:14px;">Attached Documents & Media:</strong><ul style="margin:10px 0 0; padding-left:20px; font-family:Arial, sans-serif; font-size:13px; color:#f3f4f6; line-height:1.6;">';
       media.forEach((url: string, idx: number) => {
+        // Links inside an email must be absolute; uploads are stored as /api/media/<id>
+        const href = /^https?:\/\//i.test(url) ? url : `${getSiteUrl()}${url.startsWith("/") ? "" : "/"}${url}`;
         const filename = url.split("/").pop()?.split("?")[0] || `document-${idx + 1}`;
-        projectUpdateHtml += `<li><a href="${url}" target="_blank" style="color:#C9A24B; text-decoration:underline;">${filename}</a></li>`;
+        projectUpdateHtml += `<li><a href="${href}" target="_blank" style="color:#C9A24B; text-decoration:underline;">${filename}</a></li>`;
       });
       projectUpdateHtml += '</ul>';
     }
@@ -97,7 +123,6 @@ export async function POST(req: Request) {
     // Store in active broadcast store
     broadcastStore.set(broadcastId, broadcastRecord);
 
-    // 2. Setup Background Processing via waitUntil
     const payload = {
       heading,
       eyebrow,
@@ -109,12 +134,17 @@ export async function POST(req: Request) {
       createdAt
     };
 
-    waitUntil(processBroadcast(broadcastId, recipients, payload));
+    const broadcast = await processBroadcast(broadcastId, recipients, payload, {
+      deadline: requestStartedAt + SEND_BUDGET_MS,
+    });
 
-    return NextResponse.json({ 
-      success: true, 
+    const sent = broadcast?.stats.sent ?? 0;
+    return NextResponse.json({
+      success: sent > 0,
       broadcastId,
-      total: recipients.length 
+      total: recipients.length,
+      broadcast,
+      ...(sent === 0 && { error: broadcast?.failureReason || "No emails could be delivered." }),
     });
     
   } catch (error: any) {

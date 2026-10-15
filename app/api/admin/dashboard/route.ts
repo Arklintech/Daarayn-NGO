@@ -24,14 +24,17 @@ export async function GET(request: Request) {
   try {
     const TIMEOUT_MS = 20_000;
 
+    // Always read fresh rows: donations and donors are written by other
+    // serverless instances, so this instance's cache can be out of date.
     const [donations, donors, reports, causes] = await Promise.all([
-      withTimeout(donationRepository.getAll(), TIMEOUT_MS, []),
-      withTimeout(donorRepository.getAll(), TIMEOUT_MS, []),
-      withTimeout(fieldReportRepository.getAll(), TIMEOUT_MS, []),
-      withTimeout(causeRepository.getAll(), TIMEOUT_MS, []),
+      withTimeout(donationRepository.getAll(true), TIMEOUT_MS, []),
+      withTimeout(donorRepository.getAll(true), TIMEOUT_MS, []),
+      withTimeout(fieldReportRepository.getAll(true), TIMEOUT_MS, []),
+      withTimeout(causeRepository.getAll(true), TIMEOUT_MS, []),
     ]);
 
     let totalDonationSum = 0;
+    let pendingDonationSum = 0;
     let completedCount = 0;
     let pendingCount = 0;
 
@@ -41,7 +44,8 @@ export async function GET(request: Request) {
       if (status === "completed" || status === "verified") {
         totalDonationSum += amt;
         completedCount++;
-      } else {
+      } else if (status !== "rejected" && status !== "failed" && status !== "cancelled") {
+        pendingDonationSum += amt;
         pendingCount++;
       }
     }
@@ -65,6 +69,27 @@ export async function GET(request: Request) {
       })
       .slice(0, 8);
 
+    // Monthly amounts received over the last 6 months (verified + awaiting verification)
+    const now = new Date();
+    const monthlyTrend = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
+      return { key: `${d.getFullYear()}-${d.getMonth()}`, month: d.toLocaleString("en-US", { month: "short" }), amount: 0 };
+    });
+    for (const d of donations as any[]) {
+      const status = String(d.status || "").toLowerCase();
+      if (status === "rejected" || status === "failed" || status === "cancelled") continue;
+      const when = new Date(d.date || d.createdAt || "");
+      if (isNaN(when.getTime())) continue;
+      const bucket = monthlyTrend.find((m) => m.key === `${when.getFullYear()}-${when.getMonth()}`);
+      if (bucket) bucket.amount += Number(d.amount || 0);
+    }
+
+    const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+    const newDonorsLast30Days = donors.filter((d: any) => {
+      const joined = new Date(d.dateJoined || "").getTime();
+      return !isNaN(joined) && joined >= thirtyDaysAgo;
+    }).length;
+
     const totalDonors = donors.length;
     const activeCauses = causes.filter(c => (c.status as string) !== "Inactive").length;
     const totalReports = reports.length;
@@ -73,7 +98,9 @@ export async function GET(request: Request) {
       success: true,
       stats: {
         totalDonations: totalDonationSum,
+        pendingAmount: pendingDonationSum,
         totalDonors,
+        newDonorsLast30Days,
         completedDonations: completedCount,
         pendingDonations: pendingCount,
         activeCampaigns: activeCauses,
@@ -84,8 +111,9 @@ export async function GET(request: Request) {
         waterProjects: 9,
         totalBeneficiaries: Math.max(180, totalDonors * 3)
       },
-      recentDonations: recent
-    });
+      recentDonations: recent,
+      monthlyTrend: monthlyTrend.map(({ month, amount }) => ({ month, amount })),
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     console.error("[DashboardAPI] Error fetching dashboard data:", error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

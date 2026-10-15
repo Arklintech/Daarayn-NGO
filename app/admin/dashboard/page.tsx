@@ -14,7 +14,8 @@ import {
   CheckCircle,
   AlertCircle,
   ChevronRight,
-  TrendingDown
+  TrendingDown,
+  UserPlus
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { 
@@ -31,16 +32,6 @@ import {
 } from "recharts";
 
 // Fallback visual mock metrics if Firestore is still loading/empty
-const mockMonthlyData = [
-  { month: "Jan", amount: 45000 },
-  { month: "Feb", amount: 52000 },
-  { month: "Mar", amount: 49000 },
-  { month: "Apr", amount: 63000 },
-  { month: "May", amount: 58000 },
-  { month: "Jun", amount: 72000 },
-  { month: "Jul", amount: 89000 },
-];
-
 const mockVisitorData = [
   { day: "Mon", visitors: 320 },
   { day: "Tue", visitors: 450 },
@@ -54,6 +45,10 @@ const mockVisitorData = [
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
     totalDonations: 0,
+    pendingAmount: 0,
+    pendingDonations: 0,
+    totalDonors: 0,
+    newDonorsLast30Days: 0,
     activeCampaigns: 4,
     familiesHelped: 12,
     studentsSponsored: 8,
@@ -62,13 +57,14 @@ export default function AdminDashboard() {
     totalBeneficiaries: 180
   });
   const [recentDonations, setRecentDonations] = useState<any[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<{ month: string; amount: number }[] | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
     async function loadDashboard() {
       try {
-        const res = await fetch("/api/admin/dashboard");
+        const res = await fetch("/api/admin/dashboard", { cache: "no-store" });
         const data = await res.json();
         if (data.success && isMounted) {
           setStats(prev => ({
@@ -76,6 +72,7 @@ export default function AdminDashboard() {
             ...data.stats
           }));
           setRecentDonations(data.recentDonations || []);
+          if (Array.isArray(data.monthlyTrend)) setMonthlyTrend(data.monthlyTrend);
         }
       } catch (err) {
         console.warn("Error fetching dashboard data:", err);
@@ -93,6 +90,7 @@ export default function AdminDashboard() {
         try {
           const payload = JSON.parse(event.data);
           if (
+            payload.type === "DONATION_RECEIVED" ||
             payload.type === "DONATION_CREATED" ||
             payload.type === "DONATION_STATUS_UPDATED" ||
             payload.type === "FIELD_REPORT_SUBMITTED"
@@ -103,14 +101,28 @@ export default function AdminDashboard() {
       };
     } catch {}
 
+    // SSE only reaches this tab when the event fires on the same server
+    // instance, which serverless hosting rarely guarantees, so also poll.
+    const pollInterval = setInterval(() => {
+      if (document.visibilityState === "visible") loadDashboard();
+    }, 30_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible") loadDashboard();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+
     return () => {
       isMounted = false;
       if (eventSource) eventSource.close();
+      clearInterval(pollInterval);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, []);
 
   const cardItems = [
-    { title: "Total Donations", value: `₹${stats.totalDonations.toLocaleString()}`, change: "+14.2% from last month", icon: TrendingUp, color: "text-[#D4AF37]" },
+    { title: "Total Donations", value: `₹${stats.totalDonations.toLocaleString()}`, change: "Verified contributions", icon: TrendingUp, color: "text-[#D4AF37]" },
+    { title: "Awaiting Verification", value: `₹${stats.pendingAmount.toLocaleString()}`, change: `${stats.pendingDonations} donation${stats.pendingDonations === 1 ? "" : "s"} to review`, icon: Clock, color: "text-amber-300" },
+    { title: "Registered Donors", value: stats.totalDonors.toString(), change: `${stats.newDonorsLast30Days} new in the last 30 days`, icon: UserPlus, color: "text-violet-300" },
     { title: "Total Beneficiaries", value: stats.totalBeneficiaries.toString(), change: "Direct relief support", icon: Users, color: "text-emerald-400" },
     { title: "Families Helped", value: stats.familiesHelped.toString(), change: "Monthly relief kits distributed", icon: Heart, color: "text-red-400" },
     { title: "Students Sponsored", value: stats.studentsSponsored.toString(), change: "Hifdh scholars progress", icon: GraduationCap, color: "text-blue-400" },
@@ -118,10 +130,15 @@ export default function AdminDashboard() {
     { title: "Clean Water Projects", value: stats.waterProjects.toString(), change: "Active tube wells built", icon: Droplet, color: "text-[#46c6f3]" },
   ];
 
+  const trendData = monthlyTrend ?? [];
+  const trendPeak = monthlyTrend && monthlyTrend.some(m => m.amount > 0)
+    ? monthlyTrend.reduce((best, m) => (m.amount > best.amount ? m : best))
+    : null;
+
   return (
     <div className="space-y-8">
       {/* Overview stats layout */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
         {cardItems.map((item, idx) => {
           const Icon = item.icon;
           return (
@@ -159,16 +176,18 @@ export default function AdminDashboard() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Donations Trend Analysis</h3>
-              <p className="text-[10px] text-gray-400 mt-0.5">Year-to-date monthly contribution summaries</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Contributions received per month, last 6 months</p>
             </div>
-            <span className="text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> Peak: Jun-Jul
-            </span>
+            {trendPeak && (
+              <span className="text-[10px] text-emerald-400 bg-emerald-950/40 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" /> Peak: {trendPeak.month}
+              </span>
+            )}
           </div>
           
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mockMonthlyData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorDonations" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.25}/>

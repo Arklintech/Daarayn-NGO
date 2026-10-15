@@ -1,3 +1,6 @@
+import { sendEmail, type EmailResult } from "@/lib/email/providerManager";
+import { getSiteUrl } from "@/lib/email/deliverability";
+
 export interface DonationEmailParams {
   trackingId: string;
   donorName: string;
@@ -7,8 +10,15 @@ export interface DonationEmailParams {
   date: string;
 }
 
-export async function sendDonationEmail(params: DonationEmailParams) {
-  const { trackingId, donorName, donorEmail, amount, causes, date } = params;
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]!));
+}
+
+export async function sendDonationEmail(params: DonationEmailParams): Promise<EmailResult> {
+  const { trackingId, donorEmail, amount, date } = params;
+  // Name and cause come straight from the public donation form
+  const donorName = escapeHtml(params.donorName || "");
+  const causes = params.causes.map(c => ({ ...c, causeName: escapeHtml(String(c.causeName || "")) }));
 
   const causesListHtml = causes.map(c => `
     <tr>
@@ -85,7 +95,7 @@ export async function sendDonationEmail(params: DonationEmailParams) {
           </div>
 
           <div style="text-align: center; margin-top: 40px;">
-            <a href="https://daaraynaid.org/#ledger" style="display: inline-block; background-color: #fdfbf7; color: #000; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
+            <a href="${getSiteUrl()}/#ledger" style="display: inline-block; background-color: #fdfbf7; color: #000; padding: 14px 28px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px;">
               Track in Public Ledger
             </a>
           </div>
@@ -106,13 +116,14 @@ export async function sendDonationEmail(params: DonationEmailParams) {
     </html>
   `;
 
-  // TODO: Integrate actual email provider (e.g. Resend, SendGrid, Nodemailer)
-  // For now, we mock the email sending to ensure the flow is robust.
-  console.log("========== MOCK EMAIL DISPATCH ==========");
-  console.log(`To: ${donorEmail}`);
-  console.log(`Subject: Jazakallah Khair - Contribution Recorded [${trackingId}]`);
-  console.log("HTML Template Generated Successfully.");
-  console.log("=========================================");
+  const result = await sendEmail({
+    to: donorEmail,
+    subject: `Jazakallah Khair - Contribution Recorded [${trackingId}]`,
+    html,
+  });
 
-  return { success: true };
+  if (!result.success) {
+    console.error(`[DonationEmail] Receipt for ${trackingId} not sent:`, result.error);
+  }
+  return result;
 }

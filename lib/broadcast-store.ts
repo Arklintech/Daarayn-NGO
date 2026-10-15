@@ -1,3 +1,8 @@
+export interface BroadcastError {
+  reason: string;
+  count: number;
+}
+
 export interface BroadcastRecord {
   id: string;
   createdBy: string;
@@ -16,6 +21,7 @@ export interface BroadcastRecord {
   completedAt: string | null;
   processingDurationMs: number;
   failureReason?: string;
+  errors?: BroadcastError[];
 }
 
 // Global in-memory cache for live worker tracking across serverless requests in same instance
