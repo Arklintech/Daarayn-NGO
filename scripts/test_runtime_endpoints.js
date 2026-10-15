@@ -8,8 +8,6 @@ const endpoints = [
   { name: "Field Shell", path: "/field" },
   { name: "Notification Center", path: "/admin/notifications" },
   { name: "Field Operations", path: "/admin/field-ops" },
-  { name: "KHIZR Admin Interface", path: "/admin/ai" },
-  { name: "KHIZR Public Assistant", path: "/assistant" },
   { name: "Pay Page", path: "/pay" },
   { name: "Donor Dashboard", path: "/donor/dashboard" }
 ];

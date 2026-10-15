@@ -64,7 +64,7 @@ export default function AdminPrograms() {
       try {
         const res = await fetch("/api/causes");
         const data = await res.json();
-        const allCauses = data.success && Array.isArray(data.causes) ? data.causes : [];
+        const allCauses = (Array.isArray(data) ? data : data?.success && Array.isArray(data.causes) ? data.causes : []);
 
         const casesList: any[] = [];
         const studentsList: any[] = [];

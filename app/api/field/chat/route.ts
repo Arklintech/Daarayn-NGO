@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
+import { RealtimeEvent, type Audience } from "@/lib/realtime/events";
 import { fieldMessageRepository, FieldChatMessageEntity } from "@/lib/repositories/fieldMessageRepository";
 import { fieldReportRepository } from "@/lib/repositories/fieldReportRepository";
 import { requireAdminOrAgent, type AgentPrincipal } from "@/lib/server/auth";
@@ -27,6 +28,20 @@ async function agentOwnsConversation(principal: AgentPrincipal, conversationId: 
   if (!conversationId.startsWith("conv_")) return false;
   const report = await fieldReportRepository.getById(conversationId.slice("conv_".length));
   return !!report && report.agentId === agentId;
+}
+
+/** The field agent a conversation belongs to: from the id for general threads, else the report's agent. */
+async function conversationAgentId(conversationId: string, hint?: string): Promise<string | undefined> {
+  if (hint) return hint;
+  const general = /^conv_(.+)_general$/.exec(conversationId);
+  if (general) return general[1];
+  if (!conversationId.startsWith("conv_")) return undefined;
+  try {
+    const report = await fieldReportRepository.getById(conversationId.slice("conv_".length));
+    return report?.agentId || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 function saveLocalFallback(history: FieldChatMessageEntity[]) {
@@ -153,10 +168,11 @@ export async function POST(request: NextRequest) {
       }
     } catch {}
 
-    // 2. Broadcast via Realtime Layer (SSE) for Instantaneous Delivery
-    realtimeBroadcaster.broadcast("CHAT_MESSAGE", message);
-    realtimeBroadcaster.broadcast(`CHAT_MESSAGE_${conversationId}`, message);
-    realtimeBroadcaster.broadcast("CONVERSATION_UPDATED", {
+    // 2. Broadcast via Realtime Layer (SSE): admins and the agent who owns the thread only
+    const ownerAgentId = await conversationAgentId(conversationId, derivedAgentId);
+    const audience: Audience[] = ownerAgentId ? ["admin", `agent:${ownerAgentId}`] : ["admin"];
+    realtimeBroadcaster.broadcast(RealtimeEvent.CHAT_MESSAGE, message, { audience });
+    realtimeBroadcaster.broadcast(RealtimeEvent.CONVERSATION_UPDATED, {
       conversationId,
       lastMessage: {
         text: message.text,
@@ -165,7 +181,7 @@ export async function POST(request: NextRequest) {
       },
       agentId: derivedAgentId,
       reportId: derivedReportId,
-    });
+    }, { audience });
 
     return NextResponse.json({ success: true, message });
   } catch (error: any) {

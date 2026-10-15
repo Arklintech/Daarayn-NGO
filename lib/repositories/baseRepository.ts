@@ -31,18 +31,30 @@ export abstract class BaseRepository<T extends { id: string }> {
 
     await this.init();
     const rows = await sheetsService.getAllRows(this.sheetName);
-    this.cache.clear();
+    return this.hydrate(rows, now);
+  }
 
+  public get tabName(): string {
+    return this.sheetName;
+  }
+
+  /**
+   * Maps rows that were read elsewhere (e.g. several tabs in one batch
+   * request) and refreshes this repository's cache with them.
+   */
+  public hydrate(rows: Record<string, any>[], fetchedAt = Date.now()): T[] {
+    this.cache.clear();
     const entities: T[] = [];
     for (const row of rows) {
-      if (!row || (!row.id && !row.ID)) continue;
+      if (!row) continue;
+      // Check the mapped id: some tabs key rows by another column (Audit_Log uses event_id).
       const entity = this.mapRowToEntity(row);
+      if (!entity.id) continue;
       this.cache.set(entity.id, entity);
       entities.push(entity);
     }
-
     this.cacheLoaded = true;
-    this.lastFetchTime = now;
+    this.lastFetchTime = fetchedAt;
     return entities;
   }
 

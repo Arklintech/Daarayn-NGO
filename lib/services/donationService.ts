@@ -3,10 +3,11 @@ import { donorRepository } from "../repositories/donorRepository";
 import { causeRepository } from "../repositories/causeRepository";
 import { auditLogRepository } from "../repositories/auditLogRepository";
 import { notificationRepository } from "../repositories/notificationRepository";
-import { driveService, DriveFileMetadata } from "../google/drive";
-import { realtimeBroadcaster } from "../realtime/broadcaster";
+import { driveService } from "../google/drive";
+import { realtimeBroadcaster, type PublishResult } from "../realtime/broadcaster";
+import { RealtimeEvent } from "../realtime/events";
+import { resolveCauseId } from "../donations/metrics";
 import { sendDonationEmail } from "../email";
-import { VerifiedAnalyticsEngine } from "../ai/engines/VerifiedAnalyticsEngine";
 
 import { Donation, DonorProfile } from "../db";
 
@@ -21,6 +22,8 @@ export interface ProcessDonationInput {
   screenshotBuffer?: Buffer;
   screenshotFilename?: string;
   screenshotMimeType?: string;
+  /** Identifies one submission so retries and double-submits are not recorded twice. */
+  submissionKey?: string;
 }
 
 export interface ProcessDonationResult {
@@ -29,72 +32,73 @@ export interface ProcessDonationResult {
   donorId: string;
   donationId: string;
   proofDriveFileId?: string;
+  /** True when this submission had already been recorded; nothing new was written. */
+  duplicate?: boolean;
+  realtime?: PublishResult["delivered"];
   error?: string;
+}
+
+/** Fixed operating split recorded in each donation's notes (90% direct aid, 10% operations). */
+function allocationSplits(amount: number) {
+  return { directAid: Math.floor(amount * 0.9), opsCost: Math.floor(amount * 0.1) };
+}
+
+function newSubmissionKey() {
+  return `SUB-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 export class DonationService {
   /**
-   * Authoritative Donation Ingestion Service (Google Sheets + Google Drive)
-   * With Safe Migration Dual-Write to Firestore Mirror
+   * Records a donation submitted through the public website (Google Sheets +
+   * Google Drive). The donation row is written and confirmed before anything
+   * that refers to it, and the realtime event is published only after that.
+   *
+   * New donations are "pending" until an admin verifies them, so this does
+   * not add to donor or cause totals: those are derived from verified
+   * donation records (lib/donations/metrics.ts).
    */
   public async processDonation(input: ProcessDonationInput): Promise<ProcessDonationResult> {
     const numAmount = Number(input.amount);
     if (!numAmount || numAmount <= 0) {
       throw new Error("Invalid donation amount.");
     }
+    const submissionKey = (input.submissionKey || "").trim().slice(0, 100) || newSubmissionKey();
 
-    // 1. Generate Authoritative Sequence / Tracking ID
-    // Read fresh rows and continue from the highest number: a cached or
-    // count-based sequence reissued IDs already taken (e.g. two DA006 rows).
-    let trackingId = await this.nextTrackingId();
-
-    // 2. Process & Upload Payment Proof to Google Drive (Authoritative File Storage)
-    let proofMetadata: DriveFileMetadata | null = null;
+    // 1. Upload the payment proof. Filed under the submission key because the
+    //    donation id is only final once the row is confirmed below.
     let proofDriveFileId = "";
-
     if (input.screenshotBuffer && input.screenshotBuffer.length > 0) {
       try {
         const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
         const filename = input.screenshotFilename || `proof-${uniqueSuffix}.png`;
         const mimeType = input.screenshotMimeType || "image/png";
-
-        proofMetadata = await driveService.uploadFile(
+        const proofMetadata = await driveService.uploadFile(
           input.screenshotBuffer,
           filename,
           mimeType,
           "Payment Proofs",
-          trackingId,
+          submissionKey,
           input.donorName || "Anonymous"
         );
         proofDriveFileId = proofMetadata.drive_file_id;
       } catch (driveErr: any) {
+        // The donation is still recorded; the admin sees "No file" and can verify directly.
         console.error("[DonationService] Google Drive upload failed:", driveErr.message);
-        // Do not crash the entire donation if drive has a transient issue, but record audit warning
       }
     }
 
-    // 3. Resolve or Create Donor Profile in Google Sheets
+    // 2. Resolve or create the donor profile
     const contact = (input.donorContact || "").trim();
     const isEmail = contact.includes("@");
     const normalizedContact = isEmail ? contact.toLowerCase() : contact;
-    let donor = await donorRepository.findByContact(contact, true);
-
-    const nowIso = new Date().toISOString();
-    const today = new Date();
-    const formattedDate = `${String(today.getDate()).padStart(2, "0")}/${String(
-      today.getMonth() + 1
-    ).padStart(2, "0")}/${today.getFullYear()}`;
-
     const donorNameClean = input.donorName?.trim() || "Generous Donor";
+    const nowIso = new Date().toISOString();
 
+    let donor: DonorProfile | null = await donorRepository.findByContact(contact, true);
+    let donorCreated = false;
     if (!donor) {
-      const newDonorId = `DNR-${Date.now().toString(36).toUpperCase()}-${Math.random()
-        .toString(36)
-        .substr(2, 4)
-        .toUpperCase()}`;
-
       donor = {
-        id: newDonorId,
+        id: `DNR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
         name: donorNameClean,
         email: isEmail ? normalizedContact : "",
         phone: !isEmail ? contact : "",
@@ -103,146 +107,123 @@ export class DonationService {
         donationPreference: input.cause || "General Fund",
         communicationPreference: isEmail ? "Email" : "WhatsApp",
         dateJoined: nowIso,
-        totalDonations: 1,
-        totalAmountDonated: numAmount,
+        // Legacy counters, no longer maintained: giving is derived from verified donations.
+        totalDonations: 0,
+        totalAmountDonated: 0,
         projectsSupportedCount: 1,
-        casesSupportedCount: 1,
-        donationHistory: [trackingId],
+        casesSupportedCount: 0,
+        donationHistory: [],
         projectsSupported: [input.cause],
         casesSupported: [],
         status: "active",
       };
       await donorRepository.save(donor);
-    } else {
-      donor.totalDonations = (donor.totalDonations || 0) + 1;
-      donor.totalAmountDonated = (donor.totalAmountDonated || 0) + numAmount;
-      if (!donor.donationHistory) donor.donationHistory = [];
-      if (!donor.donationHistory.includes(trackingId)) {
-        donor.donationHistory.push(trackingId);
-      }
-      if (!donor.projectsSupported) donor.projectsSupported = [];
-      if (!donor.projectsSupported.includes(input.cause)) {
-        donor.projectsSupported.push(input.cause);
-      }
-      donor.projectsSupportedCount = donor.projectsSupported.length;
-      await donorRepository.save(donor);
+      donorCreated = true;
     }
 
-    // 4. Calculate Verified Financial Allocation
-    const { directAid, opsCost } = VerifiedAnalyticsEngine.calculateAllocationSplits(numAmount);
-
-    // 5. Match and Update Cause in Google Sheets
+    // 3. Record the donation under a confirmed-unique id
     const causes = await causeRepository.getAll();
-    const matchedCause = causes.find(
-      (c) =>
-        c.title.toLowerCase().includes(input.cause.toLowerCase()) ||
-        input.cause.toLowerCase().includes(c.title.toLowerCase())
-    );
+    const picked = Array.isArray(input.selectedCauses) && input.selectedCauses.length === 1 ? (input.selectedCauses[0] as any) : null;
+    const matchedCauseId = resolveCauseId({ causeId: picked?.causeId, causeTitle: input.cause }, causes);
+    const { directAid, opsCost } = allocationSplits(numAmount);
+    const donorRef = donor;
 
-    if (matchedCause) {
-      matchedCause.raisedAmount = (matchedCause.raisedAmount || 0) + numAmount;
-      await causeRepository.save(matchedCause);
-    }
-
-    // 6. Create Authoritative Donation Record in Google Sheets
-    // Another donation may have claimed this ID during the Drive upload above
-    const latestId = await this.nextTrackingId();
-    if (latestId !== trackingId && parseInt(latestId.slice(2), 10) > parseInt(trackingId.slice(2), 10)) {
-      if (donor.donationHistory) {
-        donor.donationHistory = donor.donationHistory.map((id) => (id === trackingId ? latestId : id));
-        await donorRepository.save(donor);
-      }
-      trackingId = latestId;
-    }
-
-    const donationRecord: Donation = {
-      id: trackingId,
-      donorId: donor.id,
-      donorName: donorNameClean,
-      donorEmail: donor.email || "",
-      amount: numAmount,
-      currency: input.currency || "INR",
-      date: nowIso,
-      status: "pending",
-      paymentMethod: "UPI",
-      donationType: input.cause,
-      causeId: matchedCause?.id || "",
-      causeTitle: input.cause,
-      proofDriveFileId: proofDriveFileId,
-      transactionReference: input.upiRef || "",
-      notes: `Allocated via VerifiedAnalyticsEngine. Direct Aid: INR ${directAid}, Ops: INR ${opsCost}`,
-      selectedCauses: (Array.isArray(input.selectedCauses) && typeof input.selectedCauses[0] === "object"
-        ? input.selectedCauses
-        : [{ causeId: matchedCause?.id || "general", causeName: input.cause, allocatedAmount: numAmount, percentage: 100 }]) as any,
-    };
-
-    await donationRepository.save(donationRecord);
-
-    // Step 7 (Firestore dual-write) has been removed.
-    // Google Sheets via donationRepository is the sole source of truth.
-
-    // 8. Publish Realtime Operational Events
-    realtimeBroadcaster.broadcast("DONATION_RECEIVED", {
-      trackingId,
-      donorId: donor.id,
-      donorName: donorNameClean,
-      amount: numAmount,
-      currency: input.currency || "INR",
-      cause: input.cause,
-      proofDriveFileId,
-      timestamp: nowIso,
-    });
-
-    // 9. Persist Authoritative System Notification
-    const notifId = `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    await notificationRepository.save({
-      id: notifId,
-      recipientType: "Admin",
-      recipientId: "all",
-      type: "DONATION",
-      title: "New Donation Received",
-      message: `Received ₹${numAmount.toLocaleString()} for ${input.cause} from ${donorNameClean}${input.upiRef ? ` (Ref: ${input.upiRef})` : ''}`,
-      read: false,
-      relatedEntityId: trackingId,
-      createdAt: nowIso,
-    });
-
-    // 10. Persist Authoritative Audit Log
-    const auditId = `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
-    await auditLogRepository.save({
-      id: auditId,
-      actor_id: donor.id,
-      actor_role: "donor",
-      action: "SUBMIT_DONATION",
-      entity_type: "Donation",
-      entity_id: trackingId,
-      before_state: null,
-      after_state: {
+    const { donation, duplicate } = await donationRepository.createWithUniqueId(
+      (id): Donation => ({
+        id,
+        donorId: donorRef.id,
+        donorName: donorNameClean,
+        donorEmail: donorRef.email || "",
         amount: numAmount,
-        cause: input.cause,
-        trackingId,
+        currency: input.currency || "INR",
+        date: nowIso,
+        status: "pending",
+        paymentMethod: "UPI",
+        donationType: input.cause,
+        causeId: matchedCauseId || "",
+        causeTitle: input.cause,
         proofDriveFileId,
         transactionReference: input.upiRef || "",
-      },
-      timestamp: nowIso,
-      source: "web_donation_gateway",
-    });
+        notes: `Allocation split: Direct Aid INR ${directAid}, Ops INR ${opsCost}`,
+        selectedCauses: [],
+      }),
+      submissionKey
+    );
+    const trackingId = donation.id;
 
-    // 11. Send Donor Email Receipt
+    if (duplicate) {
+      // Already recorded (and its notification, receipt and event already sent).
+      return { success: true, trackingId, donorId: donation.donorId, donationId: trackingId, proofDriveFileId: donation.proofDriveFileId, duplicate: true };
+    }
+
+    // 4. Link the donation to the donor profile (relationship lists only)
+    try {
+      if (!donor.donationHistory) donor.donationHistory = [];
+      if (!donor.donationHistory.includes(trackingId)) donor.donationHistory.push(trackingId);
+      if (!donor.projectsSupported) donor.projectsSupported = [];
+      if (!donor.projectsSupported.includes(input.cause)) donor.projectsSupported.push(input.cause);
+      donor.projectsSupportedCount = donor.projectsSupported.length;
+      await donorRepository.save(donor);
+    } catch (err: any) {
+      // Giving totals come from the donation row's donorId, so this list is informational.
+      console.error(`[DonationService] Could not update donation history for ${donor.id}:`, err.message);
+    }
+
+    // 5. Tell every connected admin. Clients re-read the figures through the API.
+    const event = await realtimeBroadcaster.publish(RealtimeEvent.DONATION_CREATED, { id: trackingId, status: "pending" });
+    if (donorCreated) realtimeBroadcaster.broadcast(RealtimeEvent.DONOR_UPDATED, { id: donor.id });
+
+    // 6. Admin notification
+    try {
+      await notificationRepository.save({
+        id: `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        recipientType: "Admin",
+        recipientId: "all",
+        type: "DONATION",
+        title: "New Donation Received",
+        message: `Received ₹${numAmount.toLocaleString()} for ${input.cause} from ${donorNameClean}${input.upiRef ? ` (Ref: ${input.upiRef})` : ""} — awaiting verification`,
+        read: false,
+        relatedEntityId: trackingId,
+        createdAt: nowIso,
+      });
+      realtimeBroadcaster.broadcast(RealtimeEvent.NOTIFICATION_CREATED, { relatedEntityId: trackingId });
+    } catch (err: any) {
+      console.error(`[DonationService] Notification for ${trackingId} failed:`, err.message);
+    }
+
+    // 7. Audit log
+    try {
+      await auditLogRepository.save({
+        id: `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+        actor_id: donor.id,
+        actor_role: "donor",
+        action: "SUBMIT_DONATION",
+        entity_type: "Donation",
+        entity_id: trackingId,
+        before_state: null,
+        after_state: { amount: numAmount, cause: input.cause, trackingId, proofDriveFileId, transactionReference: input.upiRef || "", submissionKey },
+        timestamp: nowIso,
+        source: "web_donation_gateway",
+      });
+    } catch (err: any) {
+      console.error(`[DonationService] Audit log for ${trackingId} failed:`, err.message);
+    }
+
+    // 8. Donor email receipt (acknowledges the submission)
     if (donor.email) {
       try {
+        const today = new Date();
+        const formattedDate = `${String(today.getDate()).padStart(2, "0")}/${String(today.getMonth() + 1).padStart(2, "0")}/${today.getFullYear()}`;
         const rawCauses = input.selectedCauses && input.selectedCauses.length > 0 ? input.selectedCauses : [input.cause];
         const perCauseAmount = Math.round(numAmount / rawCauses.length);
         const structuredCauses = rawCauses.map((cName) => ({
           causeName: typeof cName === "string" ? cName : (cName as any).causeName || input.cause,
           allocatedAmount:
-            typeof cName === "object" && (cName as any).allocatedAmount
-              ? (cName as any).allocatedAmount
-              : perCauseAmount,
+            typeof cName === "object" && (cName as any).allocatedAmount ? (cName as any).allocatedAmount : perCauseAmount,
         }));
 
         await sendDonationEmail({
-          trackingId: trackingId,
+          trackingId,
           donorName: donorNameClean,
           donorEmail: donor.email,
           amount: numAmount,
@@ -260,20 +241,8 @@ export class DonationService {
       donorId: donor.id,
       donationId: trackingId,
       proofDriveFileId,
+      realtime: event.delivered,
     };
-  }
-
-  /**
-   * Next DA### ID from fresh sheet rows, continuing from the highest number.
-   * A cached or count-based sequence reissued IDs already taken (two DA006 rows).
-   */
-  private async nextTrackingId(): Promise<string> {
-    const existingDonations = await donationRepository.getAll(true);
-    const highestIdx = existingDonations.reduce((max, d) => {
-      const match = /^DA(\d+)$/.exec(String(d.id || ""));
-      return match ? Math.max(max, parseInt(match[1], 10)) : max;
-    }, 0);
-    return "DA" + String(highestIdx + 1).padStart(3, "0");
   }
 }
 

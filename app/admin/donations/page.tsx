@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { 
   BadgeIndianRupee, 
@@ -16,6 +16,9 @@ import {
   ArrowLeft
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRealtimeRefresh } from "@/lib/realtime/useRealtime";
+import { DONATION_DATA_EVENTS } from "@/lib/realtime/events";
+import LiveStatus from "@/components/admin/LiveStatus";
 
 export default function AdminDonations() {
   const [donations, setDonations] = useState<any[]>([]);
@@ -30,49 +33,40 @@ export default function AdminDonations() {
   // Proof Viewer Drawer State
   const [selectedProofUrl, setSelectedProofUrl] = useState<string | null>(null);
 
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [readAt, setReadAt] = useState<string | null>(null);
+  const [duplicateIds, setDuplicateIds] = useState<string[]>([]);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | null>(null);
+  const requestSeq = useRef(0);
+
   // Fetch donations list from Google Sheets API
-  useEffect(() => {
-    let isMounted = true;
-    async function loadDonations() {
-      setLoading(true);
-      try {
-        const res = await fetch("/api/admin/donations");
-        const data = await res.json();
-        if (data.success && Array.isArray(data.donations)) {
-          if (isMounted) {
-            setDonations(data.donations);
-            setFilteredDonations(data.donations);
-          }
-        } else {
-          throw new Error(data.error || "Failed to load donations");
-        }
-      } catch (err) {
-        console.warn("API donation load error, rendering fallback:", err);
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    loadDonations();
-
-    // Listen to realtime stream
-    let eventSource: EventSource | null = null;
+  const loadDonations = useCallback(async () => {
+    const seq = ++requestSeq.current;
     try {
-      eventSource = new EventSource("/api/realtime/stream");
-      eventSource.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (payload.type === "DONATION_CREATED" || payload.type === "DONATION_STATUS_UPDATED") {
-            loadDonations();
-          }
-        } catch {}
-      };
-    } catch {}
-
-    return () => {
-      isMounted = false;
-      if (eventSource) eventSource.close();
-    };
+      const res = await fetch("/api/admin/donations", { cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (seq !== requestSeq.current) return;
+      if (!res.ok || !data.success || !Array.isArray(data.donations)) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      setDonations(data.donations);
+      setDuplicateIds(Array.isArray(data.duplicateIds) ? data.duplicateIds : []);
+      setReadAt(data.readAt || new Date().toISOString());
+      setLoadError(null);
+    } catch (err: any) {
+      if (seq !== requestSeq.current) return;
+      setLoadError(err.message || "Failed to load donations");
+    } finally {
+      if (seq === requestSeq.current) setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadDonations();
+  }, [loadDonations]);
+
+  const liveStatus = useRealtimeRefresh(DONATION_DATA_EVENTS, loadDonations);
 
   // Update lists based on query & selects
   useEffect(() => {
@@ -99,41 +93,36 @@ export default function AdminDonations() {
     setFilteredDonations(result);
   }, [searchQuery, statusFilter, causeFilter, donations]);
 
-  // Verify/Approve donation
-  const handleApprove = async (id: string) => {
+  // Status changes are shown only once Google Sheets confirms them.
+  const changeStatus = async (item: any, status: "completed" | "rejected") => {
+    setActionError(null);
+    setSavingId(item.id);
     try {
       const res = await fetch("/api/admin/donations", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: "completed" })
+        body: JSON.stringify({ id: item.id, status, expectedStatus: item.status })
       });
-      if (res.ok) {
-        setDonations(prev => prev.map(item => 
-          item.id === id ? { ...item, status: "completed", proof: "✅ Verified & Checked" } : item
-        ));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `HTTP ${res.status}`);
       }
-    } catch (err) {
-      console.error("Error approving donation:", err);
+      setDonations(prev => prev.map(d => d.id === item.id ? { ...d, status: data.status } : d));
+    } catch (err: any) {
+      setActionError(`${item.id} was not updated: ${err.message}`);
+    } finally {
+      setSavingId(null);
+      loadDonations();
     }
   };
 
+  // Verify/Approve donation
+  const handleApprove = (item: any) => changeStatus(item, "completed");
+
   // Reject donation
-  const handleReject = async (id: string) => {
+  const handleReject = (item: any) => {
     if (!window.confirm("Are you sure you want to reject this contribution entry?")) return;
-    try {
-      const res = await fetch("/api/admin/donations", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, status: "rejected" })
-      });
-      if (res.ok) {
-        setDonations(prev => prev.map(item => 
-          item.id === id ? { ...item, status: "rejected", proof: "❌ Rejected / Refuted" } : item
-        ));
-      }
-    } catch (err) {
-      console.error("Error rejecting donation:", err);
-    }
+    changeStatus(item, "rejected");
   };
 
   // Export Donation list as CSV
@@ -190,6 +179,28 @@ export default function AdminDonations() {
           <Download className="w-4 h-4 text-luxury-gold" /> Export Ledger CSV
         </button>
       </div>
+
+      <LiveStatus status={liveStatus} updatedAt={readAt} error={loadError} onRetry={loadDonations} />
+
+      {loadError && donations.length === 0 && !loading && (
+        <div className="p-4 rounded-2xl border border-red-500/20 bg-red-500/5 text-red-200" role="alert">
+          Donations could not be loaded from Google Sheets: {loadError}
+        </div>
+      )}
+      {actionError && (
+        <div className="p-4 rounded-2xl border border-red-500/20 bg-red-500/5 text-red-200 flex items-start justify-between gap-3" role="alert">
+          <span>{actionError}</span>
+          <button type="button" onClick={() => setActionError(null)} className="text-red-300 hover:text-white" aria-label="Dismiss">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      {duplicateIds.length > 0 && (
+        <div className="p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5 text-amber-200" role="status">
+          {duplicateIds.join(", ")} {duplicateIds.length === 1 ? "is" : "are"} used by more than one donation row in the Donations sheet.
+          Those entries cannot be verified or rejected here until the duplicate is corrected in Google Sheets.
+        </div>
+      )}
 
       {/* Filtering Toolbar */}
       <div className="flex flex-col xl:flex-row gap-4 justify-between items-start xl:items-center">
@@ -277,8 +288,8 @@ export default function AdminDonations() {
                   </td>
                 </tr>
               ) : (
-                filteredDonations.map((item) => (
-                  <tr key={item.id} className="hover:bg-white/[0.01] transition-colors">
+                filteredDonations.map((item, rowIdx) => (
+                  <tr key={`${item.id}-${rowIdx}`} className="hover:bg-white/[0.01] transition-colors">
                     <td className="p-4 font-semibold text-white">{item.id}</td>
                     <td className="p-4 font-medium">{item.donor}</td>
                     <td className="p-4 text-gray-400">{item.cause}</td>
@@ -314,14 +325,16 @@ export default function AdminDonations() {
                       {item.status === "pending" && (
                         <div className="flex items-center justify-end gap-2">
                           <button 
-                            onClick={() => handleApprove(item.id)}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold transition"
+                            onClick={() => handleApprove(item)}
+                            disabled={savingId === item.id || duplicateIds.includes(item.id)}
+                            className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             Verify
                           </button>
                           <button 
-                            onClick={() => handleReject(item.id)}
-                            className="px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition"
+                            onClick={() => handleReject(item)}
+                            disabled={savingId === item.id || duplicateIds.includes(item.id)}
+                            className="px-3 py-1.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
                           >
                             Reject
                           </button>
@@ -345,8 +358,8 @@ export default function AdminDonations() {
           ) : filteredDonations.length === 0 ? (
             <div className="py-12 text-center text-gray-500">No contributions match the filters.</div>
           ) : (
-            filteredDonations.map((item) => (
-              <div key={item.id} className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
+            filteredDonations.map((item, rowIdx) => (
+              <div key={`${item.id}-${rowIdx}`} className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
                     <h4 className="text-sm font-bold text-white">{item.donor}</h4>
@@ -394,14 +407,16 @@ export default function AdminDonations() {
                 {item.status === "pending" && (
                   <div className="flex items-center gap-2 pt-2 border-t border-white/[0.06]">
                     <button 
-                      onClick={() => handleApprove(item.id)}
-                      className="flex-1 py-2 min-h-[44px] rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold transition"
+                      onClick={() => handleApprove(item)}
+                            disabled={savingId === item.id || duplicateIds.includes(item.id)}
+                      className="flex-1 py-2 min-h-[44px] rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Verify
                     </button>
                     <button 
-                      onClick={() => handleReject(item.id)}
-                      className="flex-1 py-2 min-h-[44px] rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition"
+                      onClick={() => handleReject(item)}
+                            disabled={savingId === item.id || duplicateIds.includes(item.id)}
+                      className="flex-1 py-2 min-h-[44px] rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 text-xs font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       Reject
                     </button>

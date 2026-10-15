@@ -1,6 +1,10 @@
 import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { donorRepository } from "@/lib/repositories/donorRepository";
+import { loadSnapshot } from "@/lib/donations/snapshot";
+import { givingByDonor } from "@/lib/donations/metrics";
+import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
+import { RealtimeEvent } from "@/lib/realtime/events";
 
 export async function GET(request: NextRequest) {
   const adminAuth = await requireAdmin(request);
@@ -11,7 +15,22 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q")?.toLowerCase().trim();
     const status = searchParams.get("status")?.toLowerCase().trim();
 
-    const donors = await donorRepository.getAll();
+    // Fresh read of both tabs in one request; giving is derived from donation records.
+    const { donors: storedDonors, donations } = await loadSnapshot(["donors", "donations"]);
+    const giving = givingByDonor(donations, storedDonors);
+    const donors = storedDonors.map((d) => {
+      const g = giving.get(d.id)!;
+      return {
+        ...d,
+        // Verified (received) donations only — the stored counters also counted
+        // unverified submissions and are no longer maintained.
+        totalDonations: g.receivedCount,
+        totalAmountDonated: g.receivedAmount,
+        pendingDonations: g.pendingCount,
+        pendingAmount: g.pendingAmount,
+        lastDonationDate: g.lastDonationDate,
+      };
+    });
 
     let filtered = donors;
     if (status && status !== "all") {
@@ -28,7 +47,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json(filtered);
+    return NextResponse.json(filtered, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
     console.error("[API/Donors] Failed to fetch donors:", error);
     return NextResponse.json(
@@ -74,13 +93,17 @@ export async function POST(request: NextRequest) {
         status: body.status || "active",
       };
     } else {
+      // Giving figures are derived from donations (see GET); a profile edit
+      // that echoes them back must not overwrite the stored record.
+      const { totalDonations, totalAmountDonated, pendingDonations, pendingAmount, lastDonationDate, ...editable } = body;
       donor = {
         ...donor,
-        ...body,
+        ...editable,
       };
     }
 
     await donorRepository.save(donor!);
+    realtimeBroadcaster.broadcast(RealtimeEvent.DONOR_UPDATED, { id: donor!.id });
     return NextResponse.json({ success: true, donor });
   } catch (error: any) {
     console.error("[API/Donors] Failed to save donor:", error);

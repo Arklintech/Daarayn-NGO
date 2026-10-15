@@ -37,7 +37,7 @@ export default function AdminCampaigns() {
       const res = await fetch("/api/causes");
       if (res.ok) {
         const data = await res.json();
-        const list = data.success && Array.isArray(data.causes) ? data.causes : [];
+        const list = (Array.isArray(data) ? data : data?.success && Array.isArray(data.causes) ? data.causes : []);
         setCampaigns(list.filter((c: any) => c.category === "Campaign" || c.isCampaign || c.type === "campaign" || true));
       }
     } catch(e) {

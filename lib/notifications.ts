@@ -351,17 +351,6 @@ export const notifyCommunication = {
 
 /** Executive Reports */
 export const notifyExecutive = {
-  dailyBrief: () =>
-    publishNotification({
-      category: "executive_reports",
-      title: "Daily Executive Brief Ready",
-      description: "Your daily operations summary is available for review.",
-      entityType: "ExecutiveReport",
-      entityId: `BRIEF-${new Date().toISOString().split("T")[0]}`,
-      createdBy: "KHIZR AI",
-      actionUrl: "/admin/dashboard",
-      priority: "normal",
-    }),
   ledgerUpdated: (ledgerId: string) =>
     publishNotification({
       category: "executive_reports",

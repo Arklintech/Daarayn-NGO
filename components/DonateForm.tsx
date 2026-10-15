@@ -61,6 +61,8 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
   const formRef = useRef<HTMLFormElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const causeRef = useRef<HTMLDivElement>(null);
+  // Same key for retries of one submission, so the server never records it twice.
+  const submissionKeyRef = useRef<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -217,6 +219,12 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
 
       formData.set('selectedCauses', JSON.stringify(selectedCauses));
       formData.set('cause', selectedCauses.length === 1 ? selectedCauses[0].causeName : "Multiple Causes");
+      if (!submissionKeyRef.current) {
+        submissionKeyRef.current = typeof crypto !== 'undefined' && 'randomUUID' in crypto
+          ? crypto.randomUUID()
+          : `1792078016510-a7o7nqkgnjr`;
+      }
+      formData.set('submissionKey', submissionKeyRef.current);
 
       const res = await fetch('/api/donate', {
         method: 'POST',
@@ -225,6 +233,7 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
       const data = await res.json();
 
       if (res.ok && data.success) {
+        submissionKeyRef.current = null;
         const successPayload = {
           trackingId: data.trackingId,
           amount: amount,
@@ -239,6 +248,8 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
           setSuccessData(successPayload);
         }
       } else {
+        // A rejected request was not recorded, so the next attempt is a new submission.
+        if (res.status < 500) submissionKeyRef.current = null;
         setError(data.error || 'Failed to submit contribution.');
       }
     } catch (err: any) {

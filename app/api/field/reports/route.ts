@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
     await fieldReportRepository.save(reportEntity as any);
 
     // 2. Realtime SSE Broadcast to Admin Operations
-    realtimeBroadcaster.broadcast("FIELD_REPORT_SUBMITTED", reportEntity);
+    realtimeBroadcaster.broadcast("FIELD_REPORT_SUBMITTED", reportEntity, { audience: ["admin", `agent:${reportEntity.agentId}`] });
 
     // 3. Persist Notification in Google Sheets
     const notifId = `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;
@@ -233,8 +233,7 @@ export async function PATCH(request: NextRequest) {
     await fieldReportRepository.save(updatedReport as any);
 
     // 2. Realtime SSE Broadcast to Field Agent & Admin
-    realtimeBroadcaster.broadcast("FIELD_REPORT_UPDATE", updatedReport);
-    realtimeBroadcaster.broadcast(`FIELD_REPORT_${reportId}`, updatedReport);
+    realtimeBroadcaster.broadcast("FIELD_REPORT_UPDATE", updatedReport, { audience: ["admin", `agent:${existing.agentId}`] });
 
     // 3. Persist Notification in Google Sheets
     const notifId = `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;

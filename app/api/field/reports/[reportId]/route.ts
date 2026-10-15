@@ -61,7 +61,7 @@ export async function PATCH(
     await fieldReportRepository.save(updated as any);
 
     // 2. Broadcast via Realtime SSE Layer
-    realtimeBroadcaster.broadcast("FIELD_REPORT_UPDATED", updated);
+    realtimeBroadcaster.broadcast("FIELD_REPORT_UPDATED", updated, { audience: ["admin", `agent:${(existing as any).agentId}`] });
 
     // 3. Persist Notification to Agent
     const notifId = `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`;

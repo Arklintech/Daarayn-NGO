@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { DEFAULT_CAUSES } from "@/lib/causes";
 import { motion, AnimatePresence } from 'framer-motion';
@@ -10,6 +10,10 @@ import {
   MessageSquare, BarChart2, FileText, Bookmark, Cpu, User, Layers, Gift, Landmark, ChevronDown
 } from 'lucide-react';
 
+import { belongsToDonor, donorGiving } from '@/lib/donations/metrics';
+import { useRealtimeRefresh } from '@/lib/realtime/useRealtime';
+import { DONATION_DATA_EVENTS } from '@/lib/realtime/events';
+
 import OverviewTab from './tabs/OverviewTab';
 import DonationsTab from './tabs/DonationsTab';
 import CommunicationsTab from './tabs/CommunicationsTab';
@@ -17,9 +21,8 @@ import DocumentsTab from './tabs/DocumentsTab';
 import LedgerTab from './tabs/LedgerTab';
 import AnalyticsTab from './tabs/AnalyticsTab';
 import AdminNotesTab from './tabs/AdminNotesTab';
-import KhizrTab from './tabs/KhizrTab';
 
-type TabId = 'overview' | 'donations' | 'communications' | 'documents' | 'ledger' | 'analytics' | 'notes' | 'khizr';
+type TabId = 'overview' | 'donations' | 'communications' | 'documents' | 'ledger' | 'analytics' | 'notes';
 
 const TABS: { id: TabId; label: string; icon?: any }[] = [
   { id: 'overview',        label: 'Overview' },
@@ -29,7 +32,6 @@ const TABS: { id: TabId; label: string; icon?: any }[] = [
   { id: 'ledger',          label: 'Ledger' },
   { id: 'notes',           label: 'Notes' },
   { id: 'analytics',       label: 'Analytics' },
-  { id: 'khizr',           label: 'Khizr Summary' },
 ];
 
 export default function DonorWorkspace() {
@@ -73,10 +75,9 @@ export default function DonorWorkspace() {
     }
   };
 
-  useEffect(() => {
-    if (!donorId) return;
-    async function load() {
-      setLoading(true);
+  const load = useCallback(async (showSpinner = true) => {
+      if (!donorId) return;
+      if (showSpinner) setLoading(true);
       const decodedId = decodeURIComponent(donorId);
 
       try {
@@ -98,29 +99,14 @@ export default function DonorWorkspace() {
           );
         }
 
-        if (!donorData) {
-          donorData = {
-            id: decodedId,
-            name: decodedId.includes('@') ? decodedId.split('@')[0] : "Verified Donor",
-            email: decodedId.includes('@') ? decodedId : "donor@example.com",
-            phone: "+91 98765 43210",
-            country: "India",
-            city: "Mumbai",
-            dateJoined: new Date().toISOString(),
-            status: "active"
-          };
-        }
-        setDonor(donorData);
+        // An unknown id shows "could not be loaded" rather than a made-up profile.
+        setDonor(donorData || null);
+        if (!donorData) return;
 
         if (donRes && donRes.ok) {
           const donData = await donRes.json();
           const allDonations = donData.success && Array.isArray(donData.donations) ? donData.donations : Array.isArray(donData) ? donData : [];
-          const filtered = allDonations.filter((d: any) => 
-            d.donorId === donorId || 
-            d.donorId === decodedId || 
-            (d.donor && d.donor.toLowerCase() === donorData.name?.toLowerCase()) || 
-            (d.donorEmail && d.donorEmail.toLowerCase() === donorData.email?.toLowerCase())
-          );
+          const filtered = allDonations.filter((d: any) => belongsToDonor(d, { id: donorData.id, email: donorData.email }));
           setDonations(filtered);
         }
 
@@ -147,9 +133,14 @@ export default function DonorWorkspace() {
       } finally {
         setLoading(false);
       }
-    }
-    load();
   }, [donorId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  // Re-read this donor's figures whenever donation data changes anywhere.
+  useRealtimeRefresh(DONATION_DATA_EVENTS, () => load(false));
 
   const handleAction = async (action: string) => {
     setMoreOpen(false);
@@ -212,7 +203,9 @@ export default function DonorWorkspace() {
   }
 
   const initials = (donor.name || 'A').split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2);
-  const lifetimeGiving = donations.reduce((s: number, d: any) => s + (d.amount || 0), 0) || donor.totalAmountDonated || 0;
+  // Verified donations only; pending submissions are shown separately.
+  const giving = donorGiving(donations);
+  const lifetimeGiving = giving.receivedAmount;
   const causesSupported = new Set(donations.flatMap((d: any) => (d.selectedCauses || []).map((c: any) => c.causeId))).size;
   const lastDonation = donations.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())[0];
 
@@ -335,7 +328,10 @@ export default function DonorWorkspace() {
               style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
               <div>
                 <p className="text-[11px] text-gray-400 mb-1 tracking-wide">Total Donations</p>
-                <p className="text-xl font-semibold text-white tracking-tight">{donor.totalDonations || donations.length || 0}</p>
+                <p className="text-xl font-semibold text-white tracking-tight">{giving.receivedCount}</p>
+                {giving.pendingCount > 0 && (
+                  <p className="text-[10px] text-amber-300/80 mt-0.5">+{giving.pendingCount} awaiting verification (₹{giving.pendingAmount.toLocaleString()})</p>
+                )}
               </div>
               <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ background: 'rgba(255,249,221,0.05)', border: '1px solid rgba(255,249,221,0.15)' }}>
@@ -402,7 +398,6 @@ export default function DonorWorkspace() {
             {activeTab === 'ledger'         && <LedgerTab         {...tabProps} />}
             {activeTab === 'analytics'      && <AnalyticsTab      {...tabProps} />}
             {activeTab === 'notes'          && <AdminNotesTab     {...tabProps} />}
-            {activeTab === 'khizr'          && <KhizrTab          {...tabProps} />}
           </motion.div>
         </AnimatePresence>
       </div>

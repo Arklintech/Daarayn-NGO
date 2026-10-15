@@ -10,6 +10,8 @@ import {
   ShieldCheck, Eye, MoreVertical, SearchIcon, AlertTriangle, X
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { useRealtimeRefresh } from "@/lib/realtime/useRealtime";
+import { DONATION_DATA_EVENTS } from "@/lib/realtime/events";
 
 // Section Header Component
 const SectionHeader = ({ title, icon: Icon }: { title: string, icon?: any }) => (
@@ -75,27 +77,10 @@ export default function AdminDonors() {
 
   useEffect(() => {
     fetchData();
-
-    // Connect to Authoritative Realtime Layer (SSE)
-    let es: EventSource | null = null;
-    try {
-      es = new EventSource("/api/realtime/stream");
-      es.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "DONATION_RECEIVED" || data.type === "DONOR_UPDATED") {
-            fetchData();
-          }
-        } catch {}
-      };
-    } catch (sseErr) {
-      console.warn("SSE connection error in AdminDonors:", sseErr);
-    }
-
-    return () => {
-      if (es) es.close();
-    };
   }, []);
+
+  // Donor giving changes with every donation event; re-read from Sheets.
+  useRealtimeRefresh(DONATION_DATA_EVENTS, () => fetchData());
 
   const filteredDonors = useMemo(() => {
     let result = [...donors];
@@ -234,8 +219,6 @@ export default function AdminDonors() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } else if (actionLabel === 'Ask KHIZR') {
-      router.push('/admin/ai');
     } else if (actionLabel === 'Generate Board Report') {
       handleQuickAction('Download CSV');
     }
@@ -411,7 +394,6 @@ export default function AdminDonors() {
             { label: "Donor Communications", icon: MessageSquare },
             { label: "Export Report", icon: FileText },
             { label: "Download CSV", icon: Download },
-            { label: "Ask KHIZR", icon: Star },
             { label: "Generate Board Report", icon: FileText },
           ].map((action, i) => (
             <button key={i} onClick={() => handleQuickAction(action.label)} className="flex items-center gap-2 px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[13px] font-medium text-gray-300 hover:text-white transition">

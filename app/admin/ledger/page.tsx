@@ -14,6 +14,8 @@ import {
   AlertCircle
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRealtimeRefresh } from "@/lib/realtime/useRealtime";
+import { DONATION_DATA_EVENTS } from "@/lib/realtime/events";
 
 export default function PublicLedgerManagement() {
   const [ledger, setLedger] = useState<any[]>([]);
@@ -67,6 +69,8 @@ export default function PublicLedgerManagement() {
   useEffect(() => {
     loadLedger();
   }, []);
+
+  useRealtimeRefresh(DONATION_DATA_EVENTS, () => loadLedger());
 
   // Filter based on search
   useEffect(() => {

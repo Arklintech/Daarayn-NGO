@@ -9,6 +9,7 @@ import {
 import { FieldAgent, FieldReport, FieldMessage, FieldConversation } from "@/lib/db-field-ops";
 import { notifyFieldReport, notifyConversation } from "@/lib/notifications";
 import { useSearchParams, useRouter } from "next/navigation";
+import { subscribeRealtime } from "@/lib/realtime/client";
 
 function FieldOperationsCenterContent() {
   const router = useRouter();
@@ -28,9 +29,6 @@ function FieldOperationsCenterContent() {
   const [newMessage, setNewMessage] = useState("");
   const [activeTab, setActiveTab] = useState('Conversation');
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAIInsights, setShowAIInsights] = useState(false);
-  const [aiInsights, setAiInsights] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
@@ -135,10 +133,12 @@ function FieldOperationsCenterContent() {
     loadOperationalData();
 
     // EventSource SSE Realtime Listener (Zero Polling)
-    const eventSource = new EventSource("/api/realtime/stream");
-    eventSource.onmessage = (event) => {
+    // Shares the tab's single realtime connection.
+    const unsubscribe = subscribeRealtime({
+      onResync: () => loadOperationalData(),
+      onMessage: (parsed: any) => {
       try {
-        const parsed = JSON.parse(event.data);
+        
         if (parsed.type === "FIELD_REPORT_SUBMITTED" && parsed.payload) {
           setAllReports(prev => [parsed.payload, ...prev.filter(r => r.id !== parsed.payload.id)]);
         } else if (parsed.type === "FIELD_REPORT_UPDATE" && parsed.payload) {
@@ -147,10 +147,11 @@ function FieldOperationsCenterContent() {
       } catch (e) {
         console.warn("[FieldOps/SSE] Event parse error:", e);
       }
-    };
+      },
+    });
 
     return () => {
-      eventSource.close();
+      unsubscribe();
     };
   }, [paramAgentId]);
 
@@ -237,10 +238,12 @@ function FieldOperationsCenterContent() {
     loadMessages();
 
     // EventSource SSE Listener for Chat Messages & Realtime Sync
-    const eventSource = new EventSource("/api/realtime/stream");
-    eventSource.onmessage = (event) => {
+    // Shares the tab's single realtime connection.
+    const unsubscribe = subscribeRealtime({
+      onResync: () => loadMessages(),
+      onMessage: (parsed: any) => {
       try {
-        const parsed = JSON.parse(event.data);
+        
         if (parsed.type === "CHAT_MESSAGE" && parsed.payload) {
           const msg = parsed.payload;
           if (msg.conversationId === activeConvId) {
@@ -281,10 +284,11 @@ function FieldOperationsCenterContent() {
       } catch (e) {
         console.warn("[FieldChat/SSE] Event parse error:", e);
       }
-    };
+      },
+    });
 
     return () => {
-      eventSource.close();
+      unsubscribe();
     };
   }, [activeConvId, activeAgentId]);
 
@@ -594,77 +598,6 @@ function FieldOperationsCenterContent() {
     }
   };
 
-  const handleAIInsights = async () => {
-    setShowAIInsights(true);
-    setAiLoading(true);
-    setAiInsights('');
-    try {
-      const pending = allReports.filter(r => ['Pending Review','Needs Info'].includes(r.status)).length;
-      const urgent = allReports.filter(r => r.urgency === 'High' && !['Approved','Converted'].includes(r.status)).length;
-      const unread = conversations.filter(c => c.unreadCountAdmin > 0).length;
-      const suspended = agents.filter(a => a.status === 'Suspended').length;
-      const catMap: Record<string,number> = {};
-      allReports.forEach(r => { catMap[r.category] = (catMap[r.category]||0)+1; });
-      const topCat = Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0];
-      const convRate = allReports.length > 0 ? Math.round((allReports.filter(r=>r.status==='Converted').length / allReports.length) * 100) : 0;
-
-      const prompt = `You are Khizr, an AI operational analyst for Daarayn Foundation. Analyze this live field operations data and provide 5 concise, actionable bullet points for the admin dashboard. Format each point as "**Heading**: Description".\n\nOperational Data: ${JSON.stringify({ totalAgents: agents.length, activeAgents: agents.filter(a=>a.status==='Active').length, totalReports: allReports.length, pendingReview: pending, urgentCases: urgent, unreadMessages: unread, suspendedAgents: suspended, topCategory: topCat?.[0] || "General", conversionRate: convRate + "%" })}`;
-
-      // Call Daarayn KHIZR AI Copilot API
-      const res = await fetch('/api/admin/ai/copilot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: prompt,
-          adminRole: 'super_admin'
-        })
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        const text = data.reply || data.content;
-        if (text && typeof text === 'string' && text.length > 20) {
-          setAiInsights(text);
-          setAiLoading(false);
-          return;
-        }
-      }
-    } catch (err) {
-      console.warn("AI Copilot request fallback to local analytics model:", err);
-    }
-
-    // Fallback: generate insights from live data locally
-    const pending2 = allReports.filter(r => ['Pending Review','Needs Info'].includes(r.status)).length;
-    const urgent2 = allReports.filter(r => r.urgency === 'High' && !['Approved','Converted'].includes(r.status)).length;
-    const unread2 = conversations.filter(c => c.unreadCountAdmin > 0).length;
-    const suspended2 = agents.filter(a => a.status === 'Suspended').length;
-    const catMap2: Record<string,number> = {};
-    allReports.forEach(r => { catMap2[r.category] = (catMap2[r.category]||0)+1; });
-    const topCat2 = Object.entries(catMap2).sort((a,b)=>b[1]-a[1])[0];
-    const convRate2 = allReports.length > 0 ? Math.round((allReports.filter(r=>r.status==='Converted').length / allReports.length) * 100) : 0;
-
-    const bullets = [
-      `**Operational Overview**: ${agents.length} field agents are deployed across multiple regions, with ${allReports.length} total reports submitted to date. Overall conversion rate stands at ${convRate2}%.`,
-      urgent2 > 0
-        ? `**Urgent Attention Needed**: ${urgent2} high-priority report${urgent2>1?'s':''} require immediate review. Delays in addressing urgent cases can impact beneficiary welfare and donor confidence.`
-        : `**No Urgent Reports**: All high-priority cases are resolved — excellent operational discipline.`,
-      pending2 > 0
-        ? `**Review Backlog**: ${pending2} report${pending2>1?'s are':' is'} awaiting your review. Consider dedicating focused review sessions to clear the backlog and maintain agent morale.`
-        : `**No Pending Reports**: All submitted reports have been reviewed. Your team is operating efficiently.`,
-      unread2 > 0
-        ? `**Communication Gap**: ${unread2} conversation${unread2>1?'s have':' has'} unread messages. Prompt replies to field agents improve trust, coordination and operational speed.`
-        : `**Communication is Clear**: All agent messages have been read and responded to.`,
-      topCat2
-        ? `**Top Issue Category**: "${topCat2[0]}" is the most reported category (${topCat2[1]} reports). Consider launching a dedicated fundraising cause or program targeting this area.`
-        : `**Diverse Issues**: Reports are spread across multiple categories — consider prioritizing based on impact and urgency.`,
-      suspended2 > 0
-        ? `**Agent Status Alert**: ${suspended2} agent${suspended2>1?'s are':' is'} currently suspended. Review their status and reinstate or replace to maintain field coverage.`
-        : `**Full Agent Capacity**: All agents are active and operational.`,
-    ];
-    setAiInsights(bullets.join('\n\n'));
-    setAiLoading(false);
-  };
-
   const avatar = (name: string, url?: string) =>
     url || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=111&color=fff&size=64`;
 
@@ -690,9 +623,6 @@ function FieldOperationsCenterContent() {
             <UserPlus className="w-3.5 h-3.5" /> <span>Profile</span>
           </button>
         ) : null}
-        <button onClick={handleAIInsights} className="py-1.5 px-2.5 rounded-lg text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/20 transition flex items-center justify-center gap-1 shrink-0">
-          <Sparkles className="w-3.5 h-3.5" /> <span>AI</span>
-        </button>
       </div>
 
       {/* ── HEADER ── */}
@@ -711,9 +641,6 @@ function FieldOperationsCenterContent() {
               <kbd className="bg-white/[0.08] border border-white/[0.12] rounded px-1 py-0.5 text-[8px] font-mono text-gray-400 shadow-sm leading-none">K</kbd>
             </div>
           </div>
-          <button onClick={handleAIInsights} className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 hover:bg-emerald-500/20 active:scale-95 transition shrink-0">
-            <Sparkles className="w-3.5 h-3.5" /> AI
-          </button>
           <button onClick={() => router.push('/admin/notifications')} className="relative p-2 text-gray-400 hover:text-white transition shrink-0" title="View Notifications">
             <Bell className="w-4 h-4" />
             {totalUnread > 0 && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 border border-[#020704] rounded-full" />}
@@ -1564,66 +1491,6 @@ function FieldOperationsCenterContent() {
         )}
       </div>
     </div>
-
-    {/* ── AI INSIGHTS MODAL ── */}
-    {showAIInsights && (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-        <div className="bg-[#0a0f0c] border border-emerald-500/20 rounded-xl w-full max-w-xl shadow-2xl overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] bg-emerald-900/20">
-            <div className="flex items-center gap-2.5">
-              <Sparkles className="w-5 h-5 text-emerald-400" />
-              <div>
-                <h3 className="text-sm font-bold text-white">AI Operational Insights</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Generated from live field operations data</p>
-              </div>
-            </div>
-            <button onClick={() => setShowAIInsights(false)} className="p-1.5 text-gray-400 hover:text-white hover:bg-white/[0.05] rounded-lg transition">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-
-          {/* Body */}
-          <div className="p-5 max-h-[60vh] overflow-y-auto space-y-3">
-            {aiLoading ? (
-              <div className="flex flex-col items-center justify-center py-8 gap-3">
-                <div className="w-7 h-7 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin" />
-                <p className="text-xs text-gray-400">Analyzing operational data...</p>
-              </div>
-            ) : (
-              aiInsights.split('\n\n').filter(Boolean).map((bullet, i) => {
-                const boldMatch = bullet.match(/^\*\*(.+?)\*\*:?\s*([\s\S]*)$/);
-                return (
-                  <div key={i} className="flex gap-3 p-3 bg-white/[0.02] border border-white/[0.05] rounded-lg">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                      <span className="text-xs font-bold text-emerald-400">{i+1}</span>
-                    </div>
-                    <div className="flex-1">
-                      {boldMatch ? (
-                        <>
-                          <p className="text-xs font-bold text-white mb-0.5">{boldMatch[1]}</p>
-                          <p className="text-xs text-gray-300 leading-relaxed">{boldMatch[2]}</p>
-                        </>
-                      ) : (
-                        <p className="text-xs text-gray-300 leading-relaxed">{bullet}</p>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {/* Footer */}
-          <div className="px-5 py-3 border-t border-white/[0.06] flex items-center justify-between">
-            <p className="text-xs text-gray-400">Based on {allReports.length} reports · {agents.length} agents · {conversations.length} conversations</p>
-            <button onClick={handleAIInsights} disabled={aiLoading} className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 disabled:opacity-40 flex items-center gap-1.5 transition">
-              <Sparkles className="w-3.5 h-3.5" /> Regenerate
-            </button>
-          </div>
-        </div>
-      </div>
-    )}
 
     {/* ── REJECT MODAL ── */}
     {showRejectModal && (

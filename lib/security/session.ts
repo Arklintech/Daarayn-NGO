@@ -1,5 +1,5 @@
 import { getAuth } from 'firebase/auth';
-import { openDB } from 'idb';
+import { initializePwaDatabase } from '@/lib/pwa/db';
 
 export async function executeSecureSessionIsolation() {
   const auth = getAuth();
@@ -10,7 +10,8 @@ export async function executeSecureSessionIsolation() {
 
   // 2. Sanitize and isolate database registers
   try {
-    const db = await openDB('daarayn_os_core', 1);
+    // Open at the current schema version; a hard-coded older version throws.
+    const db = await initializePwaDatabase();
     const tx = db.transaction(['sync_queue', 'drafts', 'ui_preferences'], 'readwrite');
     
     // Safety check: Preserve un-synced transactions in a localized secure backup layer

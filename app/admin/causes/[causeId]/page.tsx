@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { donationState, resolveCauseId } from "@/lib/donations/metrics";
 import { useParams, useRouter } from "next/navigation";
 import { Donation } from "@/lib/db";
 import {
@@ -57,10 +58,12 @@ export default function CauseWorkspace() {
         // Fetch Cause details
         const causeRes = await fetch("/api/causes");
         let causeData: any = null;
+        let causeList: any[] = [];
         if (causeRes.ok) {
           const resJson = await causeRes.json();
-          const allCauses = resJson.success && Array.isArray(resJson.causes) ? resJson.causes : [];
+          const allCauses = (Array.isArray(resJson) ? resJson : resJson?.success && Array.isArray(resJson.causes) ? resJson.causes : []);
           causeData = allCauses.find((c: any) => c.id === causeId || c.slug === causeId);
+          causeList = allCauses;
         }
         if (!causeData) {
           causeData = {
@@ -88,8 +91,13 @@ export default function CauseWorkspace() {
 
         donList.forEach((donation: any) => {
           const allocatedAmount = Number(donation.amount || 0);
-          const isMatch = donation.causeId === causeId || donation.cause === causeData.name || (donation.selectedCauses && donation.selectedCauses.some((sc: any) => sc.causeId === causeId));
+          // Same cause matching as every other view; only verified donations count as raised.
+          const isMatch = resolveCauseId({ causeId: donation.causeId, causeTitle: donation.cause }, causeList.length ? causeList : [causeData]) === causeData.id;
           if (isMatch) {
+            if (donationState(donation.status) !== "received") {
+              mappedContributions.push({ ...donation, allocatedAmount });
+              return;
+            }
             totalRaised += allocatedAmount;
             const email = donation.donorEmail || donation.donor || donation.donorId || "Anonymous";
             if (!uniqueContributorsMap.has(email)) {

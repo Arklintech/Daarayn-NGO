@@ -20,7 +20,6 @@ import {
   X, 
   User as UserIcon,
   ShieldCheck,
-  Sparkles,
   Mail,
   MapPin,
   Bell,
@@ -30,7 +29,17 @@ import {
   PanelLeftOpen
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRealtimeRefresh } from "@/lib/realtime/useRealtime";
+import { NOTIFICATION_EVENTS, RealtimeEvent } from "@/lib/realtime/events";
 
+// Events that add or change notification rows.
+const UNREAD_REFRESH_EVENTS = [
+  ...NOTIFICATION_EVENTS,
+  RealtimeEvent.DONATION_CREATED,
+  RealtimeEvent.FIELD_REPORT_SUBMITTED,
+  RealtimeEvent.FIELD_REPORT_UPDATE,
+  RealtimeEvent.FIELD_REPORT_UPDATED,
+];
 
 
 export default function AdminLayoutClient({ children }: { children: React.ReactNode }) {
@@ -64,27 +73,25 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     }
   }, [user, adminData, loading, pathname, router]);
 
-  // Real-time unread count — poll the Sheets-backed notifications API
-  React.useEffect(() => {
-    if (!adminData) return;
-
-    const fetchUnread = async () => {
-      try {
-        const res = await fetch("/api/admin/notifications");
-        const data = await res.json();
-        if (data.success && Array.isArray(data.notifications)) {
-          const unread = data.notifications.filter((n: any) => !n.isRead).length;
-          setTotalUnread(unread);
-        }
-      } catch {
-        // Silently ignore — unread count is non-critical
+  // Unread count from the Sheets-backed notifications API, refreshed by realtime events
+  const fetchUnread = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/notifications");
+      const data = await res.json();
+      if (data.success && Array.isArray(data.notifications)) {
+        const unread = data.notifications.filter((n: any) => !n.isRead).length;
+        setTotalUnread(unread);
       }
-    };
+    } catch {
+      // Silently ignore — unread count is non-critical
+    }
+  }, []);
 
-    fetchUnread();
-    const interval = setInterval(fetchUnread, 30_000);
-    return () => clearInterval(interval);
-  }, [adminData]);
+  React.useEffect(() => {
+    if (adminData) fetchUnread();
+  }, [adminData, fetchUnread]);
+
+  useRealtimeRefresh(UNREAD_REFRESH_EVENTS, fetchUnread, { enabled: !!adminData, fallbackMs: 60_000 });
 
 
   // Register SW + detect live updates for mobile PWA
@@ -176,12 +183,6 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       title: "Dashboard",
       items: [
         { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-      ]
-    },
-    {
-      title: "Intelligence",
-      items: [
-        { name: "KHIZR AI", href: "/admin/ai", icon: Sparkles },
       ]
     },
     {

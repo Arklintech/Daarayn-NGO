@@ -25,6 +25,8 @@ import {
 import { AdminNotification, NotificationCategory, CATEGORY_META } from "@/lib/notifications";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
+import { useRealtimeRefresh } from "@/lib/realtime/useRealtime";
+import { NOTIFICATION_EVENTS, RealtimeEvent } from "@/lib/realtime/events";
 
 type FilterType = "all" | "unread" | "starred" | "today" | "week";
 
@@ -66,6 +68,26 @@ const CATEGORY_COLORS: Record<NotificationCategory, { bg: string, border: string
   executive_reports: { bg: "bg-yellow-500/10", border: "border-yellow-500/20", text: "text-yellow-400" },
 };
 
+// Screen-reader names for each card's destination (CATEGORY_META[cat].href).
+const CATEGORY_DESTINATIONS: Record<NotificationCategory, string> = {
+  field_reports: "Field Operations",
+  conversations: "Field Operations conversations",
+  donors: "Donors CRM",
+  donations: "Donations",
+  causes_campaigns: "Cause Management Center",
+  communications: "Donor Communications",
+  executive_reports: "Executive Dashboard",
+};
+
+// Every event that creates or changes a notification row.
+const NOTIFICATION_REFRESH_EVENTS = [
+  ...NOTIFICATION_EVENTS,
+  RealtimeEvent.DONATION_CREATED,
+  RealtimeEvent.FIELD_REPORT_SUBMITTED,
+  RealtimeEvent.FIELD_REPORT_UPDATE,
+  RealtimeEvent.FIELD_REPORT_UPDATED,
+];
+
 export default function NotificationCenterPage() {
   const [notifications, setNotifications] = useState<(AdminNotification & { id: string, isStarred?: boolean })[]>([]);
   const [filter, setFilter] = useState<FilterType>("all");
@@ -86,33 +108,9 @@ export default function NotificationCenterPage() {
 
   useEffect(() => {
     fetchNotifications(true);
-
-    // SSE Realtime stream for live notifications
-    let es: EventSource | null = null;
-    try {
-      es = new EventSource("/api/realtime/stream");
-      es.onmessage = (event) => {
-        try {
-          const payload = JSON.parse(event.data);
-          if (
-            payload.type === "NOTIFICATION_CREATED" ||
-            payload.type === "NOTIFICATION_UPDATED" ||
-            payload.type === "NOTIFICATION_DELETED" ||
-            payload.type === "DONATION_RECEIVED" ||
-            payload.type === "REPORT_CREATED"
-          ) {
-            fetchNotifications(true);
-          }
-        } catch (_) {}
-      };
-    } catch (e) {
-      console.warn("[NotificationCenter] SSE init warning:", e);
-    }
-
-    return () => {
-      if (es) es.close();
-    };
   }, []);
+
+  useRealtimeRefresh(NOTIFICATION_REFRESH_EVENTS, () => fetchNotifications(true));
 
   const filtered = notifications.filter((n) => {
     if (filter === "unread") return !n.isRead;
@@ -250,25 +248,32 @@ export default function NotificationCenterPage() {
       {/* Category Grid */}
       <div className={`${selectedItem ? 'hidden' : 'flex'} md:grid md:grid-cols-4 lg:grid-cols-7 gap-2 lg:gap-3 w-full min-w-0 overflow-x-auto md:overflow-visible custom-scrollbar pb-1.5 md:pb-0 snap-x`}>
         {categories.map(([cat, meta]) => {
+          const catTotal = notifications.filter(n => n.category === cat).length;
           const catUnread = notifications.filter(n => n.category === cat && !n.isRead).length;
           const Icon = CATEGORY_ICONS[cat];
           const colorClass = CATEGORY_COLORS[cat];
+          // The whole card is one link to the section that owns these records.
           return (
-            <div key={cat} className="flex flex-col p-2.5 lg:p-3.5 rounded-xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden group min-w-0 shrink-0 md:shrink md:snap-none snap-start w-[150px] md:w-auto">
-              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Link
+              key={cat}
+              href={meta.href}
+              aria-label={`${meta.label}: ${catTotal} total, ${catUnread} unread. Open ${CATEGORY_DESTINATIONS[cat]}`}
+              className="flex flex-col p-2.5 lg:p-3.5 rounded-xl bg-white/[0.015] border border-white/[0.04] hover:bg-white/[0.03] hover:border-white/[0.08] active:bg-white/[0.045] active:scale-[0.98] transition cursor-pointer relative overflow-hidden group min-w-0 shrink-0 md:shrink md:snap-none snap-start w-[150px] md:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-luxury-gold/70 focus-visible:border-luxury-gold/40"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity" aria-hidden="true" />
               <div className="flex flex-row items-center gap-2 mb-2 min-w-0">
-                <div className={`w-7 h-7 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0`}>
+                <div className={`w-7 h-7 rounded-full ${colorClass.bg} ${colorClass.border} border flex items-center justify-center shrink-0`} aria-hidden="true">
                   <Icon className={`w-3.5 h-3.5 ${colorClass.text}`} />
                 </div>
                 <span className="text-xs font-semibold text-gray-300 leading-tight flex-1 whitespace-normal break-words">{meta.label}</span>
               </div>
               <div className="min-w-0 mt-auto">
-                <div className="text-lg xl:text-xl font-bold text-white leading-none">{notifications.filter(n => n.category === cat).length}</div>
+                <div className="text-lg xl:text-xl font-bold text-white leading-none">{catTotal}</div>
                 <div className={`text-xs font-semibold tracking-wider uppercase mt-1 whitespace-normal ${catUnread > 0 ? colorClass.text : 'text-gray-500'}`}>
                   {catUnread > 0 ? `${catUnread} Unread` : "0 Unread"}
                 </div>
               </div>
-            </div>
+            </Link>
           )
         })}
       </div>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { donationState } from '@/lib/donations/metrics';
 import { TrendingUp, TrendingDown, Award, Calendar, Target, BarChart2 } from 'lucide-react';
 
 function StatCard({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
@@ -30,7 +31,9 @@ function MiniBar({ value, max, label }: { value: number; max: number; label: str
   );
 }
 
-export default function AnalyticsTab({ donor, donations, causes }: any) {
+export default function AnalyticsTab({ donor, donations: allDonations, causes }: any) {
+  // Giving analytics count verified donations only.
+  const donations = useMemo(() => allDonations.filter((d: any) => donationState(d.status) === 'received'), [allDonations]);
   const stats = useMemo(() => {
     if (!donations.length) return null;
 

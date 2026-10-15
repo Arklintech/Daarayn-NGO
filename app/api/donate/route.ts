@@ -18,6 +18,7 @@ export async function POST(request: NextRequest) {
     const amountStr = formData.get("amount")?.toString() || "";
     const currency = formData.get("currency")?.toString() || "INR";
     const cause = formData.get("cause")?.toString() || "General Support";
+    const submissionKey = formData.get("submissionKey")?.toString() || "";
 
     let selectedCauses: string[] = [];
     try {
@@ -60,9 +61,10 @@ export async function POST(request: NextRequest) {
       screenshotBuffer,
       screenshotFilename,
       screenshotMimeType,
+      submissionKey,
     });
 
-    logAuditEvent({
+    if (!result.duplicate) logAuditEvent({
       userId: result.donorId,
       userName: donorName || "Anonymous Donor",
       action: "DONATION_PROCESSED",
@@ -74,6 +76,7 @@ export async function POST(request: NextRequest) {
       success: true,
       trackingId: result.trackingId,
       proofDriveFileId: result.proofDriveFileId,
+      duplicate: Boolean(result.duplicate),
     });
   } catch (error: any) {
     console.error("[API/Donate] Error processing donation:", error);

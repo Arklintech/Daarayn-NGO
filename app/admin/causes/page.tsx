@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { fundingByCause } from "@/lib/donations/metrics";
+import { useRealtimeRefresh } from "@/lib/realtime/useRealtime";
+import { DONATION_DATA_EVENTS } from "@/lib/realtime/events";
 import { Donation } from "@/lib/db";
 import Link from "next/link";
 import { 
@@ -46,9 +49,7 @@ export default function CauseManagementCenter() {
         // Fetch Unified Causes from Sheets-backed API
         const causesRes = await fetch("/api/causes");
         const causesData = await causesRes.json();
-        let fetchedCauses: any[] = causesData.success && Array.isArray(causesData.causes)
-          ? causesData.causes
-          : [];
+        let fetchedCauses: any[] = (Array.isArray(causesData) ? causesData : causesData?.success && Array.isArray(causesData.causes) ? causesData.causes : []);
 
         if (fetchedCauses.length === 0) {
           fetchedCauses = DEFAULT_CAUSES;
@@ -62,28 +63,12 @@ export default function CauseManagementCenter() {
           ? donationsData.donations
           : [];
 
-        const stats: Record<string, { raised: number, contributors: Set<string> }> = {};
-        fetchedCauses.forEach(c => {
-          stats[c.id] = { raised: 0, contributors: new Set() };
-        });
-
-        donations.forEach(donation => {
-          if (donation.selectedCauses && Array.isArray(donation.selectedCauses)) {
-            donation.selectedCauses.forEach((cause: any) => {
-              if (stats[cause.causeId]) {
-                stats[cause.causeId].raised += cause.allocatedAmount;
-                stats[cause.causeId].contributors.add(donation.donorId);
-              }
-            });
-          }
-        });
-
+        // Verified donations linked to each cause — the same rule as the dashboard.
+        const { byCause } = fundingByCause(donations as any[], fetchedCauses);
         const formattedStats: Record<string, { raised: number, contributors: number }> = {};
-        Object.keys(stats).forEach(key => {
-          formattedStats[key] = {
-            raised: stats[key].raised,
-            contributors: stats[key].contributors.size
-          };
+        fetchedCauses.forEach((c: any) => {
+          const f = byCause.get(c.id);
+          formattedStats[c.id] = { raised: f?.receivedAmount ?? 0, contributors: f?.contributorCount ?? 0 };
         });
 
         setCauseStats(formattedStats);
@@ -99,6 +84,8 @@ export default function CauseManagementCenter() {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useRealtimeRefresh(DONATION_DATA_EVENTS, () => fetchData());
 
   const handleCreateCause = async (e: React.FormEvent) => {
     e.preventDefault();

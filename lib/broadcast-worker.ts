@@ -172,13 +172,14 @@ export async function processBroadcast(
         errors: topErrors(errorCounts),
       });
 
+      // Progress ticks are transient: keep them out of the shared event log.
       realtimeBroadcaster.broadcast("BROADCAST_PROGRESS", {
         broadcastId,
         sent: successCount,
         failed: failCount,
         remaining: remainingCount,
         status: "Processing"
-      });
+      }, { durable: false });
 
       // Delay to respect provider limits
       if (i + BATCH_SIZE < jobs.length) {

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useFieldAgentAuth } from "@/lib/FieldAgentAuthContext";
 import { FieldConversation, FieldMessage, FieldReport } from "@/lib/db-field-ops";
 import { Search, Send, FileText, Settings, Paperclip, MessageSquare, ArrowLeft, Mic } from "lucide-react";
+import { subscribeRealtime } from "@/lib/realtime/client";
 
 export default function AgentMessagesPage() {
   const { agentData, loading } = useFieldAgentAuth();
@@ -112,10 +113,12 @@ export default function AgentMessagesPage() {
     fetchChatMessages();
 
     // SSE Real-time Listener for instant delivery
-    const eventSource = new EventSource("/api/realtime/stream");
-    eventSource.onmessage = (event) => {
+    // Shares the tab's single realtime connection.
+    const unsubscribe = subscribeRealtime({
+      onResync: () => fetchChatMessages(),
+      onMessage: (parsed: any) => {
       try {
-        const parsed = JSON.parse(event.data);
+        
         if (parsed.type === "CHAT_MESSAGE" && parsed.payload) {
           const msg = parsed.payload;
           if (msg.conversationId === activeConvId) {
@@ -159,10 +162,11 @@ export default function AgentMessagesPage() {
       } catch (e) {
         console.warn("[FieldAgent/SSE] Event error:", e);
       }
-    };
+      },
+    });
 
     return () => {
-      eventSource.close();
+      unsubscribe();
     };
   }, [activeConvId]);
 

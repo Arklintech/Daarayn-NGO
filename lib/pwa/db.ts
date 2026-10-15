@@ -1,11 +1,12 @@
 import { openDB, IDBPDatabase } from 'idb';
 
 const DATABASE_NAME = 'daarayn_os_core';
-const DATABASE_VERSION = 1;
+// v2 drops the decommissioned assistant conversation store.
+const DATABASE_VERSION = 2;
 
 export interface OfflineDraft {
   id: string;
-  payloadType: 'field_report' | 'khizr_prompt' | 'crm_draft';
+  payloadType: 'field_report' | 'crm_draft';
   payload: Record<string, any>;
   timestamp: number;
   retries: number;
@@ -20,10 +21,9 @@ export async function initializePwaDatabase(): Promise<IDBPDatabase> {
         syncStore.createIndex('by_timestamp', 'timestamp');
       }
 
-      // Store persistent conversational states locally (legacy)
-      if (!db.objectStoreNames.contains('khizr_conversations')) {
-        const chatStore = db.createObjectStore('khizr_conversations', { keyPath: 'id' });
-        chatStore.createIndex('by_session', 'sessionId');
+      // Removed in v2: locally cached assistant conversations
+      if (db.objectStoreNames.contains('khizr_conversations')) {
+        db.deleteObjectStore('khizr_conversations');
       }
 
       // Offline form and metadata drafts

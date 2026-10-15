@@ -2,6 +2,10 @@ import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { causeRepository } from "@/lib/repositories/causeRepository";
 import { DEFAULT_CAUSES } from "@/lib/causes";
+import { donationRepository } from "@/lib/repositories/donationRepository";
+import { fundingByCause } from "@/lib/donations/metrics";
+import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
+import { RealtimeEvent } from "@/lib/realtime/events";
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,6 +31,16 @@ export async function GET(request: NextRequest) {
       causes = await causeRepository.getAll(true);
     }
 
+    // Raised = verified donations linked to the cause (lib/donations/metrics.ts).
+    // The stored raisedAmount column also counted unverified submissions; it
+    // is kept as recordedRaisedAmount and used only if donations cannot be read.
+    let funding: ReturnType<typeof fundingByCause>["byCause"] | null = null;
+    try {
+      funding = fundingByCause(await donationRepository.getAll(), causes).byCause;
+    } catch (err: any) {
+      console.error("[API/Causes] Donations unavailable, using recorded raised amounts:", err.message);
+    }
+
     // Public Safe mapping: ensures internal operational metadata is shielded
     const publicCauses = causes.map((c) => ({
       id: c.id,
@@ -34,7 +48,10 @@ export async function GET(request: NextRequest) {
       name: c.title,
       category: c.category,
       targetAmount: c.targetAmount,
-      raisedAmount: c.raisedAmount,
+      raisedAmount: funding ? funding.get(c.id)?.receivedAmount ?? 0 : c.raisedAmount,
+      recordedRaisedAmount: c.raisedAmount,
+      raisedSource: funding ? "verified_donations" : "recorded",
+      supporters: funding ? funding.get(c.id)?.contributorCount ?? 0 : undefined,
       location: c.location,
       description: c.description,
       status: c.status,
@@ -75,6 +92,7 @@ export async function POST(request: NextRequest) {
     };
 
     await causeRepository.save(newCause);
+    realtimeBroadcaster.broadcast(RealtimeEvent.CAUSE_UPDATED, { id: causeId });
     return NextResponse.json({ success: true, cause: newCause });
   } catch (error: any) {
     console.error("[API/Causes] Error saving cause:", error);

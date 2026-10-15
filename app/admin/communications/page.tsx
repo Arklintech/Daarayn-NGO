@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { Send, Users, Activity, CheckCircle, ChevronDown, Sparkles, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check, Globe } from "lucide-react";
+import { Send, Users, Activity, CheckCircle, ChevronDown, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check, Globe } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DEFAULT_CAUSES } from "@/lib/causes";
 
@@ -28,10 +28,6 @@ function CommunicationsHubContent() {
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; size: number; type: string; previewUrl: string; serverUrl?: string; uploaded: boolean }[]>([]);
   const [uploading, setUploading] = useState(false);
   
-  const [generating, setGenerating] = useState(false);
-  const [verificationError, setVerificationError] = useState("");
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [originalValues, setOriginalValues] = useState({ heading: "", notes: "" });
 
   useEffect(() => {
     async function fetchData() {
@@ -165,45 +161,6 @@ function CommunicationsHubContent() {
       console.error(err);
       alert("An error occurred while initiating broadcast.");
       setMode("compose");
-    }
-  };
-
-  const handleGenerate = async (overwriteOverride?: boolean) => {
-    const headingEdited = heading !== originalValues.heading;
-    const notesEdited = notes !== originalValues.notes;
-    
-    if ((headingEdited || notesEdited) && !overwriteOverride && (heading || notes)) {
-      setShowConfirmModal(true);
-      return;
-    }
-
-    setGenerating(true);
-    setVerificationError("");
-    setShowConfirmModal(false);
-
-    try {
-      const response = await fetch("/api/admin/communications/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          causeId: selectedCauseIds[0] || "all",
-          type,
-          media: uploadedFiles.filter(f => f.uploaded)
-        })
-      });
-
-      const result = await response.json();
-      if (result.success) {
-        setHeading(result.heading || "");
-        setNotes(result.body || "");
-        setOriginalValues({ heading: result.heading || "", notes: result.body || "" });
-      } else {
-        setVerificationError(result.error || "Generation failed.");
-      }
-    } catch (err) {
-      setVerificationError("Failed to connect to Khizr service.");
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -569,21 +526,6 @@ function CommunicationsHubContent() {
                       />
                     </label>
                   </div>
-
-                  {verificationError && (
-                    <div className="p-3.5 rounded-xl border border-red-500/20 bg-red-500/5 text-red-200 text-xs leading-relaxed mb-3">
-                      {verificationError}
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => handleGenerate(false)}
-                    disabled={generating}
-                    className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-gray-100 active:scale-[0.99] mb-3"
-                    style={{ background: '#ffffff' }}
-                  >
-                    {generating ? <Activity className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Generate with Khizr</>}
-                  </button>
 
                   <button
                     onClick={handlePreview}
