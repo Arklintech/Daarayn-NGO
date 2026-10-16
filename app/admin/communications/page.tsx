@@ -32,7 +32,12 @@ function CommunicationsHubContent() {
   const [aiAssistLoading, setAiAssistLoading] = useState(false);
   const [aiSuggestions, setAiSuggestions] = useState<{improved?: string; keyPoints?: string[]; suggestions?: string[]} | null>(null);
   const [showAiSuggestions, setShowAiSuggestions] = useState(false);
-  
+
+  // Khizr Generation State
+  const [generating, setGenerating] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [originalValues, setOriginalValues] = useState({ heading: "", notes: "" });
 
   useEffect(() => {
     async function fetchData() {
@@ -198,6 +203,45 @@ function CommunicationsHubContent() {
       console.error(err);
       alert("An error occurred while initiating broadcast.");
       setMode("compose");
+    }
+  };
+
+  const handleGenerate = async (overwriteOverride?: boolean) => {
+    const headingEdited = heading !== originalValues.heading;
+    const notesEdited = notes !== originalValues.notes;
+
+    if ((headingEdited || notesEdited) && !overwriteOverride && (heading || notes)) {
+      setShowConfirmModal(true);
+      return;
+    }
+
+    setGenerating(true);
+    setVerificationError("");
+    setShowConfirmModal(false);
+
+    try {
+      const response = await fetch("/api/admin/communications/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          causeId: selectedCauseIds[0],
+          type,
+          media: uploadedFiles.filter(f => f.uploaded)
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setHeading(result.heading || "");
+        setNotes(result.body || "");
+        setOriginalValues({ heading: result.heading || "", notes: result.body || "" });
+      } else {
+        setVerificationError(result.error || "Generation failed.");
+      }
+    } catch (err) {
+      setVerificationError("Failed to connect to Khizr service.");
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -484,23 +528,7 @@ function CommunicationsHubContent() {
                   </div>
 
                   <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="block text-xs text-gray-500 uppercase tracking-widest">Verified Notes</label>
-                      <button
-                        type="button"
-                        onClick={handleAiAssist}
-                        disabled={aiAssistLoading || !notes.trim()}
-                        className="flex items-center gap-2 text-xs font-semibold px-4 py-1.5 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                        style={{
-                          background: aiAssistLoading ? 'rgba(212,175,55,0.25)' : 'rgba(212,175,55,0.2)',
-                          color: 'var(--color-luxury-gold)',
-                          border: '1.5px solid rgba(212,175,55,0.4)'
-                        }}
-                      >
-                        <Sparkles className="w-4 h-4" />
-                        {aiAssistLoading ? 'Generating...' : 'Generate with Khidr'}
-                      </button>
-                    </div>
+                    <label className="block text-xs text-gray-500 uppercase tracking-widest mb-2">Verified Notes</label>
                     <textarea
                       rows={4}
                       placeholder="Enter factual statements describing the progress..."
@@ -638,6 +666,19 @@ function CommunicationsHubContent() {
                       />
                     </label>
                   </div>
+
+                  <button
+                    onClick={() => handleGenerate(false)}
+                    disabled={generating || selectedCauseIds.length === 0}
+                    className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-gray-100 active:scale-[0.99] mb-3"
+                    style={{ background: '#ffffff' }}
+                  >
+                    {generating ? <Activity className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Generate with Khizr</>}
+                  </button>
+
+                  {verificationError && (
+                    <p className="text-xs text-red-400 bg-red-400/10 border border-red-400/30 rounded-lg px-3 py-2 mb-3">{verificationError}</p>
+                  )}
 
                   <button
                     onClick={handlePreview}
@@ -850,6 +891,33 @@ function CommunicationsHubContent() {
             >
               View Report →
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Khizr Overwrite Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="rounded-2xl p-6 md:p-8 max-w-md w-full" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)' }}>
+            <h3 className="text-lg font-bold text-white mb-3">Generate with Khizr?</h3>
+            <p className="text-sm text-gray-300 mb-6">This will replace your current heading and notes with AI-generated content.</p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all text-white"
+                style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleGenerate(true)}
+                className="flex-1 py-2.5 rounded-lg font-semibold text-sm transition-all text-black"
+                style={{ background: 'var(--color-luxury-gold)' }}
+              >
+                Generate
+              </button>
+            </div>
           </div>
         </div>
       )}
