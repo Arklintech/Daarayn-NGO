@@ -10,3 +10,4 @@ export * from "./auditLogRepository";
 export * from "./programRepository";
 export * from "./campaignRepository";
 export * from "./fieldMessageRepository";
+export * from "./allocationRepository";

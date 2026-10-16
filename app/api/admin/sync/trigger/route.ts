@@ -1,28 +1,26 @@
 import { requireAdmin } from "@/lib/server/auth";
 import { NextResponse } from "next/server";
-import { SyncEngine } from "@/lib/sync/SyncEngine";
-import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
 
 export async function POST(request: Request) {
   const adminAuth = await requireAdmin(request);
   if (adminAuth instanceof NextResponse) return adminAuth;
 
-  try {
-    const body = await request.json();
-    const { taskId } = body;
-    if (!taskId) return NextResponse.json({ error: "Missing taskId" }, { status: 400 });
+  // This endpoint previously triggered Firestore sync_queue tasks.
+  // The sync queue has been migrated to Google Sheets and replaced with
+  // event-driven architecture via SSE (Server-Sent Events).
+  //
+  // All operational data is now persisted directly to Google Sheets.
+  // Real-time synchronization across devices/instances is handled by:
+  // - lib/realtime/broadcaster.ts (publishes events to SSE)
+  // - lib/realtime/eventLog.ts (persistent event log in Sheets)
+  // - lib/realtime/client.ts (browser-side SSE listener)
+  //
+  // Manual sync triggers are no longer needed.
 
-    const taskSnap = await getDoc(doc(db, "sync_queue", taskId));
-    if (!taskSnap.exists()) return NextResponse.json({ error: "Task not found" }, { status: 404 });
-    
-    const task = taskSnap.data();
-    
-    // Fire and forget, don't await so the client response is immediate
-    SyncEngine.executeSyncTask(taskId, task as any).catch(console.error);
-
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  return NextResponse.json({
+    status: "deprecated",
+    message: "Manual sync triggers are no longer needed. All data is persisted to Google Sheets and synchronized via SSE events.",
+    architecture: "Event-driven with persistent event log in Google Sheets",
+    documentation: "See lib/realtime/ for the real-time event system"
+  }, { status: 410 }); // 410 Gone
 }
