@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, use } from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowLeft, Download, CheckCircle, XCircle, Clock, FileText } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 
 export default function BroadcastReport() {
   const router = useRouter();
-  const params = use(useParams());
+  const params = useParams();
   const id = (params?.id as string) || "";
 
   const [broadcast, setBroadcast] = useState<any>(null);
