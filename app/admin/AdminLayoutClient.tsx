@@ -187,7 +187,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     return null;
   }
 
-  const sidebarSections = React.useMemo(() => [
+  const sidebarSections = [
     {
       title: "Notification Center",
       items: [
@@ -242,7 +242,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
         { name: "Settings", href: "/admin/settings", icon: Settings2 },
       ]
     }
-  ], []);
+  ];
 
   const handleLogout = async () => {
     await logout();

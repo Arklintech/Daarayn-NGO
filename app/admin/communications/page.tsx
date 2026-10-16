@@ -42,31 +42,35 @@ function CommunicationsHubContent() {
 
   useEffect(() => {
     async function fetchData() {
-      try {
-        const res = await fetch("/api/causes");
-        const data = await res.json();
-        let causesData = Array.isArray(data) 
-          ? data 
-          : (data.success && Array.isArray(data.causes) && data.causes.length > 0 ? data.causes : DEFAULT_CAUSES);
-        
-        if (causesData.length === 0) causesData = DEFAULT_CAUSES;
-        setCauses(causesData);
+      // Use defaults immediately to show page
+      setCauses(DEFAULT_CAUSES);
+      setLoading(false);
 
-        if (paramDonorId) {
-          setSelectedCauseIds([paramDonorId]);
-        } else if (causesData.length > 0) {
-          setSelectedCauseIds(causesData.map((c: any) => c.id));
+      if (paramDonorId) {
+        setSelectedCauseIds([paramDonorId]);
+      } else {
+        setSelectedCauseIds(DEFAULT_CAUSES.map(c => c.id));
+      }
+
+      // Fetch fresh data in background with 3s timeout
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+        const res = await fetch("/api/causes", { signal: controller.signal });
+        clearTimeout(timeoutId);
+
+        const data = await res.json();
+        let causesData = Array.isArray(data)
+          ? data
+          : (data.success && Array.isArray(data.causes) && data.causes.length > 0 ? data.causes : DEFAULT_CAUSES);
+
+        if (causesData.length > 0) {
+          setCauses(causesData);
         }
       } catch (err) {
-        console.error("Failed to load causes", err);
-        setCauses(DEFAULT_CAUSES);
-        if (paramDonorId) {
-          setSelectedCauseIds([paramDonorId]);
-        } else {
-          setSelectedCauseIds(DEFAULT_CAUSES.map(c => c.id));
-        }
-      } finally {
-        setLoading(false);
+        console.error("Failed to load causes in background", err);
+        // Silently fail - using defaults is fine
       }
     }
     fetchData();
@@ -83,12 +87,20 @@ function CommunicationsHubContent() {
     async function fetchResolution() {
       try {
         setResolutionError("");
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
         const res = await fetch("/api/admin/communications/resolve", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ causeIds: selectedCauseIds, type })
+          body: JSON.stringify({ causeIds: selectedCauseIds, type }),
+          signal: controller.signal
         });
+
+        clearTimeout(timeoutId);
         const data = await res.json();
+
         if (data.success) {
           setDonorCount(data.count);
           setStats(data.stats);
@@ -97,14 +109,21 @@ function CommunicationsHubContent() {
           setDonorCount(0);
           setStats({ raised: 0, goalAmount: 0, percentage: 0 });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to resolve recipients", err);
-        setResolutionError("Network error: unable to load recipient data");
+        if (err?.name === 'AbortError') {
+          setResolutionError("Request timed out. Please try again.");
+        } else {
+          setResolutionError("Unable to load recipient data");
+        }
         setDonorCount(0);
         setStats({ raised: 0, goalAmount: 0, percentage: 0 });
       }
     }
-    fetchResolution();
+
+    // Add debounce to prevent rapid requests
+    const timeoutId = setTimeout(fetchResolution, 300);
+    return () => clearTimeout(timeoutId);
   }, [selectedCauseIds, type]);
 
   const handleFileUpload = async (files: File[]) => {
