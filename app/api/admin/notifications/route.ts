@@ -45,8 +45,24 @@ export async function GET(req: NextRequest) {
     const sorted = mapped.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
     return NextResponse.json({ success: true, notifications: sorted });
   } catch (error: any) {
-    console.error("[API] GET /api/admin/notifications error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const errorMsg = error?.message || "Unknown error";
+    console.error("[API] GET /api/admin/notifications error:", errorMsg, error?.code);
+
+    if (errorMsg.includes("ENOTFOUND") || errorMsg.includes("ECONNREFUSED") || errorMsg.includes("timeout")) {
+      return NextResponse.json({
+        success: false,
+        error: "Unable to reach notification service. Please check your network.",
+        code: "SERVICE_UNAVAILABLE",
+        notifications: []
+      }, { status: 503 });
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: "Failed to load notifications",
+      code: "LOAD_ERROR",
+      notifications: []
+    }, { status: 500 });
   }
 }
 
@@ -83,8 +99,22 @@ export async function PATCH(req: NextRequest) {
     realtimeBroadcaster.broadcast("NOTIFICATION_UPDATED", { id, ...updates, isStarred });
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("[API] PATCH /api/admin/notifications error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const errorMsg = error?.message || "Unknown error";
+    console.error("[API] PATCH /api/admin/notifications error:", errorMsg);
+
+    if (errorMsg.includes("ENOTFOUND") || errorMsg.includes("ECONNREFUSED")) {
+      return NextResponse.json({
+        success: false,
+        error: "Service unavailable. Please try again.",
+        code: "SERVICE_UNAVAILABLE"
+      }, { status: 503 });
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: "Failed to update notification",
+      code: "UPDATE_ERROR"
+    }, { status: 500 });
   }
 }
 
@@ -105,8 +135,22 @@ export async function DELETE(req: NextRequest) {
     realtimeBroadcaster.broadcast("NOTIFICATION_DELETED", { id });
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error("[API] DELETE /api/admin/notifications error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const errorMsg = error?.message || "Unknown error";
+    console.error("[API] DELETE /api/admin/notifications error:", errorMsg);
+
+    if (errorMsg.includes("ENOTFOUND") || errorMsg.includes("ECONNREFUSED")) {
+      return NextResponse.json({
+        success: false,
+        error: "Service unavailable. Please try again.",
+        code: "SERVICE_UNAVAILABLE"
+      }, { status: 503 });
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: "Failed to delete notification",
+      code: "DELETE_ERROR"
+    }, { status: 500 });
   }
 }
 
@@ -134,8 +178,22 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true, notification: newNotif });
   } catch (error: any) {
-    console.error("[API] POST /api/admin/notifications error:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const errorMsg = error?.message || "Unknown error";
+    console.error("[API] POST /api/admin/notifications error:", errorMsg);
+
+    if (errorMsg.includes("ENOTFOUND") || errorMsg.includes("ECONNREFUSED")) {
+      return NextResponse.json({
+        success: false,
+        error: "Service unavailable. Please try again.",
+        code: "SERVICE_UNAVAILABLE"
+      }, { status: 503 });
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: "Failed to create notification",
+      code: "CREATE_ERROR"
+    }, { status: 500 });
   }
 }
 

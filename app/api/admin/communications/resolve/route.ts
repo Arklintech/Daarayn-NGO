@@ -21,7 +21,22 @@ export async function POST(req: Request) {
       stats
     });
   } catch (error: any) {
-    console.error("Failed to resolve recipients:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    const errorMsg = error?.message || "Unknown error";
+    console.error("[Resolve] Failed to resolve recipients:", errorMsg, error?.code);
+
+    // Network/API errors
+    if (errorMsg.includes("ENOTFOUND") || errorMsg.includes("ECONNREFUSED") || errorMsg.includes("timeout")) {
+      return NextResponse.json({
+        success: false,
+        error: "Unable to reach data services. Please check your network connection and try again.",
+        code: "SERVICE_UNAVAILABLE"
+      }, { status: 503 });
+    }
+
+    return NextResponse.json({
+      success: false,
+      error: "Failed to resolve recipients. Please try again.",
+      code: "RESOLUTION_ERROR"
+    }, { status: 500 });
   }
 }

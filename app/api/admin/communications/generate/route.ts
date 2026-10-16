@@ -69,9 +69,20 @@ export async function POST(req: Request) {
       body,
     });
   } catch (error: any) {
-    console.error("[Communications/Generate] Error:", error);
+    const errorMsg = error?.message || "Unknown error";
+    console.error("[Communications/Generate] Error:", errorMsg, error?.code);
+
+    // Network/API errors
+    if (errorMsg.includes("ENOTFOUND") || errorMsg.includes("ECONNREFUSED") || errorMsg.includes("timeout")) {
+      return NextResponse.json({
+        success: false,
+        error: "Unable to reach data services. Please check your network connection.",
+        code: "SERVICE_UNAVAILABLE"
+      }, { status: 503 });
+    }
+
     return NextResponse.json(
-      { success: false, error: error.message || "Failed to generate content" },
+      { success: false, error: "Failed to generate content. Please try again.", code: "GENERATION_ERROR" },
       { status: 500 }
     );
   }
