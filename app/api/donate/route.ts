@@ -77,6 +77,8 @@ export async function POST(request: NextRequest) {
       trackingId: result.trackingId,
       proofDriveFileId: result.proofDriveFileId,
       duplicate: Boolean(result.duplicate),
+      confirmationEmailSent: result.confirmationEmailSent,
+      confirmationEmailError: result.confirmationEmailError,
     });
   } catch (error: any) {
     console.error("[API/Donate] Error processing donation:", error);
