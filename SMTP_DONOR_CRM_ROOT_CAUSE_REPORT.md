@@ -201,27 +201,36 @@ From the user's report: "Donors appear in Donor CRM, but their donation informat
 - Added explicit logging about semantics
 - Prevents false success claims
 
-### FIX #4: Prevent DA006 Race Condition 🔴 REQUIRES IMPLEMENTATION
+### FIX #4: Prevent DA006 Race Condition ✅ DONE
 
-**Root Cause:** nextDonationId() calculated before append creates race condition
-**Solution:** Calculate ID AFTER appending, using final row position
+**Commit:** b83a161
+- Append blank row first to lock position in queue
+- Calculate ID AFTER append based on rows that came before
+- Prevents concurrent requests from calculating same ID
+- Fixes financial record integrity issue
 
 ```typescript
-// Current (unsafe):
-let donation = build(nextDonationId(rows));  // ← Calculated before append
-const myRow = await sheetsService.appendRow(...);
-
-// Fixed (safe):
-const myRow = await sheetsService.appendRow(..., {id: ""}); // Append with blank ID
-// Then after append, use myRow number to calculate final ID based on position
+// Fixed approach:
+const myRow = await sheetsService.appendRow(sheetName, blankRow); // Lock position
+const highest = earlier.reduce(...); // Count existing DA### IDs
+const finalId = "DA" + String(highest + 1).padStart(3, "0"); // Safe calculation
 ```
 
-### FIX #5: Verify Donor Profile Queries ⏳ NEXT
+### FIX #5: Enable Email Fallback in Donor Matching ✅ DONE
 
-Check:
-- How donationHistory is queried
-- Whether pending donations are included/excluded
-- Whether donation-to-donor relationship is bidirectional
+**Commit:** 1e7ae35
+- Allow donations to match donors by email even when donorId present
+- Handles cases where donor has multiple IDs in system
+- Fixes donations hidden from donor CRM when IDs diverged
+
+```typescript
+// Fixed logic:
+export function belongsToDonor(d: DonationLike, donor: DonorIdentity): boolean {
+  if (d.donorId && d.donorId === donor.id) return true;
+  const email = norm(donor.email);
+  return !!email && norm(d.donorEmail) === email; // Email fallback always tried
+}
+```
 
 ---
 
@@ -270,14 +279,19 @@ Check:
 
 ## NEXT ACTIONS
 
-1. Implement FIX #1: Error handling in DonationService
-2. Implement FIX #2: Email status fields
-3. Test email delivery end-to-end
-4. Implement remaining fixes
-5. Run full test suite
-6. Create test evidence report
+**COMPLETED:**
+1. ✅ FIX #1: Error handling in DonationService (c10be4e3, 8f1b212)
+2. ✅ FIX #2: Email status fields (c10be4e3, 8f1b212)
+3. ✅ FIX #3: Broadcast semantics (c8a77a35)
+4. ✅ FIX #4: DA006 race condition (cb83a161)
+5. ✅ FIX #5: Email fallback in matching (c1e7ae35)
 
-**No deployment until all fixes tested and verified.**
+**PENDING:**
+1. Priority 3: Test email delivery end-to-end with approved inboxes
+2. Priority 4: Regression testing (TypeScript, lint, build, integration tests)
+3. Documentation of DA006 existing records and safe correction plan
+
+**NO DEPLOYMENT** until all fixes tested and verified.
 
 ---
 
@@ -285,11 +299,11 @@ Check:
 
 | Issue | Root Cause | Fix Status | Test Status | Deployment |
 |-------|-----------|-----------|-------------|------------|
-| Email failures silent | Exception swallowed | ✅ FIXED (c10be4e3, 8f1b212) | ⏳ TODO | ⏳ BLOCKED |
-| No email status tracking | Schema missing fields | ✅ FIXED (c10be4e3, 8f1b212) | ⏳ TODO | ⏳ BLOCKED |
-| Broadcast semantics unclear | SMTP != delivery | 🔄 IN PROGRESS | ⏳ TODO | ⏳ BLOCKED |
-| DA006 duplicate | ID logic unknown | 🔄 INVESTIGATING | ⏳ TODO | ⏳ BLOCKED |
-| Donor CRM missing info | Query logic unknown | 🔄 INVESTIGATING | ⏳ TODO | ⏳ BLOCKED |
+| Email failures silent | Exception swallowed | ✅ FIXED (c10be4e3, 8f1b212) | ⏳ PENDING | ⏳ BLOCKED |
+| No email status tracking | Schema missing fields | ✅ FIXED (c10be4e3, 8f1b212) | ⏳ PENDING | ⏳ BLOCKED |
+| Broadcast semantics unclear | SMTP != delivery | ✅ FIXED (c8a77a35) | ⏳ PENDING | ⏳ BLOCKED |
+| DA006 duplicate | Race condition pre-append | ✅ FIXED (cb83a161) | ⏳ PENDING | ⏳ BLOCKED |
+| Donor CRM missing info | Email fallback missing | ✅ FIXED (c1e7ae35) | ⏳ PENDING | ⏳ BLOCKED |
 
 ---
 
