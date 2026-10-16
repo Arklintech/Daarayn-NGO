@@ -38,6 +38,7 @@ function CommunicationsHubContent() {
   const [verificationError, setVerificationError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [originalValues, setOriginalValues] = useState({ heading: "", notes: "" });
+  const [resolutionError, setResolutionError] = useState("");
 
   useEffect(() => {
     async function fetchData() {
@@ -81,6 +82,7 @@ function CommunicationsHubContent() {
 
     async function fetchResolution() {
       try {
+        setResolutionError("");
         const res = await fetch("/api/admin/communications/resolve", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -90,9 +92,16 @@ function CommunicationsHubContent() {
         if (data.success) {
           setDonorCount(data.count);
           setStats(data.stats);
+        } else {
+          setResolutionError(data.error || "Failed to load recipient count");
+          setDonorCount(0);
+          setStats({ raised: 0, goalAmount: 0, percentage: 0 });
         }
       } catch (err) {
         console.error("Failed to resolve recipients", err);
+        setResolutionError("Network error: unable to load recipient data");
+        setDonorCount(0);
+        setStats({ raised: 0, goalAmount: 0, percentage: 0 });
       }
     }
     fetchResolution();
@@ -471,6 +480,17 @@ function CommunicationsHubContent() {
 
           {selectedCauseIds.length > 0 && (
             <div className="space-y-6">
+              {/* Error Alert */}
+              {resolutionError && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-red-400 text-sm flex items-start gap-3">
+                  <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Unable to Load Recipients</p>
+                    <p className="text-xs opacity-75 mt-1">{resolutionError}</p>
+                  </div>
+                </div>
+              )}
+
               {/* Stats Row */}
               <div className="flex flex-wrap gap-4">
                 <div className="flex items-center gap-3 px-5 py-3 rounded-xl flex-1 min-w-[200px]" style={{ background: 'rgba(212,175,55,0.06)', border: '1px solid rgba(212,175,55,0.15)' }}>
