@@ -229,13 +229,20 @@ function CommunicationsHubContent() {
     setShowConfirmModal(false);
 
     try {
+      // Get cause data from already-loaded causes to avoid re-fetching
+      const selectedCause = causes.find(c => c.id === selectedCauseIds[0]);
+      const causeName = selectedCause?.name || selectedCause?.title || "Initiative";
+      const category = selectedCause?.category || "Foundation Initiative";
+
       const response = await fetch("/api/admin/communications/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           causeId: selectedCauseIds[0],
           type,
-          media: uploadedFiles.filter(f => f.uploaded)
+          media: uploadedFiles.filter(f => f.uploaded),
+          causeName,
+          category
         })
       });
 
