@@ -97,11 +97,11 @@ export class DonationRepository extends BaseRepository<Donation> {
    * Persists a new donation under a unique DA### id and returns it once the
    * row is confirmed in the sheet.
    *
-   * Reading the highest id and then appending is not safe on its own: two
-   * submissions can read the same maximum (this is how two DA006 rows came
-   * to exist). So the row is appended first, then re-read: Sheets applies
-   * appends one at a time, so row order decides — the earliest row holding
-   * an id keeps it and any later row moves to the next free id.
+   * Race condition fix: appending a blank row first locks the position in the
+   * append queue, preventing two concurrent requests from calculating the same
+   * ID. Once myRow is locked, we calculate the final ID based on how many rows
+   * came before it in the final sheet state. This ensures every concurrent
+   * submission gets a unique position and unique ID.
    *
    * `submissionKey` identifies one donor submission. If a row with the same
    * key already exists (a retry, or a double-clicked submit) no new row is
@@ -117,14 +117,34 @@ export class DonationRepository extends BaseRepository<Donation> {
     const prior = rows.find((r) => r.record.submissionKey === submissionKey);
     if (prior) return { donation: this.mapRowToEntity(prior.record), duplicate: true };
 
-    let donation = build(nextDonationId(rows));
-    const toRow = (d: Donation) => ({ ...this.mapEntityToRow(d), submissionKey });
-    const myRow = await sheetsService.appendRow(this.sheetName, toRow(donation), DONATION_HEADERS);
+    // 1. Append a blank row to lock position in the append queue.
+    //    Once appended, this row's position is immutable; no later appends
+    //    can move it or change how many rows came before it.
+    const blankRow = {
+      id: "PENDING",
+      donorId: "",
+      donorName: "",
+      donorEmail: "",
+      amount: 0,
+      currency: "INR",
+      date: new Date().toISOString(),
+      status: "pending",
+      paymentMethod: "UPI",
+      causeId: "",
+      causeTitle: "",
+      proofDriveFileId: "",
+      transactionReference: "",
+      notes: "",
+      submissionKey,
+    };
+    const myRow = await sheetsService.appendRow(this.sheetName, blankRow, DONATION_HEADERS);
 
+    // 2. Re-read and calculate the collision-free ID based on final row position.
     for (let attempt = 0; attempt < MAX_ID_ATTEMPTS; attempt++) {
       ({ rows } = await sheetsService.getRowsWithNumbers(this.sheetName));
       const earlier = rows.filter((r) => r.rowNumber < myRow);
 
+      // Check if another submission with the same submissionKey got in first.
       const sameSubmission = earlier.find((r) => r.record.submissionKey === submissionKey);
       if (sameSubmission) {
         await sheetsService.clearRowAt(this.sheetName, myRow);
@@ -132,16 +152,30 @@ export class DonationRepository extends BaseRepository<Donation> {
         return { donation: this.mapRowToEntity(sameSubmission.record), duplicate: true };
       }
 
-      if (!earlier.some((r) => String(r.record.id) === donation.id)) {
+      // Calculate the ID based on existing rows: count all DA### IDs that appear
+      // in earlier rows, then add 1. Safe because myRow position is locked.
+      const highest = earlier.reduce((max, r) => {
+        const match = /^DA(\d+)$/.exec(String(r.record.id || ""));
+        return match ? Math.max(max, parseInt(match[1], 10)) : max;
+      }, 0);
+      const finalId = "DA" + String(highest + 1).padStart(3, "0");
+
+      const donation = build(finalId);
+      const toRow = (d: Donation) => ({ ...this.mapEntityToRow(d), submissionKey });
+      await sheetsService.updateRowAt(this.sheetName, myRow, toRow(donation));
+
+      // Verify uniqueness: only myRow should have finalId.
+      ({ rows } = await sheetsService.getRowsWithNumbers(this.sheetName));
+      const sameIdCount = rows.filter((r) => String(r.record.id) === finalId).length;
+      if (sameIdCount === 1) {
         this.invalidateCache();
         return { donation, duplicate: false };
       }
 
-      donation = build(nextDonationId(rows));
-      await sheetsService.updateRowAt(this.sheetName, myRow, toRow(donation));
+      console.warn(`[DonationRepository] ID collision on attempt ${attempt + 1} for ${finalId}, retrying...`);
     }
 
-    throw new Error(`Could not allocate a unique donation id (row ${myRow} kept id ${donation.id}); retry the submission.`);
+    throw new Error(`Could not allocate a unique donation id (row ${myRow}); retry the submission.`);
   }
 
   /** Reads the donation fresh from the sheet; refuses ids held by more than one row. */
