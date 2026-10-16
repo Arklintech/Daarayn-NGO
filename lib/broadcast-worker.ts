@@ -7,8 +7,9 @@ import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { broadcastStore, type BroadcastError, type BroadcastRecord } from "@/lib/broadcast-store";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 25;
 const MAX_ATTEMPTS = 3;
+const BATCH_DELAY_MS = 100;
 
 /** One entry per address: the same donor often appears under several donation rows. */
 export function dedupeRecipients(recipients: any[]): { name: string; email: string }[] {
@@ -101,17 +102,20 @@ export async function processBroadcast(
       stats: { sent: 0, failed: 0, remaining: jobs.length },
     });
 
-    // Resolve media attachments once for efficiency
+    // Resolve media attachments once for efficiency (in parallel)
     const resolvedAttachments: any[] = [...attachDaaraynLogo()];
-    if (Array.isArray(mediaUrls)) {
-      for (const url of mediaUrls) {
+    if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
+      const attachmentPromises = mediaUrls.map(async (url) => {
         try {
-          const attachment = await resolveAttachment(url);
-          if (attachment) resolvedAttachments.push(attachment);
+          return await resolveAttachment(url);
         } catch (downloadErr: any) {
           console.error(`[Broadcast] Failed to attach ${url}:`, downloadErr?.message || downloadErr);
+          return null;
         }
-      }
+      });
+
+      const attachments = await Promise.all(attachmentPromises);
+      resolvedAttachments.push(...attachments.filter(Boolean));
     }
 
     const subject = `${heading} — Daarayn Foundation`;
@@ -147,8 +151,8 @@ export async function processBroadcast(
 
           for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             if (attempt > 0) {
-              // Exponential backoff
-              await new Promise(res => setTimeout(res, 500 * Math.pow(2, attempt)));
+              // Fast exponential backoff (50ms, 100ms, 200ms) for retries
+              await new Promise(res => setTimeout(res, 50 * Math.pow(2, attempt - 1)));
             }
             const result = await sendEmail({ to: job.email, subject, html, attachments: resolvedAttachments });
 
@@ -189,9 +193,9 @@ export async function processBroadcast(
         status: "Processing"
       }, { durable: false });
 
-      // Delay to respect provider limits
+      // Minimal delay to respect provider rate limits while maximizing throughput
       if (i + BATCH_SIZE < jobs.length) {
-        await new Promise(res => setTimeout(res, 300));
+        await new Promise(res => setTimeout(res, BATCH_DELAY_MS));
       }
     }
 

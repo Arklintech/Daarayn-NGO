@@ -142,13 +142,18 @@ export async function POST(req: Request) {
     });
 
     const sent = broadcast?.stats.sent ?? 0;
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: sent > 0,
       broadcastId,
       total: recipients.length,
       broadcast,
       ...(sent === 0 && { error: broadcast?.failureReason || "No emails could be delivered." }),
     });
+
+    // Cache control: this response won't change
+    response.headers.set('Cache-Control', 'private, max-age=300');
+
+    return response;
     
   } catch (error: any) {
     console.error("Communication dispatch setup failed:", error);
