@@ -115,16 +115,35 @@ export async function POST(req: Request) {
               signOff: `With gratitude,<br><span style="color:#F2EEE3;">The Daarayn Foundation team</span>`
             });
 
-            // Dispatch emails
+            // Dispatch emails - track failures
+            const sendResults: { recipient: string; success: boolean; error?: string }[] = [];
             for (const recipient of recipients) {
               if (!recipient.email) continue;
-              await sendEmail({
-                to: recipient.email,
-                subject: `${heading} — Daarayn Foundation`,
-                html,
-                attachments: attachDaaraynLogo()
-              }).catch(err => console.error(`Automation failed for ${recipient.email}:`, err));
+              try {
+                const result = await sendEmail({
+                  to: recipient.email,
+                  subject: `${heading} — Daarayn Foundation`,
+                  html,
+                  attachments: attachDaaraynLogo()
+                });
+                if (result.success) {
+                  sendResults.push({ recipient: recipient.email, success: true });
+                  console.log(`[Automation] Email sent to ${recipient.email}`);
+                } else {
+                  sendResults.push({ recipient: recipient.email, success: false, error: result.error });
+                  console.error(`[Automation] Email failed for ${recipient.email}: ${result.error}`);
+                }
+              } catch (err) {
+                sendResults.push({ recipient: recipient.email, success: false, error: (err as any).message });
+                console.error(`[Automation] Exception for ${recipient.email}:`, err);
+              }
             }
+
+            // Count successes and failures
+            const successCount = sendResults.filter(r => r.success).length;
+            const failureCount = sendResults.filter(r => !r.success).length;
+            logData.sentCount = successCount;
+            logData.failedCount = failureCount;
 
             // Save log to Google Sheets repository
             await communicationRepository.save(logData);

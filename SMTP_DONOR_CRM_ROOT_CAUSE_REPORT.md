@@ -249,9 +249,9 @@ Check:
 
 | Issue | Root Cause | Fix Status | Test Status | Deployment |
 |-------|-----------|-----------|-------------|------------|
-| Email failures silent | Exception swallowed | ⏳ TODO | ⏳ TODO | ⏳ BLOCKED |
-| No email status tracking | Schema missing fields | ⏳ TODO | ⏳ TODO | ⏳ BLOCKED |
-| Broadcast semantics unclear | SMTP != delivery | ⏳ TODO | ⏳ TODO | ⏳ BLOCKED |
+| Email failures silent | Exception swallowed | ✅ FIXED (c10be4e3, 8f1b212) | ⏳ TODO | ⏳ BLOCKED |
+| No email status tracking | Schema missing fields | ✅ FIXED (c10be4e3, 8f1b212) | ⏳ TODO | ⏳ BLOCKED |
+| Broadcast semantics unclear | SMTP != delivery | 🔄 IN PROGRESS | ⏳ TODO | ⏳ BLOCKED |
 | DA006 duplicate | ID logic unknown | 🔄 INVESTIGATING | ⏳ TODO | ⏳ BLOCKED |
 | Donor CRM missing info | Query logic unknown | 🔄 INVESTIGATING | ⏳ TODO | ⏳ BLOCKED |
 
