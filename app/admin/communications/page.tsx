@@ -936,7 +936,7 @@ function CommunicationsHubContent() {
               Back to Communications
             </button>
             <button
-              onClick={() => router.push(`/admin/communications/history/${broadcastId}`)}
+              onClick={() => router.push(`/admin/communications/history?id=${broadcastId}`)}
               className="py-3.5 px-6 rounded-xl font-semibold text-sm transition-all text-black bg-[var(--color-luxury-gold)] hover:bg-[var(--color-luxury-gold)]/90"
             >
               View Report →

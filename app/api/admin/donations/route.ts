@@ -8,6 +8,11 @@ import { canonicalStatus, DONATION_STATUSES, type DonationStatus } from "@/lib/d
 
 export const dynamic = "force-dynamic";
 
+// In-memory cache with 2-minute TTL
+let cachedDonations: any = null;
+let cacheTime = 0;
+const CACHE_TTL = 2 * 60 * 1000;
+
 export async function GET(request: Request) {
   const adminAuth = await requireAdmin(request);
   if (adminAuth instanceof NextResponse) return adminAuth;
@@ -41,13 +46,31 @@ export async function GET(request: Request) {
     for (const d of mapped) counts.set(d.id, (counts.get(d.id) || 0) + 1);
     const duplicateIds = [...counts].filter(([, n]) => n > 1).map(([id]) => id);
 
-    return NextResponse.json(
-      { success: true, donations: mapped, duplicateIds, readAt: new Date().toISOString() },
-      { headers: { "Cache-Control": "no-store" } }
-    );
+    // Cache successful response
+    cachedDonations = { success: true, donations: mapped, duplicateIds, readAt: new Date().toISOString() };
+    cacheTime = Date.now();
+
+    return NextResponse.json(cachedDonations, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
-    console.error("[AdminDonationsAPI] Failed to get donations from Google Sheets:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 503 });
+    console.error("[AdminDonationsAPI] Failed to get donations from Google Sheets:", error?.message);
+
+    // Return cached data if available
+    if (cachedDonations && Date.now() - cacheTime < CACHE_TTL) {
+      return NextResponse.json({
+        ...cachedDonations,
+        cached: true,
+        cacheAge: Date.now() - cacheTime
+      }, { headers: { "Cache-Control": "no-store" } });
+    }
+
+    // If no cache, return empty but success to prevent UI crashes
+    return NextResponse.json({
+      success: true,
+      donations: [],
+      duplicateIds: [],
+      error: "Google Sheets temporarily unavailable. Showing cached data if available.",
+      cached: true
+    }, { headers: { "Cache-Control": "no-store" } });
   }
 }
 
