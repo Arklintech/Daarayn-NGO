@@ -31,8 +31,7 @@ export async function POST(request: Request) {
     }
 
     // 2. Update program progress
-    await programRepository.update({
-      ...program,
+    await programRepository.update(programId, {
       progress: updateState.progress,
     });
 
@@ -93,13 +92,13 @@ export async function POST(request: Request) {
 
     // 5. Record audit entry in Audit Log
     const auditStatement = `📢 Program Update Published: ${program.title} | Progress: ${updateState.progress}%`;
-    await auditLogRepository.create({
+    await auditLogRepository.createLog({
       action: "DISPATCH_UPDATE",
       entity_type: "program",
       entity_id: programId,
       actor_id: adminAuth.email,
       actor_role: "admin",
-      details: auditStatement,
+      source: auditStatement,
       timestamp: new Date().toISOString(),
     });
 
