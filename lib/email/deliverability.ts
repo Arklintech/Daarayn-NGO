@@ -75,7 +75,24 @@ export function getFromHeader(authenticatedUser?: string): string {
 export function getStandardHeaders(): Record<string, string> {
   const unsubscribe = getReplyToAddress();
   return {
+    // List headers - critical for inbox placement with major providers
     "List-Unsubscribe": `<mailto:${unsubscribe}?subject=Unsubscribe>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    "List-ID": "<daarayn-communications.example.com>",
+    "List-Post": "<NO>",
+
+    // Authentication and legitimacy markers
+    "X-Mailer": "Daarayn Foundation Email System",
+    "X-Priority": "3",
+    "Importance": "normal",
+
+    // Prevent auto-replies and bounce loops
+    "Precedence": "bulk",
+    "Auto-Submitted": "auto-generated",
+
+    // Additional deliverability signals
+    "X-Originating-IP": "[127.0.0.1]",
+    "Return-Path": `<${unsubscribe}>`,
   };
 }
 
