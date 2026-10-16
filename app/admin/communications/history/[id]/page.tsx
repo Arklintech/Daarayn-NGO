@@ -4,9 +4,6 @@ import React, { useEffect, useState } from "react";
 import { ArrowLeft, Download, CheckCircle, XCircle, Clock, FileText } from "lucide-react";
 import { useRouter, useParams } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
 export default function BroadcastReport() {
   const router = useRouter();
   const params = useParams();
