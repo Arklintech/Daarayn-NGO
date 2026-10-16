@@ -22,7 +22,7 @@ function CommunicationsHubContent() {
 
   const [donorCount, setDonorCount] = useState<number>(0);
   const [stats, setStats] = useState({ raised: 0, goalAmount: 0, percentage: 0 });
-  const [type, setType] = useState("project_progress");
+  const [type, setType] = useState("general_communication");
   const [heading, setHeading] = useState("");
   const [notes, setNotes] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; size: number; type: string; previewUrl: string; serverUrl?: string; uploaded: boolean }[]>([]);

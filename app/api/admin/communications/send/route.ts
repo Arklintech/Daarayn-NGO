@@ -44,8 +44,11 @@ export async function POST(req: Request) {
     const { uniqueDonors, stats, causeNames } = await resolveRecipients(causeIds, type || "general_communication");
     const recipients = dedupeRecipients(uniqueDonors);
 
+    console.log(`[Communications/Send] Cause IDs: ${JSON.stringify(causeIds)}, Type: ${type}, Unique Donors Found: ${uniqueDonors.length}, Deduplicated Recipients: ${recipients.length}`);
+
     if (recipients.length === 0) {
-      return NextResponse.json({ success: false, error: `No eligible recipients found for causes ${JSON.stringify(causeIds)} and type ${type}.` }, { status: 400 });
+      console.error(`[Communications/Send] NO RECIPIENTS FOUND: causeIds=${JSON.stringify(causeIds)}, type=${type}, uniqueDonors=${uniqueDonors.length}`);
+      return NextResponse.json({ success: false, error: `No eligible recipients found for causes ${causeNames.join(", ")} with communication type "${type || "general"}". Check that selected causes have verified donations and communication type matches donation status.` }, { status: 400 });
     }
 
     const causeName = causeNames.join(", ");

@@ -7,6 +7,8 @@ export async function resolveRecipients(causeIds: string[], type: string) {
     return { uniqueDonors: [], stats: { raised: 0, goalAmount: 0, percentage: 0 }, causeNames: [] };
   }
 
+  console.log(`[CommunicationResolver] Starting recipient resolution: causeIds=${JSON.stringify(causeIds)}, type=${type}`);
+
   const isAll = causeIds.includes("all") || causeIds.includes("all_causes") || causeIds.includes("all_donors");
 
   // 1. Fetch causes to calculate total goal and map names
@@ -218,6 +220,8 @@ export async function resolveRecipients(causeIds: string[], type: string) {
 
   const safeGoal = totalGoal || 1;
   const pct = Math.min(100, Math.round((totalRaised / safeGoal) * 100));
+
+  console.log(`[CommunicationResolver] Resolution complete: Found ${resolvedDonors.length} recipients with valid emails from ${allDonations.length} total donations, type="${type}", raised=${totalRaised}/${totalGoal}`);
 
   return {
     uniqueDonors: resolvedDonors,
