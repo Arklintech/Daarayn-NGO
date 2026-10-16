@@ -151,12 +151,20 @@ export async function processBroadcast(
               await new Promise(res => setTimeout(res, 500 * Math.pow(2, attempt)));
             }
             const result = await sendEmail({ to: job.email, subject, html, attachments: resolvedAttachments });
+
+            // Note: result.success means SMTP server accepted the email (250 OK),
+            // NOT that it arrived in the recipient's mailbox. This is provider semantics.
+            // We record SMTP acceptance here; inbox delivery is not automatically verifiable.
             if (result.success) {
               successCount++;
+              console.log(`[Broadcast] Email SMTP-accepted for ${job.email}, MessageId: ${result.providerMessageId}`);
               return;
             }
             lastError = result.error || lastError;
-            if (result.retryable === false) break;
+            if (result.retryable === false) {
+              console.warn(`[Broadcast] Permanent failure for ${job.email}: ${lastError}`);
+              break;
+            }
           }
         } catch (e: any) {
           lastError = e?.message || lastError;
@@ -201,8 +209,10 @@ export async function processBroadcast(
     });
 
     if (failCount > 0) {
-      console.error(`[Broadcast] ${broadcastId}: ${failCount}/${jobs.length} failed`, errors);
+      console.error(`[Broadcast] ${broadcastId}: ${failCount}/${jobs.length} failed (SMTP rejection)`, errors);
     }
+
+    console.log(`[Broadcast] ${broadcastId}: ${successCount}/${jobs.length} SMTP-accepted (not inbox-delivery-verified)`);
 
     // Persist durable history; a Sheets hiccup must not hide the send result from the admin
     try {
