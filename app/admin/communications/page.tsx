@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
-import { Send, Users, Activity, CheckCircle, ChevronDown, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check, Globe } from "lucide-react";
+import { Send, Users, Activity, CheckCircle, ChevronDown, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check, Globe, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { DEFAULT_CAUSES } from "@/lib/causes";
 
@@ -27,6 +27,11 @@ function CommunicationsHubContent() {
   const [notes, setNotes] = useState("");
   const [uploadedFiles, setUploadedFiles] = useState<{ name: string; size: number; type: string; previewUrl: string; serverUrl?: string; uploaded: boolean }[]>([]);
   const [uploading, setUploading] = useState(false);
+
+  // AI Writing Assistant State
+  const [aiAssistLoading, setAiAssistLoading] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<{improved?: string; keyPoints?: string[]; suggestions?: string[]} | null>(null);
+  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
   
 
   useEffect(() => {
@@ -128,6 +133,38 @@ function CommunicationsHubContent() {
 
   const removeFile = (index: number) => {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAiAssist = async () => {
+    if (!notes.trim()) {
+      alert("Please write some notes first for AI to improve.");
+      return;
+    }
+
+    setAiAssistLoading(true);
+    setAiSuggestions(null);
+
+    try {
+      const response = await fetch("/api/admin/communications/ai-assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes, heading, type })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setAiSuggestions(data);
+        setShowAiSuggestions(true);
+      } else {
+        alert("AI assistant error: " + (data.error || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("AI assist error:", error);
+      alert("Failed to get AI suggestions. Please try again.");
+    } finally {
+      setAiAssistLoading(false);
+    }
   };
 
   const handlePreview = () => {
@@ -447,7 +484,23 @@ function CommunicationsHubContent() {
                   </div>
 
                   <div>
-                    <label className="block text-xs text-gray-500 uppercase tracking-widest mb-2">Verified Notes</label>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="block text-xs text-gray-500 uppercase tracking-widest">Verified Notes</label>
+                      <button
+                        type="button"
+                        onClick={handleAiAssist}
+                        disabled={aiAssistLoading || !notes.trim()}
+                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        style={{
+                          background: aiAssistLoading ? 'rgba(212,175,55,0.2)' : 'rgba(212,175,55,0.15)',
+                          color: 'var(--color-luxury-gold)',
+                          border: '1px solid rgba(212,175,55,0.3)'
+                        }}
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        {aiAssistLoading ? 'Improving...' : 'AI Assist'}
+                      </button>
+                    </div>
                     <textarea
                       rows={4}
                       placeholder="Enter factual statements describing the progress..."
@@ -456,6 +509,65 @@ function CommunicationsHubContent() {
                       className="w-full px-4 py-3 rounded-xl text-white text-sm placeholder-gray-600 focus:outline-none focus:ring-1 focus:ring-[var(--color-luxury-gold)]/40 resize-none"
                       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
                     />
+
+                    {/* AI Suggestions Panel */}
+                    {showAiSuggestions && aiSuggestions && (
+                      <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}>
+                        <div className="flex items-start justify-between mb-3">
+                          <h4 className="text-xs font-semibold text-[var(--color-luxury-gold)] uppercase tracking-widest">AI Suggestions</h4>
+                          <button
+                            type="button"
+                            onClick={() => setShowAiSuggestions(false)}
+                            className="text-gray-500 hover:text-gray-300"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {aiSuggestions.improved && (
+                          <div className="mb-3">
+                            <p className="text-xs text-gray-400 mb-2">Improved Version:</p>
+                            <p className="text-xs text-white leading-relaxed bg-black/20 p-2 rounded">{aiSuggestions.improved}</p>
+                            <button
+                              type="button"
+                              onClick={() => setNotes(aiSuggestions.improved!)}
+                              className="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all"
+                              style={{ background: 'rgba(212,175,55,0.2)', color: 'var(--color-luxury-gold)' }}
+                            >
+                              ✓ Accept Improved Version
+                            </button>
+                          </div>
+                        )}
+
+                        {aiSuggestions.keyPoints && aiSuggestions.keyPoints.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs text-gray-400 mb-2">Key Points:</p>
+                            <ul className="space-y-1">
+                              {aiSuggestions.keyPoints.map((point, i) => (
+                                <li key={i} className="text-xs text-white/80 flex items-start gap-2">
+                                  <span className="text-[var(--color-luxury-gold)] mt-0.5">•</span>
+                                  <span>{point}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {aiSuggestions.suggestions && aiSuggestions.suggestions.length > 0 && (
+                          <div>
+                            <p className="text-xs text-gray-400 mb-2">Recommendations:</p>
+                            <ul className="space-y-1">
+                              {aiSuggestions.suggestions.map((suggestion, i) => (
+                                <li key={i} className="text-xs text-white/70 flex items-start gap-2">
+                                  <span className="text-amber-400 mt-0.5">→</span>
+                                  <span>{suggestion}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Media Upload */}
