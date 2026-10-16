@@ -113,6 +113,11 @@ export interface Donation {
   proofDriveFileId?: string;
   allocatedAmount?: number;
   allocationStatus?: "fully" | "partially";
+  /** Email confirmation status tracking */
+  confirmationEmailSent?: boolean;
+  confirmationEmailSentAt?: string;
+  confirmationEmailError?: string;
+  confirmationEmailRetryCount?: number;
 }
 
 export interface Allocation {

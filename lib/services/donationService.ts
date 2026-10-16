@@ -36,6 +36,9 @@ export interface ProcessDonationResult {
   duplicate?: boolean;
   realtime?: PublishResult["delivered"];
   error?: string;
+  /** Email confirmation delivery status */
+  confirmationEmailSent?: boolean;
+  confirmationEmailError?: string;
 }
 
 /** Fixed operating split recorded in each donation's notes (90% direct aid, 10% operations). */
@@ -210,6 +213,9 @@ export class DonationService {
     }
 
     // 8. Donor email receipt (acknowledges the submission)
+    let confirmationEmailSent = false;
+    let confirmationEmailError: string | undefined;
+
     if (donor.email) {
       try {
         const today = new Date();
@@ -222,7 +228,7 @@ export class DonationService {
             typeof cName === "object" && (cName as any).allocatedAmount ? (cName as any).allocatedAmount : perCauseAmount,
         }));
 
-        await sendDonationEmail({
+        const emailResult = await sendDonationEmail({
           trackingId,
           donorName: donorNameClean,
           donorEmail: donor.email,
@@ -230,8 +236,33 @@ export class DonationService {
           causes: structuredCauses,
           date: formattedDate,
         });
+
+        if (emailResult.success) {
+          confirmationEmailSent = true;
+          console.log(`[DonationService] Confirmation email sent for ${trackingId} to ${donor.email}`);
+        } else {
+          confirmationEmailError = emailResult.error || "Unknown email send error";
+          console.error(`[DonationService] Email send failed for ${trackingId}: ${confirmationEmailError}`);
+        }
       } catch (emailErr: any) {
-        console.error("[DonationService] Email send error:", emailErr.message);
+        confirmationEmailError = emailErr?.message || "Exception during email send";
+        console.error(`[DonationService] Email exception for ${trackingId}:`, emailErr);
+      }
+
+      // Persist email status to donation record
+      try {
+        donation.confirmationEmailSent = confirmationEmailSent;
+        donation.confirmationEmailSentAt = confirmationEmailSent ? new Date().toISOString() : undefined;
+        donation.confirmationEmailError = confirmationEmailError;
+        donation.confirmationEmailRetryCount = 1;
+        await donationRepository.update(donation.id, {
+          confirmationEmailSent,
+          confirmationEmailSentAt: donation.confirmationEmailSentAt,
+          confirmationEmailError,
+          confirmationEmailRetryCount: 1,
+        });
+      } catch (updateErr: any) {
+        console.error(`[DonationService] Failed to persist email status for ${trackingId}:`, updateErr?.message);
       }
     }
 
@@ -242,6 +273,8 @@ export class DonationService {
       donationId: trackingId,
       proofDriveFileId,
       realtime: event.delivered,
+      confirmationEmailSent,
+      confirmationEmailError: confirmationEmailError || undefined,
     };
   }
 }
