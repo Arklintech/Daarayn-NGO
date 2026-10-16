@@ -116,17 +116,48 @@ return {
 
 ---
 
-## ISSUE #4: DUPLICATE DA006 PREVENTING VERIFICATION 🟡
+## ISSUE #4: DUPLICATE DA006 PREVENTING VERIFICATION 🔴 **ROOT CAUSE FOUND**
 
-### Evidence
-
-From the user's report: "A duplicate DA006 record reportedly prevents verification/rejection of affected donations."
-
-**Root Cause:** `donationRepository.createWithUniqueId()` has retry logic that can generate the SAME ID under certain conditions.
+### Root Cause: Race Condition in ID Allocation
 
 **File:** `lib/repositories/donationRepository.ts`
 
-The ID allocation needs verification - if two rows share the same ID in Google Sheets, the verification endpoint won't know which row to update.
+**The Problem:**
+```typescript
+// 1. Calculate next ID from CURRENT sheet state
+let donation = build(nextDonationId(rows));  // Calculates DA006
+
+// 2. Append row with that ID
+const myRow = await sheetsService.appendRow(this.sheetName, toRow(donation), DONATION_HEADERS);
+
+// 3. THEN retry if collision (too late - already appended)
+for (let attempt = 0; attempt < MAX_ID_ATTEMPTS; attempt++) {
+  ({ rows } = await sheetsService.getRowsWithNumbers(this.sheetName));
+  // If other concurrent submission already used DA006, update ours to DA007
+  // But the earlier submission keeps DA006!
+}
+```
+
+**Race Condition:**
+1. Request A calculates nextDonationId() → DA006
+2. Request B calculates nextDonationId() → DA006 (same calculation, both see same max)
+3. Request A appends row with DA006
+4. Request B appends row with DA006
+5. Request A's retry detects collision, updates to DA007
+6. Request B's retry also detects collision, updates to DA007 (overwrites A's data!)
+7. Result: TWO rows with DA006, both broken
+
+**Why It's Critical:**
+- `findSingleRow(id)` throws error when ID appears >1 time
+- Admin can't verify or reject either DA006 donation
+- Financial records become ambiguous
+
+### Evidence
+
+From code:
+- Line: `let donation = build(nextDonationId(rows));` — ID calculated BEFORE append
+- No row-level lock preventing concurrent ID generation
+- Two concurrent requests can both calculate the same ID before either appends
 
 ---
 
@@ -148,39 +179,44 @@ From the user's report: "Donors appear in Donor CRM, but their donation informat
 
 ## FIXES REQUIRED (PRIORITY ORDER)
 
-### FIX #1: Proper Email Error Handling in DonationService ✅
+### FIX #1: Proper Email Error Handling in DonationService ✅ DONE
 
-Change from swallowing errors to:
-- Catching the error
-- Logging with full context
-- Persisting to donation record OR returning error to caller
-- Allowing retry logic to work
+**Commits:** 10be4e3, 8f1b212
+- Email errors now caught and persisted
+- Status returned to API caller
+- Admin can see email delivery status
 
-### FIX #2: Add Email Status Fields to Donation ✅
+### FIX #2: Add Email Status Fields to Donation ✅ DONE
 
-Add to schema:
+**Commits:** 10be4e3, 8f1b212
+- confirmationEmailSent: boolean
+- confirmationEmailSentAt: timestamp
+- confirmationEmailError: error message
+- confirmationEmailRetryCount: for retries
+
+### FIX #3: Fix SMTP Semantics in Broadcast ✅ DONE
+
+**Commit:** 8a77a35
+- Clarified SMTP acceptance vs inbox delivery
+- Added explicit logging about semantics
+- Prevents false success claims
+
+### FIX #4: Prevent DA006 Race Condition 🔴 REQUIRES IMPLEMENTATION
+
+**Root Cause:** nextDonationId() calculated before append creates race condition
+**Solution:** Calculate ID AFTER appending, using final row position
+
 ```typescript
-confirmationEmailSent: boolean;
-confirmationEmailSentAt?: string;
-confirmationEmailError?: string;
-confirmationEmailRetryCount?: number;
+// Current (unsafe):
+let donation = build(nextDonationId(rows));  // ← Calculated before append
+const myRow = await sheetsService.appendRow(...);
+
+// Fixed (safe):
+const myRow = await sheetsService.appendRow(..., {id: ""}); // Append with blank ID
+// Then after append, use myRow number to calculate final ID based on position
 ```
 
-### FIX #3: Fix SMTP Semantics in Broadcast ✅
-
-Distinguish:
-- `smtp_accepted` = SMTP server accepted (200 OK)
-- `delivery_attempted` = Email system processed it
-- `inbox_delivery_confirmed` = (not automatically verifiable, marked for manual confirmation)
-
-### FIX #4: Investigate DA006 Duplicate ID ✅
-
-Check:
-- ID generation logic
-- Retry logic in createWithUniqueId
-- Row-level deduplication in Google Sheets
-
-### FIX #5: Verify Donor Profile Queries ✅
+### FIX #5: Verify Donor Profile Queries ⏳ NEXT
 
 Check:
 - How donationHistory is queried
