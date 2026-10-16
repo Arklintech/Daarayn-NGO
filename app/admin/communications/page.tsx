@@ -189,6 +189,15 @@ function CommunicationsHubContent() {
 
   const handleDispatch = async () => {
     setMode("progress");
+    // Optimistic broadcast ID for immediate UI update
+    const optimisticBroadcastId = `BCAST-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    setBroadcastId(optimisticBroadcastId);
+    setBroadcastStats({
+      stats: { sent: 0, failed: 0, remaining: donorCount },
+      status: "Queued",
+      totalRecipients: donorCount
+    });
+
     try {
       const response = await fetch("/api/admin/communications/send", {
         method: "POST",
@@ -200,7 +209,7 @@ function CommunicationsHubContent() {
       });
       const result = await response.json();
       if (result.broadcast) {
-        // The server returns only after every email has been attempted
+        // Update with actual server response
         setBroadcastId(result.broadcastId);
         setBroadcastStats(result.broadcast);
         setMode("success");

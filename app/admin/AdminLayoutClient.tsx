@@ -73,14 +73,18 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     }
   }, [user, adminData, loading, pathname, router]);
 
-  // Unread count from the Sheets-backed notifications API, refreshed by realtime events
+  // Unread count with caching for instant initial load
   const fetchUnread = React.useCallback(async () => {
     try {
-      const res = await fetch("/api/admin/notifications");
+      const res = await fetch("/api/admin/notifications", {
+        headers: { 'Cache-Control': 'max-age=10' }
+      });
       const data = await res.json();
       if (data.success && Array.isArray(data.notifications)) {
         const unread = data.notifications.filter((n: any) => !n.isRead).length;
         setTotalUnread(unread);
+        // Cache in localStorage for instant next load
+        localStorage.setItem('admin_unread_count', String(unread));
       }
     } catch {
       // Silently ignore — unread count is non-critical
@@ -88,29 +92,40 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
   }, []);
 
   React.useEffect(() => {
-    if (adminData) fetchUnread();
+    if (adminData) {
+      // Load cached value immediately
+      const cached = localStorage.getItem('admin_unread_count');
+      if (cached) {
+        setTotalUnread(Number(cached));
+      }
+      // Then fetch fresh value
+      fetchUnread();
+    }
   }, [adminData, fetchUnread]);
 
   useRealtimeRefresh(UNREAD_REFRESH_EVENTS, fetchUnread, { enabled: !!adminData, fallbackMs: 60_000 });
 
 
-  // Register SW + detect live updates for mobile PWA
+  // Lazy-load SW registration (non-blocking)
   const [swUpdateReady, setSwUpdateReady] = React.useState(false);
   React.useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js', { scope: '/' })
-        .then((reg) => {
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            if (!newWorker) return;
-            newWorker.addEventListener('statechange', () => {
-              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                setSwUpdateReady(true);
-              }
+    // Defer SW registration to idle time
+    if ('serviceWorker' in navigator && 'requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(() => {
+        navigator.serviceWorker.register('/sw.js', { scope: '/' })
+          .then((reg) => {
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              if (!newWorker) return;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  setSwUpdateReady(true);
+                }
+              });
             });
-          });
-        })
-        .catch(err => console.error('SW registration failed:', err));
+          })
+          .catch(err => console.error('SW registration failed:', err));
+      });
     }
   }, []);
 
@@ -172,7 +187,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
     return null;
   }
 
-  const sidebarSections = [
+  const sidebarSections = React.useMemo(() => [
     {
       title: "Notification Center",
       items: [
@@ -227,7 +242,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
         { name: "Settings", href: "/admin/settings", icon: Settings2 },
       ]
     }
-  ];
+  ], []);
 
   const handleLogout = async () => {
     await logout();
