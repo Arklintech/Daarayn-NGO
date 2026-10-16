@@ -7,28 +7,39 @@ import { useRouter, useParams } from "next/navigation";
 export default function BroadcastReport() {
   const router = useRouter();
   const params = use(useParams());
-  const id = params.id as string;
-  
+  const id = (params?.id as string) || "";
+
   const [broadcast, setBroadcast] = useState<any>(null);
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!id) {
+      setError("No broadcast ID provided");
+      setLoading(false);
+      return;
+    }
+
     async function fetchData() {
       try {
         const res = await fetch(`/api/admin/communications/status?id=${encodeURIComponent(id)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.broadcast) {
-            setBroadcast(data.broadcast);
-          }
+        const data = await res.json();
+
+        if (res.ok && data.success && data.broadcast) {
+          setBroadcast(data.broadcast);
+          setError(null);
+        } else {
+          setError(data.error || "Broadcast not found");
         }
       } catch (err) {
-        console.error("Failed to load broadcast data from Sheets/API", err);
+        console.error("Failed to load broadcast data", err);
+        setError("Failed to load broadcast data");
       } finally {
         setLoading(false);
       }
     }
+
     fetchData();
   }, [id]);
 
@@ -47,11 +58,30 @@ export default function BroadcastReport() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-gray-500">Loading Report...</div>;
+    return (
+      <div className="p-8 text-center text-gray-500">
+        <div className="animate-spin inline-block">Loading Report...</div>
+      </div>
+    );
   }
 
-  if (!broadcast) {
-    return <div className="p-8 text-center text-red-400">Broadcast not found.</div>;
+  if (error || !broadcast) {
+    return (
+      <div className="p-8 max-w-2xl mx-auto">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-white mb-4">Broadcast Report</h1>
+          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-6 text-red-400">
+            <p>{error || "Broadcast not found."}</p>
+          </div>
+          <button
+            onClick={() => router.push('/admin/communications/history')}
+            className="mt-6 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white hover:bg-white/20 transition"
+          >
+            Back to Communications History
+          </button>
+        </div>
+      </div>
+    );
   }
 
   return (

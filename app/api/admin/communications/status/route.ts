@@ -26,25 +26,37 @@ export async function GET(req: NextRequest) {
   // 2. Check Google Sheets communications repository
   try {
     const comms = await communicationRepository.getAll();
-    const found = comms.find(c => c.id === broadcastId);
-    if (found) {
-      return NextResponse.json({
-        success: true,
-        broadcast: {
-          id: found.id,
-          status: found.status,
-          stats: {
-            sent: found.sentCount || 0,
-            failed: found.failedCount || 0,
-            remaining: Math.max(0, (found.recipientCount || 0) - (found.sentCount || 0) - (found.failedCount || 0))
-          },
-          totalRecipients: found.recipientCount,
-          completedAt: found.completedAt
-        }
-      });
+    if (Array.isArray(comms)) {
+      const found = comms.find(c => c.id === broadcastId);
+      if (found) {
+        return NextResponse.json({
+          success: true,
+          broadcast: {
+            id: found.id,
+            status: found.status || "Unknown",
+            communicationType: found.type || "general_communication",
+            causeName: (Array.isArray(found.selectedCauses) ? found.selectedCauses : []).join(", ") || "Unknown",
+            stats: {
+              sent: Number(found.sentCount || 0),
+              failed: Number(found.failedCount || 0),
+              remaining: Math.max(0, Number(found.recipientCount || 0) - Number(found.sentCount || 0) - Number(found.failedCount || 0))
+            },
+            totalRecipients: Number(found.recipientCount || 0),
+            startedAt: found.createdAt,
+            completedAt: found.completedAt,
+            processingDurationMs: 0,
+            errors: found.errorSummary ? [{ reason: found.errorSummary, count: 1 }] : []
+          }
+        });
+      }
     }
   } catch (err: any) {
     console.warn("[BroadcastStatus] Error querying sheets:", err.message);
+    // Return empty response rather than erroring
+    return NextResponse.json({
+      success: false,
+      error: "Failed to retrieve broadcast details"
+    }, { status: 404 });
   }
 
   return NextResponse.json({
