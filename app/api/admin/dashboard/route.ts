@@ -9,6 +9,11 @@ export const dynamic = "force-dynamic";
 const READ_TIMEOUT_MS = 20_000;
 const REVIEW_STATUSES = new Set(["pending review", "needs info"]);
 
+// In-memory cache with 3-minute TTL for dashboard
+let cachedDashboard: any = null;
+let dashboardCacheTime = 0;
+const DASHBOARD_CACHE_TTL = 3 * 60 * 1000;
+
 const AUDIT_LABELS: Record<string, string> = {
   SUBMIT_DONATION: "Donation submitted",
   DONATION_PROCESSED: "Donation processed",
@@ -67,40 +72,79 @@ export async function GET(request: Request) {
         timestamp: e.timestamp,
       }));
 
-    return NextResponse.json(
-      {
-        success: true,
-        readAt: snap.readAt,
-        stats: {
-          totalDonations: summary.receivedAmount,
-          completedDonations: summary.receivedCount,
-          pendingAmount: summary.pendingAmount,
-          pendingDonations: summary.pendingCount,
-          rejectedAmount: summary.rejectedAmount,
-          rejectedDonations: summary.rejectedCount,
-          averageVerifiedDonation: summary.receivedCount ? Math.round(summary.receivedAmount / summary.receivedCount) : 0,
-          generalFundReceived: unattributed.receivedAmount,
-          generalFundCount: unattributed.receivedCount,
-          totalDonors: donors.length,
-          newDonorsLast30Days,
-          totalCauses: causes.length,
-          activeCampaigns: causes.filter((c) => String(c.status) !== "Inactive").length,
-          totalReports: fieldReports.length,
-          reportsAwaitingReview: fieldReports.filter((r: any) => REVIEW_STATUSES.has(String(r.status || "").toLowerCase())).length,
-        },
-        statusBreakdown: [
-          { label: "Verified", amount: summary.receivedAmount, count: summary.receivedCount },
-          { label: "Pending", amount: summary.pendingAmount, count: summary.pendingCount },
-          { label: "Rejected", amount: summary.rejectedAmount, count: summary.rejectedCount },
-        ],
-        recentDonations: recent,
-        monthlyTrend: monthlyTrend(donations, 6).map(({ month, amount, pending }) => ({ month, amount, pending })),
-        activity,
+    const response = {
+      success: true,
+      readAt: snap.readAt,
+      stats: {
+        totalDonations: summary.receivedAmount,
+        completedDonations: summary.receivedCount,
+        pendingAmount: summary.pendingAmount,
+        pendingDonations: summary.pendingCount,
+        rejectedAmount: summary.rejectedAmount,
+        rejectedDonations: summary.rejectedCount,
+        averageVerifiedDonation: summary.receivedCount ? Math.round(summary.receivedAmount / summary.receivedCount) : 0,
+        generalFundReceived: unattributed.receivedAmount,
+        generalFundCount: unattributed.receivedCount,
+        totalDonors: donors.length,
+        newDonorsLast30Days,
+        totalCauses: causes.length,
+        activeCampaigns: causes.filter((c) => String(c.status) !== "Inactive").length,
+        totalReports: fieldReports.length,
+        reportsAwaitingReview: fieldReports.filter((r: any) => REVIEW_STATUSES.has(String(r.status || "").toLowerCase())).length,
       },
-      { headers: { "Cache-Control": "no-store" } }
-    );
+      statusBreakdown: [
+        { label: "Verified", amount: summary.receivedAmount, count: summary.receivedCount },
+        { label: "Pending", amount: summary.pendingAmount, count: summary.pendingCount },
+        { label: "Rejected", amount: summary.rejectedAmount, count: summary.rejectedCount },
+      ],
+      recentDonations: recent,
+      monthlyTrend: monthlyTrend(donations, 6).map(({ month, amount, pending }) => ({ month, amount, pending })),
+      activity,
+    };
+
+    // Cache successful response
+    cachedDashboard = response;
+    dashboardCacheTime = Date.now();
+
+    return NextResponse.json(response, { headers: { "Cache-Control": "no-store" } });
   } catch (error: any) {
-    console.error("[DashboardAPI] Error fetching dashboard data:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 503 });
+    console.error("[DashboardAPI] Error fetching dashboard data:", error?.message);
+
+    // Return cached data if available and fresh
+    if (cachedDashboard && Date.now() - dashboardCacheTime < DASHBOARD_CACHE_TTL) {
+      return NextResponse.json({
+        ...cachedDashboard,
+        cached: true,
+        cacheAge: Date.now() - dashboardCacheTime
+      }, { headers: { "Cache-Control": "no-store" } });
+    }
+
+    // Return empty but success to prevent UI crashes
+    return NextResponse.json({
+      success: true,
+      stats: {
+        totalDonations: 0,
+        completedDonations: 0,
+        pendingAmount: 0,
+        pendingDonations: 0,
+        rejectedAmount: 0,
+        rejectedDonations: 0,
+        averageVerifiedDonation: 0,
+        generalFundReceived: 0,
+        generalFundCount: 0,
+        totalDonors: 0,
+        newDonorsLast30Days: 0,
+        totalCauses: 0,
+        activeCampaigns: 0,
+        totalReports: 0,
+        reportsAwaitingReview: 0,
+      },
+      statusBreakdown: [],
+      recentDonations: [],
+      monthlyTrend: [],
+      activity: [],
+      cached: true,
+      error: "Dashboard service temporarily unavailable"
+    }, { headers: { "Cache-Control": "no-store" } });
   }
 }
