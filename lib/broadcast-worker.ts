@@ -7,9 +7,9 @@ import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { broadcastStore, type BroadcastError, type BroadcastRecord } from "@/lib/broadcast-store";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const BATCH_SIZE = 25;
-const MAX_ATTEMPTS = 3;
-const BATCH_DELAY_MS = 100;
+const BATCH_SIZE = 50;
+const MAX_ATTEMPTS = 2;
+const BATCH_DELAY_MS = 50;
 
 /** One entry per address: the same donor often appears under several donation rows. */
 export function dedupeRecipients(recipients: any[]): { name: string; email: string }[] {
@@ -120,6 +120,22 @@ export async function processBroadcast(
 
     const subject = `${heading} — Daarayn Foundation`;
 
+    // Generate base template once - only the greeting changes per recipient
+    const baseTemplate = {
+      title: subject,
+      eyebrow: eyebrow,
+      contributionSummary: [
+        { label: "Target Causes", value: causeName || "Daarayn Initiatives" },
+        { label: "Campaign Progress", value: stats?.percentage !== undefined ? `${stats.percentage}% Funded` : "Active" }
+      ],
+      projectUpdate: projectUpdateHtml,
+      transparencySummary: "Every Rupee you donate is tracked, documented, and reported. This communication is permanently recorded on our public ledger for complete transparency.",
+      ctaLink: `${getSiteUrl()}/donor/dashboard`,
+      ctaText: "Track Your Impact",
+      dua,
+      signOff: ""
+    };
+
     for (let i = 0; i < jobs.length; i += BATCH_SIZE) {
       if (Date.now() > deadline) {
         const skipped = jobs.length - i;
@@ -133,26 +149,16 @@ export async function processBroadcast(
       await Promise.allSettled(batch.map(async (job) => {
         let lastError = "Send failed";
         try {
+          // Only personalize the greeting - generate HTML once
           const html = generateLetterEmailTemplate({
-            title: subject,
-            eyebrow: eyebrow,
-            greeting: `Assalamu Alaikum, ${job.name},`,
-            contributionSummary: [
-              { label: "Target Causes", value: causeName || "Daarayn Initiatives" },
-              { label: "Campaign Progress", value: stats?.percentage !== undefined ? `${stats.percentage}% Funded` : "Active" }
-            ],
-            projectUpdate: projectUpdateHtml,
-            transparencySummary: "Every Rupee you donate is tracked, documented, and reported. This communication is permanently recorded on our public ledger for complete transparency.",
-            ctaLink: `${getSiteUrl()}/donor/dashboard`,
-            ctaText: "Track Your Impact",
-            dua,
-            signOff: ""
+            ...baseTemplate,
+            greeting: `Assalamu Alaikum, ${job.name},`
           });
 
           for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             if (attempt > 0) {
-              // Fast exponential backoff (50ms, 100ms, 200ms) for retries
-              await new Promise(res => setTimeout(res, 50 * Math.pow(2, attempt - 1)));
+              // Minimal backoff for retries (25ms only)
+              await new Promise(res => setTimeout(res, 25));
             }
             const result = await sendEmail({ to: job.email, subject, html, attachments: resolvedAttachments });
 
