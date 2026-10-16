@@ -162,14 +162,15 @@ export interface DonorIdentity {
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
 
 /**
- * A donation belongs to a donor when it carries the donor's id, or — for
- * records written without an id — the donor's email. Names are never used:
- * many donors share names such as "Generous Donor".
+ * A donation belongs to a donor when it carries the donor's id, or when the
+ * email matches. Email matching is tried as a fallback to handle donors with
+ * mismatched IDs (due to multiple lookups/creations of the same person).
+ * Names are never used: many donors share names such as "Generous Donor".
  */
 export function belongsToDonor(d: DonationLike, donor: DonorIdentity): boolean {
   if (d.donorId && d.donorId === donor.id) return true;
   const email = norm(donor.email);
-  return !d.donorId && !!email && norm(d.donorEmail) === email;
+  return !!email && norm(d.donorEmail) === email;
 }
 
 export function donationsForDonor<T extends DonationLike>(donations: T[], donor: DonorIdentity): T[] {
