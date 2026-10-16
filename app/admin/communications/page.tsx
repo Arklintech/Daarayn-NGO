@@ -69,8 +69,7 @@ function CommunicationsHubContent() {
           setCauses(causesData);
         }
       } catch (err) {
-        console.error("Failed to load causes in background", err);
-        // Silently fail - using defaults is fine
+        // Silently fail - defaults are already loaded
       }
     }
     fetchData();
@@ -110,12 +109,8 @@ function CommunicationsHubContent() {
           setStats({ raised: 0, goalAmount: 0, percentage: 0 });
         }
       } catch (err: any) {
-        console.error("Failed to resolve recipients", err);
-        if (err?.name === 'AbortError') {
-          setResolutionError("Request timed out. Please try again.");
-        } else {
-          setResolutionError("Unable to load recipient data");
-        }
+        // Silently fail - keep showing defaults while user composes
+        // Only show error if user tries to send without recipient data
         setDonorCount(0);
         setStats({ raised: 0, goalAmount: 0, percentage: 0 });
       }
