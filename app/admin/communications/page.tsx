@@ -490,15 +490,15 @@ function CommunicationsHubContent() {
                         type="button"
                         onClick={handleAiAssist}
                         disabled={aiAssistLoading || !notes.trim()}
-                        className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 text-xs font-semibold px-4 py-1.5 rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                         style={{
-                          background: aiAssistLoading ? 'rgba(212,175,55,0.2)' : 'rgba(212,175,55,0.15)',
+                          background: aiAssistLoading ? 'rgba(212,175,55,0.25)' : 'rgba(212,175,55,0.2)',
                           color: 'var(--color-luxury-gold)',
-                          border: '1px solid rgba(212,175,55,0.3)'
+                          border: '1.5px solid rgba(212,175,55,0.4)'
                         }}
                       >
-                        <Sparkles className="w-3.5 h-3.5" />
-                        {aiAssistLoading ? 'Improving...' : 'AI Assist'}
+                        <Sparkles className="w-4 h-4" />
+                        {aiAssistLoading ? 'Generating...' : 'Generate with Khidr'}
                       </button>
                     </div>
                     <textarea
