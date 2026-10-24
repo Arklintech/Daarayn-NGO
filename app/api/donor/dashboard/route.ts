@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { donorRepository } from "@/lib/repositories/donorRepository";
 import { donationRepository } from "@/lib/repositories/donationRepository";
 import { causeRepository } from "@/lib/repositories/causeRepository";
+import { donationsForDonor } from "@/lib/donations/metrics";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,9 +19,8 @@ export async function GET(request: NextRequest) {
     }
 
     const allDonations = await donationRepository.getAll();
-    const donorDonations = allDonations.filter(
-      (d) => d.donorId === donorId || d.donorEmail === donor.email
-    );
+    // Same relationship rule as the admin CRM: donor token, else a non-empty matching email.
+    const donorDonations = donationsForDonor(allDonations, donor);
 
     const causes = await causeRepository.getAll();
     const allocations = donorDonations.map((d) => ({

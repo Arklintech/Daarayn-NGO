@@ -19,6 +19,10 @@ const DONATION_HEADERS = [
   "transactionReference",
   "notes",
   "submissionKey",
+  "confirmationEmailSent",
+  "confirmationEmailSentAt",
+  "confirmationEmailError",
+  "confirmationEmailRetryCount",
 ];
 
 /** A write the caller should report as a 4xx rather than a server fault. */
@@ -33,7 +37,7 @@ export class DonationWriteError extends Error {
   }
 }
 
-const MAX_ID_ATTEMPTS = 6;
+const MAX_ID_ATTEMPTS = 12;
 
 function nextDonationId(rows: SheetRow[]): string {
   const highest = rows.reduce((max, r) => {
@@ -66,6 +70,10 @@ export class DonationRepository extends BaseRepository<Donation> {
       transactionReference: String(row.transactionReference || ""),
       notes: String(row.notes || ""),
       selectedCauses: [],
+      confirmationEmailSent: String(row.confirmationEmailSent).toLowerCase() === "true",
+      confirmationEmailSentAt: row.confirmationEmailSentAt ? String(row.confirmationEmailSentAt) : undefined,
+      confirmationEmailError: row.confirmationEmailError ? String(row.confirmationEmailError) : undefined,
+      confirmationEmailRetryCount: Number(row.confirmationEmailRetryCount || 0),
     };
   }
 
@@ -85,6 +93,10 @@ export class DonationRepository extends BaseRepository<Donation> {
       proofDriveFileId: (donation as any).proofDriveFileId || (donation as any).receiptUrl || "",
       transactionReference: donation.transactionReference || "",
       notes: donation.notes || "",
+      confirmationEmailSent: Boolean(donation.confirmationEmailSent),
+      confirmationEmailSentAt: donation.confirmationEmailSentAt || "",
+      confirmationEmailError: donation.confirmationEmailError || "",
+      confirmationEmailRetryCount: donation.confirmationEmailRetryCount || 0,
     };
   }
 
@@ -152,13 +164,18 @@ export class DonationRepository extends BaseRepository<Donation> {
         return { donation: this.mapRowToEntity(sameSubmission.record), duplicate: true };
       }
 
-      // Calculate the ID based on existing rows: count all DA### IDs that appear
-      // in earlier rows, then add 1. Safe because myRow position is locked.
+      // Calculate the ID from the rows above ours: the highest finalized DA### plus one, plus one
+      // more for every recent row above us that is still being finalized (id "PENDING"). Every
+      // concurrent request applies the same rule, so ids line up with row order instead of
+      // colliding. Stale PENDING rows (a request that died) are ignored after two minutes.
       const highest = earlier.reduce((max, r) => {
         const match = /^DA(\d+)$/.exec(String(r.record.id || ""));
         return match ? Math.max(max, parseInt(match[1], 10)) : max;
       }, 0);
-      const finalId = "DA" + String(highest + 1).padStart(3, "0");
+      const inFlight = earlier.filter(
+        (r) => String(r.record.id) === "PENDING" && Date.now() - new Date(String(r.record.date)).getTime() < 120_000
+      ).length;
+      const finalId = "DA" + String(highest + 1 + inFlight).padStart(3, "0");
 
       const donation = build(finalId);
       const toRow = (d: Donation) => ({ ...this.mapEntityToRow(d), submissionKey });
@@ -173,6 +190,7 @@ export class DonationRepository extends BaseRepository<Donation> {
       }
 
       console.warn(`[DonationRepository] ID collision on attempt ${attempt + 1} for ${finalId}, retrying...`);
+      await new Promise((r) => setTimeout(r, 20 + Math.random() * 60 * (attempt + 1)));
     }
 
     throw new Error(`Could not allocate a unique donation id (row ${myRow}); retry the submission.`);

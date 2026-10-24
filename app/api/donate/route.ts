@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { donationService } from "@/lib/services/donationService";
+import { donationService, DonationInputError } from "@/lib/services/donationService";
 import { checkRateLimit } from "@/lib/security/rate-limiter";
 import { logAuditEvent } from "@/lib/security/audit-logger";
 
@@ -37,6 +37,15 @@ export async function POST(request: NextRequest) {
         { error: "Required fields (Amount, Payment Screenshot) are missing." },
         { status: 400 }
       );
+    }
+
+    const ALLOWED_PROOF_TYPES = ["image/png", "image/jpeg", "image/webp", "image/heic", "application/pdf"];
+    const MAX_PROOF_BYTES = 10 * 1024 * 1024;
+    if (!ALLOWED_PROOF_TYPES.includes(screenshot.type)) {
+      return NextResponse.json({ error: "Payment proof must be an image (PNG, JPEG, WebP, HEIC) or PDF." }, { status: 400 });
+    }
+    if (screenshot.size > MAX_PROOF_BYTES) {
+      return NextResponse.json({ error: "Payment proof must be 10 MB or smaller." }, { status: 400 });
     }
 
     const numAmount = parseInt(amountStr, 10);
@@ -81,6 +90,9 @@ export async function POST(request: NextRequest) {
       confirmationEmailError: result.confirmationEmailError,
     });
   } catch (error: any) {
+    if (error instanceof DonationInputError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("[API/Donate] Error processing donation:", error);
     return NextResponse.json(
       { error: error.message || "Failed to process contribution." },

@@ -1,54 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { donorRepository } from "@/lib/repositories/donorRepository";
+import { checkRateLimit } from "@/lib/security/rate-limiter";
 
+/**
+ * Donor portal sign-in lookup. It only recognises an EXISTING donor (created by
+ * a donation); it never creates a donor profile, and it returns just the Donor
+ * Token and first name so contact details are not disclosed to whoever knows an
+ * email address or phone number.
+ */
 export async function POST(request: NextRequest) {
+  const limited = checkRateLimit(request, { limit: 10, windowMs: 60 * 1000 });
+  if (!limited.allowed && limited.response) return limited.response;
+
   try {
     const { identifier } = await request.json();
-    const clean = (identifier || "").trim().toLowerCase();
+    const clean = String(identifier || "").trim();
     if (!clean) {
       return NextResponse.json({ error: "Email or phone number is required." }, { status: 400 });
     }
 
-    // Lookup in Google Sheets repository
-    let donor = await donorRepository.findByContact(clean);
-
-    // If not found, automatically register a new donor profile in Google Sheets
+    const donor = await donorRepository.findByContact(clean, true);
     if (!donor) {
-      const isEmail = clean.includes("@");
-      const newId = `DNR-${Date.now().toString(36).toUpperCase()}-${Math.random()
-        .toString(36)
-        .substr(2, 4)
-        .toUpperCase()}`;
-
-      donor = {
-        id: newId,
-        name: isEmail ? clean.split("@")[0] : "New Donor",
-        email: isEmail ? clean : "",
-        phone: !isEmail ? clean : "",
-        country: "India",
-        city: "",
-        donationPreference: "General Fund",
-        communicationPreference: isEmail ? "Email" : "WhatsApp",
-        dateJoined: new Date().toISOString(),
-        totalDonations: 0,
-        totalAmountDonated: 0,
-        projectsSupportedCount: 0,
-        casesSupportedCount: 0,
-        donationHistory: [],
-        projectsSupported: [],
-        casesSupported: [],
-        status: "active",
-      };
-      await donorRepository.save(donor);
+      return NextResponse.json({ error: "No donor profile was found for this email or phone number. Profiles are created when you make a donation." }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, donor });
+    return NextResponse.json({ success: true, donor: { id: donor.id, name: (donor.name || "").split(" ")[0] } });
   } catch (error: any) {
     console.error("[API/DonorLookup] Lookup error:", error);
-    return NextResponse.json(
-      { error: "Failed to verify donor credentials." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to verify donor credentials." }, { status: 500 });
   }
 }
 

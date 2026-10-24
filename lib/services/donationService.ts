@@ -8,6 +8,7 @@ import { realtimeBroadcaster, type PublishResult } from "../realtime/broadcaster
 import { RealtimeEvent } from "../realtime/events";
 import { resolveCauseId } from "../donations/metrics";
 import { sendDonationEmail } from "../email";
+import { contactKeys } from "../donors/normalize";
 
 import { Donation, DonorProfile } from "../db";
 
@@ -50,6 +51,9 @@ function newSubmissionKey() {
   return `SUB-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+/** A submission the donor can correct; reported as HTTP 400, not a server fault. */
+export class DonationInputError extends Error {}
+
 export class DonationService {
   /**
    * Records a donation submitted through the public website (Google Sheets +
@@ -64,6 +68,9 @@ export class DonationService {
     const numAmount = Number(input.amount);
     if (!numAmount || numAmount <= 0) {
       throw new Error("Invalid donation amount.");
+    }
+    if (!contactKeys(input.donorContact).email && !contactKeys(input.donorContact).phone) {
+      throw new DonationInputError("A valid email address or phone number is required.");
     }
     const submissionKey = (input.submissionKey || "").trim().slice(0, 100) || newSubmissionKey();
 
@@ -90,39 +97,34 @@ export class DonationService {
       }
     }
 
-    // 2. Resolve or create the donor profile
+    // 2. Resolve or create the donor profile (one permanent Donor Token per person)
     const contact = (input.donorContact || "").trim();
-    const isEmail = contact.includes("@");
-    const normalizedContact = isEmail ? contact.toLowerCase() : contact;
+    const keys = contactKeys(contact);
+    const isEmail = !!keys.email;
     const donorNameClean = input.donorName?.trim() || "Generous Donor";
     const nowIso = new Date().toISOString();
 
-    let donor: DonorProfile | null = await donorRepository.findByContact(contact, true);
-    let donorCreated = false;
-    if (!donor) {
-      donor = {
-        id: `DNR-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`,
-        name: donorNameClean,
-        email: isEmail ? normalizedContact : "",
-        phone: !isEmail ? contact : "",
-        country: "India",
-        city: "",
-        donationPreference: input.cause || "General Fund",
-        communicationPreference: isEmail ? "Email" : "WhatsApp",
-        dateJoined: nowIso,
-        // Legacy counters, no longer maintained: giving is derived from verified donations.
-        totalDonations: 0,
-        totalAmountDonated: 0,
-        projectsSupportedCount: 1,
-        casesSupportedCount: 0,
-        donationHistory: [],
-        projectsSupported: [input.cause],
-        casesSupported: [],
-        status: "active",
-      };
-      await donorRepository.save(donor);
-      donorCreated = true;
-    }
+    const { donor: foundDonor, created: donorCreated } = await donorRepository.findOrCreateByContact(contact, (id) => ({
+      id,
+      name: donorNameClean,
+      email: keys.email,
+      phone: isEmail ? "" : keys.phone,
+      country: "India",
+      city: "",
+      donationPreference: input.cause || "General Fund",
+      communicationPreference: isEmail ? "Email" : "WhatsApp",
+      dateJoined: nowIso,
+      // Legacy counters, no longer maintained: giving is derived from verified donations.
+      totalDonations: 0,
+      totalAmountDonated: 0,
+      projectsSupportedCount: 1,
+      casesSupportedCount: 0,
+      donationHistory: [],
+      projectsSupported: [input.cause],
+      casesSupported: [],
+      status: "active",
+    }));
+    const donor: DonorProfile = foundDonor;
 
     // 3. Record the donation under a confirmed-unique id
     const causes = await causeRepository.getAll();
