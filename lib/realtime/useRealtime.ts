@@ -7,7 +7,9 @@ import type { RealtimeMessage } from "./events";
 /** Receives every realtime event (for views that apply payloads directly, e.g. chat). */
 export function useRealtimeEvents(onMessage: (message: RealtimeMessage) => void, onResync?: () => void): RealtimeStatus {
   const handlers = useRef({ onMessage, onResync });
-  handlers.current = { onMessage, onResync };
+  useEffect(() => {
+    handlers.current = { onMessage, onResync };
+  });
   const [status, setStatus] = useState<RealtimeStatus>("connecting");
 
   useEffect(
@@ -41,7 +43,9 @@ export function useRealtimeRefresh(
   { debounceMs = 400, fallbackMs = 120_000, enabled = true }: RefreshOptions = {}
 ): RealtimeStatus {
   const refreshRef = useRef(refresh);
-  refreshRef.current = refresh;
+  useEffect(() => {
+    refreshRef.current = refresh;
+  });
   const typesKey = types.join("|");
   const [status, setStatus] = useState<RealtimeStatus>("connecting");
 

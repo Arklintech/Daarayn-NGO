@@ -17,6 +17,8 @@ const FIELD_REPORT_HEADERS = [
   "status",
   "timelineStages",
   "assignedTo",
+  "adminNotes",
+  "assignedAdminId",
   "createdAt",
   "updatedAt",
 ];
@@ -53,6 +55,8 @@ export class FieldReportRepository extends BaseRepository<FieldReport> {
       status: (row.status || "Pending Review") as any,
       timelineStages: safeParse(row.timelineStages, {}),
       assignedTo: String(row.assignedTo || ""),
+      adminNotes: String(row.adminNotes || ""),
+      assignedAdminId: String(row.assignedAdminId || ""),
       createdAt: String(row.createdAt || new Date().toISOString()),
       updatedAt: String(row.updatedAt || new Date().toISOString()),
     } as any;
@@ -75,6 +79,8 @@ export class FieldReportRepository extends BaseRepository<FieldReport> {
       status: report.status,
       timelineStages: JSON.stringify((report as any).timelineStages || {}),
       assignedTo: (report as any).assignedTo || "",
+      adminNotes: (report as any).adminNotes || "",
+      assignedAdminId: (report as any).assignedAdminId || "",
       createdAt: report.createdAt,
       updatedAt: report.updatedAt,
     };
