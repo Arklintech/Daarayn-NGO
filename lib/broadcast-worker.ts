@@ -3,6 +3,7 @@ import { sendEmail } from "@/lib/email/providerManager";
 import { getSiteUrl } from "@/lib/email/deliverability";
 import { driveService } from "@/lib/google/drive";
 import { communicationRepository } from "@/lib/repositories/communicationRepository";
+import { communicationRecipientRepository, type CommunicationRecipientEntity } from "@/lib/repositories/communicationRecipientRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { broadcastStore, type BroadcastError, type BroadcastRecord } from "@/lib/broadcast-store";
 
@@ -12,13 +13,13 @@ const MAX_ATTEMPTS = 2;
 const BATCH_DELAY_MS = 50;
 
 /** One entry per address: the same donor often appears under several donation rows. */
-export function dedupeRecipients(recipients: any[]): { name: string; email: string }[] {
-  const byEmail = new Map<string, { name: string; email: string }>();
+export function dedupeRecipients(recipients: any[]): { id?: string; name: string; email: string }[] {
+  const byEmail = new Map<string, { id?: string; name: string; email: string }>();
   for (const r of recipients) {
     const email = String(r?.email || "").trim();
     const key = email.toLowerCase();
     if (!EMAIL_PATTERN.test(email) || byEmail.has(key)) continue;
-    byEmail.set(key, { name: String(r.name || "").trim() || "Valued Donor", email });
+    byEmail.set(key, { id: r.id ? String(r.id) : undefined, name: String(r.name || "").trim() || "Valued Donor", email });
   }
   return Array.from(byEmail.values());
 }
@@ -62,7 +63,7 @@ export async function processBroadcast(
   broadcastId: string,
   recipients: any[],
   payload: any,
-  options: { deadline?: number } = {}
+  options: { deadline?: number; rows?: { entity: CommunicationRecipientEntity; rowNumber: number }[] } = {}
 ): Promise<BroadcastRecord> {
   const { heading, eyebrow, dua, projectUpdateHtml, mediaUrls, causeName, stats, createdAt } = payload;
   const deadline = options.deadline ?? Number.POSITIVE_INFINITY;
@@ -72,6 +73,16 @@ export async function processBroadcast(
   let failCount = 0;
 
   const jobs = dedupeRecipients(recipients);
+  // Per-recipient history rows (Communication_Recipients), keyed by Donor Token.
+  const rowByDonor = new Map((options.rows || []).map((r) => [r.entity.donorId, r]));
+  const persistRows = async (rows: { entity: CommunicationRecipientEntity; rowNumber: number }[]) => {
+    if (rows.length === 0) return;
+    try {
+      await communicationRecipientRepository.writeOutcomes(rows);
+    } catch (err: any) {
+      console.error(`[Broadcast] ${broadcastId}: could not save recipient outcomes:`, err?.message || err);
+    }
+  };
 
   // Keep our own copy so the result never depends on the in-memory store entry
   let record: BroadcastRecord = broadcastStore.get(broadcastId) ?? {
@@ -140,14 +151,25 @@ export async function processBroadcast(
       if (Date.now() > deadline) {
         const skipped = jobs.length - i;
         failCount += skipped;
-        errorCounts.set("Not attempted: the send ran out of time. Send again to the remaining recipients.", skipped);
+        const reason = "Not attempted: the send ran out of time. Retry failed recipients to send to the remaining recipients.";
+        errorCounts.set(reason, skipped);
+        const skippedRows = jobs.slice(i).map((j) => (j.id ? rowByDonor.get(j.id) : undefined)).filter(Boolean) as { entity: CommunicationRecipientEntity; rowNumber: number }[];
+        skippedRows.forEach((r) => { r.entity = { ...r.entity, status: "failed", lastError: reason, updatedAt: new Date().toISOString() }; });
+        await persistRows(skippedRows);
         break;
       }
 
       const batch = jobs.slice(i, i + BATCH_SIZE);
+      const batchRows = batch.map((j) => (j.id ? rowByDonor.get(j.id) : undefined)).filter(Boolean) as { entity: CommunicationRecipientEntity; rowNumber: number }[];
+      batchRows.forEach((r) => { r.entity = { ...r.entity, status: "attempted", updatedAt: new Date().toISOString() }; });
+      await persistRows(batchRows);
 
       await Promise.allSettled(batch.map(async (job) => {
         let lastError = "Send failed";
+        const row = job.id ? rowByDonor.get(job.id) : undefined;
+        const record = (patch: Partial<CommunicationRecipientEntity>) => {
+          if (row) row.entity = { ...row.entity, ...patch, updatedAt: new Date().toISOString() };
+        };
         try {
           // Only personalize the greeting - generate HTML once
           const html = generateLetterEmailTemplate({
@@ -160,6 +182,7 @@ export async function processBroadcast(
               // Minimal backoff for retries (25ms only)
               await new Promise(res => setTimeout(res, 25));
             }
+            record({ attempts: (row?.entity.attempts || 0) + 1 });
             const result = await sendEmail({ to: job.email, subject, html, attachments: resolvedAttachments });
 
             // Note: result.success means SMTP server accepted the email (250 OK),
@@ -167,6 +190,7 @@ export async function processBroadcast(
             // We record SMTP acceptance here; inbox delivery is not automatically verifiable.
             if (result.success) {
               successCount++;
+              record({ status: "smtp_accepted", lastError: "", providerMessageId: result.providerMessageId || "" });
               console.log(`[Broadcast] Email SMTP-accepted for ${job.email}, MessageId: ${result.providerMessageId}`);
               return;
             }
@@ -181,7 +205,9 @@ export async function processBroadcast(
         }
         failCount++;
         recordError(lastError);
+        record({ status: "failed", lastError: lastError.slice(0, 500) });
       }));
+      await persistRows(batchRows);
 
       const remainingCount = Math.max(0, jobs.length - (successCount + failCount));
 
@@ -236,10 +262,12 @@ export async function processBroadcast(
         sentCount: successCount,
         failedCount: failCount,
         status,
-        createdBy: "Admin",
+        createdBy: record.createdBy || "Admin",
         createdAt: createdAt || new Date().toISOString(),
         completedAt,
         errorSummary: errors.map(e => `${e.count}× ${e.reason}`).join(" | "),
+        communicationType: record.communicationType,
+        causeIds: record.selectedCauseIds,
       });
     } catch (persistErr: any) {
       console.error(`[Broadcast] ${broadcastId}: failed to save history:`, persistErr?.message || persistErr);

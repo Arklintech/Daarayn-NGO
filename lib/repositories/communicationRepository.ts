@@ -14,6 +14,10 @@ export interface CommunicationRecord {
   createdAt: string;
   completedAt?: string;
   errorSummary?: string;
+  /** One of the five communication types, e.g. project_progress. */
+  communicationType?: string;
+  /** Cause ids the audience was selected from. */
+  causeIds?: string[];
 }
 
 const COMMUNICATION_HEADERS = [
@@ -30,6 +34,8 @@ const COMMUNICATION_HEADERS = [
   "createdAt",
   "completedAt",
   "errorSummary",
+  "communicationType",
+  "causeIds",
 ];
 
 export class CommunicationRepository extends BaseRepository<CommunicationRecord> {
@@ -62,6 +68,8 @@ export class CommunicationRepository extends BaseRepository<CommunicationRecord>
       createdAt: String(row.createdAt || new Date().toISOString()),
       completedAt: String(row.completedAt || ""),
       errorSummary: String(row.errorSummary || ""),
+      communicationType: String(row.communicationType || ""),
+      causeIds: safeParse(row.causeIds),
     };
   }
 
@@ -80,6 +88,8 @@ export class CommunicationRepository extends BaseRepository<CommunicationRecord>
       createdAt: comm.createdAt,
       completedAt: comm.completedAt || "",
       errorSummary: comm.errorSummary || "",
+      communicationType: comm.communicationType || "",
+      causeIds: JSON.stringify(comm.causeIds || []),
     };
   }
 }

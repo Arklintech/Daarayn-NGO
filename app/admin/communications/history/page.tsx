@@ -25,7 +25,7 @@ export default function BroadcastAnalytics() {
     async function fetchSingle() {
       setSingleLoading(true);
       try {
-        const res = await fetch(`/api/admin/communications/status?id=${encodeURIComponent(broadcastId)}`);
+        const res = await fetch(`/api/admin/communications/status?id=${encodeURIComponent(String(broadcastId))}`);
         const data = await res.json();
 
         if (res.ok && data.success && data.broadcast) {

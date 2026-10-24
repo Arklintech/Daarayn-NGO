@@ -21,6 +21,11 @@ function CommunicationsHubContent() {
   const [broadcastStats, setBroadcastStats] = useState<any>(null);
 
   const [donorCount, setDonorCount] = useState<number>(0);
+  // Exact recipient list previewed by the server; only this list can be approved and sent.
+  const [recipients, setRecipients] = useState<{ id: string; name: string; email: string; previouslyFailed?: boolean; lastError?: string }[]>([]);
+  const [excluded, setExcluded] = useState<{ id: string; name: string; email: string; reason: string }[]>([]);
+  const [ruleText, setRuleText] = useState("");
+  const [retrying, setRetrying] = useState(false);
   const [stats, setStats] = useState({ raised: 0, goalAmount: 0, percentage: 0 });
   const [type, setType] = useState("general_communication");
   const [heading, setHeading] = useState("");
@@ -79,9 +84,16 @@ function CommunicationsHubContent() {
   useEffect(() => {
     if (selectedCauseIds.length === 0) {
       setDonorCount(0);
+      setRecipients([]);
+      setExcluded([]);
       setStats({ raised: 0, goalAmount: 0, percentage: 0 });
       return;
     }
+
+    // A new selection invalidates the previous list immediately.
+    setRecipients([]);
+    setExcluded([]);
+    setDonorCount(0);
 
     async function fetchResolution() {
       try {
@@ -102,15 +114,21 @@ function CommunicationsHubContent() {
 
         if (data.success) {
           setDonorCount(data.count);
+          setRecipients(data.recipients || []);
+          setExcluded(data.excluded || []);
+          setRuleText(data.rule || "");
           setStats(data.stats);
         } else {
           setResolutionError(data.error || "Failed to load recipient count");
+          setRecipients([]);
+          setExcluded([]);
           setDonorCount(0);
           setStats({ raised: 0, goalAmount: 0, percentage: 0 });
         }
       } catch (err: any) {
-        // Silently fail - keep showing defaults while user composes
-        // Only show error if user tries to send without recipient data
+        // Recipients could not be established: show none (never a stale list from another selection)
+        setRecipients([]);
+        setExcluded([]);
         setDonorCount(0);
         setStats({ raised: 0, goalAmount: 0, percentage: 0 });
       }
@@ -218,6 +236,7 @@ function CommunicationsHubContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           causeIds: selectedCauseIds, type, heading, notes,
+          recipientIds: recipients.map((r) => r.id),
           media: uploadedFiles.filter(f => f.serverUrl).map(f => f.serverUrl!)
         })
       });
@@ -235,6 +254,36 @@ function CommunicationsHubContent() {
       console.error(err);
       alert("An error occurred while initiating broadcast.");
       setMode("compose");
+    }
+  };
+
+  // Retry only the recipients of the finished broadcast whose send failed or never completed.
+  const handleRetryFailed = async () => {
+    if (!broadcastId) return;
+    setRetrying(true);
+    try {
+      const hist = await fetch(`/api/admin/communications/recipients?broadcastId=${encodeURIComponent(broadcastId)}`).then((r) => r.json());
+      const failedIds = (hist.records || []).filter((r: any) => r.status !== "smtp_accepted").map((r: any) => r.donorId);
+      if (failedIds.length === 0) {
+        alert("No failed recipients to retry.");
+        return;
+      }
+      const response = await fetch("/api/admin/communications/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ causeIds: selectedCauseIds, type, heading, notes, recipientIds: failedIds, retryBroadcastId: broadcastId, causeName: causeNamesText }),
+      });
+      const result = await response.json();
+      if (result.broadcast) {
+        setBroadcastId(result.broadcastId);
+        setBroadcastStats(result.broadcast);
+      } else {
+        alert("Retry was not sent: " + (result.error || `HTTP ${response.status}`));
+      }
+    } catch {
+      alert("Retry could not be started.");
+    } finally {
+      setRetrying(false);
     }
   };
 
@@ -827,6 +876,31 @@ function CommunicationsHubContent() {
             </div>
           </div>
 
+          {ruleText && <p className="text-xs text-gray-400 mb-4"><span className="text-white font-semibold">Eligibility rule:</span> {ruleText}</p>}
+
+          <div className="mb-6">
+            <p className="text-xs uppercase tracking-wider text-gray-500 mb-2">Recipients you are approving ({recipients.length})</p>
+            <div className="max-h-56 overflow-y-auto rounded-xl border border-white/10 divide-y divide-white/5">
+              {recipients.map((r) => (
+                <div key={r.id} className="flex items-center justify-between gap-3 px-3 py-2 text-xs">
+                  <span className="text-white truncate">{r.name} <span className="text-gray-500 font-mono">{r.id}</span></span>
+                  <span className="text-gray-400 truncate">{r.email}{r.previouslyFailed ? " · previously failed" : ""}</span>
+                </div>
+              ))}
+              {recipients.length === 0 && <p className="px-3 py-3 text-xs text-amber-400">No eligible recipients for this cause and communication type.</p>}
+            </div>
+            {excluded.length > 0 && (
+              <details className="mt-3 text-xs text-gray-400">
+                <summary className="cursor-pointer">{excluded.length} donor(s) excluded — why</summary>
+                <div className="mt-2 max-h-40 overflow-y-auto space-y-1">
+                  {excluded.map((x) => (
+                    <p key={x.id}><span className="text-gray-300">{x.name}</span> <span className="font-mono text-gray-500">{x.id}</span> — {x.reason}</p>
+                  ))}
+                </div>
+              </details>
+            )}
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-4">
             <button
               onClick={() => setMode("compose")}
@@ -935,6 +1009,15 @@ function CommunicationsHubContent() {
             >
               Back to Communications
             </button>
+            {(broadcastStats.stats?.failed || 0) > 0 && (
+              <button
+                onClick={handleRetryFailed}
+                disabled={retrying}
+                className="py-3.5 px-6 rounded-xl font-semibold text-sm transition-all text-white border border-red-400/40 hover:bg-red-400/10 disabled:opacity-50"
+              >
+                {retrying ? "Retrying…" : "Retry failed recipients"}
+              </button>
+            )}
             <button
               onClick={() => router.push(`/admin/communications/history?id=${broadcastId}`)}
               className="py-3.5 px-6 rounded-xl font-semibold text-sm transition-all text-black bg-[var(--color-luxury-gold)] hover:bg-[var(--color-luxury-gold)]/90"

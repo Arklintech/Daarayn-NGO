@@ -319,6 +319,36 @@ export class SheetsService {
     return true;
   }
 
+  /** Appends several rows in one request and returns the 1-based row number of the first. */
+  public async appendRows(sheetName: string, records: Record<string, any>[], expectedHeaders: string[]): Promise<number> {
+    if (records.length === 0) throw new Error("appendRows needs at least one record.");
+    await this.ensureSheetExists(sheetName, expectedHeaders);
+    let headers = await this.getHeaders(sheetName);
+    const missing = Object.keys(records[0]).filter((k) => !headers.includes(k));
+    if (missing.length) headers = await this.ensureHeadersFor(sheetName, records[0], expectedHeaders);
+    const res = await this.sheets.spreadsheets.values.append({
+      spreadsheetId: this.spreadsheetId,
+      range: `'${sheetName}'!A:A`,
+      valueInputOption: "USER_ENTERED",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: { values: records.map((r) => this.toRowValues(headers, r)) },
+    });
+    return rowNumberFromRange(res.data.updates?.updatedRange);
+  }
+
+  /** Overwrites several known rows in one request. */
+  public async updateRowsAt(sheetName: string, updates: { rowNumber: number; record: Record<string, any> }[]): Promise<void> {
+    if (updates.length === 0) return;
+    const headers = await this.ensureHeadersFor(sheetName, Object.assign({}, ...updates.map((u) => u.record)));
+    await this.sheets.spreadsheets.values.batchUpdate({
+      spreadsheetId: this.spreadsheetId,
+      requestBody: {
+        valueInputOption: "USER_ENTERED",
+        data: updates.map((u) => ({ range: `'${sheetName}'!A${u.rowNumber}`, values: [this.toRowValues(headers, u.record)] })),
+      },
+    });
+  }
+
   public async batchAppendRows(sheetName: string, records: Record<string, any>[], expectedHeaders: string[]): Promise<void> {
     if (records.length === 0) return;
     await this.ensureSheetExists(sheetName, expectedHeaders);

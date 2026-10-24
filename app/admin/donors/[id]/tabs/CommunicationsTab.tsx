@@ -13,6 +13,8 @@ const TYPE_LABELS: Record<string, string> = {
 
 const STATUS_DOT: Record<string, string> = {
   sent: 'bg-emerald-400',
+  smtp_accepted: 'bg-emerald-400',
+  attempted: 'bg-amber-400',
   queued: 'bg-amber-400',
   failed: 'bg-red-400',
 };
@@ -116,7 +118,7 @@ export default function CommunicationsTab({ communications, donor }: any) {
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     <span className="text-xs text-gray-500 font-mono">{c.sentDate || '—'}</span>
                     <span className={`inline-flex items-center gap-1.5 text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                      c.status === 'sent' ? 'bg-emerald-500/10 text-emerald-400' :
+                      (c.status === 'sent' || c.status === 'smtp_accepted') ? 'bg-emerald-500/10 text-emerald-400' :
                       c.status === 'failed' ? 'bg-red-500/10 text-red-400' :
                       'bg-amber-500/10 text-amber-400'
                     }`}>
@@ -127,6 +129,12 @@ export default function CommunicationsTab({ communications, donor }: any) {
                 </div>
                 {c.causeId && (
                   <p className="text-xs text-gray-500 mt-1.5 truncate">Cause: {c.causeId}</p>
+                )}
+                {c.status === 'failed' && c.error && (
+                  <p className="text-xs text-red-400 mt-1.5 break-words">Failed after {c.attempts || 1} attempt(s): {c.error}</p>
+                )}
+                {c.status === 'smtp_accepted' && (
+                  <p className="text-xs text-gray-600 mt-1.5">Accepted by the mail server (inbox delivery is not confirmed).</p>
                 )}
               </div>
 

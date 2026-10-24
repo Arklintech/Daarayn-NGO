@@ -118,15 +118,35 @@ export default function DonorWorkspace() {
           setCauses(DEFAULT_CAUSES);
         }
 
-        if (commRes && commRes.ok) {
-          const commData = await commRes.json();
-          const allComms = commData.success && Array.isArray(commData.communications) ? commData.communications : Array.isArray(commData) ? commData : [];
-          const filtered = allComms.filter((c: any) => 
-            c.donorId === donorId || 
-            c.donorId === decodedId || 
-            (c.recipientEmail && c.recipientEmail.toLowerCase() === donorData.email?.toLowerCase())
+        // Communication history comes from the per-recipient history (keyed by the permanent Donor Token),
+        // joined to the broadcast record for subject, so it shows the actual recorded outcome of each message.
+        try {
+          const [recRes, bcastList] = await Promise.all([
+            fetch(`/api/admin/communications/recipients?donorId=${encodeURIComponent(donorData.id)}`).then((r) => (r.ok ? r.json() : null)).catch(() => null),
+            commRes && commRes.ok ? commRes.json().catch(() => null) : Promise.resolve(null),
+          ]);
+          const broadcasts: any[] = bcastList && Array.isArray(bcastList.communications) ? bcastList.communications : [];
+          const records: any[] = recRes && Array.isArray(recRes.records) ? recRes.records : [];
+          setCommunications(
+            records.map((r) => {
+              const b = broadcasts.find((x) => x.id === r.broadcastId);
+              return {
+                id: r.id,
+                donorId: r.donorId,
+                type: r.communicationType,
+                subject: b?.subject || '',
+                message: b?.bodyText || '',
+                sentDate: (r.updatedAt || r.createdAt || '').slice(0, 10),
+                status: r.status, // queued | attempted | smtp_accepted | failed (SMTP acceptance is not inbox delivery)
+                causeId: r.scopeKey,
+                error: r.lastError,
+                attempts: r.attempts,
+                createdBy: b?.createdBy,
+              };
+            })
           );
-          setCommunications(filtered);
+        } catch {
+          setCommunications([]);
         }
       } catch (err) {
         console.warn('Error loading donor workspace data:', err);
@@ -254,7 +274,7 @@ export default function DonorWorkspace() {
                       Verified Donor
                     </span>
                   </div>
-                  <p className="text-sm font-mono text-gray-400 mt-1">{donor.id}</p>
+                  <p className="text-sm font-mono text-gray-400 mt-1">Donor Token: {donor.id}</p>
                 </div>
 
                 {/* Actions */}

@@ -25,7 +25,7 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, error: "Cause not found" }, { status: 404 });
       }
 
-      finalCauseName = cause.name || cause.title || "Initiative";
+      finalCauseName = cause.title || "Initiative";
       finalCategory = (cause as any).category || "Foundation Initiative";
     }
 
