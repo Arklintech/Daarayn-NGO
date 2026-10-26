@@ -23,7 +23,11 @@ export async function GET(
 
   let isPublicCauseImage = false;
   try {
-    isPublicCauseImage = (await causeRepository.getAll()).some((c) => c.driveFileId === fileId);
+    // A file is a public cause image when a cause points at it, either by driveFileId or by an
+    // imageUrl of the form /api/media/<id> (what the Programs/Campaigns upload stores).
+    isPublicCauseImage = (await causeRepository.getAll()).some(
+      (c) => c.driveFileId === fileId || (c.imageUrl || "").split("?")[0].endsWith(`/api/media/${fileId}`)
+    );
   } catch {
     // If causes cannot be read, treat the file as private.
   }
@@ -56,6 +60,12 @@ export async function GET(
   } catch (err: any) {
     const message = String(err?.message || "");
     const missing = /not found|404|File with id/i.test(message);
+    if (/invalid_grant/i.test(message)) {
+      return NextResponse.json(
+        { error: "Google Drive authorisation has expired or was revoked. An administrator must reconnect Google Drive in Admin → Settings.", code: "DRIVE_REAUTH_REQUIRED" },
+        { status: 503, headers: { "Cache-Control": "no-store" } }
+      );
+    }
     console.error(`[API/Media] ${fileId}: ${message}`);
     return NextResponse.json(
       { error: missing ? "File not found." : "The file could not be read from storage." },

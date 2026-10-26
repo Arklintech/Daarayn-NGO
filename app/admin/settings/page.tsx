@@ -12,6 +12,7 @@ import {
   EyeOff
 } from "lucide-react";
 import { motion } from "framer-motion";
+import DriveConnectionCard from "@/components/admin/DriveConnectionCard";
 
 const DEFAULT_ADMINS = [
   { uid: "super_1", name: "Super Admin", email: "admin@daarayn.org", role: "Super Admin", status: "active" },
@@ -72,6 +73,7 @@ export default function AdminSettings() {
 
   return (
     <div className="space-y-6 text-xs">
+      <DriveConnectionCard />
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         
         {/* SEO Configuration CMS */}

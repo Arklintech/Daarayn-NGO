@@ -1,4 +1,6 @@
-import { getDriveClient, GOOGLE_DRIVE_ROOT_FOLDER_ID } from "./client";
+import { GOOGLE_DRIVE_ROOT_FOLDER_ID } from "./client";
+import { getDriveApi } from "./driveOAuth";
+import { withGoogleRetry } from "./retry";
 import { Readable } from "stream";
 import fs from "fs";
 import path from "path";
@@ -26,6 +28,14 @@ interface LocalStorageIndexItem {
   related_entity_id?: string;
 }
 
+/** Escapes a value for use inside single quotes in a Drive `q` query. */
+function escapeDriveQuery(value: string): string {
+  return value.split("\\").join("\\\\").split("'").join("\\'");
+}
+
+/** A Drive upload that failed; nothing was stored. */
+export class DriveUploadError extends Error {}
+
 export class DriveService {
   private rootFolderId: string;
   private folderCache: Map<string, string> = new Map();
@@ -41,12 +51,12 @@ export class DriveService {
     this.indexFilePath = path.join(this.localStorageDir, "storage_index.json");
   }
 
-  private get drive() {
-    const client = getDriveClient();
-    if (!client) {
-      throw new Error("Google Drive client is not initialized.");
+  /** Writes use the authorised OAuth account (the service account has no Drive storage quota). */
+  private drive(write: boolean) {
+    if (!this.rootFolderId) {
+      throw new Error("GOOGLE_DRIVE_ROOT_FOLDER_ID is not configured.");
     }
-    return client;
+    return getDriveApi(write);
   }
 
   private getLocalIndex(): Record<string, LocalStorageIndexItem> {
@@ -85,14 +95,18 @@ export class DriveService {
     }
 
     try {
-      const q = `'${parentFolderId}' in parents and name = '${folderName}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-      const res = await this.drive.files.list({
-        q,
-        fields: "files(id, name)",
-        spaces: "drive",
-        supportsAllDrives: true,
-        includeItemsFromAllDrives: true,
-      });
+      const q = `'${parentFolderId}' in parents and name = '${escapeDriveQuery(folderName)}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+      const res = await withGoogleRetry(
+        async () =>
+          (await this.drive(true)).files.list({
+            q,
+            fields: "files(id, name)",
+            spaces: "drive",
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
+          }),
+        { label: "Drive list folder" }
+      );
 
       if (res.data.files && res.data.files.length > 0) {
         const folderId = res.data.files[0].id!;
@@ -101,22 +115,22 @@ export class DriveService {
       }
 
       // Create folder
-      const createRes = await this.drive.files.create({
-        requestBody: {
-          name: folderName,
-          mimeType: "application/vnd.google-apps.folder",
-          parents: [parentFolderId],
-        },
-        fields: "id",
-        supportsAllDrives: true,
-      });
+      const createRes = await withGoogleRetry(
+        async () =>
+          (await this.drive(true)).files.create({
+            requestBody: { name: folderName, mimeType: "application/vnd.google-apps.folder", parents: [parentFolderId] },
+            fields: "id",
+            supportsAllDrives: true,
+          }),
+        { label: "Drive create folder", quotaOnly: true }
+      );
 
       const newFolderId = createRes.data.id!;
       this.folderCache.set(cacheKey, newFolderId);
       return newFolderId;
     } catch (err: any) {
       console.error(`[DriveService] Failed to get/create Google Drive folder ${folderName}:`, err.message);
-      return `folder_${folderName.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+      throw new Error(`Google Drive folder "${folderName}" is unavailable: ${err.message}`);
     }
   }
 
@@ -137,23 +151,25 @@ export class DriveService {
     try {
       const folderId = await this.getOrCreateFolder(categoryFolder);
 
-      const stream = new Readable();
-      stream.push(fileBuffer);
-      stream.push(null);
-
-      const res = await this.drive.files.create({
-        requestBody: {
-          name: filename,
-          parents: [folderId],
-          description: `Uploaded for entity ${relatedEntityId || "N/A"} by ${uploadedBy || "System"}`,
+      const res = await withGoogleRetry(
+        async () => {
+          // A Readable can only be consumed once, so every attempt gets its own.
+          const stream = new Readable();
+          stream.push(fileBuffer);
+          stream.push(null);
+          return (await this.drive(true)).files.create({
+            requestBody: {
+              name: filename,
+              parents: [folderId],
+              description: `Uploaded for entity ${relatedEntityId || "N/A"} by ${uploadedBy || "System"}`,
+            },
+            media: { mimeType, body: stream },
+            fields: "id, name, mimeType, size, createdTime",
+            supportsAllDrives: true,
+          });
         },
-        media: {
-          mimeType,
-          body: stream,
-        },
-        fields: "id, name, mimeType, size, createdTime",
-        supportsAllDrives: true,
-      });
+        { label: "Drive upload", quotaOnly: true }
+      );
 
       const fileData = res.data;
       return {
@@ -168,48 +184,12 @@ export class DriveService {
         storage_backend: "google_drive",
       };
     } catch (err: any) {
-      console.warn(
-        `[DriveService] Google Drive upload direct failed (${err.message}). Using secure server storage fallback.`
-      );
-
-      // 2. Secure Server Fallback
-      const uniqueId = `local_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
-      const safeCategoryDir = path.join(
-        this.localStorageDir,
-        categoryFolder.replace(/[^a-zA-Z0-9_-]/g, "_")
-      );
-      if (!fs.existsSync(safeCategoryDir)) {
-        fs.mkdirSync(safeCategoryDir, { recursive: true });
+      // No silent local-disk fallback: evidence must live in Google Drive. Report the real cause.
+      console.error(`[DriveService] Google Drive upload failed: ${err.message}`);
+      if (/invalid_grant/i.test(String(err?.message))) {
+        throw new DriveUploadError("Google Drive authorisation has expired or was revoked. An administrator must reconnect Google Drive in Admin → Settings.");
       }
-
-      const safeFilename = `${uniqueId}_${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
-      const destinationPath = path.join(safeCategoryDir, safeFilename);
-      fs.writeFileSync(destinationPath, fileBuffer);
-
-      const index = this.getLocalIndex();
-      index[uniqueId] = {
-        id: uniqueId,
-        filename,
-        localPath: destinationPath,
-        mimeType,
-        size: fileBuffer.length,
-        folder_category: categoryFolder,
-        uploaded_at: new Date().toISOString(),
-        related_entity_id: relatedEntityId,
-      };
-      this.saveLocalIndex(index);
-
-      return {
-        drive_file_id: uniqueId,
-        original_filename: filename,
-        mime_type: mimeType,
-        size: fileBuffer.length,
-        uploaded_at: new Date().toISOString(),
-        uploaded_by: uploadedBy,
-        related_entity_id: relatedEntityId,
-        folder_category: categoryFolder,
-        storage_backend: "secure_fallback",
-      };
+      throw new DriveUploadError(`The file could not be stored in Google Drive: ${err.message}`);
     }
   }
 
@@ -240,15 +220,15 @@ export class DriveService {
 
     // 2. Handle Google Drive Stream
     try {
-      const metadata = await this.drive.files.get({
-        fileId,
-        fields: "id, name, mimeType, size",
-        supportsAllDrives: true,
-      });
+      const driveRead = await this.drive(false);
+      const metadata = await withGoogleRetry(
+        () => driveRead.files.get({ fileId, fields: "id, name, mimeType, size", supportsAllDrives: true }),
+        { label: "Drive file metadata" }
+      );
 
-      const res = await this.drive.files.get(
-        { fileId, alt: "media", supportsAllDrives: true },
-        { responseType: "stream" }
+      const res = await withGoogleRetry(
+        () => driveRead.files.get({ fileId, alt: "media", supportsAllDrives: true }, { responseType: "stream" }),
+        { label: "Drive file download" }
       );
 
       return {
@@ -281,7 +261,7 @@ export class DriveService {
     }
 
     try {
-      await this.drive.files.delete({
+      await (await this.drive(true)).files.delete({
         fileId,
         supportsAllDrives: true,
       });

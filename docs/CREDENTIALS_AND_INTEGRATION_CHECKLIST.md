@@ -16,3 +16,13 @@ Names are the ones the code reads. Never paste values into chat, source or tests
 
 ## Re-running the blocked tests
 `npm test` (Vitest) uses an in-memory Sheets fake and mocks Drive/SMTP/Firebase; it needs no credentials and cannot touch real data. Live checks are manual, on a **test** spreadsheet/Drive/mailbox: submit a donation, verify it, preview and send a communication to your own address, retry a failed one, confirm rows in `Donations`, `Donors`, `Communication_Recipients`, `Communications`.
+
+## Live results 2026-10-24 (npm run test:live)
+- Service-account JSON (`GOOGLE_APPLICATION_CREDENTIALS`, project daaraynorg-9165c, daarayn@daaraynorg-9165c.iam.gserviceaccount.com): token exchange PASS; production spreadsheet "DAARAYN OPERATIONS DATABASE" readable PASS (metadata only).
+- Evidence folder "DAARAYN SECURE STORAGE" (`GOOGLE_DRIVE_ROOT_FOLDER_ID`, now set in `.env.local`): reachable, canAddChildren PASS.
+- **Drive upload FAIL**: "Service Accounts do not have storage quota". The folder is in a personal My Drive and the service account has no Shared Drive. Fix: create a Shared Drive, move the folder into it, add the service account as Content manager, set `GOOGLE_DRIVE_ROOT_FOLDER_ID` to the folder's id, rerun.
+- **Sheets write/read-back BLOCKED**: the service account cannot create files. Make a COPY of the spreadsheet, share it with the service account as Editor, set `GOOGLE_TEST_SHEET_ID` in `.env.local`, rerun.
+- **SMTP**: authentication passed, but with the OLD exposed password (still in `.env.local` and still valid). Revoke it, put the new App Password in `SMTP_PASS`, rerun. Inbox receipt of the test mail needs human confirmation.
+
+## Google Drive OAuth (replaces service-account uploads)
+Variables: `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_OAUTH_REDIRECT_URI` (= `http://localhost:3000/api/admin/google-drive/callback` locally; the real site URL + same path in production), optional `GOOGLE_DRIVE_REFRESH_TOKEN`, production `DRIVE_TOKEN_ENCRYPTION_KEY` (base64 of 32 random bytes), optional `GOOGLE_DRIVE_TEST_FOLDER_ID`. Scope: `https://www.googleapis.com/auth/drive` (`drive.file` cannot reach the existing evidence folder or existing proofs). Connect once at Admin -> Settings -> "Connect Google Drive". Token is stored server-side (encrypted `_Secrets` tab if `DRIVE_TOKEN_ENCRYPTION_KEY` is set, otherwise git-ignored `.secrets/` in local development). Sheets still uses the service account. Verify: `npx vitest run --config vitest.live.config.ts tests/live/drive-oauth.live.test.ts`.

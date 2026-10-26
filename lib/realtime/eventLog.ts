@@ -10,6 +10,7 @@
 
 import { getSheetsClient, GOOGLE_SHEET_ID } from "../google/client";
 import { sheetsService } from "../google/sheets";
+import { withGoogleRetry } from "../google/retry";
 import type { Audience, RealtimeMessage } from "./events";
 
 const SHEET = "Realtime_Events";
@@ -59,13 +60,28 @@ export async function appendEvent(type: string, payload: unknown, audience: Audi
   );
 }
 
+/** Writes several events in ONE request; returns the row number of the first (ids are consecutive). */
+export async function appendEvents(events: { type: string; payload: unknown; audience: Audience[] }[], origin: string, at: string): Promise<number> {
+  await ensureLog();
+  const records = events.map((e) => {
+    let json = JSON.stringify(e.payload ?? null);
+    if (json.length > MAX_PAYLOAD_CHARS) json = JSON.stringify({ truncated: true });
+    return {
+      eventId: `EVT-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      type: e.type,
+      audience: e.audience.join(" "),
+      payload: json,
+      createdAt: at,
+      origin,
+    };
+  });
+  return sheetsService.appendRows(SHEET, records, HEADERS);
+}
+
 /** Row number of the newest event (1 when the log only has its header row). */
 export async function lastEventRow(): Promise<number> {
   await ensureLog();
-  const res = await client().spreadsheets.values.get({
-    spreadsheetId: GOOGLE_SHEET_ID,
-    range: `'${SHEET}'!A:A`,
-  });
+  const res = await withGoogleRetry(() => client().spreadsheets.values.get({ spreadsheetId: GOOGLE_SHEET_ID, range: `'${SHEET}'!A:A` }), { label: "event log end" });
   return Math.max(1, res.data.values?.length || 1);
 }
 
@@ -73,10 +89,7 @@ export async function lastEventRow(): Promise<number> {
 export async function readEventsFrom(fromRow: number, maxRows = 200): Promise<{ events: LoggedEvent[]; nextRow: number }> {
   await ensureLog();
   const start = Math.max(2, fromRow);
-  const res = await client().spreadsheets.values.get({
-    spreadsheetId: GOOGLE_SHEET_ID,
-    range: `'${SHEET}'!A${start}:F${start + maxRows - 1}`,
-  });
+  const res = await withGoogleRetry(() => client().spreadsheets.values.get({ spreadsheetId: GOOGLE_SHEET_ID, range: `'${SHEET}'!A${start}:F${start + maxRows - 1}` }), { label: "event log read" });
   const values = res.data.values || [];
   const events: LoggedEvent[] = [];
   values.forEach((row, i) => {
