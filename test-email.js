@@ -1,4 +1,5 @@
-﻿const nodemailer = require("nodemailer");
+﻿require("dotenv").config({ path: ".env.local" });
+const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
@@ -6,8 +7,8 @@ const transporter = nodemailer.createTransport({
   secure: false,
   requireTLS: true,
   auth: {
-    user: "daaraynorg@gmail.com",
-    pass: "***REMOVED-REVOKED-SMTP-PASSWORD***"
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
   },
   connectionTimeout: 10000,
   greetingTimeout: 10000,

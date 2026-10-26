@@ -36,3 +36,9 @@ daaraynorg-*.json
 
 .vercel
 .env*
+
+!.env.example
+
+.secrets/
+
+client_secret_*.json

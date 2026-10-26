@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: { alias: { "@": path.resolve(__dirname) } },
   test: {
     include: ["tests/**/*.test.ts"],
+    exclude: ["tests/live/**", "node_modules/**"],
     setupFiles: ["tests/setup.ts"],
     environment: "node",
     testTimeout: 30_000,

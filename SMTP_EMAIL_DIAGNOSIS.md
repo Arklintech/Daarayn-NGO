@@ -9,7 +9,7 @@ Emails are not being sent via the Admin Communications panel. No error messages 
 **Host:** `smtp.gmail.com`  
 **Port:** `587` (TLS)  
 **User:** `daaraynorg@gmail.com`  
-**Password:** `***REMOVED-REVOKED-SMTP-PASSWORD***` (appears to be a Gmail App Password)  
+**Password:** `<redacted>` (appears to be a Gmail App Password)  
 
 **Implementation:**
 - `lib/email/providerManager.ts` — Routes email to Gmail or Resend
@@ -32,7 +32,7 @@ echo "EMAIL_PROVIDER: ${EMAIL_PROVIDER}"
 Expected output:
 ```
 SMTP_USER: daaraynorg@gmail.com
-SMTP_PASS: ***REMOVED-REVOKED-SMTP-PASSWORD***
+SMTP_PASS: <redacted>
 SMTP_HOST: smtp.gmail.com
 SMTP_PORT: 587
 EMAIL_PROVIDER: gmail
@@ -68,7 +68,7 @@ async function testSmtp() {
     requireTLS: true,
     auth: {
       user: "daaraynorg@gmail.com",
-      pass: "***REMOVED-REVOKED-SMTP-PASSWORD***", // Replace with actual app password
+      pass: "<redacted>", // Replace with actual app password
     },
     connectionTimeout: 10000,
     greetingTimeout: 10000,
@@ -123,7 +123,7 @@ vercel env add SMTP_USER
 # Prompts for value: daaraynorg@gmail.com
 
 vercel env add SMTP_PASS
-# Prompts for value: ***REMOVED-REVOKED-SMTP-PASSWORD*** (the app password)
+# Prompts for value: <redacted> (the app password)
 
 # etc.
 ```
@@ -260,7 +260,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_SECURE=false
 SMTP_USER=daaraynorg@gmail.com
-SMTP_PASS=***REMOVED-REVOKED-SMTP-PASSWORD***
+SMTP_PASS=<redacted>
 
 # Sender Email
 FROM_EMAIL="Daarayn Foundation <daaraynorg@gmail.com>"

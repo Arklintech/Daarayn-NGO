@@ -100,7 +100,7 @@ Navigation & Config Cleaned:
 **Diagnosis Needed:**
 1. Verify Gmail SMTP credentials in `.env.local`:
    - SMTP_USER: daaraynorg@gmail.com
-   - SMTP_PASS: ***REMOVED-REVOKED-SMTP-PASSWORD*** (app password)
+   - SMTP_PASS: <redacted> (app password)
    - SMTP_HOST: smtp.gmail.com
    - SMTP_PORT: 587
 2. Verify Gmail account settings:
