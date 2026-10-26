@@ -21,6 +21,7 @@ const DONOR_HEADERS = [
   "projectsSupported",
   "casesSupported",
   "status",
+  "emailSuppressed",
 ];
 
 export class DonorRepository extends BaseRepository<DonorProfile> {
@@ -58,6 +59,7 @@ export class DonorRepository extends BaseRepository<DonorProfile> {
       projectsSupported: safeParseArray(row.projectsSupported),
       casesSupported: safeParseArray(row.casesSupported),
       status: (row.status === "inactive" ? "inactive" : "active") as "active" | "inactive",
+      emailSuppressed: ["true", "yes", "1"].includes(String(row.emailSuppressed).toLowerCase()),
     };
   }
 
@@ -80,6 +82,7 @@ export class DonorRepository extends BaseRepository<DonorProfile> {
       projectsSupported: JSON.stringify(donor.projectsSupported || []),
       casesSupported: JSON.stringify(donor.casesSupported || []),
       status: donor.status,
+      emailSuppressed: Boolean(donor.emailSuppressed),
     };
   }
 
@@ -116,7 +119,7 @@ export class DonorRepository extends BaseRepository<DonorProfile> {
   public async findOrCreateByContact(
     contact: string,
     build: (id: string) => DonorProfile
-  ): Promise<{ donor: DonorProfile; created: boolean }> {
+  ): Promise<DonorLookup> {
     const keys = contactKeys(contact);
     if (!keys.email && !keys.phone) {
       throw new Error("A valid email address or phone number is required to identify the donor.");
@@ -133,6 +136,12 @@ export class DonorRepository extends BaseRepository<DonorProfile> {
     }
   }
 
+  /** Updates a donor row whose position and contents were just read (no extra Sheets read). Extra sheet columns are preserved. */
+  public async saveKnownRow(rowNumber: number, raw: Record<string, any>, donor: DonorProfile): Promise<void> {
+    await sheetsService.updateRowAt(this.sheetName, rowNumber, { ...raw, ...this.mapEntityToRow(donor) });
+    this.invalidateCache();
+  }
+
   private matchRows(rows: { rowNumber: number; record: Record<string, any> }[], keys: { email: string; phone: string }) {
     return rows.filter(
       (r) =>
@@ -144,13 +153,13 @@ export class DonorRepository extends BaseRepository<DonorProfile> {
   private async createOrFind(
     keys: { email: string; phone: string },
     build: (id: string) => DonorProfile
-  ): Promise<{ donor: DonorProfile; created: boolean }> {
+  ): Promise<DonorLookup> {
     await this.init();
     let { rows } = await sheetsService.getRowsWithNumbers(this.sheetName);
     const existing = this.matchRows(rows, keys)[0];
     if (existing) {
       this.invalidateCache();
-      return { donor: this.mapRowToEntity(existing.record), created: false };
+      return { donor: this.mapRowToEntity(existing.record), created: false, rowNumber: existing.rowNumber, raw: existing.record };
     }
 
     let donor = build(generateDonorToken());
@@ -162,12 +171,12 @@ export class DonorRepository extends BaseRepository<DonorProfile> {
       if (earlier.length > 0) {
         await sheetsService.clearRowAt(this.sheetName, myRow);
         this.invalidateCache();
-        return { donor: this.mapRowToEntity(earlier[0].record), created: false };
+        return { donor: this.mapRowToEntity(earlier[0].record), created: false, rowNumber: earlier[0].rowNumber, raw: earlier[0].record };
       }
       const sameToken = rows.filter((r) => String(r.record.id) === donor.id);
       if (sameToken.length <= 1) {
         this.invalidateCache();
-        return { donor, created: true };
+        return { donor, created: true, rowNumber: myRow, raw: this.mapEntityToRow(donor) };
       }
       // Token collision (practically impossible): issue a fresh token to our row only.
       donor = { ...donor, id: generateDonorToken() };
@@ -175,6 +184,14 @@ export class DonorRepository extends BaseRepository<DonorProfile> {
     }
     throw new Error("Could not allocate a unique Donor Token; retry the submission.");
   }
+}
+
+export interface DonorLookup {
+  donor: DonorProfile;
+  created: boolean;
+  /** Sheet row of the donor and the raw row as just read, so a follow-up update needs no extra read. */
+  rowNumber: number;
+  raw: Record<string, any>;
 }
 
 const donorLocks = new Map<string, Promise<unknown>>();

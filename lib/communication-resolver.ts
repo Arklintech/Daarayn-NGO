@@ -1,30 +1,27 @@
 /**
  * lib/communication-resolver.ts
  *
- * Decides exactly who may receive a communication for the selected cause(s)
- * and communication type. The decision is made by the pure function
- * `evaluateRecipients` (unit-tested); `resolveRecipients` only loads the
- * records from Google Sheets through the repositories.
+ * Decides exactly who may receive a communication for the selected cause(s) and purpose. The decision is made by the
+ * pure function `evaluateRecipients` (unit-tested); `resolveRecipients` only loads the records from Google Sheets.
  *
  * Principles
- *  - A selected cause limits recipients to donors with a donation attributed
- *    to that cause by id or exact title. There is no keyword/fuzzy matching and
- *    never a fall-back to "all donors".
- *  - Each of the five communication types has its own eligibility rule, based
- *    on the donation's real payment state (see TYPE_RULES).
- *  - Donors are identified by their permanent Donor Token and de-duplicated by
- *    normalised e-mail address.
- *  - Communication history (Communication_Recipients) is consulted: donors who
- *    already had this communication accepted, or have one in progress, are
- *    excluded; previously failed donors are eligible and flagged.
- *  - Everything that is excluded is returned with the reason, so the admin can
- *    see why. If the selection cannot be established, an error is returned.
+ *  - Cause scope comes from canonical relationships: Donation_Causes rows (a donation selecting several causes
+ *    qualifies for each of them) with the donation's stored cause as a legacy fallback. No keyword/fuzzy matching and
+ *    never a fall-back to "all donors". An empty result is a valid result, not a reason to broaden the audience.
+ *  - Each of the five purposes has its own rule, based on the donation's payment state and, where relevant, real
+ *    allocation records and evidence (TYPE_RULES).
+ *  - Donors are identified by their permanent Donor Token and de-duplicated by e-mail; the causes and donations that
+ *    made a donor eligible are kept as eligibility context.
+ *  - Communication history is consulted per donor, purpose and cause scope: accepted, in-progress and unresolved
+ *    outcomes are excluded; failed recipients are eligible and flagged.
+ *  - Everything excluded is returned with its reason.
  */
 
 import { causeRepository, type Cause } from "@/lib/repositories/causeRepository";
 import { donationRepository } from "@/lib/repositories/donationRepository";
 import { donorRepository } from "@/lib/repositories/donorRepository";
 import { allocationRepository, type AllocationEntity } from "@/lib/repositories/allocationRepository";
+import { donationCauseRepository, type DonationCauseEntity } from "@/lib/repositories/donationCauseRepository";
 import { communicationRecipientRepository, type CommunicationRecipientEntity } from "@/lib/repositories/communicationRecipientRepository";
 import { donationState } from "@/lib/donations/metrics";
 import { normalizeEmail } from "@/lib/donors/normalize";
@@ -41,11 +38,11 @@ export type CommunicationType = (typeof COMMUNICATION_TYPES)[number];
 
 /** Human description of each rule, shown in the UI and docs. */
 export const TYPE_RULES: Record<CommunicationType, string> = {
-  contribution_confirmation: "Donation attributed to the cause AND verified (payment received). Pending or rejected donations are not confirmed.",
-  project_progress: "Donation attributed to the cause AND verified.",
-  allocation_confirmation: "Verified donation AND a valid active allocation record for that donation.",
-  completion_report: "Verified donation AND the cause is marked Completed (verified completion evidence).",
-  general_communication: "Donor has at least one non-rejected donation attributed to the cause.",
+  contribution_confirmation: "A verified donation related to the selected cause. Pending or rejected donations are not confirmed. (Transactional: ignores e-mail opt-out.)",
+  project_progress: "A verified donation related to the selected cause.",
+  allocation_confirmation: "A verified donation with an ACTIVE allocation record for the selected cause.",
+  completion_report: "A verified donation AND the cause is marked Completed AND an active allocation for that donation and cause has supporting evidence.",
+  general_communication: "A donor with a non-rejected donation related to the selected cause (or, for All donors, every active registered donor).",
 };
 
 const ALL_SELECTORS = new Set(["all", "all_causes", "all_donors"]);
@@ -57,6 +54,8 @@ export interface EligibleRecipient {
   name: string;
   email: string;
   donationIds: string[];
+  /** The selected causes that made this donor eligible (a donor matching several causes appears once). */
+  causeIds: string[];
   previouslyFailed: boolean;
   lastError?: string;
 }
@@ -86,9 +85,12 @@ export interface EvaluateInput {
   donations: Donation[];
   donors: DonorProfile[];
   allocations: AllocationEntity[];
+  designations?: DonationCauseEntity[];
   history: CommunicationRecipientEntity[];
   /** Admin explicitly chose to include donors who already had this message accepted. */
   includePreviouslySent?: boolean;
+  /** Admin explicitly chose to include donors whose previous send has an unknown outcome (may duplicate). */
+  includeUnresolved?: boolean;
   now?: number;
 }
 
@@ -102,7 +104,7 @@ export function scopeKeyFor(causeIds: string[]): string {
   return [...new Set(causeIds)].sort().join("|");
 }
 
-/** The cause a donation counts towards: exact cause id, else exact (case-insensitive) title. No partial matching. */
+/** Legacy attribution of a donation that has no relationship rows: its stored cause id, else exact title. No fuzzy match. */
 export function attributeDonation(d: Donation, causes: Cause[]): string | null {
   if (d.causeId && causes.some((c) => c.id === d.causeId)) return d.causeId;
   const title = norm(d.causeTitle);
@@ -125,16 +127,13 @@ function fail(type: string, scopeKey: string, error: string): Resolution {
 
 export function evaluateRecipients(input: EvaluateInput): Resolution {
   const { causeIds, causes, donations, donors, allocations, history } = input;
+  const designations = input.designations ?? [];
   const now = input.now ?? Date.now();
   const scopeKey = scopeKeyFor(causeIds || []);
 
-  if (!isCommunicationType(input.type)) {
-    return fail(input.type, scopeKey, `Unknown communication type "${input.type}".`);
-  }
+  if (!isCommunicationType(input.type)) return fail(input.type, scopeKey, `Unknown communication type "${input.type}".`);
   const type = input.type;
-  if (!causeIds || causeIds.length === 0) {
-    return fail(type, scopeKey, "Select at least one cause before choosing recipients.");
-  }
+  if (!causeIds || causeIds.length === 0) return fail(type, scopeKey, "Select at least one cause before choosing recipients.");
 
   const donorById = new Map(donors.map((d) => [d.id, d]));
   const donorByEmail = new Map<string, DonorProfile>();
@@ -147,9 +146,7 @@ export function evaluateRecipients(input: EvaluateInput): Resolution {
   const directDonorIds = causeIds.filter((c) => donorById.has(c));
   const causeSelection = causeIds.filter((c) => !ALL_SELECTORS.has(c) && !donorById.has(c));
   const unknown = causeSelection.filter((c) => !causes.some((x) => x.id === c));
-  if (unknown.length > 0) {
-    return fail(type, scopeKey, `Unknown cause id(s): ${unknown.join(", ")}. Recipients cannot be established safely.`);
-  }
+  if (unknown.length > 0) return fail(type, scopeKey, `Unknown cause id(s): ${unknown.join(", ")}. Recipients cannot be established safely.`);
   if (wantsAll && causeIds.includes("all_donors") && type !== "general_communication") {
     return fail(type, scopeKey, "\"All donors\" is only allowed for General Communication; choose a cause for this communication type.");
   }
@@ -161,60 +158,77 @@ export function evaluateRecipients(input: EvaluateInput): Resolution {
     ...(wantsAll ? ["All causes"] : []),
   ];
 
-  // Donations in scope
-  const inScope = (d: Donation): boolean => {
-    if (directDonorIds.includes(d.donorId)) return true;
-    const attributed = attributeDonation(d, causes);
-    if (wantsAll) return true;
-    return !!attributed && causeSelection.includes(attributed);
+  // Canonical relationships: donationId -> cause ids (Donation_Causes), else the legacy single cause.
+  const relByDonation = new Map<string, Set<string>>();
+  for (const r of designations) {
+    if (!relByDonation.has(r.donationId)) relByDonation.set(r.donationId, new Set());
+    relByDonation.get(r.donationId)!.add(r.causeId);
+  }
+  const relatedCauses = (d: Donation): Set<string> => {
+    const rows = relByDonation.get(d.id);
+    if (rows && rows.size) return rows;
+    const legacy = attributeDonation(d, causes);
+    return new Set(legacy ? [legacy] : []);
   };
+
+  /** Selected causes this donation relates to (empty = out of scope). */
+  const matchedCauses = (d: Donation): string[] => {
+    if (directDonorIds.includes(d.donorId) || wantsAll) return [...relatedCauses(d)];
+    return [...relatedCauses(d)].filter((c) => causeSelection.includes(c));
+  };
+  const inScope = (d: Donation): boolean => d.id !== "PENDING" && (directDonorIds.includes(d.donorId) || wantsAll || matchedCauses(d).length > 0);
   const scoped = donations.filter(inScope);
 
-  const allocatedDonationIds = new Set(
-    allocations.filter((a) => norm(a.status) !== "reversed" && Number(a.allocatedAmount) > 0).map((a) => a.donationId)
-  );
+  const activeAllocs = allocations.filter((a) => norm(a.status) !== "reversed" && Number(a.allocatedAmount) > 0);
+  const allocFor = (donationId: string, causeId: string) =>
+    activeAllocs.filter((a) => a.donationId === donationId && (a.causeId ? a.causeId === causeId : true));
 
-  const donationEligible = (d: Donation): string | null => {
+  /** null = eligible; otherwise the reason. `matched` are the selected causes this donation relates to. */
+  const donationEligible = (d: Donation, matched: string[]): string | null => {
     const state = donationState(d.status);
-    const cause = causes.find((c) => c.id === attributeDonation(d, causes));
+    const casesToCheck = matched.length ? matched : [...relatedCauses(d)];
     switch (type) {
       case "contribution_confirmation":
       case "project_progress":
         return state === "received" ? null : state === "pending" ? "payment not yet verified" : "payment rejected";
       case "allocation_confirmation":
         if (state !== "received") return state === "pending" ? "payment not yet verified" : "payment rejected";
-        return allocatedDonationIds.has(d.id) ? null : "no allocation record for this donation";
-      case "completion_report":
+        return casesToCheck.some((c) => allocFor(d.id, c).length > 0) ? null : "no allocation record for this donation and cause";
+      case "completion_report": {
         if (state !== "received") return state === "pending" ? "payment not yet verified" : "payment rejected";
-        return cause && norm(cause.status) === "completed" ? null : "cause is not marked Completed";
+        const completed = casesToCheck.filter((c) => norm(causes.find((x) => x.id === c)?.status) === "completed");
+        if (completed.length === 0) return "cause is not marked Completed";
+        const evidenced = completed.some((c) => allocFor(d.id, c).some((a) => (a.evidenceDriveFileIds || []).length > 0));
+        return evidenced ? null : "no verified completion evidence is attached to an allocation";
+      }
       case "general_communication":
         return state === "rejected" ? "payment rejected" : null;
     }
   };
 
-  // Group in-scope donations by donor identity
-  const byDonor = new Map<string, { donor: DonorProfile | null; fallbackEmail: string; fallbackName: string; ok: Donation[]; reasons: string[] }>();
+  const byDonor = new Map<string, { donor: DonorProfile | null; fallbackEmail: string; fallbackName: string; ok: Donation[]; causeIds: Set<string>; reasons: string[] }>();
   for (const d of scoped) {
     let donor = donorById.get(d.donorId) || null;
     if (!donor) donor = donorByEmail.get(normalizeEmail(d.donorEmail)) || null;
     const key = donor?.id || `unresolved:${normalizeEmail(d.donorEmail) || d.id}`;
-    const entry = byDonor.get(key) || { donor, fallbackEmail: normalizeEmail(d.donorEmail), fallbackName: d.donorName, ok: [], reasons: [] };
-    const reason = donationEligible(d);
+    const entry = byDonor.get(key) || { donor, fallbackEmail: normalizeEmail(d.donorEmail), fallbackName: d.donorName, ok: [], causeIds: new Set<string>(), reasons: [] };
+    const matched = matchedCauses(d);
+    const reason = donationEligible(d, matched);
     if (reason) entry.reasons.push(reason);
-    else entry.ok.push(d);
+    else {
+      entry.ok.push(d);
+      matched.forEach((c) => entry.causeIds.add(c));
+    }
     byDonor.set(key, entry);
   }
 
-  // Registered donors with no donation at all matter only for direct targeting and All-donors general mail.
-  if (type === "general_communication" && causeIds.includes("all_donors")) {
+  const allDonorsMail = type === "general_communication" && causeIds.includes("all_donors");
+  if (allDonorsMail) {
     for (const d of donors) {
-      if (!byDonor.has(d.id) && d.status !== "inactive") {
-        byDonor.set(d.id, { donor: d, fallbackEmail: "", fallbackName: d.name, ok: [], reasons: [] });
-      }
+      if (!byDonor.has(d.id) && d.status !== "inactive") byDonor.set(d.id, { donor: d, fallbackEmail: "", fallbackName: d.name, ok: [], causeIds: new Set(), reasons: [] });
     }
   }
 
-  // Communication history for this type + scope
   const relevant = history.filter((h) => h.communicationType === type && h.scopeKey === scopeKey);
   const historyFor = (donorId: string) => relevant.filter((h) => h.donorId === donorId);
 
@@ -227,7 +241,6 @@ export function evaluateRecipients(input: EvaluateInput): Resolution {
     const id = donor?.id || key;
     const name = donor?.name || entry.fallbackName || "Valued Donor";
     const email = normalizeEmail(donor?.email) || entry.fallbackEmail;
-    const allDonorsMail = type === "general_communication" && causeIds.includes("all_donors");
 
     if (!donor) {
       excluded.push({ id, name, email, reason: "no donor profile (Donor Token) is linked to this donation" });
@@ -245,11 +258,20 @@ export function evaluateRecipients(input: EvaluateInput): Resolution {
       excluded.push({ id, name, email, reason: "donor profile is inactive" });
       continue;
     }
+    if (donor.emailSuppressed && type !== "contribution_confirmation") {
+      excluded.push({ id, name, email, reason: "donor opted out of e-mail outreach" });
+      continue;
+    }
 
     const past = historyFor(id);
     const accepted = past.find((h) => h.status === "smtp_accepted");
     if (accepted && !input.includePreviouslySent) {
       excluded.push({ id, name, email, reason: `already sent (broadcast ${accepted.broadcastId}, SMTP-accepted)` });
+      continue;
+    }
+    const unresolved = past.find((h) => h.status === "unresolved");
+    if (unresolved && !input.includeUnresolved && !accepted) {
+      excluded.push({ id, name, email, reason: `previous send outcome unknown (broadcast ${unresolved.broadcastId}); it may already have been delivered` });
       continue;
     }
     const inProgress = past.find(
@@ -272,15 +294,14 @@ export function evaluateRecipients(input: EvaluateInput): Resolution {
       name,
       email,
       donationIds: entry.ok.map((d) => d.id),
+      causeIds: [...entry.causeIds],
       previouslyFailed: !!failed && !accepted,
       lastError: failed?.lastError || undefined,
     });
   }
 
   const raised = scoped.filter((d) => donationState(d.status) === "received").reduce((s, d) => s + (Number(d.amount) || 0), 0);
-  const goalAmount = wantsAll
-    ? causes.reduce((s, c) => s + (Number(c.targetAmount) || 0), 0)
-    : selectedCauses.reduce((s, c) => s + (Number(c.targetAmount) || 0), 0);
+  const goalAmount = wantsAll ? causes.reduce((s, c) => s + (Number(c.targetAmount) || 0), 0) : selectedCauses.reduce((s, c) => s + (Number(c.targetAmount) || 0), 0);
   const percentage = goalAmount > 0 ? Math.min(100, Math.round((raised / goalAmount) * 100)) : 0;
 
   recipients.sort((a, b) => a.name.localeCompare(b.name));
@@ -288,12 +309,13 @@ export function evaluateRecipients(input: EvaluateInput): Resolution {
 }
 
 /** Loads fresh records and evaluates. Throws if Sheets cannot be read (never returns a guess). */
-export async function resolveRecipients(causeIds: string[], type: string, options: { includePreviouslySent?: boolean } = {}) {
-  const [causes, donations, donors, allocations, history] = await Promise.all([
+export async function resolveRecipients(causeIds: string[], type: string, options: { includePreviouslySent?: boolean; includeUnresolved?: boolean } = {}) {
+  const [causes, donations, donors, allocations, designations, history] = await Promise.all([
     causeRepository.getAll(true),
     donationRepository.getAll(true),
     donorRepository.getAll(true),
     allocationRepository.getAll(true),
+    donationCauseRepository.getAll(true),
     communicationRecipientRepository.readFresh(),
   ]);
   const resolution = evaluateRecipients({
@@ -303,12 +325,10 @@ export async function resolveRecipients(causeIds: string[], type: string, option
     donations,
     donors,
     allocations,
+    designations,
     history: history.map((h) => h.entity),
     includePreviouslySent: options.includePreviouslySent,
+    includeUnresolved: options.includeUnresolved,
   });
-  return {
-    ...resolution,
-    // kept for existing callers
-    uniqueDonors: resolution.recipients,
-  };
+  return { ...resolution, uniqueDonors: resolution.recipients };
 }

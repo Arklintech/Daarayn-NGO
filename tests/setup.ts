@@ -33,6 +33,7 @@ vi.mock("@/lib/email/resend", () => ({
 vi.mock("@/lib/realtime/broadcaster", () => ({
   realtimeBroadcaster: {
     publish: vi.fn(async () => ({ delivered: "log" })),
+    publishBatch: vi.fn(async () => ({ delivered: "log" })),
     broadcast: vi.fn(),
   },
 }));

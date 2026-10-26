@@ -23,6 +23,9 @@ const DONATION_HEADERS = [
   "confirmationEmailSentAt",
   "confirmationEmailError",
   "confirmationEmailRetryCount",
+  "causeSelection",
+  "opStatus",
+  "opPending",
 ];
 
 /** A write the caller should report as a 4xx rather than a server fault. */
@@ -30,14 +33,17 @@ export class DonationWriteError extends Error {
   constructor(
     message: string,
     public readonly httpStatus: 404 | 409,
-    public readonly code: "NOT_FOUND" | "AMBIGUOUS_ID" | "STATUS_CHANGED",
+    public readonly code: "NOT_FOUND" | "AMBIGUOUS_ID" | "STATUS_CHANGED" | "IN_PROGRESS",
     public readonly currentStatus?: string
   ) {
     super(message);
   }
 }
 
-const MAX_ID_ATTEMPTS = 12;
+/** A PENDING placeholder older than this belongs to a request that died, and is completed by the retry. */
+const PENDING_ADOPT_AFTER_MS = 20_000;
+
+const MAX_ID_ATTEMPTS = 30;
 
 function nextDonationId(rows: SheetRow[]): string {
   const highest = rows.reduce((max, r) => {
@@ -74,6 +80,16 @@ export class DonationRepository extends BaseRepository<Donation> {
       confirmationEmailSentAt: row.confirmationEmailSentAt ? String(row.confirmationEmailSentAt) : undefined,
       confirmationEmailError: row.confirmationEmailError ? String(row.confirmationEmailError) : undefined,
       confirmationEmailRetryCount: Number(row.confirmationEmailRetryCount || 0),
+      selection: (() => {
+        try {
+          const v = JSON.parse(String(row.causeSelection || "[]"));
+          return Array.isArray(v) ? v.map((x: any) => ({ causeId: String(x.causeId || ""), causeName: String(x.causeName || "") })) : [];
+        } catch {
+          return [];
+        }
+      })(),
+      opStatus: (["pending", "partial", "complete"].includes(String(row.opStatus)) ? String(row.opStatus) : "") as any,
+      opPending: String(row.opPending || ""),
     };
   }
 
@@ -97,6 +113,9 @@ export class DonationRepository extends BaseRepository<Donation> {
       confirmationEmailSentAt: donation.confirmationEmailSentAt || "",
       confirmationEmailError: donation.confirmationEmailError || "",
       confirmationEmailRetryCount: donation.confirmationEmailRetryCount || 0,
+      causeSelection: JSON.stringify(donation.selection || []),
+      opStatus: donation.opStatus || "",
+      opPending: donation.opPending || "",
     };
   }
 
@@ -122,12 +141,27 @@ export class DonationRepository extends BaseRepository<Donation> {
   public async createWithUniqueId(
     build: (id: string) => Donation,
     submissionKey: string
-  ): Promise<{ donation: Donation; duplicate: boolean }> {
+  ): Promise<{ donation: Donation; duplicate: boolean; rowNumber: number }> {
     await this.init();
     let { rows } = await sheetsService.getRowsWithNumbers(this.sheetName);
 
+    // A row with this submissionKey already exists: this is a retry or a double-click.
+    //  - finished row (real DA### id): return it, nothing new is written;
+    //  - unfinished placeholder (id "PENDING"): a previous attempt died part-way. If it is recent another request
+    //    may still be finishing it, so ask the caller to retry shortly; if it is stale, ADOPT the row and finish
+    //    it, instead of leaving an orphan and creating a second row.
     const prior = rows.find((r) => r.record.submissionKey === submissionKey);
-    if (prior) return { donation: this.mapRowToEntity(prior.record), duplicate: true };
+    let adoptedRow = 0;
+    if (prior) {
+      if (String(prior.record.id) !== "PENDING") {
+        return { donation: this.mapRowToEntity(prior.record), duplicate: true, rowNumber: prior.rowNumber };
+      }
+      const age = Date.now() - new Date(String(prior.record.date)).getTime();
+      if (age < PENDING_ADOPT_AFTER_MS) {
+        throw new DonationWriteError("This submission is still being processed. Please retry in a few seconds.", 409, "IN_PROGRESS");
+      }
+      adoptedRow = prior.rowNumber;
+    }
 
     // 1. Append a blank row to lock position in the append queue.
     //    Once appended, this row's position is immutable; no later appends
@@ -149,7 +183,7 @@ export class DonationRepository extends BaseRepository<Donation> {
       notes: "",
       submissionKey,
     };
-    const myRow = await sheetsService.appendRow(this.sheetName, blankRow, DONATION_HEADERS);
+    const myRow = adoptedRow || (await sheetsService.appendRow(this.sheetName, blankRow, DONATION_HEADERS));
 
     // 2. Re-read and calculate the collision-free ID based on final row position.
     for (let attempt = 0; attempt < MAX_ID_ATTEMPTS; attempt++) {
@@ -159,16 +193,27 @@ export class DonationRepository extends BaseRepository<Donation> {
       // Check if another submission with the same submissionKey got in first.
       const sameSubmission = earlier.find((r) => r.record.submissionKey === submissionKey);
       if (sameSubmission) {
-        await sheetsService.clearRowAt(this.sheetName, myRow);
-        this.invalidateCache();
-        return { donation: this.mapRowToEntity(sameSubmission.record), duplicate: true };
+        if (!adoptedRow) {
+          await sheetsService.clearRowAt(this.sheetName, myRow);
+          this.invalidateCache();
+        }
+        // The winner may still be finalizing its row. Never hand back an unfinished placeholder as "the donation".
+        for (let wait = 0; wait < 8; wait++) {
+          const { rows: now } = await sheetsService.getRowsWithNumbers(this.sheetName);
+          const winner = now.find((r) => r.rowNumber === sameSubmission.rowNumber);
+          if (winner && String(winner.record.id) !== "PENDING") {
+            return { donation: this.mapRowToEntity(winner.record), duplicate: true, rowNumber: winner.rowNumber };
+          }
+          await new Promise((r) => setTimeout(r, 150 + wait * 100));
+        }
+        throw new DonationWriteError("This submission is still being processed. Please retry in a few seconds.", 409, "IN_PROGRESS");
       }
 
       // Calculate the ID from the rows above ours: the highest finalized DA### plus one, plus one
       // more for every recent row above us that is still being finalized (id "PENDING"). Every
       // concurrent request applies the same rule, so ids line up with row order instead of
       // colliding. Stale PENDING rows (a request that died) are ignored after two minutes.
-      const highest = earlier.reduce((max, r) => {
+      const highest = rows.reduce((max, r) => {
         const match = /^DA(\d+)$/.exec(String(r.record.id || ""));
         return match ? Math.max(max, parseInt(match[1], 10)) : max;
       }, 0);
@@ -186,14 +231,30 @@ export class DonationRepository extends BaseRepository<Donation> {
       const sameIdCount = rows.filter((r) => String(r.record.id) === finalId).length;
       if (sameIdCount === 1) {
         this.invalidateCache();
-        return { donation, duplicate: false };
+        return { donation, duplicate: false, rowNumber: myRow };
       }
 
       console.warn(`[DonationRepository] ID collision on attempt ${attempt + 1} for ${finalId}, retrying...`);
-      await new Promise((r) => setTimeout(r, 20 + Math.random() * 60 * (attempt + 1)));
+      await new Promise((r) => setTimeout(r, 10 + Math.random() * Math.min(400, 40 * (attempt + 1))));
     }
 
     throw new Error(`Could not allocate a unique donation id (row ${myRow}); retry the submission.`);
+  }
+
+  /**
+   * Rewrites the donation at the row createWithUniqueId just returned (no extra read). Rows are never deleted
+   * or shifted, so the position is stable for the life of the request.
+   */
+  public async saveAtRow(rowNumber: number, donation: Donation, submissionKey: string): Promise<void> {
+    await sheetsService.updateRowAt(this.sheetName, rowNumber, { ...this.mapEntityToRow(donation), submissionKey });
+    this.invalidateCache();
+  }
+
+  /** Records the follow-up state of a donation (used by recovery). Reads the row fresh and refuses ambiguous ids. */
+  public async setOperationState(id: string, status: "pending" | "partial" | "complete", pending: string): Promise<void> {
+    const match = await this.findSingleRow(id);
+    await sheetsService.updateRowAt(this.sheetName, match.rowNumber, { ...match.record, opStatus: status, opPending: pending });
+    this.invalidateCache();
   }
 
   /** Reads the donation fresh from the sheet; refuses ids held by more than one row. */

@@ -14,6 +14,16 @@ export interface AllocationEntity {
   status: "active" | "reversed";
   notes?: string;
   createdAt?: string;
+  /** Cause this allocation draws on, and the Donation_Causes row (designation) it is traceable to. */
+  causeId?: string;
+  designationId?: string;
+  /** Google Drive file ids of supporting evidence (only ever set after the upload succeeded). */
+  evidenceDriveFileIds?: string[];
+  /** Idempotency key: a retried request with the same key returns the existing allocation. */
+  requestKey?: string;
+  reversedReason?: string;
+  reversedAt?: string;
+  reversedBy?: string;
 }
 
 const ALLOCATION_HEADERS = [
@@ -30,6 +40,13 @@ const ALLOCATION_HEADERS = [
   "status",
   "notes",
   "createdAt",
+  "causeId",
+  "designationId",
+  "evidenceDriveFileIds",
+  "requestKey",
+  "reversedReason",
+  "reversedAt",
+  "reversedBy",
 ];
 
 export class AllocationRepository extends BaseRepository<AllocationEntity> {
@@ -52,6 +69,20 @@ export class AllocationRepository extends BaseRepository<AllocationEntity> {
       status: (row.status || "active") as "active" | "reversed",
       notes: String(row.notes || ""),
       createdAt: String(row.createdAt || new Date().toISOString()),
+      causeId: String(row.causeId || ""),
+      designationId: String(row.designationId || ""),
+      evidenceDriveFileIds: (() => {
+        try {
+          const v = JSON.parse(String(row.evidenceDriveFileIds || "[]"));
+          return Array.isArray(v) ? v.map(String) : [];
+        } catch {
+          return [];
+        }
+      })(),
+      requestKey: String(row.requestKey || ""),
+      reversedReason: String(row.reversedReason || ""),
+      reversedAt: String(row.reversedAt || ""),
+      reversedBy: String(row.reversedBy || ""),
     };
   }
 
@@ -70,6 +101,13 @@ export class AllocationRepository extends BaseRepository<AllocationEntity> {
       status: allocation.status,
       notes: allocation.notes || "",
       createdAt: allocation.createdAt || new Date().toISOString(),
+      causeId: allocation.causeId || "",
+      designationId: allocation.designationId || "",
+      evidenceDriveFileIds: JSON.stringify(allocation.evidenceDriveFileIds || []),
+      requestKey: allocation.requestKey || "",
+      reversedReason: allocation.reversedReason || "",
+      reversedAt: allocation.reversedAt || "",
+      reversedBy: allocation.reversedBy || "",
     };
   }
 

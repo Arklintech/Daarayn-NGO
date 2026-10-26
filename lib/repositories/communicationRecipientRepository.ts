@@ -12,8 +12,10 @@ import { sheetsService } from "../google/sheets";
  *   attempted     — a send is in progress or was interrupted before an outcome
  *   smtp_accepted — the mail server accepted the message
  *   failed        — rejected or errored; `lastError` says why
+ *   unresolved    — the connection broke AFTER the message body was sent, so the server may or may not have accepted it.
+ *                   It is never resent automatically (that could deliver a duplicate); an admin decides.
  */
-export type RecipientStatus = "queued" | "attempted" | "smtp_accepted" | "failed";
+export type RecipientStatus = "queued" | "attempted" | "smtp_accepted" | "failed" | "unresolved";
 
 export interface CommunicationRecipientEntity {
   id: string; // `${broadcastId}:${donorId}`
@@ -28,13 +30,18 @@ export interface CommunicationRecipientEntity {
   attempts: number;
   lastError: string;
   providerMessageId: string;
+  /** Why the donor was eligible: JSON {causeIds, donationIds}. */
+  eligibility: string;
+  /** Admin who approved the send and the hash of the approved content. */
+  approvedBy: string;
+  contentHash: string;
   createdAt: string;
   updatedAt: string;
 }
 
 const HEADERS = [
   "id", "broadcastId", "communicationType", "scopeKey", "donorId", "donorName", "email",
-  "donationIds", "status", "attempts", "lastError", "providerMessageId", "createdAt", "updatedAt",
+  "donationIds", "status", "attempts", "lastError", "providerMessageId", "eligibility", "approvedBy", "contentHash", "createdAt", "updatedAt",
 ];
 
 export class CommunicationRecipientRepository extends BaseRepository<CommunicationRecipientEntity> {
@@ -56,6 +63,9 @@ export class CommunicationRecipientRepository extends BaseRepository<Communicati
       attempts: Number(row.attempts || 0),
       lastError: String(row.lastError || ""),
       providerMessageId: String(row.providerMessageId || ""),
+      eligibility: String(row.eligibility || ""),
+      approvedBy: String(row.approvedBy || ""),
+      contentHash: String(row.contentHash || ""),
       createdAt: String(row.createdAt || ""),
       updatedAt: String(row.updatedAt || ""),
     };

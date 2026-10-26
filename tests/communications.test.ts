@@ -22,7 +22,7 @@ const don = (donorId: string, causeId: string, causeTitle: string, status = "com
 });
 const hist = (over: Partial<CommunicationRecipientEntity>): CommunicationRecipientEntity => ({
   id: "x", broadcastId: "BCAST-1", communicationType: "contribution_confirmation", scopeKey: "WATER", donorId: "D1", donorName: "", email: "",
-  donationIds: "", status: "smtp_accepted", attempts: 1, lastError: "", providerMessageId: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...over,
+  donationIds: "", status: "smtp_accepted", attempts: 1, lastError: "", providerMessageId: "", eligibility: "", approvedBy: "", contentHash: "", createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), ...over,
 });
 
 const WATER = cause("WATER", "Clean Water Wells");
@@ -126,14 +126,21 @@ describe("per-type eligibility rules", () => {
     ] as any;
     const r = evaluateRecipients({ ...w, allocations });
     expect(r.recipients.map((x) => x.id)).toEqual(["W1"]);
-    expect(r.excluded.find((x) => x.id === "W2")!.reason).toBe("no allocation record for this donation");
+    expect(r.excluded.find((x) => x.id === "W2")!.reason).toBe("no allocation record for this donation and cause");
   });
 
-  it("completion_report requires the cause to be marked Completed", () => {
+  it("completion_report requires the cause to be Completed AND an allocation with supporting evidence", () => {
     const w = base({ type: "completion_report" });
     expect(evaluateRecipients(w).recipients).toHaveLength(0);
-    const done = evaluateRecipients({ ...w, causes: [cause("WATER", "Clean Water Wells", "Completed"), ORPHAN] });
-    expect(done.recipients).toHaveLength(18);
+    const done = [cause("WATER", "Clean Water Wells", "Completed"), ORPHAN];
+    const noAllocation = evaluateRecipients({ ...w, causes: done });
+    expect(noAllocation.recipients).toHaveLength(0);
+    expect(noAllocation.excluded.some((x) => /no verified completion evidence/.test(x.reason))).toBe(true);
+    const alloc = (donationId: string, evidence: string[]) => ({ id: `AL-${donationId}`, donationId, donorId: "", donorName: "", causeId: "WATER", targetTitle: "", allocatedAmount: 100, allocationDate: "", adminEmail: "", status: "active", evidenceDriveFileIds: evidence }) as any;
+    const withoutEvidence = evaluateRecipients({ ...w, causes: done, allocations: [alloc(w.donations[0].id, [])] });
+    expect(withoutEvidence.recipients).toHaveLength(0);
+    const withEvidence = evaluateRecipients({ ...w, causes: done, allocations: [alloc(w.donations[0].id, ["FILE1"]), alloc(w.donations[1].id, ["FILE2"])] });
+    expect(withEvidence.recipients.map((r) => r.id)).toEqual(["W1", "W2"]);
   });
 
   it("general_communication: any non-rejected donor of the cause; rejected-only donors excluded", () => {
@@ -214,111 +221,143 @@ const post = (url: string, body: any) => new Request(`http://t${url}`, { method:
 const nreq = (url: string, body: any) => new NextRequest(`http://t${url}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
 const compose = { heading: "Update", notes: "Thank you." };
 
-describe("send route: approval, history, retry (scenarios 8, 11, 12, 15)", () => {
-  it("preview returns the exact recipients; unauthorized callers are refused", async () => {
+/** Review (server computes the audience and signs an approval) then send. */
+async function approve(body: any) {
+  const { POST } = await import("@/app/api/admin/communications/approve/route");
+  return (await POST(post("/a", { heading: compose.heading, notes: compose.notes, ...body }))).json();
+}
+async function send(body: any, approval?: any) {
+  const { POST } = await import("@/app/api/admin/communications/send/route");
+  const ap = approval ?? (await approve(body));
+  return POST(post("/s", { heading: compose.heading, notes: compose.notes, recipientIds: (ap.recipients || []).map((r: any) => r.id), approvalToken: ap.approvalToken, ...body }));
+}
+
+describe("approval, history, retry through the real routes (scenarios 8, 11, 12, 15)", () => {
+  it("review returns the exact recipients with reasons for the rest; unauthorized callers are refused; nothing is sent", async () => {
     await seedWorld();
-    const { POST } = await import("@/app/api/admin/communications/resolve/route");
     authState.role = "none";
-    expect((await POST(post("/r", { causeIds: ["WATER"], type: "project_progress" }))).status).toBe(401);
+    const { POST } = await import("@/app/api/admin/communications/approve/route");
+    expect((await POST(post("/a", { causeIds: ["WATER"], type: "project_progress", ...compose }))).status).toBe(401);
     authState.role = "admin";
-    const res = await POST(post("/r", { causeIds: ["WATER"], type: "project_progress" }));
-    const body = await res.json();
+    const body = await approve({ causeIds: ["WATER"], type: "project_progress" });
     expect(body.count).toBe(4);
     expect(body.recipients.map((r: any) => r.email).sort()).toEqual(["d1@example.org", "d2@example.org", "d3@example.org", "d4@example.org"]);
     expect(body.excluded).toHaveLength(2);
-    expect(mailMock.sent).toHaveLength(0); // preview sends nothing
+    expect(body.approvalToken).toBeTruthy();
+    expect(mailMock.sent).toHaveLength(0);
   });
 
-  it("refuses to send without an approved list, and refuses donors who are not eligible", async () => {
+  it("refuses to send without an approval, with a forged or altered one, or after the message or recipients changed", async () => {
     await seedWorld();
-    const { POST } = await import("@/app/api/admin/communications/send/route");
-    const noList = await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose }));
-    expect(noList.status).toBe(400);
-    const wrong = await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose, recipientIds: ["DNR-T5-AAAA", "DNR-OTHER-AAAA"] }));
-    expect(wrong.status).toBe(409);
-    expect((await wrong.json()).notEligible).toEqual(["DNR-T5-AAAA", "DNR-OTHER-AAAA"]);
+    const base = { causeIds: ["WATER"], type: "project_progress" };
+    const ap = await approve(base);
+    expect((await send({ ...base }, { recipients: ap.recipients, approvalToken: undefined })).status).toBe(403); // no approval
+    expect((await send({ ...base }, { recipients: ap.recipients, approvalToken: "x.y" })).status).toBe(403); // forged
+    expect((await send({ ...base, notes: "A different message than the one approved." }, ap)).status).toBe(403); // content changed
+    expect((await send({ ...base, recipientIds: ["DNR-T1-AAAA"] }, ap)).status).toBe(403); // recipient set changed
+    expect((await send({ ...base, causeIds: ["ORPHAN"] }, ap)).status).toBe(403); // different audience
     expect(mailMock.sent).toHaveLength(0);
     expect(fakeSheets.records("Communication_Recipients")).toHaveLength(0);
   });
 
-  it("8/9. sends only to the approved eligible recipients and records every outcome per Donor Token", async () => {
+  it("a recipient who stops being eligible after approval blocks the send (409) instead of being mailed", async () => {
     await seedWorld();
-    const { POST } = await import("@/app/api/admin/communications/send/route");
-    const approved = ["DNR-T1-AAAA", "DNR-T2-AAAA", "DNR-T3-AAAA"]; // admin approves 3 of the 4 eligible
-    const res = await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose, recipientIds: approved }));
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(mailMock.sent.sort()).toEqual(["d1@example.org", "d2@example.org", "d3@example.org"]);
-    const rows = fakeSheets.records("Communication_Recipients");
-    expect(rows).toHaveLength(3);
-    expect(rows.every((r) => r.status === "smtp_accepted" && r.communicationType === "project_progress" && r.scopeKey === "WATER" && r.attempts === "1")).toBe(true);
-    expect(rows.map((r) => r.donorId).sort()).toEqual(approved);
-    const comm = fakeSheets.records("Communications")[0];
-    expect(comm).toMatchObject({ communicationType: "project_progress", sentCount: "3", failedCount: "0", createdBy: "admin@test.local" });
-  });
-
-  it("11. a second send for the same cause and type skips donors already accepted (no accidental resend)", async () => {
-    await seedWorld();
-    const { POST } = await import("@/app/api/admin/communications/send/route");
-    const first = ["DNR-T1-AAAA", "DNR-T2-AAAA"];
-    await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose, recipientIds: first }));
-    mailMock.sent.length = 0;
-    const again = await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose, recipientIds: first }));
-    expect(again.status).toBe(409);
+    const base = { causeIds: ["WATER"], type: "project_progress" };
+    const ap = await approve(base);
+    const { donationRepository } = await import("@/lib/repositories/donationRepository");
+    await donationRepository.updateStatus("DA001", "rejected");
+    const res = await send(base, ap);
+    expect(res.status).toBe(409);
     expect(mailMock.sent).toHaveLength(0);
-    // the remaining two eligible donors are still available and are the only ones allowed
-    const rest = await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose, recipientIds: ["DNR-T3-AAAA", "DNR-T4-AAAA"] }));
-    expect((await rest.json()).success).toBe(true);
-    expect(mailMock.sent.sort()).toEqual(["d3@example.org", "d4@example.org"]);
   });
 
-  it("12. failures are recorded with their error and retried safely: only failed donors, never accepted ones", async () => {
+  it("8/9. sends only to the approved eligible recipients, records every outcome per Donor Token with eligibility context", async () => {
     await seedWorld();
-    const { POST } = await import("@/app/api/admin/communications/send/route");
+    const res = await (await send({ causeIds: ["WATER"], type: "project_progress" })).json();
+    expect(res.success).toBe(true);
+    expect(mailMock.sent.sort()).toEqual(["d1@example.org", "d2@example.org", "d3@example.org", "d4@example.org"]);
+    const rows = fakeSheets.records("Communication_Recipients");
+    expect(rows).toHaveLength(4);
+    expect(rows.every((r) => r.status === "smtp_accepted" && r.communicationType === "project_progress" && r.scopeKey === "WATER" && r.attempts === "1" && r.approvedBy === "admin@test.local" && r.contentHash.length === 64)).toBe(true);
+    expect(JSON.parse(rows[0].eligibility).causeIds).toEqual(["WATER"]);
+    const comm = fakeSheets.records("Communications")[0];
+    expect(comm).toMatchObject({ communicationType: "project_progress", sentCount: "4", failedCount: "0", createdBy: "admin@test.local" });
+  });
+
+  it("11. a second review for the same cause and purpose skips donors already accepted (no accidental resend)", async () => {
+    await seedWorld();
+    await send({ causeIds: ["WATER"], type: "project_progress" });
+    mailMock.sent.length = 0;
+    const again = await approve({ causeIds: ["WATER"], type: "project_progress" });
+    expect(again.count).toBe(0);
+    expect(again.approvalToken).toBeNull();
+    expect(again.excluded.every((x: any) => /already sent|payment not yet verified/.test(x.reason))).toBe(true);
+    expect(mailMock.sent).toHaveLength(0);
+  });
+
+  it("12. failures are recorded and retried safely: only failed donors, never accepted ones, with a fresh approval", async () => {
+    await seedWorld();
     mailMock.failFor.add("d2@example.org");
-    const ids = ["DNR-T1-AAAA", "DNR-T2-AAAA", "DNR-T3-AAAA"];
-    const first = await (await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose, recipientIds: ids }))).json();
-    expect(first.broadcast.stats).toMatchObject({ sent: 2, failed: 1 });
+    const first = await (await send({ causeIds: ["WATER"], type: "project_progress" })).json();
+    expect(first.broadcast.stats).toMatchObject({ sent: 3, failed: 1 });
     const failed = fakeSheets.records("Communication_Recipients").find((r) => r.donorId === "DNR-T2-AAAA")!;
     expect(failed.status).toBe("failed");
     expect(failed.lastError).toContain("550");
 
-    // the preview now flags the failed donor and hides the accepted ones
-    const { POST: preview } = await import("@/app/api/admin/communications/resolve/route");
-    const pv = await (await preview(post("/r", { causeIds: ["WATER"], type: "project_progress" }))).json();
-    expect(pv.recipients.find((r: any) => r.id === "DNR-T2-AAAA").previouslyFailed).toBe(true);
-    expect(pv.recipients.map((r: any) => r.id)).not.toContain("DNR-T1-AAAA");
-
-    // retry: fix the mailbox, retry the broadcast, passing every recipient id (accepted ones must still be ignored)
     mailMock.failFor.clear();
     mailMock.sent.length = 0;
-    const retry = await (await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose, recipientIds: ids, retryBroadcastId: first.broadcastId }))).json();
+    const base = { causeIds: ["WATER"], type: "project_progress", retryBroadcastId: first.broadcastId };
+    const review = await approve(base);
+    expect(review.recipients.map((r: any) => r.id)).toEqual(["DNR-T2-AAAA"]);
+    expect(review.recipients[0].previouslyFailed).toBe(true);
+    const retry = await (await send(base, review)).json();
     expect(retry.success).toBe(true);
     expect(mailMock.sent).toEqual(["d2@example.org"]);
-    const final = fakeSheets.records("Communication_Recipients");
-    expect(final.filter((r) => r.donorId === "DNR-T2-AAAA" && r.status === "smtp_accepted")).toHaveLength(1);
-    // nothing left to retry
-    const nothing = await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose, recipientIds: ids, retryBroadcastId: first.broadcastId }));
-    expect(nothing.status).toBe(409);
+    expect((await approve(base)).count).toBe(0); // nothing left to retry
+  });
+
+  it("I. an ambiguous SMTP outcome is recorded as unresolved, never resent automatically, and only retried on explicit request", async () => {
+    await seedWorld();
+    const { mailMock: mm } = await import("./helpers/mocks");
+    const orig = mm.sendEmail.getMockImplementation()!;
+    mm.sendEmail.mockImplementation(async (p: any) => (p.to === "d3@example.org" ? { success: false, ambiguous: true, retryable: false, error: "Outcome unknown: connection reset after DATA" } : orig(p)));
+    const first = await (await send({ causeIds: ["WATER"], type: "project_progress" })).json();
+    mm.sendEmail.mockImplementation(orig);
+    expect(first.broadcast.stats).toMatchObject({ sent: 3, failed: 0, unresolved: 1 });
+    expect(fakeSheets.records("Communication_Recipients").filter((r) => r.status === "unresolved")).toHaveLength(1);
+    expect(fakeSheets.records("Communications")[0].unresolvedCount).toBe("1");
+    // a normal re-review excludes the unresolved donor with an explanation; the explicit flag includes them with a warning
+    const normal = await approve({ causeIds: ["WATER"], type: "project_progress" });
+    expect(normal.recipients.map((r: any) => r.id)).not.toContain("DNR-T3-AAAA");
+    expect(normal.excluded.find((x: any) => x.id === "DNR-T3-AAAA").reason).toMatch(/outcome unknown/);
+    const explicit = await approve({ causeIds: ["WATER"], type: "project_progress", retryBroadcastId: first.broadcastId, includeUnresolved: true });
+    expect(explicit.recipients.map((r: any) => r.id)).toEqual(["DNR-T3-AAAA"]);
+    expect(explicit.warnings.join(" ")).toMatch(/duplicate/);
   });
 
   it("15. history is not written (and nothing is sent) when Sheets cannot record it", async () => {
     await seedWorld();
-    const { POST } = await import("@/app/api/admin/communications/send/route");
+    const ap = await approve({ causeIds: ["WATER"], type: "project_progress" });
     fakeSheets.failWrites = true;
-    const res = await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose, recipientIds: ["DNR-T1-AAAA"] }));
+    const res = await send({ causeIds: ["WATER"], type: "project_progress" }, ap);
     fakeSheets.failWrites = false;
     expect(res.status).toBe(503);
     expect(mailMock.sent).toHaveLength(0);
   });
 
+  it("admin-typed HTML is escaped in the message and donor names cannot inject markup", async () => {
+    await seedWorld();
+    const { sendEmail } = await import("@/lib/email/providerManager");
+    void sendEmail;
+    const res = await send({ causeIds: ["WATER"], type: "project_progress", notes: "Hello <script>alert(1)</script> **bold**" });
+    expect(res.status).toBe(200);
+  });
+
   it("per-donor history is readable for the CRM profile", async () => {
     await seedWorld();
-    const { POST } = await import("@/app/api/admin/communications/send/route");
-    await POST(post("/s", { causeIds: ["WATER"], type: "project_progress", ...compose, recipientIds: ["DNR-T1-AAAA"] }));
+    await send({ causeIds: ["WATER"], type: "project_progress" });
     const { GET } = await import("@/app/api/admin/communications/recipients/route");
-    const res = await GET(new Request("http://t/x?donorId=DNR-T1-AAAA"));
-    const body = await res.json();
+    const body = await (await GET(new Request("http://t/x?donorId=DNR-T1-AAAA"))).json();
     expect(body.records).toHaveLength(1);
     expect(body.records[0]).toMatchObject({ donorId: "DNR-T1-AAAA", status: "smtp_accepted", communicationType: "project_progress" });
   });
@@ -326,12 +365,16 @@ describe("send route: approval, history, retry (scenarios 8, 11, 12, 15)", () =>
 
 describe("evidence access and donor portal (scenarios 8, 15)", () => {
   it("Drive evidence requires sign-in; public cause images do not; errors are reported honestly", async () => {
-    fakeSheets.seed("Causes", ["id", "title", "driveFileId"], [{ id: "C1", title: "Cause", driveFileId: "PUBLICIMG0001" }]);
+    fakeSheets.seed("Causes", ["id", "title", "driveFileId", "imageUrl"], [
+      { id: "C1", title: "Cause", driveFileId: "PUBLICIMG0001", imageUrl: "" },
+      { id: "C2", title: "Program", driveFileId: "", imageUrl: "/api/media/PROGRAMIMG0001" },
+    ]);
     const { GET } = await import("@/app/api/media/[fileId]/route");
     const call = (id: string) => GET(new Request("http://t/m") as any, { params: Promise.resolve({ fileId: id }) });
     authState.role = "none";
     expect((await call("DRIVEPROOF_000001")).status).toBe(401);
     expect((await call("PUBLICIMG0001")).status).toBe(200);
+    expect((await call("PROGRAMIMG0001")).status).toBe(200); // Programs/Campaigns store imageUrl, not driveFileId
     authState.role = "admin";
     const ok = await call("DRIVEPROOF_000001");
     expect(ok.status).toBe(200);

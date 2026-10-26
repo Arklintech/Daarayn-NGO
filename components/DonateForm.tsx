@@ -105,10 +105,6 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
         const normInit = normStr(initialCause);
         const isGeneral = !normInit || normInit === 'general' || normInit === 'general donation' || normInit === 'contribution';
 
-        if (!isGeneral && !finalList.find((c: any) => normStr(c.name || c.title) === normInit || c.id === initialCause)) {
-          const fallbackId = `custom_${Date.now()}`;
-          finalList = [{ id: fallbackId, name: initialCause }, ...finalList];
-        }
         setCauses(finalList);
 
         // Auto-select initial cause
@@ -120,39 +116,16 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
           if (initialMatch) {
             setSelectedCausesList([initialMatch.id]);
           } else {
-            setSelectedCausesList([finalList[0]?.id || 'general']);
+            setSelectedCausesList(['general']);
           }
         }
       } catch (err) {
         console.warn("API causes load error, using fallbacks:", err);
-        const fallbacks = [
-          GENERAL_CAUSE,
-          { id: "clean-water-wells", name: "Clean Water Tube Wells Initiative" },
-          { id: "orphan-sponsorship", name: "Orphan & Child Care Sponsorship" },
-          { id: "emergency-food-aid", name: "Emergency Food & Relief Distribution" },
-          { id: "masjid-construction", name: "Community Masjid Construction & Repairs" },
-          { id: "healthcare-medical-fund", name: "Healthcare & Medical Aid Fund" }
-        ];
-        
-        let finalList = [...fallbacks];
-        const normInit = normStr(initialCause);
-        const isGeneral = !normInit || normInit === 'general' || normInit === 'general donation' || normInit === 'contribution';
-
-        if (!isGeneral && !fallbacks.find((c: any) => normStr(c.name) === normInit || c.id === initialCause)) {
-          finalList = [{ id: `custom_${Date.now()}`, name: initialCause }, ...finalList];
-        }
-        setCauses(finalList);
-        
-        if (isGeneral) {
-          setSelectedCausesList(['general']);
-        } else {
-          const matched = finalList.find((c: any) => normStr(c.name) === normInit || c.id === initialCause);
-          if (matched) {
-            setSelectedCausesList([matched.id]);
-          } else {
-            setSelectedCausesList(['general']);
-          }
-        }
+        // The catalog could not be loaded. Do not invent causes: offer only the unrestricted general donation.
+        setCauses([GENERAL_CAUSE]);
+        setSelectedCausesList(['general']);
+        setError('The list of causes could not be loaded right now. You can still make a general donation, or try again shortly.');
+        return;
       }
     }
     loadCauses();
@@ -197,23 +170,17 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
 
       formData.set('screenshot', file);
       
-      const perCauseAmount = Math.floor(amount / effectiveSelectedIds.length);
-
       let selectedCauses = causes
         .filter(c => effectiveSelectedIds.includes(c.id))
         .map(c => ({
           causeId: c.id,
-          causeName: c.name || c.title || "General Donation",
-          allocatedAmount: perCauseAmount,
-          percentage: 100 / effectiveSelectedIds.length
+          causeName: c.name || c.title || "General Donation"
         }));
 
       if (selectedCauses.length === 0) {
         selectedCauses = [{
           causeId: "general",
-          causeName: initialCause && initialCause !== 'General' ? initialCause : "General Donation (Where Most Needed)",
-          allocatedAmount: amount,
-          percentage: 100
+          causeName: initialCause && initialCause !== 'General' ? initialCause : "General Donation (Where Most Needed)"
         }];
       }
 

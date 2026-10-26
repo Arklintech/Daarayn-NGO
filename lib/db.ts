@@ -84,6 +84,8 @@ export interface DonorProfile {
   projectsSupported: string[]; // Project IDs
   casesSupported: string[]; // Case IDs
   status: "active" | "inactive";
+  /** Donor opted out of e-mail outreach. Honoured by every purpose except contribution_confirmation (transactional). */
+  emailSuppressed?: boolean;
 }
 
 export interface Donation {
@@ -113,6 +115,15 @@ export interface Donation {
   proofDriveFileId?: string;
   allocatedAmount?: number;
   allocationStatus?: "fully" | "partially";
+  /** Validated causes the donor selected (ids only; no amounts are invented). Empty = general donation. */
+  selection?: { causeId: string; causeName: string }[];
+  /**
+   * Follow-up workflow state. "pending" = the donation row exists but its follow-up steps have not all finished;
+   * "partial" = finished with steps still outstanding (see opPending); "complete"/"" = nothing outstanding.
+   */
+  opStatus?: "pending" | "partial" | "complete" | "";
+  /** Comma-separated follow-up steps still outstanding: designations,notification,audit */
+  opPending?: string;
   /** Email confirmation status tracking */
   confirmationEmailSent?: boolean;
   confirmationEmailSentAt?: string;

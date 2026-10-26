@@ -9,6 +9,8 @@ export interface CommunicationRecord {
   recipientCount: number;
   sentCount: number;
   failedCount: number;
+  /** Recipients whose SMTP outcome is unknown (never resent automatically). */
+  unresolvedCount?: number;
   status: "Draft" | "Queued" | "Sending" | "Completed" | "Failed";
   createdBy: string;
   createdAt: string;
@@ -29,6 +31,7 @@ const COMMUNICATION_HEADERS = [
   "recipientCount",
   "sentCount",
   "failedCount",
+  "unresolvedCount",
   "status",
   "createdBy",
   "createdAt",
@@ -63,6 +66,7 @@ export class CommunicationRepository extends BaseRepository<CommunicationRecord>
       recipientCount: Number(row.recipientCount || 0),
       sentCount: Number(row.sentCount || 0),
       failedCount: Number(row.failedCount || 0),
+      unresolvedCount: Number(row.unresolvedCount || 0),
       status: (row.status || "Completed") as any,
       createdBy: String(row.createdBy || "Admin"),
       createdAt: String(row.createdAt || new Date().toISOString()),
@@ -83,6 +87,7 @@ export class CommunicationRepository extends BaseRepository<CommunicationRecord>
       recipientCount: comm.recipientCount,
       sentCount: comm.sentCount,
       failedCount: comm.failedCount,
+      unresolvedCount: comm.unresolvedCount || 0,
       status: comm.status,
       createdBy: comm.createdBy,
       createdAt: comm.createdAt,

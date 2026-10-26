@@ -5,6 +5,7 @@ import { auditLogRepository } from "@/lib/repositories/auditLogRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { RealtimeEvent } from "@/lib/realtime/events";
 import { canonicalStatus, DONATION_STATUSES, type DonationStatus } from "@/lib/donations/metrics";
+import { donationCauseRepository } from "@/lib/repositories/donationCauseRepository";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +19,17 @@ export async function GET(request: Request) {
   if (adminAuth instanceof NextResponse) return adminAuth;
 
   try {
-    const donations = await donationRepository.getAll(true);
+    const [allDonations, designations] = await Promise.all([donationRepository.getAll(true), donationCauseRepository.getAll(true)]);
+    const donations = allDonations.filter((d) => d.id !== "PENDING"); // an unfinished placeholder is not a donation
+    const relByDonation = new Map<string, typeof designations>();
+    for (const r of designations) {
+      if (!relByDonation.has(r.donationId)) relByDonation.set(r.donationId, []);
+      relByDonation.get(r.donationId)!.push(r);
+    }
     const mapped = donations.map((d) => ({
+      causes: (relByDonation.get(d.id) || []).map((r) => ({ causeId: r.causeId, title: r.causeTitle, designatedAmount: r.designatedAmount, designationStatus: r.designationStatus })),
+      opStatus: d.opStatus || "complete",
+      opPending: d.opPending || "",
       id: d.id,
       donationId: d.id,
       donorId: d.donorId,
@@ -28,7 +38,7 @@ export async function GET(request: Request) {
       amount: Number(d.amount || 0),
       currency: d.currency || "INR",
       causeId: d.causeId || "",
-      cause: d.causeTitle || "General Support",
+      cause: (relByDonation.get(d.id) || []).length > 1 ? (relByDonation.get(d.id) || []).map((r) => r.causeTitle).join(", ") : d.causeTitle || "General Support",
       date: d.date,
       createdAt: d.date,
       status: canonicalStatus(d.status),
@@ -63,14 +73,8 @@ export async function GET(request: Request) {
       }, { headers: { "Cache-Control": "no-store" } });
     }
 
-    // If no cache, return empty but success to prevent UI crashes
-    return NextResponse.json({
-      success: true,
-      donations: [],
-      duplicateIds: [],
-      error: "Google Sheets temporarily unavailable. Showing cached data if available.",
-      cached: true
-    }, { headers: { "Cache-Control": "no-store" } });
+    // No cache: report the failure. An empty list is never presented as a successful result.
+    return NextResponse.json({ success: false, error: "Donations could not be read from Google Sheets.", donations: [], duplicateIds: [] }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 }
 
@@ -109,7 +113,7 @@ export async function PATCH(req: NextRequest) {
 
     // 2. Audit trail of who changed what
     try {
-      await auditLogRepository.save({
+      await auditLogRepository.append({
         id: `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
         actor_id: adminAuth.email,
         actor_role: "admin",

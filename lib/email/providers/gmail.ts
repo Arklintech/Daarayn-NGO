@@ -75,6 +75,20 @@ function resetTransport() {
  * trying again could help. Auth, config and quota errors never fix themselves
  * on retry, so retrying them only delays the report.
  */
+/**
+ * The connection failed after the message body may already have been sent. nodemailer reports the SMTP command in
+ * progress: "CONN"/"EHLO"/"AUTH…"/"MAIL FROM"/"RCPT TO" failures happen before any body is accepted (safe to retry),
+ * but a failure during/after "DATA" (or a dropped socket with no command info) leaves the outcome unknown.
+ */
+export function isAmbiguousSmtpFailure(err: unknown): boolean {
+  const e = err as NodeJS.ErrnoException & { command?: string; responseCode?: number };
+  if (e?.responseCode) return false; // the server answered: the outcome is known
+  const command = String(e?.command || "");
+  if (/^DATA/i.test(command)) return true;
+  if (!command && ["ESOCKET", "ETIMEDOUT", "ECONNRESET", "EPIPE"].includes(String(e?.code))) return true;
+  return false;
+}
+
 function classifySmtpError(err: unknown): { reason: string; retryable: boolean } {
   const error = err as NodeJS.ErrnoException & { responseCode?: number; response?: string };
   const response = error.response || error.message || "Unknown SMTP error";
@@ -159,6 +173,14 @@ export async function sendViaGmail(payload: EmailPayload): Promise<EmailResult> 
     resetTransport();
     const { reason, retryable } = classifySmtpError(err);
     console.error("[Gmail] Send failed:", reason);
+    if (isAmbiguousSmtpFailure(err)) {
+      return {
+        success: false,
+        retryable: false,
+        ambiguous: true,
+        error: `Outcome unknown: the connection broke after the message was sent, so it may have been accepted. ${reason}`,
+      };
+    }
     return { success: false, error: reason, retryable };
   }
 }

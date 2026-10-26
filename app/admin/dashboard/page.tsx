@@ -1,5 +1,6 @@
 'use client';
 
+import OperationsSummary from "@/components/admin/OperationsSummary";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
@@ -141,6 +142,8 @@ export default function AdminDashboard() {
           Dashboard figures could not be loaded from Google Sheets: {error}
         </div>
       )}
+
+      <OperationsSummary canonical={(data as any)?.canonical} />
 
       {/* Overview stats layout */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">

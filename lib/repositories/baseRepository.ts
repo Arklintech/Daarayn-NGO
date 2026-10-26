@@ -87,6 +87,17 @@ export abstract class BaseRepository<T extends { id: string }> {
     return entity;
   }
 
+  /**
+   * Appends a NEW record with a unique id (notification, audit entry, ...). Unlike save() it does not first read the
+   * tab to check whether the id exists, which saves a Sheets read per record on hot paths.
+   */
+  public async append(entity: T): Promise<T> {
+    await this.init();
+    await sheetsService.appendRow(this.sheetName, this.mapEntityToRow(entity), this.headers);
+    this.cache.set(entity.id, entity);
+    return entity;
+  }
+
   public async saveBatch(entities: T[]): Promise<void> {
     if (entities.length === 0) return;
     await this.init();

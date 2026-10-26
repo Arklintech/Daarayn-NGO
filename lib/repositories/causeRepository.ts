@@ -8,7 +8,9 @@ export interface Cause {
   raisedAmount: number;
   location: string;
   description: string;
-  status: "Active" | "Completed" | "Urgent";
+  status: "Draft" | "Active" | "Urgent" | "Completed" | "Inactive";
+  /** cause | project | campaign (reporting grouping); defaults to "cause". */
+  kind?: string;
   imageUrl?: string;
   driveFileId?: string;
   createdAt: string;
@@ -26,6 +28,7 @@ const CAUSE_HEADERS = [
   "imageUrl",
   "driveFileId",
   "createdAt",
+  "kind",
 ];
 
 export class CauseRepository extends BaseRepository<Cause> {
@@ -46,6 +49,7 @@ export class CauseRepository extends BaseRepository<Cause> {
       imageUrl: String(row.imageUrl || ""),
       driveFileId: String(row.driveFileId || ""),
       createdAt: String(row.createdAt || new Date().toISOString()),
+      kind: String(row.kind || "cause"),
     };
   }
 
@@ -62,6 +66,7 @@ export class CauseRepository extends BaseRepository<Cause> {
       imageUrl: cause.imageUrl || "",
       driveFileId: cause.driveFileId || "",
       createdAt: cause.createdAt,
+      kind: cause.kind || "cause",
     };
   }
 }

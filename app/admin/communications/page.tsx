@@ -26,6 +26,10 @@ function CommunicationsHubContent() {
   const [excluded, setExcluded] = useState<{ id: string; name: string; email: string; reason: string }[]>([]);
   const [ruleText, setRuleText] = useState("");
   const [retrying, setRetrying] = useState(false);
+  // Approval issued by the server for exactly this message and recipient set.
+  const [approvalToken, setApprovalToken] = useState<string | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const [reviewing, setReviewing] = useState(false);
   const [stats, setStats] = useState({ raised: 0, goalAmount: 0, percentage: 0 });
   const [type, setType] = useState("general_communication");
   const [heading, setHeading] = useState("");
@@ -213,10 +217,33 @@ function CommunicationsHubContent() {
     }
   };
 
-  const handlePreview = () => {
+  const currentMedia = () => uploadedFiles.filter((f) => f.serverUrl).map((f) => f.serverUrl!);
+
+  // Review step: the SERVER recomputes the audience and signs an approval bound to this message and recipient set.
+  const handlePreview = async () => {
     if (!heading || !notes) return alert("Heading and notes are required.");
     if (selectedCauseIds.length === 0) return alert("Please select at least one cause or donor.");
-    setMode("summary");
+    setReviewing(true);
+    try {
+      const res = await fetch("/api/admin/communications/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ causeIds: selectedCauseIds, type, heading, notes, media: currentMedia() }),
+      });
+      const data = await res.json();
+      if (!data.success) return alert("Could not prepare the review: " + (data.error || `HTTP ${res.status}`));
+      setRecipients(data.recipients || []);
+      setExcluded(data.excluded || []);
+      setDonorCount(data.count || 0);
+      setRuleText(data.rule || "");
+      setWarnings(data.warnings || []);
+      setApprovalToken(data.approvalToken || null);
+      setMode("summary");
+    } catch {
+      alert("Could not prepare the review. Nothing was sent.");
+    } finally {
+      setReviewing(false);
+    }
   };
 
   const handleDispatch = async () => {
@@ -237,7 +264,8 @@ function CommunicationsHubContent() {
         body: JSON.stringify({
           causeIds: selectedCauseIds, type, heading, notes,
           recipientIds: recipients.map((r) => r.id),
-          media: uploadedFiles.filter(f => f.serverUrl).map(f => f.serverUrl!)
+          approvalToken,
+          media: currentMedia()
         })
       });
       const result = await response.json();
@@ -257,21 +285,25 @@ function CommunicationsHubContent() {
     }
   };
 
-  // Retry only the recipients of the finished broadcast whose send failed or never completed.
+  // Retry only failed recipients of the finished broadcast. The server re-checks eligibility and issues a fresh approval.
   const handleRetryFailed = async () => {
     if (!broadcastId) return;
     setRetrying(true);
     try {
-      const hist = await fetch(`/api/admin/communications/recipients?broadcastId=${encodeURIComponent(broadcastId)}`).then((r) => r.json());
-      const failedIds = (hist.records || []).filter((r: any) => r.status !== "smtp_accepted").map((r: any) => r.donorId);
-      if (failedIds.length === 0) {
-        alert("No failed recipients to retry.");
+      const review = await fetch("/api/admin/communications/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ causeIds: selectedCauseIds, type, heading, notes, media: currentMedia(), retryBroadcastId: broadcastId }),
+      }).then((r) => r.json());
+      if (!review.success || !review.approvalToken || !review.recipients?.length) {
+        alert(review.error || "No failed recipients remain to retry.");
         return;
       }
+      if (!window.confirm(`Retry ${review.recipients.length} failed recipient(s)? Recipients already accepted are never resent.`)) return;
       const response = await fetch("/api/admin/communications/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ causeIds: selectedCauseIds, type, heading, notes, recipientIds: failedIds, retryBroadcastId: broadcastId, causeName: causeNamesText }),
+        body: JSON.stringify({ causeIds: selectedCauseIds, type, heading, notes, media: currentMedia(), recipientIds: review.recipients.map((r: any) => r.id), approvalToken: review.approvalToken, retryBroadcastId: broadcastId }),
       });
       const result = await response.json();
       if (result.broadcast) {
@@ -781,7 +813,7 @@ function CommunicationsHubContent() {
 
                   <button
                     onClick={handlePreview}
-                    disabled={donorCount === 0 || !heading || !notes}
+                    disabled={donorCount === 0 || !heading || !notes || reviewing}
                     className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-gray-100 active:scale-[0.99]"
                     style={{ background: '#ffffff' }}
                   >
@@ -876,6 +908,9 @@ function CommunicationsHubContent() {
             </div>
           </div>
 
+          {warnings.length > 0 && (
+            <div className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs text-amber-200 space-y-1">{warnings.map((w, i) => <p key={i}>{w}</p>)}</div>
+          )}
           {ruleText && <p className="text-xs text-gray-400 mb-4"><span className="text-white font-semibold">Eligibility rule:</span> {ruleText}</p>}
 
           <div className="mb-6">

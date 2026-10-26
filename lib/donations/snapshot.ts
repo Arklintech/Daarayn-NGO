@@ -13,6 +13,9 @@ import { donorRepository } from "../repositories/donorRepository";
 import { causeRepository } from "../repositories/causeRepository";
 import { fieldReportRepository } from "../repositories/fieldReportRepository";
 import { auditLogRepository } from "../repositories/auditLogRepository";
+import { donationCauseRepository } from "../repositories/donationCauseRepository";
+import { allocationRepository } from "../repositories/allocationRepository";
+import { communicationRecipientRepository } from "../repositories/communicationRecipientRepository";
 
 const repositories = {
   donations: donationRepository,
@@ -20,6 +23,9 @@ const repositories = {
   causes: causeRepository,
   fieldReports: fieldReportRepository,
   auditLog: auditLogRepository,
+  designations: donationCauseRepository,
+  allocations: allocationRepository,
+  recipients: communicationRecipientRepository,
 };
 
 type Repos = typeof repositories;

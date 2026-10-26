@@ -29,6 +29,8 @@ export interface EmailResult {
   error?: string;
   /** false when the failure is permanent (bad credentials, quota, invalid recipient) */
   retryable?: boolean;
+  /** True when the server may already have accepted the message (connection lost after the body was sent). Never resend blindly. */
+  ambiguous?: boolean;
 }
 
 function getProvider(): string {

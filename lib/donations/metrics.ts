@@ -76,6 +76,7 @@ export function emptySummary(): DonationSummary {
 }
 
 function addTo(summary: DonationSummary, d: DonationLike) {
+  if (d.id === "PENDING") return; // an unfinished placeholder row is not a donation
   const amount = donationAmount(d);
   summary.totalCount++;
   switch (donationState(d.status)) {
@@ -261,4 +262,104 @@ export function fundingByCause(donations: DonationLike[], causes: CauseLike[]): 
   }
   for (const [id, set] of contributors) byCause.get(id)!.contributorCount = set.size;
   return { byCause, unattributed };
+}
+
+// ─── Cause designations (canonical donation ↔ cause relationships) ────────────────────────────────────────────
+
+import type { DonationCauseEntity } from "./designationTypes";
+
+export interface DesignationFunding {
+  /** Verified (received) amount explicitly designated to the cause. */
+  designatedReceived: number;
+  /** Submitted but not yet verified amount explicitly designated to the cause. */
+  designatedPending: number;
+  /** Distinct VERIFIED donations with an explicit designation to the cause (a donation is counted once per cause). */
+  donationCount: number;
+  contributorCount: number;
+  /** Donations related to the cause whose monetary split has not been recorded (their money is NOT in the amounts above). */
+  unresolvedDonationCount: number;
+}
+
+export interface BucketSummary {
+  receivedAmount: number;
+  receivedCount: number;
+  pendingAmount: number;
+  pendingCount: number;
+}
+
+const emptyBucket = (): BucketSummary => ({ receivedAmount: 0, receivedCount: 0, pendingAmount: 0, pendingCount: 0 });
+
+/**
+ * Contribution by cause from EXPLICIT designations. Rules:
+ *  - rejected donations never count;
+ *  - a donation with a recorded split adds only its designated amounts to the causes;
+ *  - a donation related to several causes with no recorded split goes to `unresolved` ONCE (its amount is not
+ *    repeated under each cause);
+ *  - a donation with no cause relationship is `unrestricted` (general);
+ *  - legacy donations without relationship rows fall back to their single stored cause (full amount), else unrestricted.
+ * Every donation lands in exactly one of: a cause designation, `unresolved`, `unrestricted`, so
+ * sum(designated) + unresolved + unrestricted == total of the non-rejected donations of that state.
+ */
+export function fundingByDesignation(
+  donations: DonationLike[],
+  designations: DonationCauseEntity[],
+  causes: CauseLike[]
+): { byCause: Map<string, DesignationFunding>; unresolved: BucketSummary; unrestricted: BucketSummary } {
+  const byCause = new Map<string, DesignationFunding>();
+  const contributors = new Map<string, Set<string>>();
+  for (const c of causes) {
+    byCause.set(c.id, { designatedReceived: 0, designatedPending: 0, donationCount: 0, contributorCount: 0, unresolvedDonationCount: 0 });
+    contributors.set(c.id, new Set());
+  }
+  const ensure = (id: string) => {
+    if (!byCause.has(id)) {
+      byCause.set(id, { designatedReceived: 0, designatedPending: 0, donationCount: 0, contributorCount: 0, unresolvedDonationCount: 0 });
+      contributors.set(id, new Set());
+    }
+    return byCause.get(id)!;
+  };
+  const unresolved = emptyBucket();
+  const unrestricted = emptyBucket();
+
+  const byDonation = new Map<string, DonationCauseEntity[]>();
+  for (const d of designations) {
+    if (!byDonation.has(d.donationId)) byDonation.set(d.donationId, []);
+    byDonation.get(d.donationId)!.push(d);
+  }
+  const add = (bucket: BucketSummary, state: DonationState, amount: number) => {
+    if (state === "received") { bucket.receivedAmount += amount; bucket.receivedCount++; }
+    else { bucket.pendingAmount += amount; bucket.pendingCount++; }
+  };
+
+  for (const d of donations) {
+    if (d.id === "PENDING") continue;
+    const state = donationState(d.status);
+    if (state === "rejected") continue;
+    const amount = donationAmount(d);
+    const rels = byDonation.get(String(d.id)) || [];
+
+    if (rels.length === 0) {
+      const legacy = resolveCauseId(d, causes);
+      if (legacy) {
+        const f = ensure(legacy);
+        if (state === "received") { f.designatedReceived += amount; f.donationCount++; contributors.get(legacy)!.add(d.donorId || norm(d.donorEmail) || String(d.id)); }
+        else f.designatedPending += amount;
+      } else add(unrestricted, state, amount);
+      continue;
+    }
+
+    if (rels.some((r) => r.designationStatus === "unresolved" || r.designatedAmount === null)) {
+      add(unresolved, state, amount);
+      for (const r of rels) ensure(r.causeId).unresolvedDonationCount++;
+      continue;
+    }
+    for (const r of rels) {
+      const f = ensure(r.causeId);
+      const part = Number(r.designatedAmount) || 0;
+      if (state === "received") { f.designatedReceived += part; f.donationCount++; contributors.get(r.causeId)!.add(d.donorId || norm(d.donorEmail) || String(d.id)); }
+      else f.designatedPending += part;
+    }
+  }
+  for (const [id, set] of contributors) byCause.get(id)!.contributorCount = set.size;
+  return { byCause, unresolved, unrestricted };
 }

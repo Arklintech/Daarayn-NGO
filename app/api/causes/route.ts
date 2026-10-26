@@ -1,68 +1,58 @@
 import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { causeRepository } from "@/lib/repositories/causeRepository";
-import { DEFAULT_CAUSES } from "@/lib/causes";
 import { donationRepository } from "@/lib/repositories/donationRepository";
-import { fundingByCause } from "@/lib/donations/metrics";
+import { donationCauseRepository } from "@/lib/repositories/donationCauseRepository";
+import { fundingByDesignation } from "@/lib/donations/metrics";
+import { isSelectableCause, saveCause, CatalogError } from "@/lib/catalog/causes";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { RealtimeEvent } from "@/lib/realtime/events";
 
+export const dynamic = "force-dynamic";
+
+/**
+ * The shared catalog. Public callers (donation form, ribbon) receive only causes that are open for donations
+ * (Active or Urgent) in a public-safe shape. An authenticated admin receives every cause with its lifecycle
+ * status. There is no seeding and no hardcoded fallback: if the catalog cannot be read, the error is reported.
+ */
 export async function GET(request: NextRequest) {
+  const admin = await requireAdmin(request);
+  const isAdmin = !(admin instanceof NextResponse);
+
   try {
-    let causes = await causeRepository.getAll();
+    const all = await causeRepository.getAll();
+    const causes = isAdmin ? all : all.filter(isSelectableCause);
 
-    // If empty in Google Sheets, seed initial default causes
-    if (causes.length === 0) {
-      const initialCauses = DEFAULT_CAUSES.map((c) => ({
-        id: c.id,
-        title: c.title || c.name,
-        category: c.category || "General",
-        targetAmount: c.goalAmount || 500000,
-        raisedAmount: 0,
-        location: c.location || "National",
-        description: c.description || "",
-        status: "Active" as const,
-        imageUrl: "",
-        driveFileId: "",
-        createdAt: new Date().toISOString(),
-      }));
-
-      await causeRepository.saveBatch(initialCauses);
-      causes = await causeRepository.getAll(true);
-    }
-
-    // Raised = verified donations linked to the cause (lib/donations/metrics.ts).
-    // The stored raisedAmount column also counted unverified submissions; it
-    // is kept as recordedRaisedAmount and used only if donations cannot be read.
-    let funding: ReturnType<typeof fundingByCause>["byCause"] | null = null;
+    // Raised = VERIFIED donations explicitly designated to the cause (never the whole of a multi-cause donation).
+    let funding: ReturnType<typeof fundingByDesignation> | null = null;
     try {
-      funding = fundingByCause(await donationRepository.getAll(), causes).byCause;
+      funding = fundingByDesignation(await donationRepository.getAll(), await donationCauseRepository.getAll(), all);
     } catch (err: any) {
       console.error("[API/Causes] Donations unavailable, using recorded raised amounts:", err.message);
     }
 
-    // Public Safe mapping: ensures internal operational metadata is shielded
-    const publicCauses = causes.map((c) => ({
-      id: c.id,
-      title: c.title,
-      name: c.title,
-      category: c.category,
-      targetAmount: c.targetAmount,
-      raisedAmount: funding ? funding.get(c.id)?.receivedAmount ?? 0 : c.raisedAmount,
-      recordedRaisedAmount: c.raisedAmount,
-      raisedSource: funding ? "verified_donations" : "recorded",
-      supporters: funding ? funding.get(c.id)?.contributorCount ?? 0 : undefined,
-      location: c.location,
-      description: c.description,
-      status: c.status,
-      imageUrl: c.imageUrl || (c.driveFileId ? `/api/media/${c.driveFileId}` : ""),
-    }));
-
-    return NextResponse.json(publicCauses);
+    return NextResponse.json(
+      causes.map((c) => ({
+        id: c.id,
+        title: c.title,
+        name: c.title,
+        category: c.category,
+        kind: c.kind || "cause",
+        targetAmount: c.targetAmount,
+        raisedAmount: funding ? funding.byCause.get(c.id)?.designatedReceived ?? 0 : c.raisedAmount,
+        recordedRaisedAmount: c.raisedAmount,
+        raisedSource: funding ? "verified_designations" : "recorded",
+        supporters: funding ? funding.byCause.get(c.id)?.contributorCount ?? 0 : undefined,
+        location: c.location,
+        description: c.description,
+        status: c.status,
+        imageUrl: c.imageUrl || (c.driveFileId ? `/api/media/${c.driveFileId}` : ""),
+      })),
+      { headers: { "Cache-Control": isAdmin ? "no-store" : "public, s-maxage=10, stale-while-revalidate=60" } }
+    );
   } catch (error: any) {
     console.error("[API/Causes] Error retrieving causes:", error);
-    // Return fallback defaults so public site never breaks
-    return NextResponse.json(DEFAULT_CAUSES);
+    return NextResponse.json({ error: "The cause catalog could not be read from Google Sheets." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 }
 
@@ -72,32 +62,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    if (!body.title) {
-      return NextResponse.json({ error: "Cause title is required." }, { status: 400 });
-    }
-
-    const causeId = body.id || `CAUSE-${Date.now().toString(36).toUpperCase()}`;
-    const newCause = {
-      id: causeId,
-      title: body.title,
-      category: body.category || "General",
-      targetAmount: Number(body.targetAmount) || 500000,
-      raisedAmount: Number(body.raisedAmount) || 0,
-      location: body.location || "National",
-      description: body.description || "",
-      status: (body.status || "Active") as any,
-      imageUrl: body.imageUrl || "",
-      driveFileId: body.driveFileId || "",
-      createdAt: body.createdAt || new Date().toISOString(),
-    };
-
-    await causeRepository.save(newCause);
-    realtimeBroadcaster.broadcast(RealtimeEvent.CAUSE_UPDATED, { id: causeId });
-    return NextResponse.json({ success: true, cause: newCause });
+    const { cause, created } = await saveCause(body, adminAuth.email);
+    causeRepository.invalidateCache();
+    realtimeBroadcaster.broadcast(RealtimeEvent.CAUSE_UPDATED, { id: cause.id });
+    return NextResponse.json({ success: true, cause, created });
   } catch (error: any) {
+    if (error instanceof CatalogError) {
+      return NextResponse.json({ error: error.message }, { status: error.httpStatus });
+    }
     console.error("[API/Causes] Error saving cause:", error);
     return NextResponse.json({ error: "Failed to persist cause." }, { status: 500 });
   }
 }
-
-export const dynamic = "force-dynamic";

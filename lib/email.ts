@@ -6,7 +6,7 @@ export interface DonationEmailParams {
   donorName: string;
   donorEmail: string;
   amount: number;
-  causes: { causeName: string; allocatedAmount: number }[];
+  causes: { causeName: string; allocatedAmount?: number }[];
   date: string;
 }
 
@@ -23,7 +23,7 @@ export async function sendDonationEmail(params: DonationEmailParams): Promise<Em
   const causesListHtml = causes.map(c => `
     <tr>
       <td style="padding: 12px 0; border-bottom: 1px solid #1a2235; color: #a0aec0;">${c.causeName}</td>
-      <td style="padding: 12px 0; border-bottom: 1px solid #1a2235; color: #fdfbf7; font-weight: 500; text-align: right;">₹${c.allocatedAmount.toLocaleString()}</td>
+      <td style="padding: 12px 0; border-bottom: 1px solid #1a2235; color: #fdfbf7; font-weight: 500; text-align: right;">${typeof c.allocatedAmount === "number" ? "₹" + c.allocatedAmount.toLocaleString() : "Distribution to be confirmed"}</td>
     </tr>
   `).join('');
 

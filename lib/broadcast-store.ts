@@ -15,6 +15,8 @@ export interface BroadcastRecord {
   stats: {
     sent: number;
     failed: number;
+    /** Sent but the outcome is unknown (the connection broke after the body was sent). Never resent automatically. */
+    unresolved?: number;
     remaining: number;
   };
   startedAt: string | null;

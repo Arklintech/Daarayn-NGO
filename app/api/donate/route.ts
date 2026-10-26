@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { donationService, DonationInputError } from "@/lib/services/donationService";
+import { donationService, DonationInputError, ProofStorageError } from "@/lib/services/donationService";
+import { DonationWriteError } from "@/lib/repositories/donationRepository";
 import { checkRateLimit } from "@/lib/security/rate-limiter";
 import { logAuditEvent } from "@/lib/security/audit-logger";
 
@@ -90,6 +91,12 @@ export async function POST(request: NextRequest) {
       confirmationEmailError: result.confirmationEmailError,
     });
   } catch (error: any) {
+    if (error instanceof DonationWriteError) {
+      return NextResponse.json({ error: error.message, code: error.code }, { status: error.httpStatus });
+    }
+    if (error instanceof ProofStorageError) {
+      return NextResponse.json({ error: error.message }, { status: 503 });
+    }
     if (error instanceof DonationInputError) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }

@@ -7,6 +7,8 @@ import { communicationRecipientRepository, type CommunicationRecipientEntity } f
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { broadcastStore, type BroadcastError, type BroadcastRecord } from "@/lib/broadcast-store";
 
+const escapeHtmlText = (v: string) => v.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]!));
+
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BATCH_SIZE = 50;
 const MAX_ATTEMPTS = 2;
@@ -71,6 +73,7 @@ export async function processBroadcast(
   const recordError = (reason: string) => errorCounts.set(reason, (errorCounts.get(reason) || 0) + 1);
   let successCount = 0;
   let failCount = 0;
+  let unresolvedCount = 0;
 
   const jobs = dedupeRecipients(recipients);
   // Per-recipient history rows (Communication_Recipients), keyed by Donor Token.
@@ -174,7 +177,7 @@ export async function processBroadcast(
           // Only personalize the greeting - generate HTML once
           const html = generateLetterEmailTemplate({
             ...baseTemplate,
-            greeting: `Assalamu Alaikum, ${job.name},`
+            greeting: `Assalamu Alaikum, ${escapeHtmlText(job.name)},`
           });
 
           for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -195,6 +198,12 @@ export async function processBroadcast(
               return;
             }
             lastError = result.error || lastError;
+            if (result.ambiguous) {
+              // The server may already have accepted it: never resend automatically (it could arrive twice).
+              unresolvedCount++;
+              record({ status: "unresolved", lastError: lastError.slice(0, 500) });
+              return;
+            }
             if (result.retryable === false) {
               console.warn(`[Broadcast] Permanent failure for ${job.email}: ${lastError}`);
               break;
@@ -209,10 +218,10 @@ export async function processBroadcast(
       }));
       await persistRows(batchRows);
 
-      const remainingCount = Math.max(0, jobs.length - (successCount + failCount));
+      const remainingCount = Math.max(0, jobs.length - (successCount + failCount + unresolvedCount));
 
       patch({
-        stats: { sent: successCount, failed: failCount, remaining: remainingCount },
+        stats: { sent: successCount, failed: failCount, unresolved: unresolvedCount, remaining: remainingCount },
         errors: topErrors(errorCounts),
       });
 
@@ -239,7 +248,7 @@ export async function processBroadcast(
       status,
       completedAt,
       processingDurationMs: Date.now() - new Date(createdAt).getTime(),
-      stats: { sent: successCount, failed: failCount, remaining: 0 },
+      stats: { sent: successCount, failed: failCount, unresolved: unresolvedCount, remaining: 0 },
       errors,
       failureReason: errors[0]?.reason,
     });
@@ -261,6 +270,7 @@ export async function processBroadcast(
         recipientCount: jobs.length,
         sentCount: successCount,
         failedCount: failCount,
+        unresolvedCount,
         status,
         createdBy: record.createdBy || "Admin",
         createdAt: createdAt || new Date().toISOString(),
@@ -286,7 +296,7 @@ export async function processBroadcast(
     return patch({
       status: "Failed",
       failureReason: error?.message || "Unknown error",
-      stats: { sent: successCount, failed: jobs.length - successCount, remaining: 0 },
+      stats: { sent: successCount, failed: jobs.length - successCount - unresolvedCount, unresolved: unresolvedCount, remaining: 0 },
       errors: topErrors(errorCounts),
     });
   }
