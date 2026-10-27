@@ -43,13 +43,10 @@ export default function AdminBeneficiaries() {
         setBeneficiaries(parsed);
         setFilteredList(parsed);
       } else {
-        const defaultList = [
-          { id: "ben_001", name: "Zainab Bi", familyDetails: "Widowed mother with 4 kids, primary support needed for education and house rent", location: "Kalyan, Maharashtra", contact: "+919988776655", caseType: "Family Relief", status: "Verified", assistanceHistory: "₹30,000 rent grant disbursed on June 2026." },
-          { id: "ben_002", name: "Sheikh Arham", familyDetails: "Student memorizing Qur'an, belongs to underprivileged family of 6", location: "Mumbra, Thane", contact: "+918877665544", caseType: "Qur’an Endowment", status: "Verified", assistanceHistory: "₹2,000 monthly study scholarship ongoing." }
-        ];
-        setBeneficiaries(defaultList);
-        setFilteredList(defaultList);
-        if (typeof window !== 'undefined') localStorage.setItem('daarayn_beneficiaries', JSON.stringify(defaultList));
+        // No seeded people: beneficiary records are personal data and are only ever entered by an administrator.
+        const emptyList: any[] = [];
+        setBeneficiaries(emptyList);
+        setFilteredList(emptyList);
       }
     } catch (err) {
       console.warn("Beneficiary load error:", err);

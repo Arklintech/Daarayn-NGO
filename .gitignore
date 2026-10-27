@@ -40,5 +40,6 @@ daaraynorg-*.json
 !.env.example
 
 .secrets/
+/data/
 
 client_secret_*.json
