@@ -19,7 +19,7 @@ const targetCauses = [
   { id: "family-relief-bundle", name: "Family Relief Bundle", category: "Relief", goalAmount: 500000 },
   { id: "orphan-care-sponsor", name: "Orphan Care Sponsor", category: "Orphan Care", goalAmount: 800000 },
   { id: "masjid-al-noor-const", name: "Masjid Al-Noor Const", category: "Community", goalAmount: 2500000 },
-  { id: "sheikh-arham-sponsorship", name: "Sheikh Arham Sponsorship", category: "Education", goalAmount: 300000 },
+  { id: "sheikh-arham-sponsorship", name: "Example Beneficiary B Sponsorship", category: "Education", goalAmount: 300000 },
 ];
 
 async function seedCauses() {

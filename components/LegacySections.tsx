@@ -327,7 +327,7 @@ export default function LegacySections() {
       <button class="modal-close" aria-label="Close modal">&times;</button>
       <div class="modal-header">
         <div class="modal-badge">Amanah Verified Student Case</div>
-        <h2 class="modal-title">Sheikh Arham (ID: DA-Q03)</h2>
+        <h2 class="modal-title">Example Beneficiary B (ID: DA-Q03)</h2>
       </div>
       <div class="modal-content-grid">
         <div class="modal-media-side">
