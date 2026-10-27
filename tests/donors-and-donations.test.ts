@@ -190,3 +190,52 @@ describe("Donations (scenarios 4-7)", () => {
     for (const d of donors) expect(donationsForDonor(donations, d)).toHaveLength(1);
   });
 });
+
+// D3-F10: a donation owned by one donor token was also shown in (and counted for) another donor record that shared the
+// email address, so the donor list and the donor profile disagreed about the same records.
+describe("CRM relationship: the donor token is authoritative", () => {
+  const donorA = { id: "DNR-A", email: "same@example.invalid" };
+  const donorB = { id: "DNR-B", email: "same@example.invalid" };
+  const don = (id: string, donorId: string, donorEmail = "same@example.invalid") => ({ id, donorId, donorEmail, amount: 100, status: "completed" } as any);
+
+  it("a donation with a donor token belongs to that donor only, even when another record shares the email", () => {
+    const all = [don("DA1", "DNR-A"), don("DA2", "DNR-B")];
+    expect(donationsForDonor(all, donorA).map((d) => d.id)).toEqual(["DA1"]);
+    expect(donationsForDonor(all, donorB).map((d) => d.id)).toEqual(["DA2"]);
+  });
+
+  it("a legacy donation without a token still links by a non-empty matching email", () => {
+    expect(donationsForDonor([don("DA3", "")], { id: "DNR-C", email: "SAME@example.invalid" })).toHaveLength(1);
+  });
+
+  it("the donor list totals and the donor profile agree for every donor", async () => {
+    const { givingByDonor, donorGiving } = await import("@/lib/donations/metrics");
+    const all = [don("DA1", "DNR-A"), don("DA2", "DNR-B"), don("DA3", "DNR-B"), don("DA4", "")];
+    const list = givingByDonor(all, [donorA, donorB]);
+    for (const d of [donorA, donorB]) {
+      expect(list.get(d.id)!.receivedAmount).toBe(donorGiving(donationsForDonor(all, d)).receivedAmount);
+      expect(list.get(d.id)!.receivedCount).toBe(donorGiving(donationsForDonor(all, d)).receivedCount);
+    }
+  });
+});
+
+// D3-F11: the donor list's cause filter read a field the API never returned, so choosing any cause emptied the list.
+describe("supportedCauseIdsByDonor", () => {
+  it("lists the causes a donor's VERIFIED donations are designated to, token-first, no duplicates", async () => {
+    const { supportedCauseIdsByDonor } = await import("@/lib/donations/metrics");
+    const donors = [{ id: "DNR-A", email: "a@example.invalid" }, { id: "DNR-B", email: "a@example.invalid" }] as any[];
+    const donations = [
+      { id: "DA1", donorId: "DNR-A", donorEmail: "a@example.invalid", status: "completed" },
+      { id: "DA2", donorId: "DNR-A", donorEmail: "a@example.invalid", status: "completed" },
+      { id: "DA3", donorId: "DNR-A", donorEmail: "a@example.invalid", status: "pending" },
+      { id: "DA4", donorId: "DNR-B", donorEmail: "a@example.invalid", status: "completed" },
+    ] as any[];
+    const designations = [
+      { donationId: "DA1", causeId: "EDU" }, { donationId: "DA2", causeId: "EDU" }, { donationId: "DA2", causeId: "FOOD" },
+      { donationId: "DA3", causeId: "PENDING_ONLY" }, { donationId: "DA4", causeId: "WATER" },
+    ] as any[];
+    const m = supportedCauseIdsByDonor(donations, donors, designations);
+    expect(m.get("DNR-A")!.sort()).toEqual(["EDU", "FOOD"]);
+    expect(m.get("DNR-B")).toEqual(["WATER"]);
+  });
+});

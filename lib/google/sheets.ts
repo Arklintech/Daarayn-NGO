@@ -26,6 +26,10 @@ export class SheetsService {
   private headersCache = new Map<string, string[]>();
   /** Tab titles seen in the last spreadsheet listing, so verifying several tabs costs one request, not one each. */
   private knownTabs: Set<string> | null = null;
+  /** The in-flight tab listing, shared by every caller that starts while it is running (one request, not one each). */
+  private tabsLoading: Promise<Set<string>> | null = null;
+  /** Header reads requested in the same tick, sent as ONE batched request. */
+  private headerQueue = new Map<string, { resolve: (h: string[]) => void; reject: (e: Error) => void }[]>();
 
   constructor(spreadsheetId: string = GOOGLE_SHEET_ID) {
     this.spreadsheetId = spreadsheetId;
@@ -76,10 +80,7 @@ export class SheetsService {
     try {
       // Only list the spreadsheet when this tab is not already known to exist.
       // List once per instance; a tab missing from that listing is simply created ("already exists" is tolerated below).
-      if (!this.knownTabs) {
-        const meta = await this.call("get spreadsheet", () => this.sheets.spreadsheets.get({ spreadsheetId: this.spreadsheetId }));
-        this.knownTabs = new Set((meta.data.sheets || []).map((t) => String(t.properties?.title)));
-      }
+      if (!this.knownTabs) this.knownTabs = await this.loadKnownTabs();
       const sheetExists = this.knownTabs.has(sheetName);
 
       if (!sheetExists) {
@@ -109,25 +110,65 @@ export class SheetsService {
     }
   }
 
+  /** One tab listing at a time: concurrent callers wait for the same request. A failure is not remembered. */
+  private loadKnownTabs(): Promise<Set<string>> {
+    if (!this.tabsLoading) {
+      this.tabsLoading = this.call("get spreadsheet", () => this.sheets.spreadsheets.get({ spreadsheetId: this.spreadsheetId }))
+        .then((meta) => new Set((meta.data.sheets || []).map((t) => String(t.properties?.title))))
+        .finally(() => {
+          this.tabsLoading = null;
+        });
+    }
+    return this.tabsLoading;
+  }
+
+  private parseHeaderRow(rows: any[][] | null | undefined): string[] {
+    return !rows || rows.length === 0 ? [] : rows[0].map((h) => String(h).trim());
+  }
+
+  /** Sends every header read queued in this tick as one batchGet; if that fails, each tab is read on its own so one bad tab cannot fail the rest. */
+  private async flushHeaderQueue(): Promise<void> {
+    const queued = this.headerQueue;
+    this.headerQueue = new Map();
+    const names = [...queued.keys()];
+    const settle = (name: string, fn: (w: { resolve: (h: string[]) => void; reject: (e: Error) => void }) => void) => queued.get(name)!.forEach(fn);
+    const single = async (name: string) => {
+      try {
+        const res = await this.call("get headers", () => this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `'${name}'!1:1` }));
+        const headers = this.parseHeaderRow(res.data.values as any);
+        if (headers.length > 0) this.headersCache.set(name, headers);
+        settle(name, (w) => w.resolve(headers));
+      } catch (err: any) {
+        settle(name, (w) => w.reject(new Error(`Could not read headers of ${name}: ${err.message}`)));
+      }
+    };
+    if (names.length === 1) return single(names[0]);
+    try {
+      const res = await this.call("get headers (batch)", () =>
+        this.sheets.spreadsheets.values.batchGet({ spreadsheetId: this.spreadsheetId, ranges: names.map((n) => `'${n}'!1:1`) })
+      );
+      names.forEach((name, i) => {
+        const headers = this.parseHeaderRow(res.data.valueRanges?.[i]?.values as any);
+        if (headers.length > 0) this.headersCache.set(name, headers);
+        settle(name, (w) => w.resolve(headers));
+      });
+    } catch {
+      await Promise.all(names.map(single));
+    }
+  }
+
   public async getHeaders(sheetName: string): Promise<string[]> {
     if (this.headersCache.has(sheetName)) {
       const cached = this.headersCache.get(sheetName)!;
       if (cached.length > 0) return cached;
     }
-    try {
-      const res = await this.call("get headers", () =>
-        this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `'${sheetName}'!1:1` })
-      );
-      const rows = res.data.values;
-      if (!rows || rows.length === 0) return [];
-      const headers = rows[0].map((h) => String(h).trim());
-      this.headersCache.set(sheetName, headers);
-      return headers;
-    } catch (err: any) {
-      // Callers treat [] as "sheet has no header row yet" and write one, so a
-      // failed read must not look like an empty header row.
-      throw new Error(`Could not read headers of ${sheetName}: ${err.message}`);
-    }
+    return new Promise<string[]>((resolve, reject) => {
+      const first = this.headerQueue.size === 0;
+      const waiters = this.headerQueue.get(sheetName) || [];
+      waiters.push({ resolve, reject });
+      this.headerQueue.set(sheetName, waiters);
+      if (first) setTimeout(() => void this.flushHeaderQueue(), 0);
+    });
   }
 
   public async clearRange(range: string): Promise<void> {

@@ -7,10 +7,19 @@ import { ArrowRight } from "lucide-react";
 
 export default function DonorAccessGate() {
   const [identifier, setIdentifier] = useState("");
+  const [challenge, setChallenge] = useState("");
+  const [code, setCode] = useState("");
+  const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  const post = async (url: string, body: unknown) => {
+    const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    return { res, data: await res.json().catch(() => ({})) };
+  };
+
+  // Step 1: ask for a one-time code. The answer never says whether a profile exists.
   const handleAccess = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -21,22 +30,35 @@ export default function DonorAccessGate() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/donor/lookup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ identifier: identifier.trim() }),
-      });
+      const { res, data } = await post("/api/donor/lookup", { identifier: identifier.trim() });
+      if (res.ok && data.success && data.challenge) {
+        setChallenge(data.challenge);
+        setNotice(data.message || "");
+        return;
+      }
+      setError(data.error || "We could not start sign-in. Please try again.");
+    } catch (err) {
+      console.error("Donor portal access error:", err);
+      setError("Authentication network failure. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      const data = await res.json();
-      if (res.ok && data.success && data.donor) {
-        localStorage.setItem("daarayn_donor_id", data.donor.id);
+  // Step 2: exchange the emailed code for a session.
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const { res, data } = await post("/api/donor/verify", { challenge, code: code.trim() });
+      if (res.ok && data.success) {
         router.push("/donor/dashboard");
         return;
       }
-
-      setError(data.error || "No registered donor profile found with this identifier.");
+      setError(data.error || "That code is not valid or has expired.");
     } catch (err) {
-      console.error("Donor portal access error:", err);
+      console.error("Donor portal verify error:", err);
       setError("Authentication network failure. Please try again.");
     } finally {
       setLoading(false);
@@ -76,11 +98,12 @@ export default function DonorAccessGate() {
           </div>
         )}
 
+        {!challenge ? (
         <form onSubmit={handleAccess} className="space-y-4">
           <div className="text-left">
             <label className="block text-[10px] font-medium text-gray-400 mb-1.5 uppercase tracking-wider">Email or Phone Number</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               required
               placeholder="e.g. ahmed.khan@example.com"
               value={identifier}
@@ -89,8 +112,8 @@ export default function DonorAccessGate() {
             />
           </div>
 
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={loading}
             className="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold text-sm tracking-wide transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_20px_rgba(212,175,55,0.15)] font-mono"
           >
@@ -98,11 +121,40 @@ export default function DonorAccessGate() {
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-black border-t-transparent"></div>
             ) : (
               <span className="flex items-center gap-1.5">
-                SECURE ACCESS <ArrowRight className="w-4 h-4" />
+                SEND ME A CODE <ArrowRight className="w-4 h-4" />
               </span>
             )}
           </button>
         </form>
+        ) : (
+        <form onSubmit={handleVerify} className="space-y-4">
+          {notice && <p className="text-xs text-gray-300 text-left">{notice}</p>}
+          <div className="text-left">
+            <label className="block text-[10px] font-medium text-gray-400 mb-1.5 uppercase tracking-wider">One-time code</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              required
+              maxLength={6}
+              placeholder="6-digit code"
+              value={code}
+              onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+              className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white placeholder-gray-600 text-sm tracking-[0.4em] focus:outline-none focus:border-luxury-gold transition duration-200"
+            />
+          </div>
+          <button
+            type="submit"
+            disabled={loading || code.length !== 6}
+            className="w-full py-3.5 mt-2 rounded-xl bg-gradient-to-r from-luxury-gold to-luxury-gold-light hover:brightness-105 active:scale-[0.98] text-black font-semibold text-sm tracking-wide transition duration-200 flex items-center justify-center disabled:opacity-50 disabled:pointer-events-none shadow-[0_4px_20px_rgba(212,175,55,0.15)] font-mono"
+          >
+            {loading ? <div className="h-5 w-5 animate-spin rounded-full border-2 border-black border-t-transparent"></div> : <span className="flex items-center gap-1.5">SECURE ACCESS <ArrowRight className="w-4 h-4" /></span>}
+          </button>
+          <button type="button" onClick={() => { setChallenge(""); setCode(""); setNotice(""); setError(""); }} className="text-xs text-gray-400 underline">
+            Use a different email or phone number
+          </button>
+        </form>
+        )}
 
       </motion.div>
     </div>

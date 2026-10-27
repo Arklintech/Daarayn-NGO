@@ -5,6 +5,13 @@ import {
   User, Mail, Phone, MapPin, CheckCircle, Navigation, 
   MessageSquare, Settings, EyeOff, LayoutGrid, AlertCircle, ChevronLeft, ChevronRight, Image as ImageIcon
 } from 'lucide-react';
+import { donationBadge, donationCauseLabel, communicationOutcome } from '@/lib/donors/display';
+
+const TONE_CLASS: Record<string, string> = {
+  good: 'border-emerald-500/20 text-emerald-400',
+  wait: 'border-amber-500/20 text-amber-400',
+  bad: 'border-red-500/20 text-red-400',
+};
 
 function Section({ title, action, children }: { title: string; action?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -71,8 +78,8 @@ export default function OverviewTab({ donor, donations, communications, setActiv
             <div className="my-2 border-t border-white/[0.05]" />
             
             <InfoRow icon={MessageSquare} label="Communication Preference" value={donor.communicationPreference} />
-            <InfoRow icon={Settings} label="Receive Updates" value={donor.optIn ? 'Yes' : 'No'} />
-            <InfoRow icon={EyeOff} label="Anonymous Preference" value={donor.anonymous ? 'Yes' : 'No'} />
+            <InfoRow icon={Settings} label="Receive Updates" value={!donor.email ? 'No email on file' : donor.emailSuppressed ? 'No (unsubscribed)' : 'Yes'} />
+            <InfoRow icon={EyeOff} label="Anonymous Preference" value={donor.anonymous === undefined ? '—' : donor.anonymous ? 'Yes' : 'No'} />
             <InfoRow icon={LayoutGrid} label="Preferred Causes" value={donor.donationPreference} />
           </div>
         </Section>
@@ -143,12 +150,12 @@ export default function OverviewTab({ donor, donations, communications, setActiv
                       <div className="flex items-start justify-between">
                         <div>
                           <p className="text-[13px] text-gray-300 font-mono">{d.id}</p>
-                          <p className="text-[12px] text-gray-500 mt-0.5">{d.selectedCauses?.[0]?.causeName || 'General Fund'}</p>
+                          <p className="text-[12px] text-gray-500 mt-0.5">{donationCauseLabel(d)}</p>
                         </div>
                         <div className="text-right">
                           <p className="text-[14px] font-semibold text-white">₹{(d.amount || 0).toLocaleString()}</p>
-                          <span className="inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded border border-emerald-500/20 text-emerald-400">
-                            Verified
+                          <span className={`inline-block mt-1 text-[10px] font-medium px-2 py-0.5 rounded border ${TONE_CLASS[donationBadge(d.status).tone]}`}>
+                            {donationBadge(d.status).label}
                           </span>
                         </div>
                       </div>
@@ -180,11 +187,11 @@ export default function OverviewTab({ donor, donations, communications, setActiv
         {/* Information Shared by Donor */}
         <Section title="Information Shared by Donor">
           <div className="space-y-3">
-            <InfoRow label="Purpose / Remarks" value={<span className="block min-w-0 truncate text-right">{donor.remarks || donor.notes || 'For the sake of Allah. Please use where it is most needed.'}</span>} />
-            <InfoRow label="How did you hear about us?" value={donor.source || 'Social Media'} />
-            <InfoRow label="Preferred Communication" value={donor.communicationPreference || 'Email'} />
-            <InfoRow label="Allow Public Display" value={donor.anonymous ? 'No' : 'Yes'} />
-            <InfoRow label="Additional Note" value={donor.additionalNote || 'Keep me updated on the progress.'} />
+            <InfoRow label="Purpose / Remarks" value={<span className="block min-w-0 truncate text-right">{donor.remarks || donor.notes || '—'}</span>} />
+            <InfoRow label="How did you hear about us?" value={donor.source || '—'} />
+            <InfoRow label="Preferred Communication" value={donor.communicationPreference || '—'} />
+            <InfoRow label="Allow Public Display" value={donor.anonymous === undefined ? '—' : donor.anonymous ? 'No' : 'Yes'} />
+            <InfoRow label="Additional Note" value={donor.additionalNote || '—'} />
           </div>
         </Section>
 
@@ -197,21 +204,23 @@ export default function OverviewTab({ donor, donations, communications, setActiv
         <Section 
           title="Latest Donation Details" 
           action={
-            <span className="inline-flex items-center px-2 py-0.5 rounded border border-emerald-500/20 text-emerald-400 text-[11px] font-medium">
-              Verified
+            <span className={`inline-flex items-center px-2 py-0.5 rounded border text-[11px] font-medium ${TONE_CLASS[donationBadge(latestDonation?.status).tone]}`}>
+              {latestDonation ? donationBadge(latestDonation.status).label : '—'}
             </span>
           }
         >
           {latestDonation ? (
             <div className="space-y-2">
               <InfoRow label="Contribution ID" value={latestDonation.id} boldValue />
-              <InfoRow label="Cause" value={latestDonation.selectedCauses?.[0]?.causeName || 'General Fund'} />
+              <InfoRow label="Cause" value={donationCauseLabel(latestDonation)} />
               <InfoRow label="Amount" value={`₹${(latestDonation.amount || 0).toLocaleString()}`} boldValue />
-              <InfoRow label="Payment Method" value={latestDonation.paymentMethod || 'UPI'} />
-              <InfoRow label="Transaction ID" value={latestDonation.transactionReference || 'UPI/328749302874'} />
+              <InfoRow label="Payment Method" value={latestDonation.paymentMethod || '—'} />
+              <InfoRow label="Transaction ID" value={latestDonation.transactionReference || latestDonation.refCode || '—'} />
               <InfoRow label="Submitted On" value={formatDateTime(latestDonation.date)} />
-              <InfoRow label="Verified On" value={formatDateTime(latestDonation.verifiedAt || latestDonation.date)} />
-              <InfoRow label="Verified By" value="Super Admin" />
+              {donationBadge(latestDonation.status).tone === 'good' && latestDonation.verifiedAt && (
+                <InfoRow label="Verified On" value={formatDateTime(latestDonation.verifiedAt)} />
+              )}
+              {latestDonation.verifiedBy && <InfoRow label="Verified By" value={latestDonation.verifiedBy} />}
 
               <div className="pt-4">
                 <button onClick={() => setActiveTab('donations')} className="w-full py-2.5 rounded-xl text-[13px] font-medium text-luxury-gold hover:text-white transition"
@@ -245,24 +254,12 @@ export default function OverviewTab({ donor, donations, communications, setActiv
                   <span className="text-[13px] text-gray-300 truncate">{c.subject || c.type || 'Communication'}</span>
                   <span className="text-[12px] text-gray-500 whitespace-nowrap">{formatDate(c.sentDate)}</span>
                 </div>
-                <span className="text-[11px] font-medium text-emerald-400">Delivered</span>
+                <span className={`text-[11px] font-medium ${TONE_CLASS[communicationOutcome(c.status).tone].split(' ')[1]}`} title={communicationOutcome(c.status).note}>
+                  {communicationOutcome(c.status).label}
+                </span>
               </div>
             ))}
-            
-            {/* Fake welcome email to show history density if only a few exist */}
-            {recentComms.length < 4 && (
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ background: 'rgba(255,249,221,0.1)', border: '1px solid rgba(255,249,221,0.15)' }}>
-                  <Mail className="w-3.5 h-3.5 text-luxury-gold" />
-                </div>
-                <div className="flex-1 min-w-0 flex items-center justify-between gap-4">
-                  <span className="text-[13px] text-gray-300 truncate">Welcome & Thank You</span>
-                  <span className="text-[12px] text-gray-500 whitespace-nowrap">{formatDate(donor.dateJoined)}</span>
-                </div>
-                <span className="text-[11px] font-medium text-emerald-400">Delivered</span>
-              </div>
-            )}
+            {recentComms.length === 0 && <p className="text-[13px] text-gray-500 text-center py-2">No communications recorded for this donor.</p>}
           </div>
         </Section>
 

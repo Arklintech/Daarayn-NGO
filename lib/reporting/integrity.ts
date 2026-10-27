@@ -9,12 +9,15 @@ import type { Cause } from "../repositories/causeRepository";
 import type { DonationCauseEntity } from "../repositories/donationCauseRepository";
 import type { AllocationEntity } from "../repositories/allocationRepository";
 import { donationState } from "../donations/metrics";
+import { normalizeEmail, normalizePhone } from "../donors/normalize";
 
 export type IntegrityType =
   | "INCOMPLETE_DONATION"
   | "STALE_PLACEHOLDER"
   | "DUPLICATE_DONATION_ID"
   | "DUPLICATE_DONOR_TOKEN"
+  | "DONATION_DONOR_MISSING"
+  | "DUPLICATE_DONOR_CONTACT"
   | "UNRESOLVED_DESIGNATION"
   | "ORPHAN_DESIGNATION"
   | "UNKNOWN_CAUSE_REFERENCE"
@@ -56,6 +59,31 @@ export function findIntegrityExceptions(input: {
   const tokenCounts = new Map<string, number>();
   for (const dn of input.donors) tokenCounts.set(dn.id, (tokenCounts.get(dn.id) || 0) + 1);
   for (const [id, n] of tokenCounts) if (n > 1) out.push({ type: "DUPLICATE_DONOR_TOKEN", severity: "error", entityId: id, message: `${n} donor rows share this token.` });
+
+  // A donation must belong to an existing donor; otherwise donor histories and counts silently omit it.
+  const donorIds = new Set(input.donors.map((dn) => dn.id));
+  for (const d of real) {
+    if (d.donorId && !donorIds.has(d.donorId)) {
+      out.push({ type: "DONATION_DONOR_MISSING", severity: "warning", entityId: d.id, message: `Refers to donor ${d.donorId}, which has no donor record.` });
+    }
+  }
+
+  // Distinct tokens sharing one normalized email or phone are reported for an administrator to review. Never merged here:
+  // matching people automatically is how two different donors get combined.
+  const byContact = new Map<string, string[]>();
+  for (const dn of input.donors) {
+    for (const key of [normalizeEmail(dn.email) && `email:${normalizeEmail(dn.email)}`, normalizePhone(dn.phone) && `phone:${normalizePhone(dn.phone)}`]) {
+      if (!key) continue;
+      if (!byContact.has(key)) byContact.set(key, []);
+      const tokens = byContact.get(key)!;
+      if (!tokens.includes(dn.id)) tokens.push(dn.id);
+    }
+  }
+  for (const [key, tokens] of byContact) {
+    if (tokens.length > 1) {
+      out.push({ type: "DUPLICATE_DONOR_CONTACT", severity: "warning", entityId: tokens[0], message: `${tokens.length} donor records share the same ${key.split(":")[0]} (${tokens.join(", ")}).` });
+    }
+  }
 
   for (const d of real) {
     if (d.opStatus === "pending" || d.opStatus === "partial") {

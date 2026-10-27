@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import { isCommunicationType, scopeKeyFor, type CommunicationType } from "@/lib/communication-resolver";
 import { resolveAudience } from "@/lib/communications/audience";
 import { verifyApproval } from "@/lib/communications/approval";
-import { dedupeRecipients, processBroadcast } from "@/lib/broadcast-worker";
+import crypto from "crypto";
+import { AttachmentError, dedupeRecipients, processBroadcast, resolveAttachments } from "@/lib/broadcast-worker";
+import { inspectMedia, mediaFingerprints, MediaError } from "@/lib/communications/attachments";
 import { broadcastStore } from "@/lib/broadcast-store";
 import { verifyEmailProvider } from "@/lib/email/providerManager";
 import { getSiteUrl } from "@/lib/email/deliverability";
@@ -64,12 +66,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: `Unknown communication type "${requestedType}".` }, { status: 400 });
     }
     const commType: CommunicationType = requestedType;
+    // File identity is read now and compared with what was approved: a replaced, trashed or missing file stops the send.
+    let items: Awaited<ReturnType<typeof inspectMedia>> = [];
+    try {
+      items = await inspectMedia(media);
+    } catch (err: any) {
+      if (err instanceof MediaError) return NextResponse.json({ success: false, error: err.message, code: "ATTACHMENT_INVALID" }, { status: 422 });
+      throw err;
+    }
+
     if (!Array.isArray(recipientIds) || recipientIds.length === 0) {
       return NextResponse.json({ success: false, error: "Approve the recipient list before sending (recipientIds is required)." }, { status: 400 });
     }
 
-    // Approval is bound to THIS content and THIS recipient set.
-    const approval = verifyApproval(approvalToken, adminAuth.email, { type: commType, causeIds, heading, notes, media, recipientIds });
+    // Approval is bound to THIS content, THIS recipient set and THESE exact files.
+    const approval = verifyApproval(approvalToken, adminAuth.email, { type: commType, causeIds, heading, notes, media, recipientIds, mediaFingerprints: mediaFingerprints(items) });
     if (!approval.ok) return NextResponse.json({ success: false, error: approval.reason, code: "APPROVAL_REQUIRED" }, { status: 403 });
 
     // Fail fast on bad credentials instead of reporting every donor as failed
@@ -92,21 +103,31 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: `No eligible recipients found for ${audience.causeNames.join(", ")} (${commType}).` }, { status: 400 });
     }
 
+    // Every approved file must be readable, safe and within the size limit BEFORE anything is recorded or sent.
+    let resolvedAttachments: Awaited<ReturnType<typeof resolveAttachments>> = [];
+    const toAttach = items.filter((i) => i.delivery === "attach");
+    if (toAttach.length > 0) {
+      try {
+        resolvedAttachments = await resolveAttachments(toAttach.map((i) => i.url));
+        // What was read must be what was approved (the file could change between the check above and the download).
+        toAttach.forEach((i, idx) => {
+          if (i.kind === "drive" && /^[a-f0-9]{32}$/.test(i.fingerprint) && crypto.createHash("md5").update(resolvedAttachments[idx].content).digest("hex") !== i.fingerprint) {
+            throw new AttachmentError(`"${i.name}" changed while the message was being prepared. Nothing was sent; review and approve again.`);
+          }
+        });
+      } catch (err: any) {
+        if (err instanceof AttachmentError) return NextResponse.json({ success: false, error: err.message, code: "ATTACHMENT_INVALID" }, { status: 422 });
+        throw err;
+      }
+    }
+
     const causeName = audience.causeNames.join(", ");
     const { eyebrow, dua } = EYEBROWS[commType];
 
     // Admin-typed text is escaped BEFORE the limited **bold** markup is applied, so it cannot inject HTML.
     const formattedNotes = escapeHtml(notes).split("\n\n").map((p: string) => p.replace(/\n/g, "<br>").replace(/\*\*(.*?)\*\*/g, "<strong style='color:#F2EEE3;'>$1</strong>"));
-    let projectUpdateHtml = formattedNotes.join("<br><br>");
-    if (media.length > 0) {
-      projectUpdateHtml += '<br><br><hr style="border:none; border-top:1px solid rgba(255,255,255,0.07); margin:20px 0;"><strong style="color:#D4AF37; font-family:Georgia, serif; font-size:14px;">Attached Documents & Media:</strong><ul style="margin:10px 0 0; padding-left:20px; font-family:Arial, sans-serif; font-size:13px; color:#f3f4f6; line-height:1.6;">';
-      media.forEach((url: string, idx: number) => {
-        const href = /^https?:\/\//i.test(url) ? url : `${getSiteUrl()}${url.startsWith("/") ? "" : "/"}${url}`;
-        const filename = url.split("/").pop()?.split("?")[0] || `document-${idx + 1}`;
-        projectUpdateHtml += `<li><a href="${escapeHtml(href)}" target="_blank" style="color:#C9A24B; text-decoration:underline;">${escapeHtml(filename)}</a></li>`;
-      });
-      projectUpdateHtml += "</ul>";
-    }
+    // Files are listed per recipient by the broadcast worker (attached files by name, secure links personal to the recipient).
+    const projectUpdateHtml = formattedNotes.join("<br><br>");
 
     const broadcastId = `BCAST-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
     const createdAt = new Date().toISOString();
@@ -162,7 +183,7 @@ export async function POST(req: Request) {
     const broadcast = await processBroadcast(
       broadcastId,
       recipients,
-      { heading, eyebrow, dua, projectUpdateHtml, mediaUrls: media, causeName, stats: audience.stats, createdAt },
+      { heading, eyebrow, dua, projectUpdateHtml, mediaUrls: media, resolvedAttachments, mediaItems: items, causeName, stats: audience.stats, createdAt },
       { deadline: requestStartedAt + SEND_BUDGET_MS, rows }
     );
 

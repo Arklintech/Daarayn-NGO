@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { resolveAudience } from "@/lib/communications/audience";
 import { issueApproval } from "@/lib/communications/approval";
 import { TYPE_RULES, isCommunicationType } from "@/lib/communication-resolver";
+import { inspectMedia, mediaFingerprints, MediaError, directBudgetBytes } from "@/lib/communications/attachments";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,14 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: `Unknown communication type "${commType}".` }, { status: 400 });
     }
 
+    let items: Awaited<ReturnType<typeof inspectMedia>> = [];
+    try {
+      items = await inspectMedia(media);
+    } catch (err: any) {
+      if (err instanceof MediaError) return NextResponse.json({ success: false, error: err.message, code: "ATTACHMENT_INVALID" }, { status: 422 });
+      throw err;
+    }
+
     const audience = await resolveAudience({ causeIds, type: commType, includePreviouslySent: Boolean(includePreviouslySent), includeUnresolved: Boolean(includeUnresolved), retryBroadcastId });
     if (!audience.ok) return NextResponse.json({ success: false, error: audience.error }, { status: audience.status || 400 });
 
@@ -39,7 +48,10 @@ export async function POST(req: Request) {
     if (failed) warnings.push(`${failed} recipient(s) failed in an earlier attempt and will be tried again.`);
     if (includeUnresolved) warnings.push("Recipients with an unknown earlier outcome are included; they may receive a duplicate.");
 
-    const approval = recipientIds.length ? issueApproval(admin.email, { type: commType, causeIds, heading, notes, media, recipientIds }) : null;
+    const linked = items.filter((i) => i.delivery === "link");
+    if (linked.length) warnings.push(`${linked.length} file(s) exceed the ${directBudgetBytes() / 1048576} MB e-mail attachment budget and will be sent as personal secure links (valid for ${Number(process.env.ATTACHMENT_LINK_TTL_DAYS) || 30} days): ${linked.map((i) => i.name).join(", ")}.`);
+
+    const approval = recipientIds.length ? issueApproval(admin.email, { type: commType, causeIds, heading, notes, media, recipientIds, mediaFingerprints: mediaFingerprints(items) }) : null;
 
     return NextResponse.json(
       {
@@ -51,6 +63,7 @@ export async function POST(req: Request) {
         rule: TYPE_RULES[commType],
         stats: audience.stats,
         warnings,
+        attachments: items.map((i) => ({ name: i.name, sizeBytes: i.size, delivery: i.kind === "external" ? "public-link" : i.delivery === "attach" ? "attached" : "secure-link" })),
         approvalToken: approval?.token ?? null,
         approvalExpiresAt: approval?.expiresAt ?? null,
         // What the recipients will be told, so the reviewer sees the facts being used.

@@ -10,6 +10,8 @@
  * so callers still report an accurate failure and never a false success.
  */
 
+import { recordGoogleAttempt } from "./usage";
+
 export interface RetryOptions {
   /** Total tries including the first (default 5). */
   maxAttempts?: number;
@@ -66,9 +68,12 @@ export async function withGoogleRetry<T>(fn: () => Promise<T>, options: RetryOpt
   for (;;) {
     attempt++;
     try {
-      return await fn();
+      const result = await fn();
+      recordGoogleAttempt(options.label, { failed: false, quota: false });
+      return result;
     } catch (err: any) {
       const info = classifyGoogleError(err);
+      recordGoogleAttempt(options.label, { failed: true, quota: info.quota });
       const { retryAfterMs } = info;
       const retryable = options.quotaOnly ? info.quota : info.retryable;
       if (!retryable || attempt >= maxAttempts) {

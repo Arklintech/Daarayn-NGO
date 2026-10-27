@@ -14,15 +14,10 @@ import {
 import { motion } from "framer-motion";
 import DriveConnectionCard from "@/components/admin/DriveConnectionCard";
 
-const DEFAULT_ADMINS = [
-  { uid: "super_1", name: "Super Admin", email: "admin@daarayn.org", role: "Super Admin", status: "active" },
-  { uid: "editor_1", name: "Content Editor", email: "editor@daarayn.org", role: "Editor", status: "active" }
-];
 
 export default function AdminSettings() {
   const { adminData } = useAuth();
-  const [adminsList, setAdminsList] = useState<any[]>(DEFAULT_ADMINS);
-  const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false);
 
   // SEO metadata settings
   const [metaState, setMetaState] = useState({
@@ -37,39 +32,21 @@ export default function AdminSettings() {
     try {
       const cachedMeta = localStorage.getItem("daarayn_seo_meta");
       if (cachedMeta) setMetaState(JSON.parse(cachedMeta));
-      const cachedAdmins = localStorage.getItem("daarayn_admins_list");
-      if (cachedAdmins) setAdminsList(JSON.parse(cachedAdmins));
     } catch (e) {}
   }, []);
-
-  const handleRoleChange = (userId: string, newRole: string) => {
-    if (adminData?.role !== "Super Admin" && adminData?.role) {
-      alert("Permission denied. Only Super Administrators can update role assignments.");
-      return;
-    }
-
-    setAdminsList(prev => {
-      const updated = prev.map(a => a.uid === userId ? { ...a, role: newRole } : a);
-      try { localStorage.setItem("daarayn_admins_list", JSON.stringify(updated)); } catch(e){}
-      return updated;
-    });
-    alert("Administrator role updated successfully!");
-  };
 
   const handleSaveMeta = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       localStorage.setItem("daarayn_seo_meta", JSON.stringify(metaState));
-      alert("SEO Metadata parameters successfully updated.");
+      alert("Saved in this browser only. The public website does not read these values yet, so nothing on the live site has changed.");
     } catch (err) {
       console.error("Save meta settings error:", err);
     } finally {
       setLoading(false);
     }
   };
-
-  const isSuperAdmin = !adminData || adminData?.role === "Super Admin";
 
   return (
     <div className="space-y-6 text-xs">
@@ -86,7 +63,7 @@ export default function AdminSettings() {
             <Settings2 className="w-5 h-5 text-luxury-gold" />
             <div>
               <h3 className="text-sm font-bold text-white uppercase tracking-wider">Website SEO Parameters</h3>
-              <p className="text-[10px] text-gray-400 mt-0.5">Control search ranking metadata</p>
+              <p className="text-[10px] text-gray-400 mt-0.5">Draft values, stored in this browser only (not yet applied to the public site)</p>
             </div>
           </div>
 
@@ -144,8 +121,8 @@ export default function AdminSettings() {
           <div className="flex items-center gap-2 mb-6 border-b border-white/[0.06] pb-3">
             <Database className="w-5 h-5 text-luxury-gold" />
             <div>
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Firebase Cloud Settings</h3>
-              <p className="text-[10px] text-gray-400 mt-0.5">Primary database config (Read-Only)</p>
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">Authentication &amp; Data Sources</h3>
+              <p className="text-[10px] text-gray-400 mt-0.5">Read-only. Firebase is used for sign-in only; operational data lives in Google Sheets</p>
             </div>
           </div>
 
@@ -159,12 +136,12 @@ export default function AdminSettings() {
               <span className="text-white">daaraynorg-9165c.firebaseapp.com</span>
             </div>
             <div className="flex justify-between border-b border-white/[0.03] pb-2">
-              <span className="text-gray-500 uppercase tracking-wider text-[8px]">Firestore Database</span>
-              <span className="text-emerald-400">asia-south1 (Mumbai) / (default)</span>
+              <span className="text-gray-500 uppercase tracking-wider text-[8px]">Operational data</span>
+              <span className="text-emerald-400">Google Sheets (Firestore is not used)</span>
             </div>
             <div className="flex justify-between border-b border-white/[0.03] pb-2">
-              <span className="text-gray-500 uppercase tracking-wider text-[8px]">Storage Bucket</span>
-              <span className="text-white">daaraynorg-9165c.firebasestorage.app</span>
+              <span className="text-gray-500 uppercase tracking-wider text-[8px]">Files &amp; evidence</span>
+              <span className="text-white">Google Drive</span>
             </div>
             <div className="flex items-center gap-2 text-[9px] text-gray-500 font-sans mt-2">
               <EyeOff className="w-3.5 h-3.5" /> Core API Keys and App ID parameters are encrypted.
@@ -173,65 +150,13 @@ export default function AdminSettings() {
         </motion.div>
       </div>
 
-      {/* User Management Grid */}
-      <motion.div 
-        initial={{ opacity: 0, y: 15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="p-6 rounded-3xl admin-glass border border-white/[0.06]"
-      >
-        <div className="flex justify-between items-center mb-6 border-b border-white/[0.06] pb-3">
-          <div>
-            <h3 className="text-sm font-bold text-white uppercase tracking-wider">Administrator Accounts Directory</h3>
-            <p className="text-[10px] text-gray-400 mt-0.5">View and update RBAC permissions</p>
-          </div>
-          <span className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider">Super Admin control active</span>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-white/[0.06] text-gray-500 font-semibold uppercase tracking-wider text-[9px]">
-                <th className="py-2.5">User Name</th>
-                <th className="py-2.5">Email</th>
-                <th className="py-2.5">Assigned Role</th>
-                <th className="py-2.5">User Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/[0.03] text-gray-300">
-              {adminsList.map((admin) => (
-                <tr key={admin.uid || admin.id} className="hover:bg-white/[0.01]">
-                  <td className="py-3 font-semibold text-white">{admin.name}</td>
-                  <td className="py-3 font-mono text-gray-400">{admin.email}</td>
-                  <td className="py-3">
-                    <select
-                      value={admin.role}
-                      disabled={!isSuperAdmin}
-                      onChange={(e) => handleRoleChange(admin.uid || admin.id, e.target.value)}
-                      className={`px-3 py-1.5 rounded-lg border focus:outline-none ${
-                        !isSuperAdmin
-                          ? "bg-transparent text-gray-500 border-none cursor-not-allowed font-semibold"
-                          : "bg-[#06120c] text-white border-white/[0.08] cursor-pointer hover:border-luxury-gold/40 transition-colors"
-                      }`}
-                    >
-                      <option value="Super Admin" className="bg-[#06120c] text-white">Super Admin</option>
-                      <option value="Admin" className="bg-[#06120c] text-white">Admin</option>
-                      <option value="Editor" className="bg-[#06120c] text-white">Editor</option>
-                      <option value="Content Manager" className="bg-[#06120c] text-white">Content Manager</option>
-                      <option value="Finance Manager" className="bg-[#06120c] text-white">Finance Manager</option>
-                      <option value="Volunteer Manager" className="bg-[#06120c] text-white">Volunteer Manager</option>
-                    </select>
-                  </td>
-                  <td className="py-3">
-                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase bg-emerald-950/40 text-emerald-300 border border-emerald-500/20">
-                      {admin.status || "active"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* Administrator access */}
+      <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="p-6 rounded-3xl admin-glass border border-white/[0.06]">
+        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2">Administrator Access</h3>
+        <p className="text-[11px] text-gray-400 leading-relaxed">
+          Who can sign in to this panel is decided on the server by the ADMIN_EMAILS allow-list and Firebase Authentication. Roles are not editable here, and no administrator list is shown because none is stored in the application.
+          {adminData?.email ? <> You are signed in as <span className="text-white font-mono">{adminData.email}</span>.</> : null}
+        </p>
       </motion.div>
     </div>
   );

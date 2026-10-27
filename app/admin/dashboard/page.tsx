@@ -230,7 +230,7 @@ export default function AdminDashboard() {
               <p className="text-[10px] text-gray-400 mt-0.5">All recorded donations by status</p>
             </div>
             <span className="text-[10px] text-[#46c6f3] bg-[#46c6f3]/10 border border-[#46c6f3]/25 px-2 py-0.5 rounded-full font-semibold">
-              {plural(breakdownCount, "record")}
+              {data ? plural(breakdownCount, "record") : "—"}
             </span>
           </div>
 

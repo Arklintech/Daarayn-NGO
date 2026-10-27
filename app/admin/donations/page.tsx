@@ -284,7 +284,7 @@ export default function AdminDonations() {
               ) : filteredDonations.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="p-8 text-center text-gray-500">
-                    No contributions match the filters.
+                    {loadError ? 'Donations are unavailable right now (see the error above); this is not an empty list.' : 'No contributions match the filters.'}
                   </td>
                 </tr>
               ) : (
@@ -356,7 +356,7 @@ export default function AdminDonations() {
               Loading donations queue...
             </div>
           ) : filteredDonations.length === 0 ? (
-            <div className="py-12 text-center text-gray-500">No contributions match the filters.</div>
+            <div className="py-12 text-center text-gray-500">{loadError ? 'Donations are unavailable right now (see the error above); this is not an empty list.' : 'No contributions match the filters.'}</div>
           ) : (
             filteredDonations.map((item, rowIdx) => (
               <div key={`${item.id}-${rowIdx}`} className="p-4 rounded-2xl bg-white/[0.02] border border-white/10 space-y-3">

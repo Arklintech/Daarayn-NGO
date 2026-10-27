@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { IndianRupee, User, Mail, UploadCloud, CheckCircle2, ShieldCheck, FileImage, Loader2, Check, ChevronDown, Sparkles } from 'lucide-react';
 import DonationSuccess from './DonationSuccess';
 import { getCauseMeta } from './QuickDonationRibbon';
+import { toggleDonationCause } from '@/lib/donations/causeToggle';
 
 // Animation variants
 const containerVariants = {
@@ -132,9 +133,7 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
   }, [initialCause]);
 
   const toggleCause = (causeId: string) => {
-    setSelectedCausesList(prev => 
-      prev.includes(causeId) ? prev.filter(id => id !== causeId) : [...prev, causeId]
-    );
+    setSelectedCausesList(prev => toggleDonationCause(prev, causeId));
   };
 
   const selectedCount = selectedCausesList.length;

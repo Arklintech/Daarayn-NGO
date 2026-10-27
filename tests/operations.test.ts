@@ -353,6 +353,24 @@ describe("G. allocations and evidence", () => {
     expect(results.filter((r) => r.status === "fulfilled").length).toBeLessThanOrEqual(1);
   });
 
+  // D3-F6: with several simultaneous requests every contender rolled itself back (each saw the combined total), so
+  // nobody received funds that fit. The earliest rows must win and only the surplus must lose.
+  it("J2: simultaneous allocations that do not all fit let the earliest rows win; the total never exceeds the designation", async () => {
+    const w = await world();
+    const d = await verifiedDonation(w);
+    const results = await Promise.allSettled([
+      alloc(w, { donationId: d.donationId, amount: 400, requestKey: "p1" }),
+      alloc(w, { donationId: d.donationId, amount: 400, requestKey: "p2" }),
+      alloc(w, { donationId: d.donationId, amount: 400, requestKey: "p3" }),
+    ]);
+    const rows = fakeApi.records("Allocations");
+    const active = rows.filter((r) => r.status === "active");
+    expect(active.reduce((s, r) => s + Number(r.allocatedAmount), 0)).toBeLessThanOrEqual(1000);
+    expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(2);
+    expect(active).toHaveLength(2);
+    expect(rows.filter((r) => r.status === "reversed")).toHaveLength(1); // the loser is kept, marked reversed by "system"
+  });
+
   it("allocation routes are admin-only and validate input", async () => {
     const w = await world();
     authState.role = "none";

@@ -2,7 +2,7 @@ import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { donorRepository } from "@/lib/repositories/donorRepository";
 import { loadSnapshot } from "@/lib/donations/snapshot";
-import { givingByDonor } from "@/lib/donations/metrics";
+import { givingByDonor, supportedCauseIdsByDonor } from "@/lib/donations/metrics";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { RealtimeEvent } from "@/lib/realtime/events";
 
@@ -16,8 +16,9 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status")?.toLowerCase().trim();
 
     // Fresh read of both tabs in one request; giving is derived from donation records.
-    const { donors: storedDonors, donations } = await loadSnapshot(["donors", "donations"]);
+    const { donors: storedDonors, donations, designations } = await loadSnapshot(["donors", "donations", "designations"]);
     const giving = givingByDonor(donations, storedDonors);
+    const supportedCauses = supportedCauseIdsByDonor(donations, storedDonors, designations);
     const donors = storedDonors.map((d) => {
       const g = giving.get(d.id)!;
       return {
@@ -28,7 +29,9 @@ export async function GET(request: NextRequest) {
         totalAmountDonated: g.receivedAmount,
         pendingDonations: g.pendingCount,
         pendingAmount: g.pendingAmount,
+        rejectedDonations: g.rejectedCount,
         lastDonationDate: g.lastDonationDate,
+        supportedCauseIds: supportedCauses.get(d.id) || [],
       };
     });
 

@@ -14,6 +14,7 @@ import { useRealtimeRefresh } from '@/lib/realtime/useRealtime';
 import { DONATION_DATA_EVENTS } from '@/lib/realtime/events';
 
 import OverviewTab from './tabs/OverviewTab';
+import { supportedCauseCount } from '@/lib/donors/display';
 import DonationsTab from './tabs/DonationsTab';
 import CommunicationsTab from './tabs/CommunicationsTab';
 import DocumentsTab from './tabs/DocumentsTab';
@@ -225,7 +226,7 @@ export default function DonorWorkspace() {
   // Verified donations only; pending submissions are shown separately.
   const giving = donorGiving(donations);
   const lifetimeGiving = giving.receivedAmount;
-  const causesSupported = new Set(donations.flatMap((d: any) => (d.selectedCauses || []).map((c: any) => c.causeId))).size;
+  const causesSupported = supportedCauseCount(donations);
   const lastDonation = donations.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime())[0];
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -270,7 +271,7 @@ export default function DonorWorkspace() {
                   <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5">
                     <h1 className="text-2xl font-semibold text-white tracking-tight">{donor.name || 'Anonymous Donor'}</h1>
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                      Verified Donor
+                      {giving.receivedCount > 0 ? 'Verified Donor' : 'No verified donation yet'}
                     </span>
                   </div>
                   <p className="text-sm font-mono text-gray-400 mt-1">Donor Token: {donor.id}</p>

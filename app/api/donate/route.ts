@@ -28,7 +28,9 @@ export async function POST(request: NextRequest) {
         selectedCauses = JSON.parse(selectedCausesStr);
       }
     } catch (e) {
+      // Falling back to "no selection" would silently record the gift as unrestricted; the donor must correct it.
       console.warn("Failed to parse selectedCauses", e);
+      return NextResponse.json({ error: "The selected causes could not be read. Please choose your causes again." }, { status: 400 });
     }
 
     const screenshot = formData.get("screenshot") as File | null;

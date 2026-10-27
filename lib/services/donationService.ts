@@ -181,6 +181,13 @@ export class DonationService {
     const trackingId = donation.id;
 
     if (duplicate) {
+      // This request uploaded its own copy of the proof before the duplicate was known; the recorded donation points at
+      // another one. Remove only the redundant upload (best effort: a failure here must never fail the donor's request).
+      if (proofDriveFileId && proofDriveFileId !== donation.proofDriveFileId) {
+        await driveService.deleteFile(proofDriveFileId).catch((err: any) =>
+          console.warn("[DonationService] Could not remove a redundant proof upload:", err?.message)
+        );
+      }
       // Already recorded. If its follow-up work was interrupted it stays visible as pending/partial for recovery.
       return {
         success: true,

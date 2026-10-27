@@ -28,6 +28,8 @@ export interface ApprovalContent {
   notes: string;
   media: string[];
   recipientIds: string[];
+  /** Identity of each file (url + content fingerprint + size). A replaced or modified file changes the hash. */
+  mediaFingerprints?: string[];
 }
 
 /** Stable hash of everything an approval covers. */
@@ -39,6 +41,7 @@ export function contentHash(c: ApprovalContent): string {
     n: c.notes.trim(),
     m: [...c.media].sort(),
     r: [...new Set(c.recipientIds)].sort(),
+    f: c.mediaFingerprints && c.mediaFingerprints.length ? [...c.mediaFingerprints].sort() : undefined,
   });
   return crypto.createHash("sha256").update(canonical).digest("hex");
 }

@@ -127,7 +127,7 @@ export default function Footer() {
               margin: '0 0 0.85rem 0',
             }}>Get Involved</p>
             <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-              {[['/pay', 'Donate Now'], ['/donor/dashboard', 'Donor Portal'], ['/#about', 'Volunteer'], ['/#about', 'Contact Us']].map(([href, label]) => (
+              {[['/pay', 'Donate Now'], ['/donor/dashboard', 'Donor Portal'], ['/#about', 'Field Agents'], ['/#about', 'Contact Us']].map(([href, label]) => (
                 <li key={label}><Link href={href} className="ft-link">{label}</Link></li>
               ))}
             </ul>

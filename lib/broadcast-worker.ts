@@ -6,6 +6,7 @@ import { communicationRepository } from "@/lib/repositories/communicationReposit
 import { communicationRecipientRepository, type CommunicationRecipientEntity } from "@/lib/repositories/communicationRecipientRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { broadcastStore, type BroadcastError, type BroadcastRecord } from "@/lib/broadcast-store";
+import { issueShareToken, shareUrl, type MediaItem } from "@/lib/communications/attachments";
 
 const escapeHtmlText = (v: string) => v.replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]!));
 
@@ -13,6 +14,21 @@ const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const BATCH_SIZE = 50;
 const MAX_ATTEMPTS = 2;
 const BATCH_DELAY_MS = 50;
+
+/**
+ * The files section of one recipient's message. Attached files are listed by name (no link: the file is in the email);
+ * files delivered as links get a personal, expiring link; external https addresses stay plain public links.
+ */
+export function attachmentSectionHtml(items: MediaItem[], ctx: { broadcastId: string; recipient: string }): string {
+  if (!items.length) return "";
+  const lis = items.map((i) => {
+    if (i.kind === "external") return `<li><a href="${escapeHtmlText(i.url)}" target="_blank" style="color:#C9A24B; text-decoration:underline;">${escapeHtmlText(i.name)}</a></li>`;
+    if (i.delivery === "attach") return `<li>${escapeHtmlText(i.name)} <span style="color:#9ca3af;">(attached to this email)</span></li>`;
+    const href = shareUrl(getSiteUrl(), issueShareToken({ driveId: i.driveId!, fingerprint: i.fingerprint, broadcastId: ctx.broadcastId, recipient: ctx.recipient }));
+    return `<li><a href="${escapeHtmlText(href)}" target="_blank" style="color:#C9A24B; text-decoration:underline;">${escapeHtmlText(i.name)}</a> <span style="color:#9ca3af;">(personal secure link)</span></li>`;
+  });
+  return `<br><br><hr style="border:none; border-top:1px solid rgba(255,255,255,0.07); margin:20px 0;"><strong style="color:#D4AF37; font-family:Georgia, serif; font-size:14px;">Documents:</strong><ul style="margin:10px 0 0; padding-left:20px; font-family:Arial, sans-serif; font-size:13px; color:#f3f4f6; line-height:1.6;">${lis.join("")}</ul>`;
+}
 
 /** One entry per address: the same donor often appears under several donation rows. */
 export function dedupeRecipients(recipients: any[]): { id?: string; name: string; email: string }[] {
@@ -49,6 +65,55 @@ async function resolveAttachment(url: string): Promise<{ filename: string; conte
   return { filename, content: Buffer.from(await res.arrayBuffer()), contentType: res.headers.get("content-type") || undefined };
 }
 
+/** An approved attachment that cannot be delivered exactly as approved. Nothing is sent when this is thrown. */
+export class AttachmentError extends Error {}
+
+/** Gmail rejects messages over 25 MB; attachments are base64-encoded (about +33%), so keep raw files well under that. */
+export const MAX_ATTACHMENT_BYTES_TOTAL = 18 * 1024 * 1024;
+
+const PRIVATE_HOST = /^(localhost|.*\.local|.*\.internal)$/i;
+/** Only http(s) URLs to public hosts are fetched; the server never reaches into the local or private network for an attachment. */
+export function isSafeAttachmentUrl(url: string): boolean {
+  if (url.startsWith("/")) return true; // same site (resolved against the configured site URL)
+  let u: URL;
+  try {
+    u = new URL(url);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+  const host = u.hostname.replace(/^\[|\]$/g, "");
+  if (PRIVATE_HOST.test(host)) return false;
+  if (host === "::1" || /^(fc|fd|fe80)/i.test(host)) return false;
+  const m = host.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+  if (m) {
+    const [a, b] = [Number(m[1]), Number(m[2])];
+    if (a === 10 || a === 127 || a === 0 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168)) return false;
+  }
+  return true;
+}
+
+/**
+ * Resolves every approved attachment or throws AttachmentError naming the ones that failed. A message must never go out
+ * with fewer files than the administrator approved, so there is no "skip and continue".
+ */
+export async function resolveAttachments(mediaUrls: string[]): Promise<{ filename: string; content: Buffer; contentType?: string }[]> {
+  const label = (url: string) => decodeURIComponent(url.split("?")[0].split("/").filter(Boolean).pop() || url);
+  const unsafe = mediaUrls.filter((u) => !isSafeAttachmentUrl(u));
+  if (unsafe.length) throw new AttachmentError(`Attachment not allowed (only public https links and uploaded files can be attached): ${unsafe.map(label).join(", ")}. Nothing was sent.`);
+
+  const settled = await Promise.allSettled(mediaUrls.map(resolveAttachment));
+  const failed = settled.flatMap((r, i) => (r.status === "rejected" || !r.value ? [label(mediaUrls[i])] : []));
+  if (failed.length) throw new AttachmentError(`Attachment could not be read: ${failed.join(", ")}. Nothing was sent; fix or remove it and approve again.`);
+
+  const files = settled.map((r) => (r as PromiseFulfilledResult<NonNullable<Awaited<ReturnType<typeof resolveAttachment>>>>).value);
+  const total = files.reduce((n, f) => n + f.content.length, 0);
+  if (total > MAX_ATTACHMENT_BYTES_TOTAL) {
+    throw new AttachmentError(`The attachments total ${(total / 1048576).toFixed(1)} MB, which is too large to email (limit ${MAX_ATTACHMENT_BYTES_TOTAL / 1048576} MB). Remove some, or share the documents as links. Nothing was sent.`);
+  }
+  return files;
+}
+
 function topErrors(errorCounts: Map<string, number>): BroadcastError[] {
   return Array.from(errorCounts.entries())
     .map(([reason, count]) => ({ reason, count }))
@@ -68,6 +133,7 @@ export async function processBroadcast(
   options: { deadline?: number; rows?: { entity: CommunicationRecipientEntity; rowNumber: number }[] } = {}
 ): Promise<BroadcastRecord> {
   const { heading, eyebrow, dua, projectUpdateHtml, mediaUrls, causeName, stats, createdAt } = payload;
+  const mediaItems: MediaItem[] = Array.isArray(payload.mediaItems) ? payload.mediaItems : [];
   const deadline = options.deadline ?? Number.POSITIVE_INFINITY;
   const errorCounts = new Map<string, number>();
   const recordError = (reason: string) => errorCounts.set(reason, (errorCounts.get(reason) || 0) + 1);
@@ -117,20 +183,10 @@ export async function processBroadcast(
     });
 
     // Resolve media attachments once for efficiency (in parallel)
+    // The send route resolves (and validates) them before anything is recorded; resolving here is strict too.
     const resolvedAttachments: any[] = [...attachDaaraynLogo()];
-    if (Array.isArray(mediaUrls) && mediaUrls.length > 0) {
-      const attachmentPromises = mediaUrls.map(async (url) => {
-        try {
-          return await resolveAttachment(url);
-        } catch (downloadErr: any) {
-          console.error(`[Broadcast] Failed to attach ${url}:`, downloadErr?.message || downloadErr);
-          return null;
-        }
-      });
-
-      const attachments = await Promise.all(attachmentPromises);
-      resolvedAttachments.push(...attachments.filter(Boolean));
-    }
+    if (Array.isArray(payload.resolvedAttachments)) resolvedAttachments.push(...payload.resolvedAttachments);
+    else if (Array.isArray(mediaUrls) && mediaUrls.length > 0) resolvedAttachments.push(...(await resolveAttachments(mediaUrls)));
 
     const subject = `${heading} — Daarayn Foundation`;
 
@@ -177,6 +233,7 @@ export async function processBroadcast(
           // Only personalize the greeting - generate HTML once
           const html = generateLetterEmailTemplate({
             ...baseTemplate,
+            projectUpdate: baseTemplate.projectUpdate + attachmentSectionHtml(mediaItems, { broadcastId, recipient: job.id || job.email }),
             greeting: `Assalamu Alaikum, ${escapeHtmlText(job.name)},`
           });
 

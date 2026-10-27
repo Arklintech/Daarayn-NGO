@@ -244,6 +244,33 @@ export class DriveService {
   }
 
   /**
+   * Identity of a file without downloading it. `fingerprint` changes whenever the content changes (Drive md5 checksum;
+   * size+mtime for local storage), which is what approvals and share links are bound to.
+   */
+  public async getFileInfo(fileId: string): Promise<{ id: string; name: string; mimeType: string; size: number; fingerprint: string; trashed: boolean }> {
+    if (fileId.startsWith("local_")) {
+      const entry = this.getLocalIndex()[fileId];
+      if (!entry || !fs.existsSync(entry.localPath)) throw new Error(`File with id ${fileId} not found in secure storage.`);
+      const st = fs.statSync(entry.localPath);
+      return { id: fileId, name: entry.filename || "file", mimeType: entry.mimeType || "application/octet-stream", size: st.size, fingerprint: `${st.size}-${Math.floor(st.mtimeMs)}`, trashed: false };
+    }
+    const driveRead = await this.drive(false);
+    const res = await withGoogleRetry(
+      () => driveRead.files.get({ fileId, fields: "id, name, mimeType, size, md5Checksum, modifiedTime, trashed", supportsAllDrives: true }),
+      { label: "Drive file info" }
+    );
+    const d = res.data;
+    return {
+      id: String(d.id || fileId),
+      name: d.name || "file",
+      mimeType: d.mimeType || "application/octet-stream",
+      size: d.size ? Number(d.size) : 0,
+      fingerprint: d.md5Checksum || `${d.size || 0}-${d.modifiedTime || ""}`,
+      trashed: Boolean(d.trashed),
+    };
+  }
+
+  /**
    * Deletes a file from Google Drive or Local Storage.
    */
   public async deleteFile(fileId: string): Promise<boolean> {

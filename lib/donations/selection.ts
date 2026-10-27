@@ -8,7 +8,8 @@
 import type { Cause } from "../repositories/causeRepository";
 import { isSelectableCause } from "../catalog/causes";
 
-export const GENERAL_CAUSE_ID = "general";
+import { GENERAL_CAUSE_ID } from "./causeToggle";
+export { GENERAL_CAUSE_ID };
 
 export interface NormalizedSelection {
   /** Catalog causes the donor chose. Empty = general / unrestricted donation. */

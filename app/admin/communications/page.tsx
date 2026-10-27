@@ -42,7 +42,7 @@ function CommunicationsHubContent() {
   const [aiSuggestions, setAiSuggestions] = useState<{improved?: string; keyPoints?: string[]; suggestions?: string[]} | null>(null);
   const [showAiSuggestions, setShowAiSuggestions] = useState(false);
 
-  // Khizr Generation State
+  // Template draft state (a fixed, non-AI template; the AI assistant was decommissioned)
   const [generating, setGenerating] = useState(false);
   const [verificationError, setVerificationError] = useState("");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -172,37 +172,6 @@ function CommunicationsHubContent() {
     setUploadedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const handleAiAssist = async () => {
-    if (!notes.trim()) {
-      alert("Please write some notes first for AI to improve.");
-      return;
-    }
-
-    setAiAssistLoading(true);
-    setAiSuggestions(null);
-
-    try {
-      const response = await fetch("/api/admin/communications/ai-assist", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes, heading, type })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        setAiSuggestions(data);
-        setShowAiSuggestions(true);
-      } else {
-        alert("AI assistant error: " + (data.error || "Unknown error"));
-      }
-    } catch (error) {
-      console.error("AI assist error:", error);
-      alert("Failed to get AI suggestions. Please try again.");
-    } finally {
-      setAiAssistLoading(false);
-    }
-  };
 
   const currentMedia = () => uploadedFiles.filter((f) => f.serverUrl).map((f) => f.serverUrl!);
 
@@ -346,7 +315,7 @@ function CommunicationsHubContent() {
         setVerificationError(result.error || "Generation failed.");
       }
     } catch (err) {
-      setVerificationError("Failed to connect to Khizr service.");
+      setVerificationError("Could not create the template draft. Nothing was changed.");
     } finally {
       setGenerating(false);
     }
@@ -792,7 +761,7 @@ function CommunicationsHubContent() {
                     className="w-full py-3.5 rounded-xl font-semibold text-sm tracking-wide transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-black hover:bg-gray-100 active:scale-[0.99] mb-3"
                     style={{ background: '#ffffff' }}
                   >
-                    {generating ? <Activity className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Generate with Khizr</>}
+                    {generating ? <Activity className="w-4 h-4 animate-spin" /> : <><Sparkles className="w-4 h-4" /> Insert template draft</>}
                   </button>
 
                   {verificationError && (
@@ -963,7 +932,7 @@ function CommunicationsHubContent() {
               </div>
               <div className="grid grid-cols-3 gap-4 pt-4 text-center border-t border-white/10">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase">Emails Delivered</p>
+                  <p className="text-xs text-gray-500 uppercase">Accepted by mail server</p>
                   <p className="text-xl font-bold text-green-400">{broadcastStats.stats?.sent || 0}</p>
                 </div>
                 <div>
@@ -989,7 +958,8 @@ function CommunicationsHubContent() {
                 <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'rgba(74,222,128,0.1)' }}>
                   <CheckCircle className="w-8 h-8 text-green-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-white">Broadcast Completed Successfully</h2>
+                <h2 className="text-2xl font-bold text-white">Broadcast Completed — Accepted by the Mail Server</h2>
+                <p className="text-xs text-gray-400 mt-2">Acceptance by the mail server is not confirmation that a message reached an inbox.</p>
               </>
             ) : (
               <>
@@ -997,7 +967,7 @@ function CommunicationsHubContent() {
                   <AlertTriangle className="w-8 h-8 text-red-400" />
                 </div>
                 <h2 className="text-2xl font-bold text-white">
-                  {(broadcastStats.stats?.sent || 0) === 0 ? "Broadcast Failed — No Emails Delivered" : "Broadcast Completed With Failures"}
+                  {(broadcastStats.stats?.sent || 0) === 0 ? "Broadcast Failed — No Emails Accepted" : "Broadcast Completed With Failures"}
                 </h2>
               </>
             )}
@@ -1051,12 +1021,12 @@ function CommunicationsHubContent() {
         </div>
       )}
 
-      {/* Khizr Overwrite Confirmation Modal */}
+      {/* Template overwrite confirmation */}
       {showConfirmModal && (
         <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
           <div className="rounded-2xl p-6 md:p-8 max-w-md w-full" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.15)' }}>
-            <h3 className="text-lg font-bold text-white mb-3">Generate with Khizr?</h3>
-            <p className="text-sm text-gray-300 mb-6">This will replace your current heading and notes with AI-generated content.</p>
+            <h3 className="text-lg font-bold text-white mb-3">Replace with the template draft?</h3>
+            <p className="text-sm text-gray-300 mb-6">This replaces your current heading and notes with a standard template (not AI-written). Review and edit it before approving.</p>
 
             <div className="flex gap-3">
               <button

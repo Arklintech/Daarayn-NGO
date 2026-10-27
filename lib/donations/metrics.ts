@@ -169,7 +169,9 @@ const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
  * Names are never used: many donors share names such as "Generous Donor".
  */
 export function belongsToDonor(d: DonationLike, donor: DonorIdentity): boolean {
-  if (d.donorId && d.donorId === donor.id) return true;
+  // The donor token is authoritative: a donation that carries one belongs to that donor only, even if another donor
+  // record shares the email address. Email links only legacy rows that have no token (same rule as givingByDonor).
+  if (d.donorId) return d.donorId === donor.id;
   const email = norm(donor.email);
   return !!email && norm(d.donorEmail) === email;
 }
@@ -215,6 +217,29 @@ export function givingByDonor(donations: DonationLike[], donors: DonorIdentity[]
   for (const donor of donors) {
     const own = [...(byId.get(donor.id) || []), ...(norm(donor.email) ? byEmail.get(norm(donor.email)) || [] : [])];
     out.set(donor.id, donorGiving(own));
+  }
+  return out;
+}
+
+/** Causes each donor's VERIFIED donations are designated to (for filtering donors by cause). Same donor-token rule as everywhere else. */
+export function supportedCauseIdsByDonor(
+  donations: DonationLike[],
+  donors: DonorIdentity[],
+  designations: { donationId: string; causeId: string }[]
+): Map<string, string[]> {
+  const causesOf = new Map<string, string[]>();
+  for (const r of designations) {
+    if (!causesOf.has(r.donationId)) causesOf.set(r.donationId, []);
+    causesOf.get(r.donationId)!.push(r.causeId);
+  }
+  const out = new Map<string, string[]>();
+  for (const donor of donors) {
+    const ids = new Set<string>();
+    for (const d of donationsForDonor(donations, donor)) {
+      if (donationState(d.status) !== "received") continue;
+      for (const causeId of causesOf.get(String((d as any).id)) || []) ids.add(causeId);
+    }
+    out.set(donor.id, [...ids]);
   }
   return out;
 }

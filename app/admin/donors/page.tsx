@@ -39,6 +39,7 @@ export default function AdminDonors() {
   const [isAddDonorOpen, setIsAddDonorOpen] = useState(false);
   const [newDonor, setNewDonor] = useState({ name: '', email: '', phone: '', country: 'India', city: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const fetchData = async () => {
     setLoading(true);
@@ -59,16 +60,18 @@ export default function AdminDonors() {
       if (res.ok) {
         const list = await res.json();
         setDonors(Array.isArray(list) ? list : []);
+        setLoadError(null);
+        setLastUpdated(new Date());
       } else {
-        // Fallback local
-        const localRes = await fetch('/api/admin/donors-local');
-        if (localRes.ok) {
-          setDonors(await localRes.json());
-        }
+        // Never fall back to a local or empty list: an unreadable donor register must not look like "no donors".
+        const body = await res.json().catch(() => ({}));
+        setDonors([]);
+        setLoadError(body.error || `Donor records could not be loaded (HTTP ${res.status}).`);
       }
-      setLastUpdated(new Date());
     } catch (err) {
       console.error("Error loading CRM donors data:", err);
+      setDonors([]);
+      setLoadError("Donor records could not be loaded. Check the connection and retry.");
     } finally {
       setLoading(false);
     }
@@ -128,12 +131,8 @@ export default function AdminDonors() {
 
     // Cause
     if (selectedCause !== 'All Causes') {
-      result = result.filter(d => {
-        if (d.supportedCauses && Array.isArray(d.supportedCauses)) {
-          return d.supportedCauses.includes(selectedCause);
-        }
-        return false;
-      });
+      const causeId = causes.find(c => (c.title || c.id) === selectedCause)?.id;
+      result = result.filter(d => !!causeId && Array.isArray(d.supportedCauseIds) && d.supportedCauseIds.includes(causeId));
     }
 
     // Country
@@ -144,9 +143,9 @@ export default function AdminDonors() {
     // Verification
     if (verification !== 'All Status') {
       result = result.filter(d => {
-        if (verification === 'Verified') return d.status === 'active' || d.verificationStatus === 'verified';
-        if (verification === 'Pending') return d.verificationStatus === 'pending' || d.status === 'pending';
-        if (verification === 'Failed') return d.verificationStatus === 'failed' || d.status === 'failed';
+        if (verification === 'Verified') return (d.totalDonations || 0) > 0;
+        if (verification === 'Pending') return (d.pendingDonations || 0) > 0;
+        if (verification === 'Failed') return (d.rejectedDonations || 0) > 0;
         return true;
       });
     }
@@ -159,7 +158,7 @@ export default function AdminDonors() {
     });
 
     return result;
-  }, [donors, searchQuery, timePeriod, quickSegment, selectedCause, selectedCountry, verification]);
+  }, [donors, causes, searchQuery, timePeriod, quickSegment, selectedCause, selectedCountry, verification]);
 
   const availableCountries = useMemo(() => {
     const countries = new Set(donors.map(d => d.country).filter(Boolean));
@@ -170,7 +169,7 @@ export default function AdminDonors() {
     const total = filteredDonors.length;
     const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const newDonors = filteredDonors.filter(d => d.dateJoined && new Date(d.dateJoined) >= thirtyDaysAgo).length;
-    const returning = total - newDonors;
+    const returning = filteredDonors.filter(d => (d.totalDonations || 0) > 1).length;
     const lifetime = filteredDonors.reduce((sum, d) => sum + (d.totalAmountDonated || 0), 0);
     const totalDonations = filteredDonors.reduce((sum, d) => sum + (d.totalDonations || 0), 0);
     const average = totalDonations > 0 ? lifetime / totalDonations : 0;
@@ -270,6 +269,12 @@ export default function AdminDonors() {
         <p className="text-[13px] text-gray-400 mt-1">Manage permanent profiles, trace donation histories, and review verified update audits.</p>
       </div>
 
+      {loadError && (
+        <div role="alert" className="mt-4 rounded-xl border border-red-500/30 bg-red-950/30 px-4 py-3 text-[13px] text-red-300">
+          Donor records could not be loaded from Google Sheets: {loadError} No figures are shown rather than showing zeros.
+        </div>
+      )}
+
       {/* SEARCH BAR & REFRESH */}
       <div className="flex flex-col md:flex-row items-center gap-4 mt-6">
         <div className="flex-1 relative">
@@ -330,11 +335,11 @@ export default function AdminDonors() {
       {/* KPI CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-6">
         {[
-          { title: "Total Donors", value: kpis.total.toLocaleString(), icon: Users, spark: "M0 10 L5 8 L10 12 L15 5 L20 7 L25 2" },
-          { title: "New Donors", value: kpis.newDonors.toLocaleString(), icon: UserPlus, spark: "M0 8 L5 10 L10 6 L15 12 L20 4 L25 2" },
-          { title: "Returning Donors", value: kpis.returning.toLocaleString(), icon: RotateCcw, spark: "M0 10 L5 8 L10 12 L15 5 L20 7 L25 2" },
-          { title: "Lifetime Donation", value: `₹${kpis.lifetime.toLocaleString()}`, icon: DollarSign, spark: "M0 12 L5 10 L10 14 L15 6 L20 8 L25 2" },
-          { title: "Avg Donation", value: `₹${Math.round(kpis.average).toLocaleString()}`, icon: Activity, spark: "M0 10 L5 8 L10 12 L15 5 L20 7 L25 2" },
+          { title: "Total Donors", value: loadError ? '—' : kpis.total.toLocaleString(), icon: Users },
+          { title: "New Donors", value: loadError ? '—' : kpis.newDonors.toLocaleString(), icon: UserPlus },
+          { title: "Returning Donors", value: loadError ? '—' : kpis.returning.toLocaleString(), icon: RotateCcw },
+          { title: "Lifetime Donation", value: loadError ? '—' : `₹${kpis.lifetime.toLocaleString()}`, icon: DollarSign },
+          { title: "Avg Donation", value: loadError ? '—' : `₹${Math.round(kpis.average).toLocaleString()}`, icon: Activity },
         ].map((k, i) => (
           <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between">
             <div className="flex gap-4 items-start">
@@ -347,13 +352,7 @@ export default function AdminDonors() {
               </div>
             </div>
             <div className="flex items-end justify-between mt-5">
-              <span className="text-[11px] text-gray-500">All Time</span>
-              <svg viewBox="0 0 25 15" className="w-12 h-4 overflow-visible" fill="none" stroke="#d4af37" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d={k.spark} />
-              </svg>
-              <span className="text-[11px] font-medium flex items-center gap-0.5 text-luxury-gold">
-                ↑ 8.5%
-              </span>
+              <span className="text-[11px] text-gray-500">{timePeriod === 'All Time' ? 'All time' : `Joined: ${timePeriod}`}</span>
             </div>
           </div>
         ))}
@@ -369,10 +368,10 @@ export default function AdminDonors() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
-            { text: `${kpis.newDonors || 18} new donors joined during the selected period.`, icon: UserPlus },
-            { text: "Family Relief received 42% of all contributions.", icon: Heart },
-            { text: "7 contributions are awaiting verification.", icon: AlertTriangle },
-            { text: "12 donors have not received a communication this month.", icon: MessageSquare }
+            { text: `${kpis.newDonors} new donor${kpis.newDonors === 1 ? "" : "s"} joined in the last 30 days (among the donors shown).`, icon: UserPlus },
+            { text: `${filteredDonors.reduce((n, d) => n + (d.pendingDonations || 0), 0)} donation(s) worth ₹${filteredDonors.reduce((n, d) => n + (d.pendingAmount || 0), 0).toLocaleString()} are awaiting verification.`, icon: AlertTriangle },
+            { text: `${filteredDonors.filter(d => !d.email).length} donor(s) have no email address, so they cannot receive updates.`, icon: MessageSquare },
+            { text: `${filteredDonors.filter(d => d.emailSuppressed).length} donor(s) have unsubscribed from email.`, icon: Heart }
           ].map((insight, i) => (
             <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-4 flex gap-4 items-start">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 bg-white/10">
@@ -470,7 +469,7 @@ export default function AdminDonors() {
                 {loading ? (
                   <tr><td colSpan={10} className="py-20 text-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-luxury-gold border-t-transparent mx-auto" /></td></tr>
                 ) : paginatedDonors.length === 0 ? (
-                  <tr><td colSpan={10} className="py-20 text-center text-gray-500 text-sm">No donor records found matching filters.</td></tr>
+                  <tr><td colSpan={10} className="py-20 text-center text-gray-500 text-sm">{loadError ? 'Donor records are unavailable right now (see the error above); this is not an empty register.' : 'No donor records found matching filters.'}</td></tr>
                 ) : (
                   paginatedDonors.map((donor, idx) => {
                     const targetId = donor.id || donor.email;
@@ -483,22 +482,22 @@ export default function AdminDonors() {
                         <td className="px-4 py-3.5 text-gray-400 font-mono">{donor.id || "—"}</td>
                         <td className="px-4 py-3.5 text-white font-medium flex items-center gap-2">
                           {donor.name || "Anonymous"}
-                          {idx === 0 && <span className="bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wider">VIP</span>}
+                          {(donor.totalAmountDonated || 0) >= 100000 && <span className="bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wider">VIP</span>}
                         </td>
                         <td className="px-4 py-3.5 text-gray-400">{donor.email || "—"}</td>
                         <td className="px-4 py-3.5 text-gray-400">{donor.phone || "—"}</td>
-                        <td className="px-4 py-3.5 text-gray-400">{donor.country || "India"} / {donor.city || "Mumbai"}</td>
+                        <td className="px-4 py-3.5 text-gray-400">{[donor.country, donor.city].filter(Boolean).join(' / ') || '—'}</td>
                         <td className="px-4 py-3.5 text-gray-400">{donor.totalDonations || 0}</td>
                         <td className="px-4 py-3.5 text-white">₹{(donor.totalAmountDonated || 0).toLocaleString()}</td>
-                        <td className="px-4 py-3.5 text-gray-400">{donor.lastContributionDate ? new Date(donor.lastContributionDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric'}) : '10 May 2026'}</td>
+                        <td className="px-4 py-3.5 text-gray-400">{donor.lastDonationDate ? new Date(donor.lastDonationDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric'}) : '—'}</td>
                         <td className="px-4 py-3.5">
-                          {donor.status === 'active' || donor.verificationStatus === 'verified' ? (
+                          {(donor.totalDonations || 0) > 0 ? (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-luxury-gold/30 text-luxury-gold text-[11px] font-medium bg-luxury-gold/10">
                               <CheckCircle className="w-3 h-3" /> Verified
                             </span>
                           ) : (
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded border border-luxury-gold/30 text-luxury-gold text-[11px] font-medium bg-luxury-gold/10">
-                              <AlertTriangle className="w-3 h-3" /> Pending
+                              <AlertTriangle className="w-3 h-3" /> {(donor.pendingDonations || 0) > 0 ? 'Pending' : 'No verified donation'}
                             </span>
                           )}
                         </td>
@@ -541,7 +540,7 @@ export default function AdminDonors() {
             {loading ? (
               <div className="py-12 text-center"><div className="h-8 w-8 animate-spin rounded-full border-2 border-luxury-gold border-t-transparent mx-auto" /></div>
             ) : paginatedDonors.length === 0 ? (
-              <div className="py-12 text-center text-gray-500 text-sm">No donor records found matching filters.</div>
+              <div className="py-12 text-center text-gray-500 text-sm">{loadError ? 'Donor records are unavailable right now (see the error above); this is not an empty register.' : 'No donor records found matching filters.'}</div>
             ) : (
               paginatedDonors.map((donor, idx) => (
                 <div 
@@ -553,17 +552,17 @@ export default function AdminDonors() {
                     <div>
                       <div className="flex items-center gap-2">
                         <h4 className="text-sm font-bold text-white">{donor.name || "Anonymous"}</h4>
-                        {idx === 0 && <span className="bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wider">VIP</span>}
+                        {(donor.totalAmountDonated || 0) >= 100000 && <span className="bg-luxury-gold/10 border border-luxury-gold/30 text-luxury-gold text-[9px] px-1.5 py-0.5 rounded font-bold tracking-wider">VIP</span>}
                       </div>
                       <span className="text-[11px] text-gray-400 font-mono mt-0.5 block">{donor.id}</span>
                     </div>
-                    {donor.status === 'active' ? (
+                    {(donor.totalDonations || 0) > 0 ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-luxury-gold/30 text-luxury-gold text-[10px] font-medium bg-luxury-gold/10">
                         <CheckCircle className="w-2.5 h-2.5" /> Verified
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-luxury-gold/30 text-luxury-gold text-[10px] font-medium bg-luxury-gold/10">
-                        <AlertTriangle className="w-2.5 h-2.5" /> Pending
+                        <AlertTriangle className="w-2.5 h-2.5" /> {(donor.pendingDonations || 0) > 0 ? 'Pending' : 'No verified donation'}
                       </span>
                     )}
                   </div>
@@ -579,11 +578,11 @@ export default function AdminDonors() {
                     </div>
                     <div>
                       <span className="text-[10px] text-gray-500 block">Location</span>
-                      <span className="text-gray-300 truncate block">{donor.city || "Mumbai"}, {donor.country || "IN"}</span>
+                      <span className="text-gray-300 truncate block">{[donor.city, donor.country].filter(Boolean).join(', ') || '—'}</span>
                     </div>
                     <div>
                       <span className="text-[10px] text-gray-500 block">Last Active</span>
-                      <span className="text-gray-300 block">{donor.lastContributionDate ? new Date(donor.lastContributionDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short'}) : '10 May'}</span>
+                      <span className="text-gray-300 block">{donor.lastDonationDate ? new Date(donor.lastDonationDate).toLocaleDateString('en-GB', { day:'2-digit', month:'short'}) : '—'}</span>
                     </div>
                   </div>
 
@@ -627,7 +626,7 @@ export default function AdminDonors() {
                 </div>
                 <div>
                   <label className="text-xs text-gray-400 mb-1 block">City</label>
-                  <input type="text" value={newDonor.city} onChange={e => setNewDonor({...newDonor, city: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-luxury-gold min-h-[44px]" placeholder="Mumbai" />
+                  <input type="text" value={newDonor.city} onChange={e => setNewDonor({...newDonor, city: e.target.value})} className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-luxury-gold min-h-[44px]" placeholder="City" />
                 </div>
               </div>
               <button  

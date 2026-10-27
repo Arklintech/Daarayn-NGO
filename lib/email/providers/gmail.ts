@@ -19,6 +19,10 @@ import {
 // Reused across sends: logging in to Gmail for every message is slow and
 // repeated logins from cloud IPs can make Google treat the account as suspicious.
 let cachedTransport: nodemailer.Transporter | null = null;
+let cachedBulkTransport: nodemailer.Transporter | null = null;
+
+/** Messages with attachments are uploaded in one piece; on a slow uplink 10 MB takes minutes, far beyond the 20 s idle limit used for ordinary mail. */
+const BULK_SOCKET_TIMEOUT_MS = 240_000;
 
 /** Env values pasted into a dashboard often keep their quotes; Gmail App Passwords are shown with spaces. */
 function cleanEnv(value: string | undefined): string {
@@ -29,8 +33,8 @@ function getSmtpUser(): string {
   return cleanEnv(process.env.SMTP_USER);
 }
 
-function getTransport() {
-  if (cachedTransport) return cachedTransport;
+function getTransport(bulk = false) {
+  if (bulk ? cachedBulkTransport : cachedTransport) return (bulk ? cachedBulkTransport : cachedTransport)!;
 
   const smtpUser = getSmtpUser();
   const smtpPass = cleanEnv(process.env.SMTP_PASS).replace(/\s+/g, "");
@@ -45,7 +49,7 @@ function getTransport() {
     );
   }
 
-  cachedTransport = nodemailer.createTransport({
+  const created = nodemailer.createTransport({
     host: smtpHost,
     port: smtpPort,
     secure: smtpSecure,
@@ -59,15 +63,19 @@ function getTransport() {
     // Timeouts to prevent hanging on connection failures
     connectionTimeout: 10000,
     greetingTimeout: 10000,
-    socketTimeout: 20000,
+    socketTimeout: bulk ? BULK_SOCKET_TIMEOUT_MS : 20000,
   });
+  if (bulk) cachedBulkTransport = created;
+  else cachedTransport = created;
 
-  return cachedTransport;
+  return created;
 }
 
 function resetTransport() {
   cachedTransport?.close();
   cachedTransport = null;
+  cachedBulkTransport?.close();
+  cachedBulkTransport = null;
 }
 
 /**
@@ -134,9 +142,27 @@ export async function verifyGmail(): Promise<{ ok: boolean; error?: string }> {
   }
 }
 
+/**
+ * Opt-in safety net for test runs: when EMAIL_RECIPIENT_ALLOWLIST (comma-separated) is set, mail to any other address
+ * is refused before SMTP is contacted. Unset in production, where it changes nothing.
+ */
+function allowlistViolation(to: string): string | null {
+  const raw = cleanEnv(process.env.EMAIL_RECIPIENT_ALLOWLIST);
+  if (!raw) return null;
+  const allowed = new Set(raw.split(",").map((a) => a.trim().toLowerCase()).filter(Boolean));
+  const recipients = String(to).split(",").map((a) => a.trim().toLowerCase()).filter(Boolean);
+  return recipients.every((r) => allowed.has(r)) ? null : "Recipient is not on EMAIL_RECIPIENT_ALLOWLIST; nothing was sent.";
+}
+
 export async function sendViaGmail(payload: EmailPayload): Promise<EmailResult> {
+  const blocked = allowlistViolation(payload.to);
+  if (blocked) {
+    console.warn("[Gmail] Send refused by recipient allowlist.");
+    return { success: false, retryable: false, error: blocked };
+  }
   try {
-    const transport = getTransport();
+    const hasAttachments = Array.isArray(payload.attachments) && payload.attachments.some((a: any) => a?.content && Buffer.byteLength(a.content) > 512 * 1024);
+    const transport = getTransport(hasAttachments);
     const smtpUser = getSmtpUser();
 
     const mailOptions: Mail.Options = {
@@ -173,7 +199,9 @@ export async function sendViaGmail(payload: EmailPayload): Promise<EmailResult> 
     resetTransport();
     const { reason, retryable } = classifySmtpError(err);
     console.error("[Gmail] Send failed:", reason);
-    if (isAmbiguousSmtpFailure(err)) {
+    // A timeout while a large body is being uploaded is reported by nodemailer with command CONN; the server may still have accepted it.
+    const hasBody = Array.isArray(payload.attachments) && payload.attachments.length > 0;
+    if (isAmbiguousSmtpFailure(err) || (hasBody && ((err as any)?.code === "ETIMEDOUT" || (err as any)?.code === "ESOCKET") && !(err as any)?.responseCode)) {
       return {
         success: false,
         retryable: false,

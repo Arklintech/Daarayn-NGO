@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { fakeSheets } from "./helpers/fakeSheets";
 import { resetWorld, mailMock, authState, driveMock } from "./helpers/mocks";
@@ -384,15 +384,55 @@ describe("evidence access and donor portal (scenarios 8, 15)", () => {
     expect(driveMock.getFileStream).toHaveBeenCalled();
   });
 
-  it("donor lookup never creates a profile and discloses only token + first name", async () => {
+  // D3-F4: the lookup used to return the donor token to anyone who knew an email address, and the unauthenticated
+  // dashboard then served the whole profile for that token.
+  it("donor lookup never creates a profile, never discloses donor data, answers identically for known and unknown, and mails the code only to the profile's own address", async () => {
     await seedWorld();
     const { POST } = await import("@/app/api/donor/lookup/route");
     const before = fakeSheets.records("Donors").length;
-    const unknown = await POST(nreq("/l", { identifier: "stranger@example.org" }));
-    expect(unknown.status).toBe(404);
+    mailMock.sendEmail.mockClear();
+    const unknownRes = await POST(nreq("/l", { identifier: "stranger@example.org" }));
+    const unknown = await unknownRes.json();
+    expect(unknownRes.status).toBe(200);
+    expect(mailMock.sendEmail).not.toHaveBeenCalled();
     expect(fakeSheets.records("Donors")).toHaveLength(before);
+
     const known = await (await POST(nreq("/l", { identifier: " D1@Example.org " }))).json();
-    expect(known.donor).toEqual({ id: "DNR-T1-AAAA", name: "Donor" });
+    expect(Object.keys(known).sort()).toEqual(Object.keys(unknown).sort());
+    expect(known.message).toBe(unknown.message);
+    expect(JSON.stringify(known)).not.toContain("DNR-T1-AAAA");
+    expect(known.donor).toBeUndefined();
+    expect(mailMock.sendEmail).toHaveBeenCalledTimes(1);
+    const mail = mailMock.sendEmail.mock.calls[0][0];
+    expect(mail.to.toLowerCase()).toBe("d1@example.org");
+    expect(mail.html).toMatch(/\b\d{6}\b/);
+  });
+
+  it("the emailed code opens a session for that donor only; the dashboard refuses everyone else", async () => {
+    await seedWorld();
+    const { POST: lookup } = await import("@/app/api/donor/lookup/route");
+    const { POST: verify } = await import("@/app/api/donor/verify/route");
+    const { GET: dashboard } = await import("@/app/api/donor/dashboard/route");
+    mailMock.sendEmail.mockClear();
+    const { challenge } = await (await lookup(nreq("/l", { identifier: "d1@example.org" }))).json();
+    const code = mailMock.sendEmail.mock.calls[0][0].html.match(/\b(\d{6})\b/)[1];
+
+    expect((await verify(nreq("/v", { challenge, code: code === "000000" ? "000001" : "000000" }))).status).toBe(401);
+    const ok = await verify(nreq("/v", { challenge, code }));
+    expect(ok.status).toBe(200);
+    const cookie = ok.headers.get("set-cookie") || "";
+    expect(cookie).toMatch(/daarayn_donor=/);
+    expect(cookie.toLowerCase()).toContain("httponly");
+    const session = cookie.split(";")[0];
+
+    const get = (url: string, headers: Record<string, string> = {}) => dashboard(new NextRequest(`http://t${url}`, { headers }));
+    expect((await get("/d")).status).toBe(401); // no session
+    expect((await get("/d?donorId=DNR-T1-AAAA")).status).toBe(401); // a donorId is not an identity
+    const mine = await get("/d", { cookie: session });
+    expect(mine.status).toBe(200);
+    expect((await mine.json()).donor.id).toBe("DNR-T1-AAAA");
+    expect((await get("/d?donorId=DNR-OTHER", { cookie: session })).status).toBe(403);
+    expect((await get("/d", { cookie: "daarayn_donor=forged.value" })).status).toBe(401);
   });
 
   it("donor dashboard does not leak other donors' donations when the donor has no email", async () => {
@@ -405,12 +445,85 @@ describe("evidence access and donor portal (scenarios 8, 15)", () => {
       { id: "DA002", donorId: "DNR-P2-AAAA", donorEmail: "", amount: 900, status: "completed", date: "2026-10-01" },
     ]);
     const { GET } = await import("@/app/api/donor/dashboard/route");
-    const body = await (await GET(new Request("http://t/d?donorId=DNR-P1-AAAA") as any)).json();
+    const { issueSession } = await import("@/lib/donors/portalAuth");
+    const body = await (await GET(new NextRequest("http://t/d", { headers: { cookie: `daarayn_donor=${issueSession("DNR-P1-AAAA")}` } }))).json();
     expect(body.donations.map((d: any) => d.id)).toEqual(["DA001"]);
   });
 
   it("the AI writing assistant route is gone (410) and calls no external service", async () => {
     const { POST } = await import("@/app/api/admin/communications/ai-assist/route");
     expect((await POST()).status).toBe(410);
+  });
+});
+
+// ---------- D3-F8: attachments must be exactly what was approved, or nothing is sent ----------
+describe("attachments and uploads", () => {
+  const big = () => ({ stream: require("stream").Readable.from([Buffer.alloc(19 * 1024 * 1024)]), mimeType: "application/pdf", filename: "big.pdf", size: 19 * 1024 * 1024 });
+  const withMedia = (media: string[]) => ({ causeIds: ["WATER"], type: "project_progress", media });
+  const queuedRows = () => fakeSheets.records("Communication_Recipients").length;
+
+  it("a file that cannot be read stops the whole send: nothing is emailed or recorded, and the reason names the file", async () => {
+    await seedWorld();
+    mailMock.sendEmail.mockClear();
+    const res = await send(withMedia(["/api/media/MISSINGFILE0001"]));
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as any).error).toMatch(/MISSINGFILE0001|attachment/i);
+    expect(mailMock.sendEmail).not.toHaveBeenCalled();
+    expect(queuedRows()).toBe(0);
+  });
+
+  it("a readable file is attached to every message", async () => {
+    await seedWorld();
+    mailMock.sendEmail.mockClear();
+    const res = await send(withMedia(["/api/media/DRIVEPROOF_000001"]));
+    expect(res.status).toBe(200);
+    expect(mailMock.sendEmail).toHaveBeenCalled();
+    for (const [payload] of mailMock.sendEmail.mock.calls) expect((payload.attachments || []).some((a: any) => a.filename === "f.png")).toBe(true);
+  });
+
+  it("a message over the provider size limit is rejected, not truncated or sent without the file", async () => {
+    await seedWorld();
+    mailMock.sendEmail.mockClear();
+    driveMock.getFileStream.mockResolvedValueOnce(big());
+    const res = await send(withMedia(["/api/media/BIGFILE00000001"]));
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as any).error).toMatch(/too large|size/i);
+    expect(mailMock.sendEmail).not.toHaveBeenCalled();
+  });
+
+  it("an attachment URL pointing at the local or private network is never fetched", async () => {
+    await seedWorld();
+    mailMock.sendEmail.mockClear();
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    for (const url of ["http://127.0.0.1:8080/secret", "http://169.254.169.254/latest/meta-data", "http://localhost/x", "http://10.0.0.5/a.pdf", "file:///etc/passwd"]) {
+      const res = await send(withMedia([url]));
+      expect(res.status).toBe(422);
+    }
+    expect(fetchSpy.mock.calls.map((c) => String(c[0]))).toEqual([]);
+    expect(mailMock.sendEmail).not.toHaveBeenCalled();
+    fetchSpy.mockRestore();
+  });
+
+  const upload = async (name: string, type: string, bytes: number) => {
+    const { POST } = await import("@/app/api/admin/communications/upload/route");
+    const fd = new FormData();
+    fd.append("files", new File([new Uint8Array(bytes)], name, { type }));
+    return POST(new NextRequest("http://t/u", { method: "POST", body: fd }));
+  };
+
+  it("uploads accept documents and images only, up to a size limit", async () => {
+    driveMock.uploadFile.mockClear();
+    expect((await upload("report.pdf", "application/pdf", 1000)).status).toBe(200);
+    expect((await upload("photo.png", "image/png", 1000)).status).toBe(200);
+    for (const [n, t] of [["run.exe", "application/x-msdownload"], ["page.html", "text/html"], ["image.svg", "image/svg+xml"], ["script.js", "text/javascript"]] as const) {
+      expect((await upload(n, t, 100)).status).toBe(400);
+    }
+    expect((await upload("huge.pdf", "application/pdf", 11 * 1024 * 1024)).status).toBe(400);
+    expect(driveMock.uploadFile).toHaveBeenCalledTimes(2);
+  });
+
+  it("uploads are admin-only", async () => {
+    authState.role = "none";
+    expect((await upload("report.pdf", "application/pdf", 10)).status).toBe(401);
   });
 });

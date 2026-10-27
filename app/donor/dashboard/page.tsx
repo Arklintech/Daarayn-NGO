@@ -29,46 +29,30 @@ export default function DonorDashboard() {
   const [activeSection, setActiveSection] = useState<"overview" | "allocations" | "updates" | "communications">("overview");
   const router = useRouter();
 
-  useEffect(() => {
-    const donorId = localStorage.getItem("daarayn_donor_id") || "";
-    if (!donorId) {
-      router.replace("/donor");
-      return;
-    }
+  const [loadError, setLoadError] = useState("");
 
+  useEffect(() => {
     async function loadDonorData() {
       setLoading(true);
       try {
-        const res = await fetch(`/api/donor/dashboard?donorId=${encodeURIComponent(donorId)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.success && data.donor) {
-            setDonor(data.donor);
-            setDonations(data.donations || []);
-            setAllocations(data.allocations || []);
-            return;
-          }
+        // The session cookie identifies the donor; a missing or expired session sends them back to sign in.
+        const res = await fetch("/api/donor/dashboard");
+        if (res.status === 401 || res.status === 403) {
+          router.replace("/donor");
+          return;
         }
-        
-        // Fallback default mock if newly created or offline
-        const fallbackDonor = {
-          id: donorId,
-          name: donorId === "DNR-2026-000002" ? "Sara Ahmed" : "Ahmed Khan",
-          email: donorId === "DNR-2026-000002" ? "sara.ahmed@example.com" : "ahmed.khan@example.com",
-          phone: donorId === "DNR-2026-000002" ? "+447711223344" : "+919876543210",
-          country: donorId === "DNR-2026-000002" ? "GB" : "IN",
-          city: donorId === "DNR-2026-000002" ? "London" : "Mumbai",
-          dateJoined: "2026-01-15",
-          totalDonations: 2,
-          totalAmountDonated: 5000,
-          projectsSupportedCount: 1,
-          casesSupportedCount: 1,
-          status: "active",
-          communicationHistory: []
-        };
-        setDonor(fallbackDonor);
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success && data.donor) {
+          setDonor(data.donor);
+          setDonations(data.donations || []);
+          setAllocations(data.allocations || []);
+          return;
+        }
+        // Never substitute sample data for a donor record.
+        setLoadError(data.error || "We could not load your giving history right now. Please try again shortly.");
       } catch (err) {
         console.error("Error loading donor profile workspace:", err);
+        setLoadError("We could not load your giving history right now. Please try again shortly.");
       } finally {
         setLoading(false);
       }
@@ -77,8 +61,8 @@ export default function DonorDashboard() {
     loadDonorData();
   }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("daarayn_donor_id");
+  const handleLogout = async () => {
+    await fetch("/api/donor/verify", { method: "DELETE" }).catch(() => undefined);
     router.replace("/donor");
   };
 
@@ -98,14 +82,10 @@ Email Address: ${donor.email}
 Active Since: ${donor.dateJoined}
 Total Contribution Audit: INR ${donor.totalAmountDonated.toLocaleString()}
 
-All allocations comply with the 90/10 Amanah giving model:
-- 90% direct case funding to verified programs.
-- 10% operations, caretaker audits, and delivery.
+Donations recorded for this donor (status as recorded by Daarayn Foundation; pending items are not yet verified):
+${donations.map(d => `- ${d.id}: INR ${d.amount.toLocaleString()} via ${d.paymentMethod || "—"} (${d.status || "—"})`).join("\n")}
 
-Certified ledger matches:
-${donations.map(d => `- Transaction ${d.id}: INR ${d.amount.toLocaleString()} via ${d.paymentMethod}`).join("\n")}
-
-This document is digitally validated and verified on the public blockchain/ledger logs.
+This is a summary of your records, not a tax receipt.
 =====================================================`;
 
     const blob = new Blob([content], { type: "text/plain" });
@@ -129,7 +109,13 @@ This document is digitally validated and verified on the public blockchain/ledge
     );
   }
 
-  if (!donor) return null;
+  if (!donor) {
+    return (
+      <div className="min-h-screen w-screen flex items-center justify-center bg-[#020704] text-white px-6 text-center">
+        <p className="max-w-md text-sm text-gray-300">{loadError || "Redirecting to sign in…"}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen w-screen bg-gradient-to-br from-[#06140D] via-[#020704] to-[#040D09] text-white flex flex-col font-sans">

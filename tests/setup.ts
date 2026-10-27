@@ -26,7 +26,7 @@ vi.mock("@/lib/email/providerManager", async () => {
 });
 
 vi.mock("@/lib/email/resend", () => ({
-  generateLetterEmailTemplate: () => "<html></html>",
+  generateLetterEmailTemplate: (o: any) => `<html>${o?.projectUpdate ?? ""}</html>`,
   attachDaaraynLogo: () => [],
 }));
 

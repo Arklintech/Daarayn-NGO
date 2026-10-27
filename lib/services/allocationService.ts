@@ -124,11 +124,15 @@ export async function createAllocation(input: CreateAllocationInput): Promise<{ 
   };
   await allocationRepository.append(allocation);
 
-  // Post-write check for concurrent over-allocation (no transactions in Sheets). The newest row loses.
+  // Post-write check for concurrent over-allocation (no transactions in Sheets). Rows are appended in order, so only
+  // the rows up to and including this one count: the earliest rows win and the surplus loses. Counting every row made
+  // all simultaneous requests see the combined total and roll themselves back. Survivors never exceed the designation,
+  // because each survivor's prefix (which includes every earlier survivor) already fits.
   const after = await allocationRepository.getAll(true);
-  const total = activeAllocatedCents(after, donation.id, input.causeId);
+  const mineAt = after.findIndex((a) => a.id === allocation.id);
   const mine = after.filter((a) => a.id === allocation.id).length;
   if (mine !== 1) throw new AllocationError("The allocation could not be confirmed after writing. Check the Allocations tab before retrying.", 503);
+  const total = activeAllocatedCents(after.slice(0, mineAt + 1), donation.id, input.causeId);
   if (total > designated) {
     await allocationRepository.update(allocation.id, {
       status: "reversed",
