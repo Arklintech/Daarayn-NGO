@@ -3,7 +3,6 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { Send, Users, Activity, CheckCircle, ChevronDown, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check, Globe, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { DEFAULT_CAUSES } from "@/lib/causes";
 
 function CommunicationsHubContent() {
   const router = useRouter();
@@ -12,6 +11,7 @@ function CommunicationsHubContent() {
 
   const [loading, setLoading] = useState(true);
   const [causes, setCauses] = useState<any[]>([]);
+  const [causesError, setCausesError] = useState("");
   const [selectedCauseIds, setSelectedCauseIds] = useState<string[]>([]);
   const [causeSearchQuery, setCauseSearchQuery] = useState("");
   
@@ -51,34 +51,21 @@ function CommunicationsHubContent() {
 
   useEffect(() => {
     async function fetchData() {
-      // Use defaults immediately to show page
-      setCauses(DEFAULT_CAUSES);
-      setLoading(false);
-
-      if (paramDonorId) {
-        setSelectedCauseIds([paramDonorId]);
-      } else {
-        setSelectedCauseIds(DEFAULT_CAUSES.map(c => c.id));
-      }
-
-      // Fetch fresh data in background with 3s timeout
+      // Causes come only from the Causes sheet. If they cannot be read, say so: never offer invented causes as audiences.
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-        const res = await fetch("/api/causes", { signal: controller.signal });
-        clearTimeout(timeoutId);
-
+        const res = await fetch("/api/causes", { cache: "no-store" });
         const data = await res.json();
-        let causesData = Array.isArray(data)
-          ? data
-          : (data.success && Array.isArray(data.causes) && data.causes.length > 0 ? data.causes : DEFAULT_CAUSES);
-
-        if (causesData.length > 0) {
-          setCauses(causesData);
-        }
-      } catch (err) {
-        // Silently fail - defaults are already loaded
+        const causesData = Array.isArray(data) ? data : data.success && Array.isArray(data.causes) ? data.causes : null;
+        if (!res.ok || !causesData) throw new Error("Causes could not be loaded from Google Sheets.");
+        setCauses(causesData);
+        setCausesError("");
+        setSelectedCauseIds(paramDonorId ? [paramDonorId] : causesData.map((c: any) => c.id));
+      } catch (err: any) {
+        setCauses([]);
+        setSelectedCauseIds([]);
+        setCausesError(err?.message || "Causes could not be loaded.");
+      } finally {
+        setLoading(false);
       }
     }
     fetchData();
@@ -426,6 +413,7 @@ function CommunicationsHubContent() {
                     <div>
                       <h3 className="text-base font-bold text-white tracking-wide">Target Audience & Causes</h3>
                       <p className="text-xs text-gray-400">Select target campaigns or choose universal broadcast to all registered donors.</p>
+                      {causesError && <p className="text-xs text-red-300 mt-1" role="alert">{causesError}</p>}
                     </div>
                   </div>
 

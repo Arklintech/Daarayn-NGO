@@ -225,6 +225,14 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       ]
     },
     {
+      title: "Financial Operations",
+      items: [
+        { name: "Designations", href: "/admin/designations", icon: HeartHandshake },
+        { name: "Allocations", href: "/admin/allocations", icon: BadgeIndianRupee },
+        { name: "Reconciliation", href: "/admin/reconciliation", icon: ShieldCheck },
+      ]
+    },
+    {
       title: "Transparency",
       items: [
         { name: "Public Ledger", href: "/admin/ledger", icon: FileText },

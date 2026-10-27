@@ -32,14 +32,8 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   SAR: '﷼',
 };
 
-const DEFAULT_CAUSES_LIST = [
-  { id: 'general', name: 'General Donation', category: 'Where Most Needed' },
-  { id: 'clean-water-wells', name: 'Clean Water Tube Wells Initiative', category: 'Water & Sanitation' },
-  { id: 'orphan-sponsorship', name: 'Orphan & Child Care Sponsorship', category: 'Education & Care' },
-  { id: 'emergency-food-aid', name: 'Emergency Food & Relief Distribution', category: 'Emergency Relief' },
-  { id: 'masjid-construction', name: 'Community Masjid Construction & Repairs', category: 'Infrastructure' },
-  { id: 'healthcare-medical-fund', name: 'Healthcare & Medical Aid Fund', category: 'Healthcare' }
-];
+// General giving is always available; every other cause comes from the Causes sheet (never a hardcoded list).
+const GENERAL_CAUSE = { id: 'general', name: 'General Donation', category: 'Where Most Needed' };
 
 export function getCauseMeta(title: string) {
   const t = (title || '').toLowerCase();
@@ -66,7 +60,7 @@ export default function QuickDonationRibbon() {
   const [amount, setAmount] = useState('500');
   const [currency, setCurrency] = useState('INR');
   const [cause, setCause] = useState('General');
-  const [causes, setCauses] = useState<{ id: string; name: string; category?: string }[]>([]);
+  const [causes, setCauses] = useState<{ id: string; name: string; category?: string }[]>([GENERAL_CAUSE]);
   const [isCauseOpen, setIsCauseOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
 
@@ -88,10 +82,7 @@ export default function QuickDonationRibbon() {
             const withoutGeneral = apiCauses.filter(
               (c: any) => c.id !== 'general' && !c.name.toLowerCase().includes('general')
             );
-            setCauses([
-              { id: 'general', name: 'General Donation', category: 'Where Most Needed' },
-              ...withoutGeneral
-            ]);
+            setCauses([GENERAL_CAUSE, ...withoutGeneral]);
           }
         }
       } catch (err) {
@@ -127,7 +118,7 @@ export default function QuickDonationRibbon() {
   }, []);
 
   const symbol = CURRENCY_SYMBOLS[currency] || '₹';
-  const causeList = causes.length > 0 ? causes : DEFAULT_CAUSES_LIST;
+  const causeList = causes;
   const activeCauseDisplayName = cause === 'General' ? 'General Donation' : cause;
   const activeCauseMeta = getCauseMeta(activeCauseDisplayName);
   const ActiveCauseIcon = activeCauseMeta.icon;

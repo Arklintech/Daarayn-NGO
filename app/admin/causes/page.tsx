@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-import { DEFAULT_CAUSES } from "@/lib/causes";
 
 const CAUSE_STYLE_MAP: Record<string, { icon: any, color: string }> = {
   "clean-water-wells": { icon: Droplets, color: "from-blue-500 to-cyan-500" },
@@ -39,6 +38,7 @@ const CAUSE_STYLE_MAP: Record<string, { icon: any, color: string }> = {
 export default function CauseManagementCenter() {
   const [loading, setLoading] = useState(true);
   const [causesList, setCausesList] = useState<any[]>([]);
+  const [loadError, setLoadError] = useState("");
   const [causeStats, setCauseStats] = useState<Record<string, { raised: number, contributors: number }>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newCause, setNewCause] = useState({ name: "", category: "General", goalAmount: 100000 });
@@ -51,9 +51,8 @@ export default function CauseManagementCenter() {
         const causesData = await causesRes.json();
         let fetchedCauses: any[] = (Array.isArray(causesData) ? causesData : causesData?.success && Array.isArray(causesData.causes) ? causesData.causes : []);
 
-        if (fetchedCauses.length === 0) {
-          fetchedCauses = DEFAULT_CAUSES;
-        }
+        if (!causesRes.ok) throw new Error(causesData?.error || `Causes: HTTP ${causesRes.status}`);
+        setLoadError("");
         setCausesList(fetchedCauses);
 
         // Fetch Donations from Sheets-backed API
@@ -74,8 +73,9 @@ export default function CauseManagementCenter() {
         setCauseStats(formattedStats);
       } catch (err) {
         console.error("Failed to fetch cause stats", err);
-        // Show DEFAULT_CAUSES so page is never blank
-        setCausesList(DEFAULT_CAUSES);
+        // Never substitute invented causes: an empty list plus the error banner is the honest state.
+        setCausesList([]);
+        setLoadError("Causes could not be loaded from Google Sheets. Nothing shown here is a stand-in.");
       } finally {
         setLoading(false);
       }
@@ -143,6 +143,8 @@ export default function CauseManagementCenter() {
           Create Cause
         </button>
       </div>
+
+      {loadError && <div className="p-3 rounded-xl border border-red-500/30 bg-red-500/10 text-red-200 text-sm" role="alert">{loadError}</div>}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">

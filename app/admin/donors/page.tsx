@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { DEFAULT_CAUSES } from "@/lib/causes";
 import { 
   Search, RefreshCw, Filter, Download, CheckCircle, 
   Users, UserPlus, RotateCcw, DollarSign, Activity, ChevronDown, 
@@ -25,7 +24,7 @@ export default function AdminDonors() {
   const router = useRouter();
   
   const [donors, setDonors] = useState<any[]>([]);
-  const [causes, setCauses] = useState<any[]>(DEFAULT_CAUSES);
+  const [causes, setCauses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   
@@ -52,7 +51,7 @@ export default function AdminDonors() {
           if (Array.isArray(cData) && cData.length > 0) setCauses(cData);
         }
       } catch {
-        setCauses(DEFAULT_CAUSES);
+        setCauses([]);
       }
 
       // 2. Fetch Donors from Authoritative Repository API

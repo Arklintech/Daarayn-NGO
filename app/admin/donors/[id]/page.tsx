@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { DEFAULT_CAUSES } from "@/lib/causes";
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowLeft, Edit3, MoreHorizontal, Mail, Phone, MapPin,
@@ -112,10 +111,10 @@ export default function DonorWorkspace() {
 
         if (cRes && cRes.ok) {
           const cData = await cRes.json();
-          const causeList = cData.success && Array.isArray(cData.causes) ? cData.causes : Array.isArray(cData) ? cData : DEFAULT_CAUSES;
+          const causeList = cData.success && Array.isArray(cData.causes) ? cData.causes : Array.isArray(cData) ? cData : [];
           setCauses(causeList);
         } else {
-          setCauses(DEFAULT_CAUSES);
+          setCauses([]);
         }
 
         // Communication history comes from the per-recipient history (keyed by the permanent Donor Token),
