@@ -63,11 +63,11 @@ Time: <1 second
 
 | Inbox | Status | MessageID | Notes |
 |-------|--------|-----------|-------|
-| anasahmedkhan4535@gmail.com | ✅ DELIVERED | `ebe0f50e-9a84-1822...` | Primary test inbox |
-| anasahmedkhan57@gmail.com | ✅ DELIVERED | Generated | Alternate inbox |
-| anasahmedkhan845@gmail.com | ✅ DELIVERED | Generated | Alternate inbox |
+| test-inbox-1@example.invalid | ✅ DELIVERED | `ebe0f50e-9a84-1822...` | Primary test inbox |
+| test-inbox-2@example.invalid | ✅ DELIVERED | Generated | Alternate inbox |
+| test-inbox-3@example.invalid | ✅ DELIVERED | Generated | Alternate inbox |
 | daaraynorg@gmail.com | ✅ DELIVERED | Generated | Sending account inbox |
-| abubakarahmedkhan26@gmail.com | ✅ DELIVERED | Generated | Alternate inbox |
+| test-inbox-4@example.invalid | ✅ DELIVERED | Generated | Alternate inbox |
 
 **Delivery Verification:**
 - ✅ All 5 inboxes received test emails
@@ -256,11 +256,11 @@ Based on code review, the following communication purposes are supported:
 | Test | Method | Result | Evidence |
 |------|--------|--------|----------|
 | SMTP Verification | verifyGmail() | ✅ PASS | Connection verified without sending |
-| Inbox 1 Delivery | Direct SMTP | ✅ DELIVERED | anasahmedkhan4535@gmail.com |
-| Inbox 2 Delivery | Direct SMTP | ✅ DELIVERED | anasahmedkhan57@gmail.com |
-| Inbox 3 Delivery | Direct SMTP | ✅ DELIVERED | anasahmedkhan845@gmail.com |
+| Inbox 1 Delivery | Direct SMTP | ✅ DELIVERED | test-inbox-1@example.invalid |
+| Inbox 2 Delivery | Direct SMTP | ✅ DELIVERED | test-inbox-2@example.invalid |
+| Inbox 3 Delivery | Direct SMTP | ✅ DELIVERED | test-inbox-3@example.invalid |
 | Inbox 4 Delivery | Direct SMTP | ✅ DELIVERED | daaraynorg@gmail.com |
-| Inbox 5 Delivery | Direct SMTP | ✅ DELIVERED | abubakarahmedkhan26@gmail.com |
+| Inbox 5 Delivery | Direct SMTP | ✅ DELIVERED | test-inbox-4@example.invalid |
 | Connection Stability | 5 consecutive sends | ✅ PASS | No timeouts or dropped connections |
 | Error Handling | Invalid credentials test | ✅ PASS | Proper error classification |
 | Template Rendering | HTML structure | ✅ PASS | Valid email markup, CSS inline |

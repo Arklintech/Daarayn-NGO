@@ -40,7 +40,7 @@
 [01:59:15.179] [Gmail] Email SMTP-accepted: ahmedkhananas57@gmail.com
 [01:59:16.xxx] [Gmail] Email SMTP-accepted: (6 more recipients)
 [01:59:20.443] [Gmail] Email SMTP-accepted: a@gmail.com
-[01:59:21.373] [Gmail] Email SMTP-accepted: anasahmedkhan4535@gmail.com
+[01:59:21.373] [Gmail] Email SMTP-accepted: test-inbox-1@example.invalid
 
 [01:59:21.376] [Broadcast] BCAST-1792157171231-8700: 8/8 SMTP-accepted (not inbox-delivery-verified)
 ```
@@ -184,7 +184,7 @@ The Jest worker exceptions (`Error: write EPIPE`) were caused by the params Prom
 - ✅ fatima.test@example.org - SMTP accepted
 - ✅ ahmedkhananas57@gmail.com - SMTP accepted
 - ✅ a@gmail.com - SMTP accepted
-- ✅ anasahmedkhan4535@gmail.com - SMTP accepted
+- ✅ test-inbox-1@example.invalid - SMTP accepted
 - ✅ 4 more test recipients - SMTP accepted
 
 **Outcome:** 8/8 SMTP accepted (not inbox-delivery-verified)  
@@ -204,11 +204,11 @@ The Jest worker exceptions (`Error: write EPIPE`) were caused by the params Prom
 ### Controlled Test Environment
 
 All broadcasts used test email addresses:
-- ✅ anasahmedkhan4535@gmail.com
-- ✅ anasahmedkhan57@gmail.com (variant)
-- ✅ anasahmedkhan845@gmail.com (available)
+- ✅ test-inbox-1@example.invalid
+- ✅ test-inbox-2@example.invalid (variant)
+- ✅ test-inbox-3@example.invalid (available)
 - ✅ daaraynorg@gmail.com (available)
-- ✅ abubakarahmedkhan26@gmail.com (available)
+- ✅ test-inbox-4@example.invalid (available)
 - ✅ test/example addresses for verification
 
 No real donors were emailed during testing.

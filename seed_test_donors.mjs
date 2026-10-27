@@ -15,12 +15,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-const targetEmails = [
-  "anasahmedkhan845@gmail.com",
-  "ahmedkhananas57@gmail.com",
-  "abubakarahmedkhan26@gmail.com",
-  "anasahmedkhan4535@gmail.com"
-];
+// Test recipients come from the environment (comma-separated TEST_RECIPIENTS); never hardcode personal addresses.
+const targetEmails = (process.env.TEST_RECIPIENTS || "").split(",").map((s) => s.trim()).filter(Boolean);
+if (targetEmails.length === 0) { console.error("Set TEST_RECIPIENTS to your own test inboxes."); process.exit(1); }
 
 async function seed() {
   console.log("Fetching causes...");

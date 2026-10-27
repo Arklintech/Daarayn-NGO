@@ -21,7 +21,8 @@ async function testEmailDelivery() {
     await transporter.verify();
     console.log("✅ SMTP connection verified\n");
 
-    const testInbox = "anasahmedkhan4535@gmail.com";
+    const testInbox = (process.env.TEST_RECIPIENTS || process.env.SMTP_USER || "").split(",")[0].trim();
+    if (!testInbox) throw new Error("Set TEST_RECIPIENTS (or SMTP_USER) to a test inbox.");
     console.log(`Sending test email to: ${testInbox}`);
     
     const info = await transporter.sendMail({

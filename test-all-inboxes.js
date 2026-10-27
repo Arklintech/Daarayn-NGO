@@ -12,16 +12,12 @@ const transporter = nodemailer.createTransport({
   socketTimeout: 20000
 });
 
-const approvedInboxes = [
-  "anasahmedkhan4535@gmail.com",
-  "anasahmedkhan57@gmail.com",
-  "anasahmedkhan845@gmail.com",
-  "daaraynorg@gmail.com",
-  "abubakarahmedkhan26@gmail.com"
-];
+// Allowlisted test inboxes come from the environment (comma-separated TEST_RECIPIENTS).
+const approvedInboxes = (process.env.TEST_RECIPIENTS || "").split(",").map((s) => s.trim()).filter(Boolean);
+if (approvedInboxes.length === 0) { console.error("Set TEST_RECIPIENTS to your own test inboxes."); process.exit(1); }
 
 async function testAllInboxes() {
-  console.log("Testing Gmail SMTP delivery to 5 approved inboxes\n");
+  console.log("Testing Gmail SMTP delivery to approved inboxes\n");
   
   for (const inbox of approvedInboxes) {
     try {
