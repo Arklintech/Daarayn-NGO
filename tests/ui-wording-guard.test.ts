@@ -43,4 +43,14 @@ describe("screen wording", () => {
     const risky = sources.filter(({ p }) => /app\/api\/(donor|files)\//.test(p) && /console\.(log|error|warn)\([^)]*(\bcode\b|token|challenge)\b/i.test(fs.readFileSync(path.join(ROOT, p), "utf8").replace(/"[^"\n]*"/g, '""')));
     expect(risky.map((r) => r.p)).toEqual([]);
   });
+
+  it("the donor CRM has no controls that do nothing or pretend to be other reports", () => {
+    expect(hits(/Generate Board Report|View Full Insights/)).toEqual([]);
+  });
+
+  it("the Quick Donation Ribbon hands the checkout the permanent cause id, not the title", () => {
+    const src = fs.readFileSync(path.join(ROOT, "components/QuickDonationRibbon.tsx"), "utf8");
+    expect(src.includes("causes.find((c) => c.name === cause)?.id")).toBe(true);
+    expect(src.includes("cause=${encodeURIComponent(cause)}")).toBe(false);
+  });
 });

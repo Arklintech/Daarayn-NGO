@@ -14,6 +14,7 @@ export async function GET(request: Request) {
     });
   } catch (error: any) {
     console.error("[CommunicationsAPI] Failed to fetch communications from Google Sheets:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    // Never pass a raw Google error to the browser; say what could not be read.
+    return NextResponse.json({ success: false, error: "Communication history could not be read from Google Sheets." }, { status: 503 });
   }
 }

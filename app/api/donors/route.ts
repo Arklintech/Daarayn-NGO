@@ -54,8 +54,8 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error("[API/Donors] Failed to fetch donors:", error);
     return NextResponse.json(
-      { error: "Failed to retrieve donor records." },
-      { status: 500 }
+      { error: "Donor records could not be read from Google Sheets." },
+      { status: 503, headers: { "Cache-Control": "no-store" } }
     );
   }
 }
@@ -118,3 +118,4 @@ export async function POST(request: NextRequest) {
 }
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30; // Sheets/Drive/SMTP calls can outlast the platform default

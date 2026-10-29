@@ -74,7 +74,7 @@ const CATEGORY_DESTINATIONS: Record<NotificationCategory, string> = {
   conversations: "Field Operations conversations",
   donors: "Donors CRM",
   donations: "Donations",
-  causes_campaigns: "Cause Management Center",
+  causes_campaigns: "Programs",
   communications: "Donor Communications",
   executive_reports: "Executive Dashboard",
 };

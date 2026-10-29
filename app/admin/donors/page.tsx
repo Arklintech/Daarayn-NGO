@@ -29,7 +29,7 @@ export default function AdminDonors() {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   
   const [searchQuery, setSearchQuery] = useState("");
-  const [timePeriod, setTimePeriod] = useState("Last 7 Days");
+  const [timePeriod, setTimePeriod] = useState("All Time");
   const [quickSegment, setQuickSegment] = useState("All Donors");
   const [selectedCause, setSelectedCause] = useState("All Causes");
   const [selectedCountry, setSelectedCountry] = useState("All Countries");
@@ -40,6 +40,37 @@ export default function AdminDonors() {
   const [newDonor, setNewDonor] = useState({ name: '', email: '', phone: '', country: 'India', city: '' });
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const SAVED_FILTER_KEY = "daarayn_crm_saved_filter";
+  const [savedFilter, setSavedFilter] = useState<null | { timePeriod: string; quickSegment: string; selectedCause: string; selectedCountry: string; verification: string; searchQuery: string }>(null);
+  const [filterNote, setFilterNote] = useState("");
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(SAVED_FILTER_KEY);
+      if (raw) setSavedFilter(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  const handleSaveFilter = () => {
+    const value = { timePeriod, quickSegment, selectedCause, selectedCountry, verification, searchQuery };
+    try {
+      localStorage.setItem(SAVED_FILTER_KEY, JSON.stringify(value));
+      setSavedFilter(value);
+      setFilterNote("Filter saved in this browser.");
+    } catch {
+      setFilterNote("Could not save the filter in this browser.");
+    }
+    setTimeout(() => setFilterNote(""), 3000);
+  };
+  const handleApplySavedFilter = () => {
+    if (!savedFilter) return;
+    setTimePeriod(savedFilter.timePeriod);
+    setQuickSegment(savedFilter.quickSegment);
+    setSelectedCause(savedFilter.selectedCause);
+    setSelectedCountry(savedFilter.selectedCountry);
+    setVerification(savedFilter.verification);
+    setSearchQuery(savedFilter.searchQuery);
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -195,30 +226,27 @@ export default function AdminDonors() {
       setIsAddDonorOpen(true);
     } else if (actionLabel === 'Donor Communications') {
       router.push('/admin/communications');
-    } else if (actionLabel === 'Export Report' || actionLabel === 'Download CSV') {
+    } else if (actionLabel === 'Download CSV') {
+      // RFC 4180 quoting; a leading = + - @ is neutralised so a donor name cannot run as a spreadsheet formula.
+      const cell = (v: unknown) => {
+        let t = String(v ?? "");
+        if (/^[=+\-@\t\r]/.test(t)) t = "'" + t;
+        return '"' + t.replace(/"/g, '""') + '"';
+      };
       const csvData = [
-        ['Donor ID', 'Name', 'Email', 'Phone', 'Country', 'Total Donated'],
-        ...filteredDonors.map(d => [
-          d.id || '', 
-          `"${d.name || ''}"`, 
-          d.email || '', 
-          d.phone || '', 
-          d.country || '', 
-          d.totalAmountDonated || 0
-        ])
-      ].map(row => row.join(',')).join('\n');
-      
-      const blob = new Blob([csvData], { type: 'text/csv' });
+        ['Donor ID', 'Name', 'Email', 'Phone', 'Country', 'Total Donated (verified)'],
+        ...filteredDonors.map(d => [d.id, d.name, d.email, d.phone, d.country, d.totalAmountDonated || 0]),
+      ].map(row => row.map(cell).join(',')).join('\r\n');
+
+      const blob = new Blob(['\uFEFF' + csvData], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `CRM_Export_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `CRM_Export_${new Date().toLocaleDateString('en-CA')}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    } else if (actionLabel === 'Generate Board Report') {
-      handleQuickAction('Download CSV');
     }
   };
 
@@ -324,11 +352,17 @@ export default function AdminDonors() {
             <ChevronDown className="absolute right-3.5 bottom-2.5 w-3.5 h-3.5 text-gray-500 pointer-events-none" />
           </div>
         ))}
-        <button className="flex items-center gap-2 px-5 py-3 bg-white/5 border border-luxury-gold/50 rounded-xl text-luxury-gold text-sm font-medium hover:bg-luxury-gold/10 transition">
+        <button type="button" onClick={handleSaveFilter} className="flex items-center gap-2 px-5 py-3 bg-white/5 border border-luxury-gold/50 rounded-xl text-luxury-gold text-sm font-medium hover:bg-luxury-gold/10 transition">
           <Star className="w-4 h-4" /> Save Filter
         </button>
+        {savedFilter && (
+          <button type="button" onClick={handleApplySavedFilter} className="flex items-center gap-2 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-300 text-sm hover:text-white transition">
+            Apply saved
+          </button>
+        )}
+        {filterNote && <span role="status" className="text-[12px] text-gray-400">{filterNote}</span>}
         <button onClick={() => handleQuickAction('Download CSV')} className="flex items-center gap-2 px-5 py-3 bg-luxury-gold border border-luxury-gold/50 rounded-xl text-luxury-charcoal text-sm font-medium hover:bg-luxury-gold/80 transition">
-          Export <ChevronDown className="w-4 h-4 ml-1" />
+          <Download className="w-4 h-4" /> Export CSV
         </button>
       </div>
 
@@ -352,7 +386,7 @@ export default function AdminDonors() {
               </div>
             </div>
             <div className="flex items-end justify-between mt-5">
-              <span className="text-[11px] text-gray-500">{timePeriod === 'All Time' ? 'All time' : `Joined: ${timePeriod}`}</span>
+              <span className="text-[11px] text-gray-500">{k.title === 'New Donors' ? 'Joined in the last 30 days' : timePeriod === 'All Time' ? 'All time' : `Joined: ${timePeriod}`}</span>
             </div>
           </div>
         ))}
@@ -362,9 +396,6 @@ export default function AdminDonors() {
       <div>
         <div className="flex items-center justify-between">
           <SectionHeader title="EXECUTIVE INSIGHTS" icon={BarChart2} />
-          <button className="text-[12px] text-gray-400 hover:text-white transition flex items-center gap-1 bg-white/5 px-3 py-1.5 rounded-lg">
-            View Full Insights <ChevronDown className="w-3 h-3 -rotate-90" />
-          </button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
@@ -390,9 +421,7 @@ export default function AdminDonors() {
           {[
             { label: "Add Donor", icon: UserPlus },
             { label: "Donor Communications", icon: MessageSquare },
-            { label: "Export Report", icon: FileText },
             { label: "Download CSV", icon: Download },
-            { label: "Generate Board Report", icon: FileText },
           ].map((action, i) => (
             <button key={i} onClick={() => handleQuickAction(action.label)} className="flex items-center gap-2 px-5 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[13px] font-medium text-gray-300 hover:text-white transition">
               <action.icon className="w-4 h-4 text-gray-500" />

@@ -11,6 +11,7 @@
  */
 
 import { recordGoogleAttempt } from "./usage";
+import { acquireSlot, penalizeKind, type RequestKind } from "./requestControl";
 
 export interface RetryOptions {
   /** Total tries including the first (default 5). */
@@ -22,6 +23,10 @@ export interface RetryOptions {
   label?: string;
   /** Retry only quota errors (429 / rate-limit 403). Use for non-idempotent calls such as append. */
   quotaOnly?: boolean;
+  /** Read or write budget this request is charged to; when set, every attempt (first and retries) waits for a slot from the shared limiter. */
+  kind?: RequestKind;
+  /** Total time the retries may take (default GOOGLE_RETRY_MAX_ELAPSED_MS or 40000 ms). A retry that would exceed it is not started. */
+  maxElapsedMs?: number;
 }
 
 const defaultSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
@@ -60,31 +65,60 @@ export function classifyGoogleError(err: any): { retryable: boolean; quota: bool
   return { retryable, quota, retryAfterMs };
 }
 
+export type GoogleErrorCategory = "configuration" | "authentication" | "permission" | "not_found" | "quota" | "transient" | "timeout" | "invalid_request" | "unknown";
+
+/**
+ * Operational category of a failed Google call, used for honest messages and the readiness check.
+ * configuration / authentication / permission / not_found / invalid_request are never retried; quota and transient are.
+ */
+export function categorizeGoogleError(err: any): GoogleErrorCategory {
+  if (err?.isConfigError) return "configuration";
+  const status = Number(err?.code && typeof err.code === "number" ? err.code : err?.response?.status || err?.status || 0);
+  const message = String(err?.message || "");
+  const info = classifyGoogleError(err);
+  if (info.quota) return "quota";
+  if (/invalid_grant|invalid_client|unauthorized_client|invalid jwt|private key|DECODER routines|no key or keyfile/i.test(message) || status === 401) return "authentication";
+  if (status === 403) return "permission";
+  if (status === 404) return "not_found";
+  if (status === 400) return "invalid_request";
+  if (/timed? ?out|ETIMEDOUT|ESOCKETTIMEDOUT/i.test(message) || err?.code === "ETIMEDOUT" || err?.code === "ESOCKETTIMEDOUT") return "timeout";
+  if (info.retryable) return "transient";
+  return "unknown";
+}
+
 export async function withGoogleRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const maxAttempts = options.maxAttempts ?? 5;
   const base = options.baseDelayMs ?? 1000;
   const cap = options.maxDelayMs ?? 30_000;
+  const maxElapsed = options.maxElapsedMs ?? (Number(process.env.GOOGLE_RETRY_MAX_ELAPSED_MS) || 40_000);
+  const started = Date.now();
   let attempt = 0;
   for (;;) {
     attempt++;
+    // Pacing: every attempt, including retries, is charged to the shared budget. A backpressure error means nothing was sent.
+    const waited = options.kind ? await acquireSlot(options.kind) : 0;
     try {
       const result = await fn();
-      recordGoogleAttempt(options.label, { failed: false, quota: false });
+      recordGoogleAttempt(options.label, { failed: false, quota: false }, Date.now(), { kind: options.kind, waitedMs: waited, retry: attempt > 1 });
       return result;
     } catch (err: any) {
       const info = classifyGoogleError(err);
-      recordGoogleAttempt(options.label, { failed: true, quota: info.quota });
+      recordGoogleAttempt(options.label, { failed: true, quota: info.quota }, Date.now(), { kind: options.kind, waitedMs: waited, retry: attempt > 1 });
       const { retryAfterMs } = info;
       const retryable = options.quotaOnly ? info.quota : info.retryable;
-      if (!retryable || attempt >= maxAttempts) {
+      const backoff = Math.random() * Math.min(cap, base * 2 ** (attempt - 1)); // full jitter
+      const wait = Math.min(cap, retryAfterMs !== undefined ? Math.max(retryAfterMs, backoff) : backoff);
+      if (info.quota && options.kind) await penalizeKind(options.kind, wait); // everyone slows down, not only this caller
+      const outOfTime = Date.now() - started + wait > maxElapsed;
+      if (!retryable || attempt >= maxAttempts || outOfTime) {
         if (retryable && err && typeof err === "object") {
           err.retriesExhausted = true;
+          err.retryable = true;
+          err.quotaExhausted = info.quota;
           err.attempts = attempt;
         }
         throw err;
       }
-      const backoff = Math.random() * Math.min(cap, base * 2 ** (attempt - 1)); // full jitter
-      const wait = Math.min(cap, retryAfterMs !== undefined ? Math.max(retryAfterMs, backoff) : backoff);
       console.warn(`[GoogleRetry] ${options.label || "request"} failed (${err?.code || err?.response?.status || err?.message}); retry ${attempt}/${maxAttempts - 1} in ${Math.round(wait)}ms`);
       await sleep(wait);
     }

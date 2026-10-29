@@ -93,7 +93,7 @@ export default function DonateForm({ initialAmount = '', initialCurrency = 'INR'
       };
 
       try {
-        const res = await fetch("/api/causes");
+        const res = await fetch("/api/causes?scope=public");
         if (!res.ok) throw new Error("Failed to fetch causes");
         const list = await res.json();
         

@@ -3,6 +3,8 @@
 import React, { useState, useEffect, Suspense } from "react";
 import { Send, Users, Activity, CheckCircle, ChevronDown, AlertTriangle, X, ArrowRight, Download, BarChart2, Target, Search, Check, Globe, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import AdminSelect from "@/components/admin/AdminSelect";
+import { CATEGORY_LABEL, type ProgramCategory } from "@/lib/catalog/programContentSchema";
 
 function CommunicationsHubContent() {
   const router = useRouter();
@@ -12,6 +14,8 @@ function CommunicationsHubContent() {
   const [loading, setLoading] = useState(true);
   const [causes, setCauses] = useState<any[]>([]);
   const [causesError, setCausesError] = useState("");
+  /** Program id -> its category label (Masjid Infrastructure, Qur'an Hifz, General Causes) from the Programs data; causes that are not programs keep their own category. */
+  const [programCategories, setProgramCategories] = useState<Record<string, string>>({});
   const [selectedCauseIds, setSelectedCauseIds] = useState<string[]>([]);
   const [causeSearchQuery, setCauseSearchQuery] = useState("");
   
@@ -60,6 +64,18 @@ function CommunicationsHubContent() {
         setCauses(causesData);
         setCausesError("");
         setSelectedCauseIds(paramDonorId ? [paramDonorId] : causesData.map((c: any) => c.id));
+        try {
+          const pr = await fetch("/api/admin/programs", { cache: "no-store" });
+          const programs = pr.ok ? await pr.json() : [];
+          const map: Record<string, string> = {};
+          for (const p of Array.isArray(programs) ? programs : []) {
+            const cat = p?.content?.programCategory as ProgramCategory | undefined;
+            if (p?.id && cat && CATEGORY_LABEL[cat]) map[p.id] = CATEGORY_LABEL[cat];
+          }
+          setProgramCategories(map);
+        } catch {
+          /* labels fall back to the cause's own category */
+        }
       } catch (err: any) {
         setCauses([]);
         setSelectedCauseIds([]);
@@ -522,13 +538,13 @@ function CommunicationsHubContent() {
                           </div>
 
                           <div className="flex items-center gap-2 shrink-0">
-                            {c.category && (
+                            {(programCategories[c.id] || c.category) && (
                               <span className={`text-[10px] uppercase tracking-wider px-2.5 py-1 rounded-md border font-medium ${
                                 isSelected 
                                   ? 'bg-white/20 border-white/30 text-white' 
                                   : 'bg-white/5 border-white/10 text-gray-400'
                               }`}>
-                                {c.category}
+                                {programCategories[c.id] || c.category}
                               </span>
                             )}
                             {isSelected && (
@@ -586,21 +602,18 @@ function CommunicationsHubContent() {
 
                   <div>
                     <label className="block text-xs text-gray-500 uppercase tracking-widest mb-2">Communication Type</label>
-                    <div className="relative">
-                      <select
-                        value={type}
-                        onChange={(e) => setType(e.target.value)}
-                        className="w-full appearance-none pl-4 pr-10 py-3 rounded-xl text-white text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-luxury-gold)]/40 cursor-pointer"
-                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)' }}
-                      >
-                        <option value="contribution_confirmation" style={{ background: '#0f1623' }}>Contribution Confirmation</option>
-                        <option value="project_progress" style={{ background: '#0f1623' }}>Project Progress Update</option>
-                        <option value="allocation_confirmation" style={{ background: '#0f1623' }}>Allocation Confirmation</option>
-                        <option value="completion_report" style={{ background: '#0f1623' }}>Completion & Impact Report</option>
-                        <option value="general_communication" style={{ background: '#0f1623' }}>General Communication</option>
-                      </select>
-                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    </div>
+                    <AdminSelect
+                      ariaLabel="Communication type"
+                      value={type}
+                      onChange={setType}
+                      options={[
+                        { value: "contribution_confirmation", label: "Contribution Confirmation" },
+                        { value: "project_progress", label: "Project Progress Update" },
+                        { value: "allocation_confirmation", label: "Allocation Confirmation" },
+                        { value: "completion_report", label: "Completion & Impact Report" },
+                        { value: "general_communication", label: "General Communication" },
+                      ]}
+                    />
                   </div>
 
                   <div>

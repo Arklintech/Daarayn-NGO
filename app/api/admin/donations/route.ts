@@ -8,6 +8,7 @@ import { canonicalStatus, DONATION_STATUSES, type DonationStatus } from "@/lib/d
 import { donationCauseRepository } from "@/lib/repositories/donationCauseRepository";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30; // Sheets/Drive/SMTP calls can outlast the platform default
 
 // In-memory cache with 2-minute TTL
 let cachedDonations: any = null;

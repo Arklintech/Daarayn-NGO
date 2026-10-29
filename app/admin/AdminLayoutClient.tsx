@@ -9,10 +9,7 @@ import {
   FolderHeart, 
   Flame, 
   BadgeIndianRupee, 
-  BookMarked, 
   Users2, 
-  FileText, 
-  HelpCircle,
   HeartHandshake, 
   Settings2, 
   LogOut, 
@@ -219,9 +216,6 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
       title: "Programs & Causes",
       items: [
         { name: "Programs", href: "/admin/programs", icon: FolderHeart },
-        { name: "Campaigns", href: "/admin/campaigns", icon: Flame },
-        { name: "Cause Management Center", href: "/admin/causes", icon: BookMarked },
-        { name: "Beneficiaries", href: "/admin/beneficiaries", icon: Users2 },
       ]
     },
     {
@@ -230,18 +224,6 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
         { name: "Designations", href: "/admin/designations", icon: HeartHandshake },
         { name: "Allocations", href: "/admin/allocations", icon: BadgeIndianRupee },
         { name: "Reconciliation", href: "/admin/reconciliation", icon: ShieldCheck },
-      ]
-    },
-    {
-      title: "Transparency",
-      items: [
-        { name: "Public Ledger", href: "/admin/ledger", icon: FileText },
-      ]
-    },
-    {
-      title: "Content & FAQs",
-      items: [
-        { name: "FAQs", href: "/admin/faqs", icon: HelpCircle },
       ]
     },
     {

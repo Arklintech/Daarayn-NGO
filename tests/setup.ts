@@ -10,6 +10,19 @@ vi.mock("@/lib/google/sheets", async () => {
   return { sheetsService: fakeSheets, SheetsService: FakeSheets };
 });
 
+// Hard stop: no offline test can ever open a real SMTP connection, even if an e-mail module mock is removed by mistake.
+// (A test that needs the Gmail provider supplies its own nodemailer mock, which overrides this one.)
+vi.mock("nodemailer", () => {
+  const forbidden = () => {
+    throw new Error("Real SMTP is forbidden in offline tests: mock the transport explicitly.");
+  };
+  return { default: { createTransport: forbidden }, createTransport: forbidden };
+});
+
+// The request-rate limiter is exercised by its own tests; every other offline test runs unthrottled.
+process.env.GOOGLE_SHEETS_READS_PER_MINUTE = "0";
+process.env.GOOGLE_SHEETS_WRITES_PER_MINUTE = "0";
+
 vi.mock("@/lib/google/drive", async () => {
   const { driveMock } = await import("./helpers/mocks");
   return { driveService: driveMock };

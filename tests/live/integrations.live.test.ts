@@ -110,6 +110,12 @@ beforeAll(async () => {
   }
   if (TEST_FOLDER && TEST_FOLDER === (process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID || "").trim()) throw new Error("Refusing to run: the Drive test folder must differ from the production evidence folder.");
   process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID = TEST_FOLDER; // empty => Drive-dependent tests are skipped, production folder untouched
+  const { approveTestResourceForThisProcess: approve } = await import("@/lib/google/approvedTargets");
+  approve("sheet", testSheetId); // a throw-away sheet created by THIS run (the approved one is already on the allowlist)
+  approve("folder", TEST_FOLDER);
+  process.env.GOOGLE_TARGET_ENV = "test"; // the write guard: this process may only write to the declared test resources
+  process.env.GOOGLE_TEST_SHEET_ID = testSheetId;
+  process.env.GOOGLE_DRIVE_TEST_FOLDER_ID = TEST_FOLDER;
   process.env.GOOGLE_SHEET_ID = testSheetId; // empty when blocked, so the app can never fall back to production
   vi.resetModules();
   sheetsSvc = (await import("@/lib/google/sheets")).sheetsService;
@@ -231,8 +237,9 @@ describe("LIVE: donation workflow on the isolated spreadsheet", () => {
     const { appendEvent, readEventsFrom, lastEventRow } = await import("@/lib/realtime/eventLog");
     const before = await lastEventRow();
     const row = await appendEvent("DONATION_UPDATED", { id: "T-1" }, ["admin"], "live-test", new Date().toISOString());
-    expect(row).toBeGreaterThan(before - 1);
-    const { events } = await readEventsFrom(row);
+    expect(row).not.toBeNull();
+    expect(row!).toBeGreaterThan(before - 1);
+    const { events } = await readEventsFrom(row!);
     expect(events[0].message.type).toBe("DONATION_UPDATED");
     expect(events[0].audience).toEqual(["admin"]);
   });

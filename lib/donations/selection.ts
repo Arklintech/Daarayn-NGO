@@ -19,7 +19,7 @@ export interface NormalizedSelection {
 
 const norm = (v: unknown) => String(v ?? "").trim().toLowerCase();
 
-export function normalizeSelection(raw: unknown, catalog: Cause[], fallbackTitle = ""): NormalizedSelection {
+export function normalizeSelection(raw: unknown, catalog: Cause[], fallbackTitle = "", held: ReadonlySet<string> = new Set()): NormalizedSelection {
   const items: unknown[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
   const chosen = new Map<string, { causeId: string; causeTitle: string }>();
   let general = false;
@@ -40,6 +40,10 @@ export function normalizeSelection(raw: unknown, catalog: Cause[], fallbackTitle
     }
     if (!isSelectableCause(cause)) {
       problems.push(`"${cause.title}" is not open for donations (status ${cause.status}).`);
+      continue;
+    }
+    if (held.has(cause.id)) {
+      problems.push(`"${cause.title}" is on hold for a project-update review and is not accepting new donations right now.`);
       continue;
     }
     chosen.set(cause.id, { causeId: cause.id, causeTitle: cause.title });

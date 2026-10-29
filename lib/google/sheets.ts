@@ -1,5 +1,12 @@
 import { getSheetsClient, GOOGLE_SHEET_ID, googleAuthProblem } from "./client";
 import { withGoogleRetry } from "./retry";
+import { assertSpreadsheetId } from "./config";
+
+// Shared by every route bundle of this process. Identical reads are coalesced only when the shared request STARTED after the last write finished,
+// so a caller that has just written (and now reads to verify its row) can never be handed a snapshot older than its own write.
+const gs = globalThis as any;
+gs.__daaraynLastWriteDoneAt ??= 0;
+const inflightReads: Map<string, { startedAt: number; promise: Promise<any> }> = (gs.__daaraynInflightReads ??= new Map());
 
 export interface SheetRow {
   rowNumber: number;
@@ -36,9 +43,8 @@ export class SheetsService {
   }
 
   private get sheets() {
-    if (!this.spreadsheetId) {
-      throw new Error("GOOGLE_SHEET_ID is not configured.");
-    }
+    // Refuse before any request is made: a missing or malformed id never reaches Google and is never retried.
+    assertSpreadsheetId(this.spreadsheetId);
     const client = getSheetsClient();
     if (!client) {
       throw new Error(`Google Sheets client is not initialized. ${googleAuthProblem()}`);
@@ -47,7 +53,13 @@ export class SheetsService {
   }
 
   private call<T>(label: string, fn: () => Promise<T>, appendOnly = false): Promise<T> {
-    return withGoogleRetry(fn, { label: `Sheets ${label}`, quotaOnly: appendOnly });
+    const kind = /^(read rows|get headers|get spreadsheet|batch read)/.test(label) ? "read" : "write";
+    const run = withGoogleRetry(fn, { label: `Sheets ${label}`, quotaOnly: appendOnly, kind });
+    if (kind === "read") return run;
+    // A write finished (or failed) at this moment: a read that is already in flight may not contain it, so it must not be shared afterwards.
+    return run.finally(() => {
+      gs.__daaraynLastWriteDoneAt = performance.now();
+    });
   }
 
   /**
@@ -221,10 +233,19 @@ export class SheetsService {
 
   public async getRowsWithNumbers(sheetName: string): Promise<{ headers: string[]; rows: SheetRow[] }> {
     try {
-      const res = await this.call("read rows", () =>
+      const key = `${this.spreadsheetId}|${sheetName}`;
+      const shared = inflightReads.get(key);
+      if (shared && shared.startedAt >= (gs.__daaraynLastWriteDoneAt as number)) return await shared.promise;
+      const promise = this.call(`read rows ${sheetName}`, () =>
         this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `'${sheetName}'!A:ZZ` })
-      );
-      return this.parseValues(res.data.values);
+      ).then((res) => this.parseValues(res.data.values));
+      const entry = { startedAt: performance.now(), promise };
+      inflightReads.set(key, entry);
+      try {
+        return await promise;
+      } finally {
+        if (inflightReads.get(key) === entry) inflightReads.delete(key);
+      }
     } catch (err: any) {
       console.error(`[SheetsService] Failed to fetch rows from ${sheetName}:`, err.message);
       throw new Error(`Could not read ${sheetName} from Google Sheets: ${err.message}`);
@@ -283,7 +304,7 @@ export class SheetsService {
   /** Overwrites one known row in place (no lookup, no append fallback). Idempotent, so it retries on transient errors. */
   public async updateRowAt(sheetName: string, rowNumber: number, record: Record<string, any>): Promise<void> {
     const headers = await this.ensureHeadersFor(sheetName, record);
-    await this.call("update row", () =>
+    await this.call(`update row ${sheetName}`, () =>
       this.sheets.spreadsheets.values.update({
         spreadsheetId: this.spreadsheetId,
         range: `'${sheetName}'!A${rowNumber}`,
@@ -311,7 +332,7 @@ export class SheetsService {
   public async appendRow(sheetName: string, record: Record<string, any>, expectedHeaders?: string[]): Promise<number> {
     const headers = await this.ensureHeadersFor(sheetName, record, expectedHeaders);
     const res = await this.call(
-      "append row",
+      `append row ${sheetName}`,
       () =>
         this.sheets.spreadsheets.values.append({
           spreadsheetId: this.spreadsheetId,

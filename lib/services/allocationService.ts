@@ -15,6 +15,7 @@
  *  - a repeated request with the same requestKey returns the existing allocation (idempotent);
  *  - reversal keeps the record (status "reversed", reason, actor); nothing is deleted.
  */
+import { sheetsService } from "../google/sheets";
 import { allocationRepository, type AllocationEntity } from "../repositories/allocationRepository";
 import { donationRepository } from "../repositories/donationRepository";
 import { donationCauseRepository, designationId } from "../repositories/donationCauseRepository";
@@ -56,15 +57,18 @@ export async function createAllocation(input: CreateAllocationInput): Promise<{ 
   if (!Number.isFinite(amount) || amount <= 0) throw new AllocationError("The allocation amount must be greater than zero.");
   const requestKey = (input.requestKey || "").trim().slice(0, 100);
 
-  const [donations, designations, allocations, causes] = await Promise.all([
-    donationRepository.getAll(true),
-    donationCauseRepository.getAll(true),
-    allocationRepository.getAll(true),
-    causeRepository.getAll(),
-  ]);
+  // The four authoritative inputs are read FRESH in ONE batched Sheets request (not four), then each repository is refreshed from those rows.
+  // Nothing comes from a cache: eligibility and the remaining balance are decided on what was just read.
+  await Promise.all([donationRepository.init(), donationCauseRepository.init(), allocationRepository.init(), causeRepository.init()]);
+  const batch = await sheetsService.batchGetRows([donationRepository.tabName, donationCauseRepository.tabName, allocationRepository.tabName, causeRepository.tabName]);
+  const donations = donationRepository.hydrate(batch[donationRepository.tabName] || []);
+  const designations = donationCauseRepository.hydrate(batch[donationCauseRepository.tabName] || []);
+  const allocations = allocationRepository.hydrate(batch[allocationRepository.tabName] || []);
+  const causes = causeRepository.hydrate(batch[causeRepository.tabName] || []);
 
   if (requestKey) {
-    const prior = allocations.find((a) => a.requestKey === requestKey);
+    // A row the system itself reversed because its cap could not be verified (below) never happened: a retry with the same key starts over.
+    const prior = allocations.find((a) => a.requestKey === requestKey && !(a.status === "reversed" && a.reversedBy === "system"));
     if (prior) return { allocation: prior, duplicate: true };
   }
 
@@ -128,11 +132,37 @@ export async function createAllocation(input: CreateAllocationInput): Promise<{ 
   // the rows up to and including this one count: the earliest rows win and the surplus loses. Counting every row made
   // all simultaneous requests see the combined total and roll themselves back. Survivors never exceed the designation,
   // because each survivor's prefix (which includes every earlier survivor) already fits.
-  const after = await allocationRepository.getAll(true);
+  let after: AllocationEntity[];
+  try {
+    after = await allocationRepository.getAll(true);
+  } catch (err: any) {
+    // The row is written but the cap could not be checked (for example Google rate-limited the read). Never leave an unchecked
+    // financial row active: reverse it as a system action so the retry (same key) starts clean; if even that fails, say so plainly.
+    console.error(`[Allocation] ${allocation.id} written but not verifiable:`, err?.message);
+    try {
+      await allocationRepository.update(allocation.id, { status: "reversed", reversedReason: "Could not verify the designated cap after writing (source error); reversed for safety", reversedAt: new Date().toISOString(), reversedBy: "system" });
+    } catch (undoErr: any) {
+      console.error(`[Allocation] ${allocation.id} could not be reversed after a failed verification:`, undoErr?.message);
+      throw new AllocationError(`The allocation ${allocation.id} may have been written but could not be verified or undone. Check the Allocations tab before retrying.`, 503);
+    }
+    throw new AllocationError("The allocation could not be verified because the records service was busy, so it was not kept. Please retry.", 503);
+  }
   const mineAt = after.findIndex((a) => a.id === allocation.id);
   const mine = after.filter((a) => a.id === allocation.id).length;
   if (mine !== 1) throw new AllocationError("The allocation could not be confirmed after writing. Check the Allocations tab before retrying.", 503);
-  const total = activeAllocatedCents(after.slice(0, mineAt + 1), donation.id, input.causeId);
+  // The same logical request (same idempotency key) arriving at two instances at once passes the pre-check in both. The EARLIEST row for
+  // a key is the allocation; any later row with that key is a duplicate: it is reversed by the system and the caller gets the original.
+  const systemReversed = (a: AllocationEntity) => a.status === "reversed" && a.reversedBy === "system";
+  const firstByKey = new Map<string, AllocationEntity>();
+  for (const a of after) if (a.requestKey && !systemReversed(a) && !firstByKey.has(a.requestKey)) firstByKey.set(a.requestKey, a);
+  const winner = requestKey ? firstByKey.get(requestKey) : undefined;
+  if (winner && winner.id !== allocation.id) {
+    await allocationRepository.update(allocation.id, { status: "reversed", reversedReason: "Duplicate of an identical request (same idempotency key); the earlier allocation stands", reversedAt: new Date().toISOString(), reversedBy: "system" });
+    return { allocation: winner, duplicate: true };
+  }
+  // Rows that are later duplicates of an earlier same-key request never count toward another request's prefix total.
+  const prefix = after.slice(0, mineAt + 1).filter((a) => !a.requestKey || firstByKey.get(a.requestKey)?.id === a.id || systemReversed(a));
+  const total = activeAllocatedCents(prefix, donation.id, input.causeId);
   if (total > designated) {
     await allocationRepository.update(allocation.id, {
       status: "reversed",

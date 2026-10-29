@@ -1,4 +1,5 @@
 import { sheetsService } from "../google/sheets";
+import { registerSchema } from "../google/schemaRegistry";
 
 export abstract class BaseRepository<T extends { id: string }> {
   protected sheetName: string;
@@ -10,10 +11,13 @@ export abstract class BaseRepository<T extends { id: string }> {
   // written by other instances (new donations, verifications) for minutes.
   private CACHE_TTL_MS = 30_000;
   private MISS_REFRESH_INTERVAL_MS = 3_000;
+  // Several components ask for the same tab at the same moment (page load, realtime refresh); they share one Sheets read.
+  private inflight: Promise<T[]> | null = null;
 
   constructor(sheetName: string, headers: string[]) {
     this.sheetName = sheetName;
     this.headers = headers;
+    registerSchema(sheetName, headers);
   }
 
   protected abstract mapRowToEntity(row: Record<string, any>): T;
@@ -29,9 +33,20 @@ export abstract class BaseRepository<T extends { id: string }> {
       return Array.from(this.cache.values());
     }
 
-    await this.init();
-    const rows = await sheetsService.getAllRows(this.sheetName);
-    return this.hydrate(rows, now);
+    // Only ordinary reads share a request already in flight. A forced refresh must see writes that finished after that
+    // request started, so it always performs its own read (sharing it would hand back a snapshot older than the caller's write).
+    if (this.inflight && !forceRefresh) return this.inflight;
+    const load = (async () => {
+      await this.init();
+      const rows = await sheetsService.getAllRows(this.sheetName);
+      return this.hydrate(rows, Date.now());
+    })();
+    if (!forceRefresh) this.inflight = load;
+    try {
+      return await load;
+    } finally {
+      if (this.inflight === load) this.inflight = null;
+    }
   }
 
   public get tabName(): string {
@@ -72,6 +87,32 @@ export abstract class BaseRepository<T extends { id: string }> {
     return this.cache.get(id) || null;
   }
 
+  /**
+   * "Look up, then append" is not atomic: two instances creating the SAME new id at once both append. Right after creating, the rows for this
+   * id are re-read; a later row that is IDENTICAL to the earliest one (the double-submit case) is blanked, rows are never deleted. A later
+   * row with DIFFERENT content is never touched: it is reported as an integrity incident (log) so a person decides, because blanking it
+   * would lose a real edit.
+   */
+  private async resolveConcurrentCreate(id: string, rowData: Record<string, any>): Promise<void> {
+    try {
+      const { rows } = await sheetsService.getRowsWithNumbers(this.sheetName);
+      const same = rows.filter((r) => String(r.record.id) === String(id));
+      if (same.length < 2) return;
+      const first = same[0];
+      for (const dup of same.slice(1)) {
+        const identical = Object.keys(rowData).every((k) => String(dup.record[k] ?? "") === String(first.record[k] ?? ""));
+        if (identical) {
+          console.warn(`[${this.sheetName}] concurrent create of ${id}: identical duplicate at row ${dup.rowNumber} blanked; row ${first.rowNumber} kept.`);
+          await sheetsService.clearRowAt(this.sheetName, dup.rowNumber);
+        } else {
+          console.error(`[${this.sheetName}] INTEGRITY INCIDENT: id ${id} exists at rows ${first.rowNumber} and ${dup.rowNumber} with different content; nothing was changed.`);
+        }
+      }
+    } catch (err: any) {
+      console.error(`[${this.sheetName}] could not check ${id} for a concurrent duplicate:`, err?.message);
+    }
+  }
+
   public async save(entity: T): Promise<T> {
     await this.init();
     const existing = await this.getById(entity.id);
@@ -81,6 +122,7 @@ export abstract class BaseRepository<T extends { id: string }> {
       await sheetsService.updateRow(this.sheetName, entity.id, rowData);
     } else {
       await sheetsService.appendRow(this.sheetName, rowData, this.headers);
+      await this.resolveConcurrentCreate(entity.id, rowData);
     }
 
     this.cache.set(entity.id, entity);
@@ -131,6 +173,7 @@ export abstract class BaseRepository<T extends { id: string }> {
   }
 
   public invalidateCache(): void {
+    this.inflight = null; // a read that began before this write must not be shared with later callers
     this.cacheLoaded = false;
   }
 }

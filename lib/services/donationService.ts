@@ -9,6 +9,8 @@ import { realtimeBroadcaster, type PublishResult } from "../realtime/broadcaster
 import { RealtimeEvent } from "../realtime/events";
 import { sendDonationEmail } from "../email";
 import { contactKeys } from "../donors/normalize";
+import { readEligibilityFresh } from "../catalog/holds";
+import { serverNow } from "../catalog/clock";
 import { normalizeSelection, SelectionError, type NormalizedSelection } from "../donations/selection";
 
 import { Donation, DonorProfile } from "../db";
@@ -66,17 +68,18 @@ export class ProofStorageError extends Error {}
 export const FOLLOW_UP_STEPS = ["designations", "notification", "audit"] as const;
 
 async function resolveSelection(input: ProcessDonationInput): Promise<NormalizedSelection> {
+  // Eligibility is an authoritative decision: it is always read fresh from Google Sheets, never from this instance's cached catalog
+  // (a cause completed or unpublished a moment ago, or a Masjid project newly on hold, must not accept a donation). If the source cannot
+  // be read the donation fails (503) instead of passing on cached data.
+  // Holds only matter for a specific project, so a general (unrestricted) donation skips that read.
+  const specific = Array.isArray(input.selectedCauses) ? input.selectedCauses.length > 0 : !!input.selectedCauses;
+  // One batched request for causes and hold data when specific causes are chosen; a general donation only needs the causes.
+  const { catalog, held } = specific ? await readEligibilityFresh(serverNow()) : { catalog: await causeRepository.getAll(true), held: new Set<string>() };
   try {
-    return normalizeSelection(input.selectedCauses, await causeRepository.getAll());
+    return normalizeSelection(input.selectedCauses, catalog, "", held);
   } catch (err) {
-    if (!(err instanceof SelectionError)) throw err;
-    // The catalog cache may predate a newly activated cause on this instance: confirm against fresh data once.
-    try {
-      return normalizeSelection(input.selectedCauses, await causeRepository.getAll(true));
-    } catch (again) {
-      if (again instanceof SelectionError) throw new DonationInputError(again.message);
-      throw again;
-    }
+    if (err instanceof SelectionError) throw new DonationInputError(err.message);
+    throw err;
   }
 }
 
@@ -118,6 +121,20 @@ export class DonationService {
       } catch (driveErr: any) {
         // Payment proof is the evidence the admin verifies against. Fail BEFORE writing anything so the donor can retry.
         console.error("[DonationService] Google Drive upload failed:", driveErr.message);
+        // A retry of a donation that was already recorded (the first response was lost) must get the ORIGINAL result even while
+        // Drive is unreachable: the proof is already stored and nothing new needs to be uploaded.
+        const recorded = await donationRepository.findFinishedBySubmissionKey(submissionKey).catch(() => null);
+        if (recorded) {
+          return {
+            success: true,
+            trackingId: recorded.id,
+            donorId: recorded.donorId,
+            donationId: recorded.id,
+            proofDriveFileId: recorded.proofDriveFileId,
+            duplicate: true,
+            operationStatus: recorded.opStatus === "pending" || recorded.opStatus === "partial" ? "partial" : "complete",
+          };
+        }
         throw new ProofStorageError("Your payment proof could not be stored right now. Please try again in a few minutes.");
       }
     }
@@ -202,62 +219,73 @@ export class DonationService {
 
     const pending = new Set<string>(FOLLOW_UP_STEPS);
 
-    // 4. Cause relationships (one batched write; idempotent, so recovery can repeat it safely)
-    try {
-      await donationCauseRepository.createMissing(designationsForSelection({ id: trackingId, amount: numAmount }, selection.causes, nowIso));
-      pending.delete("designations");
-    } catch (err: any) {
-      console.error(`[DonationService] Cause relationships for ${trackingId} failed:`, err.message);
-    }
-
-    // 5. Admin notification
-    try {
-      await notificationRepository.append({
-        id: `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        recipientType: "Admin",
-        recipientId: "all",
-        type: "DONATION",
-        title: "New Donation Received",
-        message: `Received ₹${numAmount.toLocaleString()} for ${causeTitle} from ${donorNameClean}${input.upiRef ? ` (Ref: ${input.upiRef})` : ""} — awaiting verification`,
-        read: false,
-        relatedEntityId: trackingId,
-        createdAt: nowIso,
-      });
-      pending.delete("notification");
-    } catch (err: any) {
-      console.error(`[DonationService] Notification for ${trackingId} failed:`, err.message);
-    }
-
-    // 6. Audit log
-    try {
-      await auditLogRepository.append({
-        id: `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-        actor_id: donor.id,
-        actor_role: "donor",
-        action: "SUBMIT_DONATION",
-        entity_type: "Donation",
-        entity_id: trackingId,
-        before_state: null,
-        after_state: { amount: numAmount, cause: causeTitle, causes: selection.causes.map((c) => c.causeId), trackingId, proofDriveFileId, transactionReference: input.upiRef || "", submissionKey },
-        timestamp: nowIso,
-        source: "web_donation_gateway",
-      });
-      pending.delete("audit");
-    } catch (err: any) {
-      console.error(`[DonationService] Audit log for ${trackingId} failed:`, err.message);
-    }
-
-    // 7. Tell every connected admin. All events of this operation go to the shared log in ONE write.
-    const event = await realtimeBroadcaster.publishBatch([
-      { type: RealtimeEvent.DONATION_CREATED, payload: { id: trackingId, status: "pending" } },
-      ...(donorCreated ? [{ type: RealtimeEvent.DONOR_UPDATED, payload: { id: donor.id } }] : []),
-      { type: RealtimeEvent.NOTIFICATION_CREATED, payload: { relatedEntityId: trackingId } },
-    ]);
-
-    // 8. Donor e-mail receipt (acknowledges the submission; never prints an amount per cause unless one was recorded)
+    // Steps 4-8 are independent of each other (each needs only the confirmed donation row), so they run together:
+    // the donor waits for the slowest one instead of the sum. Each step records its own failure; none can fail the donation.
     let confirmationEmailSent = false;
     let confirmationEmailError: string | undefined;
-    if (donor.email) {
+
+    // 4. Cause relationships (one batched write; idempotent, so recovery can repeat it safely)
+    const designationsStep = async () => {
+      try {
+        await donationCauseRepository.createMissing(designationsForSelection({ id: trackingId, amount: numAmount }, selection.causes, nowIso));
+        pending.delete("designations");
+      } catch (err: any) {
+        console.error(`[DonationService] Cause relationships for ${trackingId} failed:`, err.message);
+      }
+    };
+
+    // 5. Admin notification
+    const notificationStep = async () => {
+      try {
+        await notificationRepository.append({
+          id: `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          recipientType: "Admin",
+          recipientId: "all",
+          type: "DONATION",
+          title: "New Donation Received",
+          message: `Received ₹${numAmount.toLocaleString()} for ${causeTitle} from ${donorNameClean}${input.upiRef ? ` (Ref: ${input.upiRef})` : ""} — awaiting verification`,
+          read: false,
+          relatedEntityId: trackingId,
+          createdAt: nowIso,
+        });
+        pending.delete("notification");
+      } catch (err: any) {
+        console.error(`[DonationService] Notification for ${trackingId} failed:`, err.message);
+      }
+    };
+
+    // 6. Audit log
+    const auditStep = async () => {
+      try {
+        await auditLogRepository.append({
+          id: `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+          actor_id: donor.id,
+          actor_role: "donor",
+          action: "SUBMIT_DONATION",
+          entity_type: "Donation",
+          entity_id: trackingId,
+          before_state: null,
+          after_state: { amount: numAmount, cause: causeTitle, causes: selection.causes.map((c) => c.causeId), trackingId, proofDriveFileId, transactionReference: input.upiRef || "", submissionKey },
+          timestamp: nowIso,
+          source: "web_donation_gateway",
+        });
+        pending.delete("audit");
+      } catch (err: any) {
+        console.error(`[DonationService] Audit log for ${trackingId} failed:`, err.message);
+      }
+    };
+
+    // 7. Tell every connected admin. All events of this operation go to the shared log in ONE write.
+    const eventStep = () =>
+      realtimeBroadcaster.publishBatch([
+        { type: RealtimeEvent.DONATION_CREATED, payload: { id: trackingId, status: "pending" } },
+        ...(donorCreated ? [{ type: RealtimeEvent.DONOR_UPDATED, payload: { id: donor.id } }] : []),
+        { type: RealtimeEvent.NOTIFICATION_CREATED, payload: { relatedEntityId: trackingId } },
+      ]);
+
+    // 8. Donor e-mail receipt (acknowledges the submission; never prints an amount per cause unless one was recorded)
+    const emailStep = async () => {
+      if (!donor.email) return;
       try {
         const formattedDate = `${String(new Date().getDate()).padStart(2, "0")}/${String(new Date().getMonth() + 1).padStart(2, "0")}/${new Date().getFullYear()}`;
         const structuredCauses = selection.causes.length
@@ -278,7 +306,9 @@ export class DonationService {
       donation.confirmationEmailSentAt = confirmationEmailSent ? new Date().toISOString() : undefined;
       donation.confirmationEmailError = confirmationEmailError;
       donation.confirmationEmailRetryCount = 1;
-    }
+    };
+
+    const [, , , event] = await Promise.all([designationsStep(), notificationStep(), auditStep(), eventStep(), emailStep()]);
 
     // 9. One final write: e-mail outcome AND the follow-up state. Only now is the operation "complete".
     const pendingSteps = [...pending];

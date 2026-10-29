@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(kill 2080)",
+      "Bash(pkill -f \"node.*next\")",
+      "Bash(npm run *)",
+      "Bash(curl -v http://localhost:3000)",
+      "PowerShell(Stop-Process *)",
+      "Bash(grep -n 'donate-container\\\\|^      </div>$' components/PayPageLayout.tsx)",
+      "Bash(sed -i '49,127s/^\\\\\\(.\\\\\\)/  \\\\1/' components/PayPageLayout.tsx)",
+      "Bash(npx tsc *)",
+      "Bash(git add *)",
+      "Bash(git commit -m 'feat: realtime donations, unified metrics, dashboard modernization, and KHIZR removal *)",
+      "Bash(node test-diagnostics.js)",
+      "Bash(git commit -m 'docs: add implementation checklist and test scripts for Firebase and SMTP verification *)",
+      "Bash(cat)",
+      "Read(//tmp/**)",
+      "Bash(pkill -f \"next dev\")",
+      "PowerShell(Get-Process *)",
+      "Bash(pkill -9 node)",
+      "Bash(git commit -m 'fix: restore font rendering by adding font-display swap *)",
+      "Bash(git commit -m 'config: add ADMIN_EMAILS with test admin account *)",
+      "Bash(curl -s http://localhost:3000/admin/login)",
+      "Bash(git commit -m 'fix: correct TypeScript errors in dispatch-updates migration *)",
+      "Bash(node *)",
+      "Bash(git commit -m 'test: add AllocationRepository structure verification script *)",
+      "Bash(git commit -m 'test: phase 2 complete - migration verified and ready for functional audit *)",
+      "PowerShell(taskkill *)",
+      "Bash(bash /tmp/test-allocations.sh)",
+      "Bash(curl -s http://localhost:3000/api/admin/donations)",
+      "Bash(git commit -m 'fix: track email delivery outcomes in automation broadcasts *)"
+    ]
+  }
+}

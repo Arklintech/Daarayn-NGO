@@ -26,18 +26,33 @@ import path from "path";
 import { google } from "googleapis";
 import { getDriveClient, googleAuthProblem } from "./client";
 import { sheetsService } from "./sheets";
+import { registerSchema } from "./schemaRegistry";
+import { guardWrites } from "./config";
 
 /**
  * Minimum scope that works for this app. `drive.file` is NOT enough: it only reaches files this OAuth client
  * created, so it cannot upload into the existing evidence folder or read the existing proofs.
  */
 export const DRIVE_OAUTH_SCOPES = ["https://www.googleapis.com/auth/drive"];
+export const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
+
+/**
+ * Scope mode (GOOGLE_DRIVE_SCOPE_MODE):
+ *  - "full" (default, current behaviour): scope `drive`, a RESTRICTED scope: moving the consent screen to Production requires Google's
+ *    restricted-scope verification (and typically an independent security assessment).
+ *  - "file": scope `drive.file`, a NON-sensitive scope: the app can only reach files it created itself, so the root folder must be created
+ *    BY the app (POST /api/admin/google-drive/create-root) and GOOGLE_DRIVE_ROOT_FOLDER_ID must point at it. Files the same OAuth client
+ *    already created stay reachable; the old owner-created root folder does not. Changing mode requires re-authorising Drive once.
+ */
+export const driveScopeMode = (): "full" | "file" => (env("GOOGLE_DRIVE_SCOPE_MODE").toLowerCase() === "file" ? "file" : "full");
+export const driveOAuthScopes = (): string[] => (driveScopeMode() === "file" ? [DRIVE_FILE_SCOPE] : DRIVE_OAUTH_SCOPES);
 export const OAUTH_CALLBACK_PATH = "/api/admin/google-drive/callback";
 export const STATE_COOKIE = "daarayn_drive_oauth";
 const STATE_TTL_MS = 10 * 60 * 1000;
 const SECRETS_TAB = "_Secrets";
 const SECRETS_KEY = "google_drive_refresh_token";
 const SECRETS_HEADERS = ["key", "value", "updatedAt", "updatedBy"];
+registerSchema(SECRETS_TAB, SECRETS_HEADERS);
 
 const env = (name: string) => (process.env[name] || "").trim().replace(/^["']|["']$/g, "");
 const tokenFile = () => path.join(process.cwd(), ".secrets", "google-drive-oauth.json");
@@ -108,7 +123,7 @@ export function buildAuthUrl(state: string): string {
     access_type: "offline", // ask for a refresh token
     prompt: "consent", // always issue one, even if the account authorised before
     include_granted_scopes: false,
-    scope: DRIVE_OAUTH_SCOPES,
+    scope: driveOAuthScopes(),
     state,
   });
 }
@@ -182,7 +197,13 @@ export async function saveRefreshToken(token: string, updatedBy: string): Promis
     const record = { key: SECRETS_KEY, value: encryptSecret(token, key), updatedAt: new Date().toISOString(), updatedBy };
     const existing = (await sheetsService.getAllRows(SECRETS_TAB)).some((r) => r.key === SECRETS_KEY);
     if (existing) await sheetsService.updateRow(SECRETS_TAB, SECRETS_KEY, record);
-    else await sheetsService.appendRow(SECRETS_TAB, record, SECRETS_HEADERS);
+    else {
+      await sheetsService.appendRow(SECRETS_TAB, record, SECRETS_HEADERS);
+      // Two administrators connecting for the first time at once would both append: keep the earliest row, blank the rest (both tokens are
+      // valid for the same grant; readers use the first match). Nothing is printed or returned.
+      const { rows } = await sheetsService.getRowsWithNumbers(SECRETS_TAB);
+      for (const dup of rows.filter((r) => r.record.key === SECRETS_KEY).slice(1)) await sheetsService.clearRowAt(SECRETS_TAB, dup.rowNumber);
+    }
     cachedToken = token;
     return "sheet";
   }
@@ -235,7 +256,7 @@ export async function getDriveApi(write: boolean) {
     if (token) {
       const client = createOAuthClient();
       client.setCredentials({ refresh_token: token });
-      return google.drive({ version: "v3", auth: client });
+      return guardWrites(google.drive({ version: "v3", auth: client }), "drive");
     }
     if (write) throw new DriveNotConnectedError("Google Drive is not connected. An administrator must connect it in Admin → Settings → Google Drive.");
   } else if (write) {
@@ -247,7 +268,7 @@ export async function getDriveApi(write: boolean) {
 }
 
 /** Non-secret status for the admin UI. */
-export async function driveConnectionStatus(): Promise<{ configured: boolean; connected: boolean; account?: string; problem?: string; reauthorizeBy?: string; publishingStatus?: string; reauthorizeSoon?: boolean }> {
+export async function driveConnectionStatus(): Promise<{ scopeMode?: string; configured: boolean; connected: boolean; account?: string; problem?: string; reauthorizeBy?: string; publishingStatus?: string; reauthorizeSoon?: boolean }> {
   const problem = oauthConfigProblem();
   if (problem) return { configured: false, connected: false, problem };
   const token = await loadRefreshToken();
@@ -264,7 +285,7 @@ export async function driveConnectionStatus(): Promise<{ configured: boolean; co
       reauthorizeBy = expires.toISOString();
       reauthorizeSoon = expires.getTime() - Date.now() < 2 * 24 * 3600 * 1000;
     }
-    return { configured: true, connected: true, account: about.data.user?.emailAddress || undefined, publishingStatus: status, reauthorizeBy, reauthorizeSoon };
+    return { scopeMode: driveScopeMode(), configured: true, connected: true, account: about.data.user?.emailAddress || undefined, publishingStatus: status, reauthorizeBy, reauthorizeSoon };
   } catch (err: any) {
     const revoked = /invalid_grant/i.test(err?.message || "");
     return { configured: true, connected: false, problem: revoked ? "The Google authorisation was revoked or expired. Connect again." : `Could not reach Google Drive: ${err.message}` };

@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import fs from "fs";
+import { guardWrites } from "./config";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/spreadsheets",
@@ -87,11 +88,11 @@ export function getGoogleAuth() {
 export function getSheetsClient() {
   const auth = getGoogleAuth();
   if (!auth) return null;
-  return google.sheets({ version: "v4", auth });
+  return guardWrites(google.sheets({ version: "v4", auth }), "sheets");
 }
 
 export function getDriveClient() {
   const auth = getGoogleAuth();
   if (!auth) return null;
-  return google.drive({ version: "v3", auth });
+  return guardWrites(google.drive({ version: "v3", auth }), "drive");
 }

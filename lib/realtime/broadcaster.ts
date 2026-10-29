@@ -29,6 +29,9 @@ export interface PublishResult {
 
 const POLL_MS = 4_000;
 const MAX_POLL_BACKOFF_MS = 30_000;
+// With no new events for a while, poll less often (each poll is a Google Sheets read against a shared per-minute quota).
+const IDLE_AFTER_MS = 2 * 60_000;
+const IDLE_POLL_MS = 12_000;
 const REPLAY_LIMIT = 200;
 
 class RealtimeBroadcaster {
@@ -38,6 +41,7 @@ class RealtimeBroadcaster {
   private delivered = new Set<number>();
   private timer: ReturnType<typeof setTimeout> | null = null;
   private pollDelay = POLL_MS;
+  private lastActivityAt = Date.now();
 
   public subscribe(listener: Listener): () => void {
     this.listeners.add(listener);
@@ -66,6 +70,12 @@ class RealtimeBroadcaster {
 
     try {
       const row = await appendEvent(type, payload, audience, this.instanceId, at);
+      if (row === null) {
+        // Written, but its row could not be confirmed: tell local clients without an id (they keep their last known id) and do not
+        // mark anything as delivered, so the log poll can still deliver it; a duplicate refresh signal is harmless, a wrong id is not.
+        this.fanOut({ type, payload, at }, audience);
+        return { delivered: "log" };
+      }
       this.delivered.add(row);
       this.fanOut({ id: String(row), type, payload, at }, audience);
       return { delivered: "log", id: String(row) };
@@ -81,13 +91,16 @@ class RealtimeBroadcaster {
     const at = new Date().toISOString();
     const normalized = items.map((i) => ({ type: i.type, payload: i.payload, audience: (i.audience?.length ? i.audience : ["admin"]) as Audience[] }));
     try {
-      const first = await appendEvents(normalized, this.instanceId, at);
+      const rows = await appendEvents(normalized, this.instanceId, at);
+      if (rows === null) {
+        normalized.forEach((e) => this.fanOut({ type: e.type, payload: e.payload, at }, e.audience));
+        return { delivered: "log" };
+      }
       normalized.forEach((e, k) => {
-        const row = first + k;
-        this.delivered.add(row);
-        this.fanOut({ id: String(row), type: e.type, payload: e.payload, at }, e.audience);
+        this.delivered.add(rows[k]);
+        this.fanOut({ id: String(rows[k]), type: e.type, payload: e.payload, at }, e.audience);
       });
-      return { delivered: "log", id: String(first) };
+      return { delivered: "log", id: String(rows[0]) };
     } catch (err: any) {
       console.error(`[Realtime] Could not record ${items.length} events in the event log; only this instance's clients were told:`, err.message);
       normalized.forEach((e) => this.fanOut({ type: e.type, payload: e.payload, at }, e.audience));
@@ -113,6 +126,7 @@ class RealtimeBroadcaster {
   }
 
   private fanOut(message: RealtimeMessage, audience: string[]) {
+    this.lastActivityAt = Date.now();
     for (const listener of this.listeners) {
       try {
         listener(message, audience);
@@ -137,6 +151,7 @@ class RealtimeBroadcaster {
         this.nextRow = (await lastEventRow()) + 1;
       } else {
         const { events, nextRow } = await readEventsFrom(this.nextRow);
+        if (events.length > 0) this.lastActivityAt = Date.now();
         for (const event of events) {
           const row = Number(event.message.id);
           if (this.delivered.has(row)) continue;
@@ -147,7 +162,7 @@ class RealtimeBroadcaster {
         this.nextRow = nextRow;
         for (const row of this.delivered) if (row < nextRow) this.delivered.delete(row);
       }
-      this.pollDelay = POLL_MS;
+      this.pollDelay = Date.now() - this.lastActivityAt > IDLE_AFTER_MS ? IDLE_POLL_MS : POLL_MS;
     } catch (err: any) {
       this.pollDelay = Math.min(this.pollDelay * 2, MAX_POLL_BACKOFF_MS);
       console.warn(`[Realtime] Event log poll failed, retrying in ${this.pollDelay}ms:`, err.message);

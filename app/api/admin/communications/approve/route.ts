@@ -6,6 +6,7 @@ import { TYPE_RULES, isCommunicationType } from "@/lib/communication-resolver";
 import { inspectMedia, mediaFingerprints, MediaError, directBudgetBytes } from "@/lib/communications/attachments";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30; // Sheets/Drive/SMTP calls can outlast the platform default
 
 /**
  * Review step. Recomputes the audience on the server, returns the exact recipients, the exclusions with reasons and

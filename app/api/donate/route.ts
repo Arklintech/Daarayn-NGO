@@ -103,11 +103,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
     console.error("[API/Donate] Error processing donation:", error);
-    return NextResponse.json(
-      { error: error.message || "Failed to process contribution." },
-      { status: 500 }
-    );
+    // Google being rate-limited or unreachable is temporary: answer 503. Retrying the same submission is safe (its submission key makes it idempotent).
+    if (error?.retriesExhausted || /Quota exceeded|rate limit|Could not read|Could not write/i.test(String(error?.message))) {
+      return NextResponse.json({ error: "The contribution could not be recorded right now because the records service is busy. Please try again in a minute; submitting the same form again will not create a duplicate." }, { status: 503, headers: { "Retry-After": "30" } });
+    }
+    // Never return raw internal error text (it can contain provider and project details).
+    return NextResponse.json({ error: "Failed to process contribution." }, { status: 500 });
   }
 }
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // Sheets/Drive/SMTP calls can outlast the platform default

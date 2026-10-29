@@ -1,11 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import DonateForm from '@/components/DonateForm';
 import DonationSuccess from '@/components/DonationSuccess';
 import { ShieldCheck, Lock, CheckCircle2 } from 'lucide-react';
 
 export default function PayPageLayout({ amount, currency, cause, source }: { amount: string, currency: string, cause: string, source?: string }) {
+  // A link from a program/campaign page carries the permanent id; show its title, never the raw id.
+  const [causeTitle, setCauseTitle] = useState<string | null>(null);
+  useEffect(() => {
+    if (!cause || cause === 'General') return;
+    let cancelled = false;
+    fetch('/api/causes?scope=public')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => {
+        const match = Array.isArray(list) ? list.find((c: any) => c.id === cause) : null;
+        if (!cancelled && match) setCauseTitle(match.title || match.name);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [cause]);
+
   const [successData, setSuccessData] = useState<any>(null);
 
   if (successData) {
@@ -28,7 +43,7 @@ export default function PayPageLayout({ amount, currency, cause, source }: { amo
         <div className="donate-text">
           <h2 style={{ fontSize: '2.2rem', marginBottom: '0.75rem', fontFamily: 'var(--font-playfair)' }}>Secure Contribution</h2>
           <p className="lead" style={{ fontSize: '1rem', color: 'rgba(252,251,251,0.85)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
-            Your contribution to <strong style={{ color: 'var(--ivory-light)' }}>{cause === 'General' ? 'General Donation (Where Most Needed)' : cause}</strong> will be securely recorded and verified by our team. Every contribution receives a unique tracking ID for complete transparency.
+            Your contribution to <strong style={{ color: 'var(--ivory-light)' }}>{cause === 'General' ? 'General Donation (Where Most Needed)' : causeTitle ?? cause}</strong> will be securely recorded and verified by our team. Every contribution receives a unique tracking ID for complete transparency.
           </p>
 
           <DonateForm 

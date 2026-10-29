@@ -1,0 +1,184 @@
+/* Programs landing carousel and detail templates. Uses the site's existing tokens from public/style.css (--black, --ivory-light, --glass, --border). */
+
+.pg-wrap { padding: 56px 0 72px; }
+.pg-container { width: 100%; max-width: 1180px; margin: 0 auto; padding: 0 1.25rem; box-sizing: border-box; }
+
+/* ---------- carousel ---------- */
+.pg-carousel { position: relative; padding: 0 56px; max-width: 100%; box-sizing: border-box; }
+.pg-viewport { overflow: hidden; width: 100%; }
+.pg-track {
+  display: flex;
+  gap: 2rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  overscroll-behavior-x: contain;
+  padding: 4px 2px 8px;
+  scroll-behavior: smooth;
+  outline: none;
+}
+.pg-track::-webkit-scrollbar { display: none; }
+.pg-track:focus-visible { box-shadow: 0 0 0 2px var(--ivory-light, #FFF9DD); border-radius: 24px; }
+@media (prefers-reduced-motion: reduce) { .pg-track { scroll-behavior: auto; } }
+
+.pg-card-item { flex: 0 0 calc((100% - 4rem) / 3); scroll-snap-align: start; min-width: 0; display: flex; }
+.pg-card-item .program-card { width: 100%; grid-column: auto; min-height: 100%; }
+.pg-card-item .program-card .pg-card-body { display: flex; flex-direction: column; flex: 1; }
+.pg-card-item .program-card .text-link { margin-top: auto; }
+.pg-card-item .program-card:focus-within { outline: 2px solid var(--ivory-light, #FFF9DD); outline-offset: 2px; }
+
+.pg-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  background: rgba(13, 23, 38, 0.92);
+  color: var(--ivory-light, #FFF9DD);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .18s ease, opacity .18s ease, border-color .18s ease;
+}
+.pg-arrow:hover:not(:disabled) { background: rgba(255, 249, 221, 0.14); border-color: rgba(255,249,221,.4); }
+.pg-arrow:focus-visible { outline: 2px solid var(--ivory-light, #FFF9DD); outline-offset: 3px; }
+.pg-arrow:disabled { opacity: .3; cursor: default; }
+.pg-prev { left: 0; }
+.pg-next { right: 0; }
+.pg-position { text-align: center; margin-top: 1.25rem; color: rgba(252,251,251,0.7); font-size: .85rem; letter-spacing: .04em; }
+
+@media (max-width: 1024px) {
+  .pg-card-item { flex-basis: calc((100% - 2rem) / 2); }
+}
+@media (max-width: 680px) {
+  .pg-carousel { padding: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 1rem; }
+  .pg-viewport { order: 1; flex: 0 0 100%; }
+  .pg-prev { order: 2; position: static; transform: none; }
+  .pg-position { order: 3; margin: 0; }
+  .pg-next { order: 4; position: static; transform: none; }
+  .pg-card-item { flex-basis: 100%; }
+  .pg-track { gap: 1rem; }
+}
+
+.pg-empty, .pg-error { text-align: center; color: rgba(252,251,251,0.75); padding: 2rem 0; }
+.pg-error { color: #fde68a; }
+
+/* ---------- detail ---------- */
+.pg-detail { padding: 56px 0 72px; }
+.pg-back { color: rgba(252,251,251,0.7); font-size: .9rem; text-decoration: none; }
+.pg-back:hover { color: var(--ivory-light, #FFF9DD); }
+.pg-title { text-align: center; color: var(--ivory-light, #FFF9DD); font-size: 2rem; margin: 1.5rem 0 .75rem; }
+.pg-lead { text-align: center; max-width: 800px; margin: 0 auto 2rem; color: rgba(252,251,251,0.92); font-size: 1.05rem; line-height: 1.6; }
+.pg-two { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 3rem; align-items: start; }
+.pg-one { display: flex; flex-direction: column; gap: 2rem; max-width: 800px; margin: 0 auto; }
+.pg-frame { padding: 1rem; }
+.pg-frame img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 16px; display: block; }
+.pg-frame .image-caption { margin: .9rem .25rem 0; color: rgba(252,251,251,0.72); font-size: .9rem; text-align: center; }
+.pg-block { margin-bottom: 1.5rem; }
+.pg-block h3 { color: var(--ivory-light, #FFF9DD); font-size: 1.2rem; margin: 0 0 .75rem; }
+.pg-block p { color: rgba(252,251,251,0.82); line-height: 1.65; white-space: pre-line; }
+.pg-checks { list-style: none; padding: 0; margin: 0; display: grid; gap: .55rem; }
+.pg-checks li { color: rgba(252,251,251,0.88); padding-left: 1.6rem; position: relative; }
+.pg-checks li::before { content: "✓"; position: absolute; left: 0; color: var(--ivory-light, #FFF9DD); }
+.pg-needs { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.pg-need { padding: 1.25rem; }
+.pg-need h4 { margin: 0 0 .35rem; color: var(--ivory-light, #FFF9DD); font-size: 1.05rem; }
+.pg-need p { margin: 0; color: rgba(252,251,251,0.8); }
+.pg-milestones { list-style: none; padding: 0; margin: 0; display: grid; gap: .8rem; }
+.pg-milestones li { display: grid; grid-template-columns: 1.5rem 1fr; gap: .5rem; color: rgba(252,251,251,0.88); }
+.pg-milestones small { display: block; color: rgba(252,251,251,0.62); margin-top: .15rem; }
+.pg-cta { margin-top: 1.5rem; }
+.pg-note { color: rgba(252,251,251,0.6); font-size: .85rem; margin-top: .75rem; }
+/* D26: the Masjid update notice sits above the card; align it with the card's column instead of the page edge */
+.pg-note[data-update-state] { max-width: 760px; margin: 1rem auto 1.25rem; box-sizing: border-box; }
+
+@media (max-width: 900px) {
+  .pg-two { grid-template-columns: 1fr; gap: 2rem; }
+  .pg-title { font-size: 1.7rem; }
+}
+
+/* ---------- gallery (framed media panel) ---------- */
+.pg-gallery { overflow: hidden; }
+.pg-gallery-view { position: relative; border-radius: 16px; overflow: hidden; }
+.pg-gallery-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none; overscroll-behavior-x: contain; scroll-behavior: smooth; outline: none; }
+.pg-gallery-track::-webkit-scrollbar { display: none; }
+.pg-gallery-track:focus-visible { box-shadow: inset 0 0 0 2px var(--ivory-light, #FFF9DD); }
+@media (prefers-reduced-motion: reduce) { .pg-gallery-track { scroll-behavior: auto; } }
+.pg-gallery-slide { flex: 0 0 100%; scroll-snap-align: start; min-width: 0; }
+.pg-gallery-slide img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; border-radius: 0; user-select: none; }
+.pg-gallery-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; border-radius: 999px;
+  border: 1px solid var(--border, rgba(255,255,255,0.18)); background: rgba(13, 23, 38, 0.82); color: var(--ivory-light, #FFF9DD);
+  font-size: 1.3rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
+}
+.pg-gallery-arrow:hover:not(:disabled) { background: rgba(13, 23, 38, 0.95); border-color: rgba(255,249,221,.5); }
+.pg-gallery-arrow:focus-visible { outline: 2px solid var(--ivory-light, #FFF9DD); outline-offset: 2px; }
+.pg-gallery-arrow:disabled { opacity: .3; cursor: default; }
+.pg-gallery-prev { left: 10px; }
+.pg-gallery-next { right: 10px; }
+.pg-gallery .image-caption { display: flex; flex-direction: column; gap: .25rem; align-items: center; }
+.pg-gallery-pos { font-size: .8rem; letter-spacing: .06em; color: rgba(252,251,251,0.6); }
+
+/* ---------- card cover ---------- */
+.pg-card-cover { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-radius: 14px; display: block; margin-bottom: 1rem; }
+
+/* ---------- project / infrastructure template (two cards) ---------- */
+.pg-project { max-width: 1000px; margin: 0 auto; }
+.pg-project .pg-lead { margin: 0 auto 2.25rem; }
+.pg-project-hero { max-width: 720px; margin: 0 auto 2rem; }
+.pg-project-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: 2rem; align-items: stretch; }
+.pg-project-single { grid-template-columns: minmax(0, 1fr); max-width: 760px; margin: 0 auto; }
+.pg-project-card { padding: 2.25rem; display: flex; flex-direction: column; }
+.pg-project-card h3 { color: var(--ivory-light, #FFF9DD); font-size: 1.35rem; margin: 0 0 .6rem; }
+.pg-project-card h4 { color: rgba(252,251,251,0.9); font-size: 1rem; font-weight: 500; margin: 1rem 0 .5rem; }
+.pg-project-card p { margin: 0 0 .9rem; }
+.pg-project-card .disc { list-style: disc; padding-left: 1.4rem; display: grid; gap: .5rem; color: rgba(252,251,251,0.9); }
+.pg-project-card .ivory { color: var(--ivory-light, #FFF9DD); }
+.pg-project-card .tiny-note { font-size: .8rem; color: rgba(252,251,251,0.62); }
+.pg-project-card .pg-cta { margin-top: auto; padding-top: 1.25rem; }
+.pg-plain { list-style: none; padding: 0; margin: 0; display: grid; gap: .55rem; color: rgba(252,251,251,0.9); line-height: 1.5; }
+@media (max-width: 900px) { .pg-project-grid { grid-template-columns: 1fr; } .pg-project-card { padding: 1.5rem; } }
+
+/* ---------- canonical program detail composition (every template) ----------
+   Desktop (>= 960px): two columns, copy left and image card right. Below that: one column in the order introduction, image, content, CTA.
+   One threshold for all programs; nothing here is program-specific. */
+.pg-std { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.5rem; align-items: start; margin-top: .5rem; }
+.pg-std-lead .lead { margin: 0; text-align: left; font-size: 1.05rem; line-height: 1.65; color: rgba(252,251,251,0.92); overflow-wrap: anywhere; }
+.pg-std-hero { min-width: 0; }
+.pg-std-body { min-width: 0; display: flex; flex-direction: column; gap: 1.25rem; overflow-wrap: anywhere; }
+.pg-std-body .pg-note { margin: 0; }
+.pg-std-nohero { max-width: 760px; margin-left: auto; margin-right: auto; }
+@media (min-width: 960px) {
+  .pg-std:not(.pg-std-nohero) { grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); column-gap: 3rem; row-gap: 1.25rem; }
+  .pg-std:not(.pg-std-nohero) .pg-std-lead { grid-column: 1; grid-row: 1; }
+  .pg-std:not(.pg-std-nohero) .pg-std-body { grid-column: 1; grid-row: 2; }
+  .pg-std:not(.pg-std-nohero) .pg-std-hero { grid-column: 2; grid-row: 1 / span 2; position: sticky; top: 100px; }
+}
+@media (max-width: 959px) { .pg-title { font-size: 1.7rem; } }
+.pg-project .pg-std { margin-bottom: 2rem; }
+
+/* category listing + homepage "view all"
+   The same card width as the carousel (3 per row desktop, 2 tablet, 1 mobile). Flex + centred wrapping instead of a fixed-column grid, so the
+   number of published records decides the shape: 1 card or 2 cards are centred as a group, 3 fill the row, more wrap and the last row stays centred. */
+.pg-viewall { text-align: center; margin: 1.5rem 0 0; }
+.pg-list { list-style: none; margin: 2rem auto 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 2rem; }
+.pg-list-item { display: flex; min-width: 0; flex: 0 1 calc((100% - 4rem) / 3); max-width: calc((100% - 4rem) / 3); }
+.pg-list-item .program-card { width: 100%; grid-column: auto; }
+.pg-list-item .program-card .pg-card-body { display: flex; flex-direction: column; flex: 1; }
+.pg-list-item .program-card .text-link { margin-top: auto; }
+@media (max-width: 1024px) {
+  .pg-list { gap: 1.5rem; }
+  .pg-list-item { flex-basis: calc((100% - 1.5rem) / 2); max-width: calc((100% - 1.5rem) / 2); }
+}
+@media (max-width: 680px) {
+  .pg-list-item { flex-basis: 100%; max-width: 100%; }
+}
+/* Homepage carousels with few cards: centre them while they all fit; as soon as they overflow the track scrolls from the start. */
+.pg-track { justify-content: safe center; }
+ 

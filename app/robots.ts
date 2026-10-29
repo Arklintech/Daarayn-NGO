@@ -14,6 +14,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://daarayn.org/sitemap.xml',
+    sitemap: 'https://daaraynorg.com/sitemap.xml',
   };
 }

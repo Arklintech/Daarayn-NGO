@@ -86,9 +86,17 @@ export class CommunicationRecipientRepository extends BaseRepository<Communicati
   public async createQueued(entities: CommunicationRecipientEntity[]): Promise<{ entity: CommunicationRecipientEntity; rowNumber: number }[]> {
     if (entities.length === 0) return [];
     await this.init();
-    const first = await sheetsService.appendRows(this.sheetName, entities.map((e) => this.mapEntityToRow(e)), this.headers);
+    await sheetsService.appendRows(this.sheetName, entities.map((e) => this.mapEntityToRow(e)), this.headers);
     this.invalidateCache();
-    return entities.map((entity, i) => ({ entity, rowNumber: first + i }));
+    // Row numbers come from where the rows really are (found by id), never from the append response: overlapping appends from
+    // concurrent sends were observed to report the same row, and outcomes are later written back by row number.
+    const { rows } = await sheetsService.getRowsWithNumbers(this.sheetName);
+    const byId = new Map(rows.map((r) => [String(r.record.id), r.rowNumber]));
+    return entities.map((entity) => {
+      const rowNumber = byId.get(String(entity.id));
+      if (!rowNumber) throw new Error(`Recipient row ${entity.id} was written but could not be located; check the Communication_Recipients tab before retrying.`);
+      return { entity, rowNumber };
+    });
   }
 
   public async writeOutcomes(rows: { entity: CommunicationRecipientEntity; rowNumber: number }[]): Promise<void> {

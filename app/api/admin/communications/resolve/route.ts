@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { resolveRecipients, TYPE_RULES, isCommunicationType } from "@/lib/communication-resolver";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30; // Sheets/Drive/SMTP calls can outlast the platform default
 
 /**
  * Preview: the exact recipients (and the excluded donors with reasons) for the

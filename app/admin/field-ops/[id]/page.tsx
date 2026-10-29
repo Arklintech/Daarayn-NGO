@@ -71,8 +71,9 @@ export default function FieldReportWorkspace() {
       if (confirm(`Are you sure you want to convert "${report.title}" into a new Cause?`)) {
         const newCauseId = `CAUSE-${Date.now()}`;
         setReport({ ...report, status: 'Converted to Cause' });
-        alert("Successfully converted to Cause Draft! Navigating to Cause Management...");
-        router.push(`/admin/causes/${newCauseId}`);
+        void newCauseId;
+        alert("Nothing has been created automatically. Create the program or cause in Programs and link the field report in its content.");
+        router.push("/admin/programs");
       }
     }
     else if (action === 'Approve Report') {

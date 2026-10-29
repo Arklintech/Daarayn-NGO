@@ -51,6 +51,7 @@ beforeAll(async () => {
     blocked = "BLOCKED: the test spreadsheet has no _IntegrationTest marker tab.";
     return;
   }
+  process.env.GOOGLE_TARGET_ENV = "test"; // the write guard: only the declared test sheet may be written
   process.env.GOOGLE_SHEET_ID = TEST_SHEET; // every application module now sees ONLY the test spreadsheet
   vi.resetModules();
   m = {

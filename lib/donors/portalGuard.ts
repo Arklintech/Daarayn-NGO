@@ -12,10 +12,12 @@
  */
 import crypto from "crypto";
 import { sheetsService } from "../google/sheets";
+import { registerSchema } from "../google/schemaRegistry";
 import { signingKey } from "../server/signingKey";
 
 export const PORTAL_EVENTS_TAB = "Portal_Auth_Events";
 const HEADERS = ["id", "ts", "kind", "ipHash", "identHash", "donorHash", "nonceHash", "ref", "detail"];
+registerSchema(PORTAL_EVENTS_TAB, HEADERS);
 
 export const PORTAL_LIMITS = {
   requestPerIp: { max: 10, windowMs: 10 * 60 * 1000 },
@@ -63,6 +65,21 @@ async function readAll(): Promise<Ev[]> {
   }));
 }
 
+/**
+ * Reads the events and finds MY row by its unique id. The row number that Sheets reports for an append is NOT reliable when appends
+ * overlap (several concurrent appends were observed to report the same row), so ordering must come from where the row really is.
+ * If my own row is not visible yet the read is repeated a few times; if it never appears the guard fails safe (portal unavailable).
+ */
+async function readWithMine(mineId: string): Promise<{ events: Ev[]; mineRow: number }> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const events = await readAll();
+    const mine = events.find((e) => e.id === mineId);
+    if (mine) return { events, mineRow: mine.rowNumber };
+    await new Promise((r) => setTimeout(r, 150 * (attempt + 1)));
+  }
+  throw new Error("The guard event just written could not be located.");
+}
+
 const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
   try {
     return await fn();
@@ -84,10 +101,10 @@ export async function guardCodeRequest(input: { ip: string; identifier: string; 
   const identHash = h("ident", normalizeIdentifier(input.identifier));
   const donorHash = input.donorId ? h("donor", input.donorId) : "";
   const mine = await wrap(() => append("request", { ipHash, identHash, donorHash }, now));
-  const events = await wrap(readAll);
+  const { events, mineRow } = await wrap(() => readWithMine(mine.id));
 
   const voided = new Set(events.filter((e) => e.kind === "request_void").map((e) => e.ref));
-  const reqs = events.filter((e) => e.kind === "request" && e.rowNumber <= mine.rowNumber);
+  const reqs = events.filter((e) => e.kind === "request" && e.rowNumber <= mineRow);
   const within = (e: Ev, ms: number) => e.ts >= now - ms;
   const rank = (list: Ev[]) => list.length; // `list` already contains only rows up to and including mine
 
@@ -125,9 +142,9 @@ export async function guardCodeAttempt(input: { ip: string; nonce: string }, now
   const ipHash = h("ip", input.ip || "unknown");
   const nonceHash = h("nonce", input.nonce);
   const mine = await wrap(() => append("attempt", { ipHash, nonceHash }, now));
-  const events = await wrap(readAll);
+  const { events, mineRow } = await wrap(() => readWithMine(mine.id));
 
-  const upToMine = events.filter((e) => e.rowNumber <= mine.rowNumber);
+  const upToMine = events.filter((e) => e.rowNumber <= mineRow);
   if (upToMine.filter((e) => e.kind === "attempt" && e.ipHash === ipHash && e.ts >= now - PORTAL_LIMITS.attemptPerIp.windowMs).length > PORTAL_LIMITS.attemptPerIp.max) {
     return { ok: false, reason: "ip-limit" };
   }
@@ -139,9 +156,9 @@ export async function guardCodeAttempt(input: { ip: string; nonce: string }, now
     ok: true,
     consume: async () => {
       const claim = await wrap(() => append("consumed", { nonceHash, ref: mine.id }, now));
-      const after = await wrap(readAll);
+      const { events: after } = await wrap(() => readWithMine(claim.id));
       const first = after.filter((e) => e.kind === "consumed" && e.nonceHash === nonceHash).sort((a, b) => a.rowNumber - b.rowNumber)[0];
-      return !!first && first.rowNumber === claim.rowNumber;
+      return !!first && first.id === claim.id; // compared by id: the row number reported by an append is not reliable under concurrency
     },
   };
 }

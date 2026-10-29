@@ -1,11 +1,20 @@
 import { google, sheets_v4 } from "googleapis";
+import { GoogleConfigError, guardWrites, isWellFormedGoogleId } from "../google/config";
+import { withGoogleRetry } from "../google/retry";
+import type { RequestKind } from "../google/requestControl";
+
+/** Every request of the legacy client is charged to the same read/write budget as SheetsService (one attempt; a 429 still penalises the shared budget). */
+const paced = <T>(kind: RequestKind, label: string, fn: () => Promise<T>) => withGoogleRetry(fn, { kind, label: `legacy sync ${label}`, maxAttempts: 1 });
+
+/** A write that cannot be performed must fail loudly: returning quietly would let the caller record a sync that never happened. */
+const notConfigured = () => new GoogleConfigError({ code: "credentials_missing", message: "Google Sheets is not configured (spreadsheet id or credentials missing/invalid); nothing was written." });
 
 export class GoogleSheetsClient {
   private sheets: sheets_v4.Sheets | null = null;
   private sheetId: string;
 
   constructor() {
-    this.sheetId = process.env.GOOGLE_SHEET_ID || "";
+    this.sheetId = (process.env.GOOGLE_SHEET_ID || "").trim();
     
     const clientEmail = process.env.GOOGLE_CLIENT_EMAIL?.trim().replace(/^["']|["']$/g, '');
     let privateKey = process.env.GOOGLE_PRIVATE_KEY;
@@ -20,13 +29,13 @@ export class GoogleSheetsClient {
       }
     }
 
-    if (clientEmail && privateKey && this.sheetId) {
+    if (clientEmail && privateKey && isWellFormedGoogleId(this.sheetId)) {
       const auth = new google.auth.JWT({
         email: clientEmail,
         key: privateKey,
         scopes: ["https://www.googleapis.com/auth/spreadsheets"],
       });
-      this.sheets = google.sheets({ version: "v4", auth });
+      this.sheets = guardWrites(google.sheets({ version: "v4", auth }), "sheets");
     } else {
       console.warn("Google Sheets credentials are not fully configured.");
     }
@@ -38,19 +47,18 @@ export class GoogleSheetsClient {
 
   public async appendRow(sheetName: string, values: any[]): Promise<void> {
     if (!this.sheets) {
-      console.warn(`[GoogleSheetsClient] Skipping appendRow to ${sheetName} because sheets client is not configured.`);
-      return;
+      throw notConfigured();
     }
 
     try {
-      await this.sheets.spreadsheets.values.append({
+      await paced("write", "append", () => this.sheets!.spreadsheets.values.append({
         spreadsheetId: this.sheetId,
         range: `${sheetName}!A:A`,
         valueInputOption: "USER_ENTERED",
         requestBody: {
           values: [values],
         },
-      });
+      }));
     } catch (error: any) {
       console.error(`[GoogleSheetsClient] Failed to append row to ${sheetName}:`, error.message);
       throw error;
@@ -58,17 +66,17 @@ export class GoogleSheetsClient {
   }
 
   public async updateRow(sheetName: string, rowIndex: number, values: any[]): Promise<void> {
-    if (!this.sheets) return;
+    if (!this.sheets) throw notConfigured();
     
     try {
-      await this.sheets.spreadsheets.values.update({
+      await paced("write", "update", () => this.sheets!.spreadsheets.values.update({
         spreadsheetId: this.sheetId,
         range: `${sheetName}!A${rowIndex}`,
         valueInputOption: "USER_ENTERED",
         requestBody: {
           values: [values],
         },
-      });
+      }));
     } catch (error: any) {
       console.error(`[GoogleSheetsClient] Failed to update row in ${sheetName}:`, error.message);
       throw error;
@@ -78,10 +86,10 @@ export class GoogleSheetsClient {
   public async getHeaders(sheetName: string): Promise<string[]> {
     if (!this.sheets) return [];
     try {
-      const response = await this.sheets.spreadsheets.values.get({
+      const response = await paced("read", "get", () => this.sheets!.spreadsheets.values.get({
         spreadsheetId: this.sheetId,
         range: `${sheetName}!1:1`,
-      });
+      }));
       const rows = response.data.values;
       if (!rows || rows.length === 0) return [];
       return rows[0].map(h => String(h).trim());
@@ -93,16 +101,16 @@ export class GoogleSheetsClient {
   }
 
   public async setHeaders(sheetName: string, headers: string[]): Promise<void> {
-    if (!this.sheets) return;
+    if (!this.sheets) throw notConfigured();
     try {
-      await this.sheets.spreadsheets.values.update({
+      await paced("write", "update", () => this.sheets!.spreadsheets.values.update({
         spreadsheetId: this.sheetId,
         range: `${sheetName}!1:1`,
         valueInputOption: "USER_ENTERED",
         requestBody: {
           values: [headers],
         },
-      });
+      }));
     } catch (error: any) {
       console.error(`[GoogleSheetsClient] Failed to set headers for ${sheetName}:`, error.message);
       throw error;
@@ -113,10 +121,10 @@ export class GoogleSheetsClient {
     if (!this.sheets) return null;
     
     try {
-      const response = await this.sheets.spreadsheets.values.get({
+      const response = await paced("read", "get", () => this.sheets!.spreadsheets.values.get({
         spreadsheetId: this.sheetId,
         range: `${sheetName}!A:A`,
-      });
+      }));
       
       const rows = response.data.values;
       if (!rows) return null;

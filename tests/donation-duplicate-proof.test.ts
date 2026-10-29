@@ -46,3 +46,22 @@ describe("a replayed submission does not leave orphan proof files", () => {
     expect(again.duplicate).toBe(true);
   });
 });
+
+// Regression (D8): the browser lost the first response and retried while Google Drive was briefly unreachable (ECONNRESET).
+// The retry answered 503 even though the donation was already recorded, instead of returning the original tracking id.
+describe("a retry of an already-recorded donation survives a Drive outage", () => {
+  it("returns the original donation (duplicate) without uploading, instead of failing with a storage error", async () => {
+    const first = await donate({ submissionKey: "KEY-OUTAGE" });
+    driveMock.uploadFile.mockRejectedValueOnce(new Error("read ECONNRESET"));
+    const retry = await donate({ submissionKey: "KEY-OUTAGE" });
+    expect(retry.duplicate).toBe(true);
+    expect(retry.donationId).toBe(first.donationId);
+    expect(await donationRepository.getAll(true)).toHaveLength(1);
+  });
+
+  it("a NEW submission during a Drive outage is still refused (nothing stored)", async () => {
+    driveMock.uploadFile.mockRejectedValueOnce(new Error("read ECONNRESET"));
+    await expect(donate({ submissionKey: "KEY-NEW-OUTAGE" })).rejects.toThrow(/payment proof could not be stored/);
+    expect(await donationRepository.getAll(true)).toHaveLength(0);
+  });
+});

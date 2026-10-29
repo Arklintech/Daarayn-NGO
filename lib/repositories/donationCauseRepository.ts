@@ -1,3 +1,4 @@
+import { auditLogRepository } from "./auditLogRepository";
 import { BaseRepository } from "./baseRepository";
 import { sheetsService } from "../google/sheets";
 
@@ -94,7 +95,41 @@ export class DonationCauseRepository extends BaseRepository<DonationCauseEntity>
     if (fresh.length === 0) return 0;
     await sheetsService.appendRows(this.sheetName, fresh.map((e) => this.mapEntityToRow(e)), this.headers);
     this.invalidateCache();
+    await this.removeLaterDuplicates(fresh.map((e) => e.id));
     return fresh.length;
+  }
+
+  /**
+   * "Read, then append what is missing" is not atomic: two instances (the donation request and a recovery run, or a retry) can both
+   * append the same relationship. A duplicated row would double-count a designation, so right after writing the rows are re-read and,
+   * for each id present more than once, every row after the EARLIEST is blanked (rows are cleared, never deleted, so row numbers do not
+   * shift). Every racer applies the same deterministic rule on real row positions, so they agree and clearing twice is harmless.
+   */
+  private async removeLaterDuplicates(ids: string[]): Promise<void> {
+    const { rows } = await sheetsService.getRowsWithNumbers(this.sheetName);
+    const wanted = new Set(ids);
+    const seen = new Map<string, { rowNumber: number; record: Record<string, any> }>();
+    const same = (a: Record<string, any>, b: Record<string, any>) => ["donationId", "causeId", "designatedAmount", "designationStatus", "provenance"].every((k) => String(a[k] ?? "") === String(b[k] ?? ""));
+    for (const r of rows) {
+      const id = String(r.record.id);
+      if (!wanted.has(id)) continue;
+      const first = seen.get(id);
+      if (!first) {
+        seen.set(id, { rowNumber: r.rowNumber, record: r.record });
+        continue;
+      }
+      // Only a row that says exactly the same thing is a duplicate. A later row with a different amount/status may be a real edit: never blanked.
+      if (same(first.record, r.record)) {
+        console.warn(`[DonationCauseRepository] duplicate relationship ${id} at row ${r.rowNumber}; keeping row ${first.rowNumber}.`);
+        await sheetsService.clearRowAt(this.sheetName, r.rowNumber);
+        await auditLogRepository
+          .append({ id: `AUDIT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, actor_id: "system", actor_role: "system", action: "REMOVE_DUPLICATE_DESIGNATION", entity_type: "Designation", entity_id: id, before_state: { row: r.rowNumber, kept: first.rowNumber }, after_state: null, timestamp: new Date().toISOString(), source: "designation_dedupe" } as any)
+          .catch(() => undefined);
+      } else {
+        console.error(`[DonationCauseRepository] INTEGRITY INCIDENT: ${id} appears at rows ${first.rowNumber} and ${r.rowNumber} with different content; nothing was changed.`);
+      }
+    }
+    this.invalidateCache();
   }
 
   /** Overwrites existing relationship rows in one request (used when an admin records the split). */

@@ -163,10 +163,21 @@ export class DonorRepository extends BaseRepository<DonorProfile> {
     }
 
     let donor = build(generateDonorToken());
-    const myRow = await sheetsService.appendRow(this.sheetName, this.mapEntityToRow(donor), this.headers);
+    await sheetsService.appendRow(this.sheetName, this.mapEntityToRow(donor), this.headers);
+    let myRow = 0; // located by the unique Donor Token: the row number an append reports is not reliable when appends overlap
 
     for (let attempt = 0; attempt < 5; attempt++) {
       ({ rows } = await sheetsService.getRowsWithNumbers(this.sheetName));
+      if (!myRow) {
+        let found = rows.find((r) => String(r.record.id) === donor.id);
+        for (let wait = 0; !found && wait < 3; wait++) {
+          await new Promise((r) => setTimeout(r, 200 * (wait + 1)));
+          ({ rows } = await sheetsService.getRowsWithNumbers(this.sheetName));
+          found = rows.find((r) => String(r.record.id) === donor.id);
+        }
+        if (!found) throw new Error("The new donor row could not be located after writing; retry the submission.");
+        myRow = found.rowNumber;
+      }
       const earlier = this.matchRows(rows, keys).filter((r) => r.rowNumber < myRow);
       if (earlier.length > 0) {
         await sheetsService.clearRowAt(this.sheetName, myRow);

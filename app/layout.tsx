@@ -27,7 +27,7 @@ const cinzel = Cinzel({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://daarayn.org'),
+  metadataBase: new URL('https://daaraynorg.com'),
   title: {
     default: 'Daarayn Foundation – Structured Charity. Documented Impact.',
     template: '%s | Daarayn Foundation',
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     'amanah charity',
     'daarayn',
   ],
-  authors: [{ name: 'Daarayn Foundation', url: 'https://daarayn.org' }],
+  authors: [{ name: 'Daarayn Foundation', url: 'https://daaraynorg.com' }],
   creator: 'Daarayn Foundation',
   publisher: 'Daarayn Foundation',
   manifest: '/manifest.webmanifest',
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://daarayn.org',
+    url: 'https://daaraynorg.com',
     siteName: 'Daarayn Foundation',
     title: 'Daarayn Foundation – Structured Charity. Documented Impact.',
     description:

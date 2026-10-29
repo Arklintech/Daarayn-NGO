@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 /**
  * Canonical operations figures from /api/admin/dashboard (`canonical`): contribution by cause from explicit
  * designations, the unresolved-distribution bucket, allocations, communication outcomes and data-integrity exceptions.
@@ -10,6 +12,9 @@ const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 export default function OperationsSummary({ canonical }: { canonical?: any }) {
   if (!canonical) return null;
   const { causes = [], unresolvedDistribution, unrestricted, allocations, communications, integrity } = canonical;
+  // The headline counts every error and warning; the list shows the first few and says how many more there are.
+  const listed = (integrity?.exceptions || []).filter((e: any) => e.severity !== "info").slice(0, 5);
+  const hidden = Math.max(0, (integrity?.errors || 0) + (integrity?.warnings || 0) - listed.length);
   return (
     <section className="space-y-4" aria-label="Operations summary">
       {integrity?.errors + integrity?.warnings > 0 && (
@@ -18,12 +23,17 @@ export default function OperationsSummary({ canonical }: { canonical?: any }) {
             {integrity.errors} integrity error(s), {integrity.warnings} warning(s) need attention.
           </p>
           <ul className="mt-2 space-y-1">
-            {(integrity.exceptions || []).filter((e: any) => e.severity !== "info").slice(0, 5).map((e: any, i: number) => (
+            {listed.map((e: any, i: number) => (
               <li key={i}>
                 <span className="font-mono">{e.entityId}</span> — {e.message}
               </li>
             ))}
           </ul>
+          {hidden > 0 && (
+            <p className="mt-2">
+              …and {hidden} more. <Link href="/admin/reconciliation" className="underline">See all in Reconciliation</Link>.
+            </p>
+          )}
         </div>
       )}
 

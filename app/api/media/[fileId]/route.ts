@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { driveService } from "@/lib/google/drive";
 import { requireAdminOrAgent } from "@/lib/server/auth";
 import { causeRepository } from "@/lib/repositories/causeRepository";
+import { programImageRepository } from "@/lib/catalog/programImages";
+import { isSelectableCause } from "@/lib/catalog/causes";
 
 export const dynamic = "force-dynamic";
 
@@ -30,6 +32,19 @@ export async function GET(
     );
   } catch {
     // If causes cannot be read, treat the file as private.
+  }
+
+  // A gallery image is public only while its program is open (Active/Urgent); drafts and closed programs stay private.
+  if (!isPublicCauseImage) {
+    try {
+      const rows = (await programImageRepository.getAll()).filter((i) => i.fileId === fileId && !i.removedAt);
+      if (rows.length > 0) {
+        const causes = await causeRepository.getAll();
+        isPublicCauseImage = rows.some((r) => causes.some((c) => c.id === r.programId && isSelectableCause(c)));
+      }
+    } catch {
+      // If the gallery cannot be read, treat the file as private.
+    }
   }
 
   if (!isPublicCauseImage) {

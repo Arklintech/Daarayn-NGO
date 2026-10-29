@@ -59,7 +59,7 @@ export const CATEGORY_META: Record<
     label: "Causes & Campaigns",
     icon: "🎯",
     color: "red",
-    href: "/admin/causes",
+    href: "/admin/programs",
   },
   communications: {
     label: "Communications",
@@ -359,7 +359,7 @@ export const notifyExecutive = {
       entityType: "Ledger",
       entityId: ledgerId,
       createdBy: "System",
-      actionUrl: "/admin/ledger",
+      actionUrl: "/admin/donations",
       priority: "low",
     }),
 };

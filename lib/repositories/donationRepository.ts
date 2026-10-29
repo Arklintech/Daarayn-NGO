@@ -138,6 +138,14 @@ export class DonationRepository extends BaseRepository<Donation> {
    * key already exists (a retry, or a double-clicked submit) no new row is
    * kept and the existing donation is returned with `duplicate: true`.
    */
+  /** A FINISHED donation (real DA### id) recorded under this submission key, or null. Always reads Sheets fresh. */
+  public async findFinishedBySubmissionKey(submissionKey: string): Promise<Donation | null> {
+    await this.init();
+    const { rows } = await sheetsService.getRowsWithNumbers(this.sheetName);
+    const hit = rows.find((r) => r.record.submissionKey === submissionKey && String(r.record.id) !== "PENDING");
+    return hit ? this.mapRowToEntity(hit.record) : null;
+  }
+
   public async createWithUniqueId(
     build: (id: string) => Donation,
     submissionKey: string
@@ -158,11 +166,19 @@ export class DonationRepository extends BaseRepository<Donation> {
       }
       const age = Date.now() - new Date(String(prior.record.date)).getTime();
       if (age < PENDING_ADOPT_AFTER_MS) {
+        // Another request is finishing this very submission: wait briefly for it so that the caller gets the SAME answer, not an error.
+        for (let wait = 0; wait < 8; wait++) {
+          await new Promise((r) => setTimeout(r, 150 + wait * 100));
+          const { rows: now } = await sheetsService.getRowsWithNumbers(this.sheetName);
+          const done = now.find((r) => r.rowNumber === prior.rowNumber);
+          if (done && String(done.record.id) !== "PENDING") return { donation: this.mapRowToEntity(done.record), duplicate: true, rowNumber: done.rowNumber };
+        }
         throw new DonationWriteError("This submission is still being processed. Please retry in a few seconds.", 409, "IN_PROGRESS");
       }
       adoptedRow = prior.rowNumber;
     }
 
+    const claimNote = `claim:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
     // 1. Append a blank row to lock position in the append queue.
     //    Once appended, this row's position is immutable; no later appends
     //    can move it or change how many rows came before it.
@@ -180,14 +196,27 @@ export class DonationRepository extends BaseRepository<Donation> {
       causeTitle: "",
       proofDriveFileId: "",
       transactionReference: "",
-      notes: "",
+      // Unique marker: the row number Sheets reports for an append is NOT reliable when appends overlap (observed live: several
+      // concurrent appends reported the same row), so this request finds its own row by this marker in the read below.
+      notes: claimNote,
       submissionKey,
     };
-    const myRow = adoptedRow || (await sheetsService.appendRow(this.sheetName, blankRow, DONATION_HEADERS));
+    let myRow = adoptedRow;
+    if (!adoptedRow) await sheetsService.appendRow(this.sheetName, blankRow, DONATION_HEADERS);
 
     // 2. Re-read and calculate the collision-free ID based on final row position.
     for (let attempt = 0; attempt < MAX_ID_ATTEMPTS; attempt++) {
       ({ rows } = await sheetsService.getRowsWithNumbers(this.sheetName));
+      if (!myRow) {
+        let found = rows.find((r) => r.record.notes === claimNote && r.record.submissionKey === submissionKey);
+        for (let wait = 0; !found && wait < 3; wait++) {
+          await new Promise((r) => setTimeout(r, 200 * (wait + 1)));
+          ({ rows } = await sheetsService.getRowsWithNumbers(this.sheetName));
+          found = rows.find((r) => r.record.notes === claimNote && r.record.submissionKey === submissionKey);
+        }
+        if (!found) throw new DonationWriteError("The submission was written but its row could not be located; it will be completed or adopted on retry. Please retry in a minute.", 409, "IN_PROGRESS");
+        myRow = found.rowNumber;
+      }
       const earlier = rows.filter((r) => r.rowNumber < myRow);
 
       // Check if another submission with the same submissionKey got in first.

@@ -69,3 +69,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
+
+// Drive uploads can outlast the platform default timeout.
+export const maxDuration = 60;

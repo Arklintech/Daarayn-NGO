@@ -35,6 +35,14 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        source: '/:file(.*\.(?:mp4|png|jpg|jpeg|webp|avif|svg|ico|woff2))',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=86400, stale-while-revalidate=604800' }],
+      },
+      {
+        source: '/api/causes',
+        headers: [{ key: 'Cache-Control', value: 'public, s-maxage=10, stale-while-revalidate=120' }],
+      },
+      {
         source: '/public/:path*',
         headers: [
           {

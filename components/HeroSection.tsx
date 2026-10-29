@@ -1,6 +1,42 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
+type Stats = { casesCompleted: number; masjidProjects: number; studentsSponsored: number | null };
+const REFRESH_MS = 60_000;
+
+/** Live public aggregates. While loading it shows an ellipsis; if the source is unavailable it shows a dash, never a made-up zero. */
+function useStats() {
+  const [state, setState] = useState<{ status: 'loading' | 'ok' | 'unavailable'; stats?: Stats }>({ status: 'loading' });
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await fetch('/api/public/stats', { cache: 'no-store' });
+        if (!res.ok) throw new Error(String(res.status));
+        const stats = (await res.json()) as Stats;
+        if (!cancelled) setState({ status: 'ok', stats });
+      } catch {
+        if (!cancelled) setState((s) => (s.status === 'ok' ? s : { status: 'unavailable' }));
+      }
+    };
+    void load();
+    const onVisible = () => { if (document.visibilityState === 'visible') void load(); };
+    const timer = setInterval(onVisible, REFRESH_MS);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => { cancelled = true; clearInterval(timer); document.removeEventListener('visibilitychange', onVisible); };
+  }, []);
+  return state;
+}
+
+const show = (state: { status: string; stats?: Stats }, pick: (s: Stats) => number | null | undefined) => {
+  if (state.status === 'loading') return '…';
+  const v = state.status === 'ok' && state.stats ? pick(state.stats) : null;
+  return v === null || v === undefined ? '—' : String(v);
+};
+
 export default function HeroSection() {
+  const stats = useStats();
   return (
     <section className="cinematic-hero-scene">
       {/* Background layer */}
@@ -68,17 +104,17 @@ export default function HeroSection() {
             <div className="trust-cards-grid">
               <div className="trust-card">
                 <ClipboardIcon />
-                <div className="trust-card-number">5</div>
+                <div className="trust-card-number" data-stat="casesCompleted">{show(stats, (s) => s.casesCompleted)}</div>
                 <div className="trust-card-label">Cases<br/>Completed</div>
               </div>
               <div className="trust-card">
                 <GraduationCapIcon />
-                <div className="trust-card-number">10</div>
+                <div className="trust-card-number" data-stat="studentsSponsored">{show(stats, (s) => s.studentsSponsored)}</div>
                 <div className="trust-card-label">Students<br/>Sponsored</div>
               </div>
               <div className="trust-card">
                 <MosqueIcon />
-                <div className="trust-card-number">3</div>
+                <div className="trust-card-number" data-stat="masjidProjects">{show(stats, (s) => s.masjidProjects)}</div>
                 <div className="trust-card-label">Masjid<br/>Projects</div>
               </div>
             </div>

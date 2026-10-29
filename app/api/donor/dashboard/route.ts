@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { donorRepository } from "@/lib/repositories/donorRepository";
 import { donationRepository } from "@/lib/repositories/donationRepository";
 import { causeRepository } from "@/lib/repositories/causeRepository";
+import { allocationRepository } from "@/lib/repositories/allocationRepository";
 import { donationsForDonor } from "@/lib/donations/metrics";
 import { SESSION_COOKIE, verifySession } from "@/lib/donors/portalAuth";
 
@@ -27,15 +28,12 @@ export async function GET(request: NextRequest) {
     const donorDonations = donationsForDonor(allDonations, donor);
 
     const causes = await causeRepository.getAll();
-    const allocations = donorDonations.map((d) => ({
-      id: d.id,
-      causeTitle: d.causeTitle || d.donationType,
-      amount: d.amount,
-      directAid: Math.round(d.amount * 0.9),
-      opsCost: Math.round(d.amount * 0.1),
-      date: d.date,
-      status: d.status,
-    }));
+    // Real allocations only: Allocations rows recorded against THIS donor's own donations and still active. A donation is not an allocation,
+    // and no 90/10 (or any other) ratio is applied or implied here. Internal fields (admin e-mail, notes, evidence ids) are never returned.
+    const ownDonationIds = new Set(donorDonations.map((d) => d.id));
+    const allocations = (await allocationRepository.getAll(true))
+      .filter((a) => ownDonationIds.has(a.donationId) && a.status === "active")
+      .map((a) => ({ id: a.id, donationId: a.donationId, targetTitle: a.targetTitle, allocatedAmount: Number(a.allocatedAmount) || 0, allocationDate: a.allocationDate }));
 
     return NextResponse.json({
       success: true,

@@ -46,6 +46,10 @@ beforeAll(async () => {
     createdFolder = true;
   }
   if (testFolderId === PRODUCTION_FOLDER) throw new Error("Refusing to run: the test folder must differ from the production evidence folder.");
+  (await import("@/lib/google/approvedTargets")).approveTestResourceForThisProcess("folder", testFolderId); // folder created by THIS run
+  process.env.GOOGLE_TARGET_ENV = "test"; // write guard: Drive writes only into the declared test folder
+  process.env.GOOGLE_DRIVE_TEST_FOLDER_ID = testFolderId;
+  process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID = testFolderId;
 });
 
 afterAll(async () => {

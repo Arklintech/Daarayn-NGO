@@ -13,6 +13,7 @@
  */
 import { causeRepository, type Cause } from "../repositories/causeRepository";
 import { auditLogRepository } from "../repositories/auditLogRepository";
+import { CatalogError } from "./errors";
 
 export const CAUSE_STATUSES = ["Draft", "Active", "Urgent", "Completed", "Inactive"] as const;
 export type CauseStatus = (typeof CAUSE_STATUSES)[number];
@@ -30,11 +31,7 @@ export function normalizeStatus(status: unknown): CauseStatus | null {
 const SAFE_ID = /^[A-Za-z0-9][A-Za-z0-9_-]{2,63}$/;
 const normTitle = (t: unknown) => String(t ?? "").trim().replace(/\s+/g, " ").toLowerCase();
 
-export class CatalogError extends Error {
-  constructor(message: string, public readonly httpStatus: 400 | 404 | 409 = 400) {
-    super(message);
-  }
-}
+export { CatalogError };
 
 export interface CauseInput {
   id?: string;
@@ -110,8 +107,18 @@ export function prepareCause(input: CauseInput, existing: Cause[], newId: () => 
 
 export const newCauseId = () => `CAUSE-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
 
+// Saves are serialised inside one server instance: a double-click or a repeated submission with the same id is then an
+// UPDATE of the same row, never a second row. (Across instances uniqueness still rests on the title/id check, as for other entities.)
+let saveChain: Promise<unknown> = Promise.resolve();
+
 /** Persists a cause (create or update), audits it, refreshes the shared cache. Throws CatalogError on invalid input. */
-export async function saveCause(input: CauseInput, actorEmail: string): Promise<{ cause: Cause; created: boolean }> {
+export function saveCause(input: CauseInput, actorEmail: string): Promise<{ cause: Cause; created: boolean }> {
+  const run = saveChain.then(() => saveCauseNow(input, actorEmail));
+  saveChain = run.catch(() => undefined);
+  return run;
+}
+
+async function saveCauseNow(input: CauseInput, actorEmail: string): Promise<{ cause: Cause; created: boolean }> {
   const existing = await causeRepository.getAll(true);
   const { cause, created, previous } = prepareCause(input, existing, newCauseId);
   await causeRepository.save(cause as Cause);

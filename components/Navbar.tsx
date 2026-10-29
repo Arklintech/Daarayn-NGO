@@ -28,12 +28,25 @@ export default function Navbar() {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // Program entries come from the Programs module (published programs that have a menu label), never from a hardcoded list.
+  const [programLinks, setProgramLinks] = useState<{ name: string; href: string }[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/programs?kind=project')
+      .then((r) => (r.ok ? r.json() : []))
+      .then((list) => {
+        if (cancelled || !Array.isArray(list)) return;
+        setProgramLinks(list.filter((p: any) => p?.content?.navLabel).slice(0, 4).map((p: any) => ({ name: p.content.navLabel, href: `/programs/${encodeURIComponent(p.id)}` })));
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const navItems = [
     { name: 'Home', href: '/#home' },
-    { name: 'Programs', href: '/#programs' },
-    { name: 'Family Relief', href: '/#family' },
-    { name: 'Qur\'an Endowment', href: '/#quran' },
-    { name: 'Masjid Fund', href: '/#masjid' },
+    { name: 'Programs', href: '/programs' },
+    ...programLinks,
+    { name: 'Campaigns', href: '/campaigns' },
     { name: 'About Us', href: '/#about' },
   ];
 

@@ -142,17 +142,16 @@ export default function CauseWorkspace() {
   const style = CAUSE_STYLE_MAP[causeId] || { icon: Heart, color: "from-gray-500 to-gray-900" };
   const Icon = style.icon;
   const safeGoalAmount = cause.goalAmount || 0;
-  const percentage = Math.min(100, Math.round((stats.raised / (safeGoalAmount || 1)) * 100)) || 0;
 
   return (
     <div className="space-y-8 pb-10">
       {/* Back & Title */}
       <div>
         <button 
-          onClick={() => router.push("/admin/causes")}
+          onClick={() => router.push("/admin/programs")}
           className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors mb-4"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Cause Management Center
+          <ArrowLeft className="w-4 h-4" /> Back to Programs
         </button>
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-white/[0.05] border border-white/10 flex items-center justify-center">
@@ -203,7 +202,7 @@ export default function CauseWorkspace() {
                   <div className="mt-2 flex items-baseline gap-2">
                     <p className="text-3xl font-bold text-white tracking-tight">₹{stats.raised.toLocaleString()}</p>
                   </div>
-                  <p className="text-xs text-gray-400 mt-2">Goal: ₹{safeGoalAmount.toLocaleString()} ({percentage}%)</p>
+                  <p className="text-xs text-gray-400 mt-2">Goal: ₹{safeGoalAmount.toLocaleString()}</p>
                 </motion.div>
 
                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-xl border border-white/10 bg-black/40 p-6 backdrop-blur-sm">
@@ -231,13 +230,6 @@ export default function CauseWorkspace() {
                 </motion.div>
               </div>
 
-              {/* Progress Section */}
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="rounded-xl border border-white/10 bg-black/40 p-6 backdrop-blur-sm">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-300 font-medium">Campaign Progress</span>
-                  <span className="text-[var(--gold)] font-bold">{percentage}% Funded</span>
-                </div>
-              </motion.div>
             </div>
           )}
 

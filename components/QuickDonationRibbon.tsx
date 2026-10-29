@@ -70,7 +70,7 @@ export default function QuickDonationRibbon() {
   useEffect(() => {
     async function fetchCauses() {
       try {
-        const res = await fetch('/api/causes');
+        const res = await fetch('/api/causes?scope=public');
         if (res.ok) {
           const list = await res.json();
           if (Array.isArray(list) && list.length > 0) {
@@ -343,7 +343,11 @@ export default function QuickDonationRibbon() {
           <button 
             type="button"
             className="daarayn-ribbon-donate-btn" 
-            onClick={() => router.push(`/pay?amt=${amount}&cur=${currency}&cause=${encodeURIComponent(cause)}&source=ribbon`)}
+            onClick={() => {
+              // Hand the checkout the PERMANENT cause id (titles can be renamed); General stays "General".
+              const causeParam = cause === 'General' ? 'General' : causes.find((c) => c.name === cause)?.id || cause;
+              router.push(`/pay?amt=${amount}&cur=${currency}&cause=${encodeURIComponent(causeParam)}&source=ribbon`);
+            }}
           >
             <span>Quick Donate</span>
             <ArrowRight size={15} className="ribbon-arrow" />

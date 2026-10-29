@@ -39,7 +39,7 @@ export default function Footer() {
         }
         .ft-credit-link:hover { color: rgba(255,249,221,1); }
         .ft-credit-link:focus-visible { outline: 1px solid rgba(255,249,221,0.4); outline-offset: 3px; border-radius: 2px; }
-        .footer-grid { display: grid; grid-template-columns: minmax(220px,1.5fr) 1fr 1fr 1.2fr; gap: 2.5rem; align-items: flex-start; }
+        .footer-grid { display: grid; grid-template-columns: minmax(220px,1.5fr) 1fr 1.2fr; gap: 2.5rem; align-items: flex-start; }
         @media (max-width: 768px) {
           .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem 1.25rem; text-align: left; }
           .footer-brand-col { grid-column: 1 / -1; align-items: flex-start !important; }
@@ -119,20 +119,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Get Involved */}
-          <div>
-            <p style={{
-              fontSize: '0.62rem', fontWeight: 700, letterSpacing: '0.2em',
-              textTransform: 'uppercase', color: 'rgba(255,255,255,0.3)',
-              margin: '0 0 0.85rem 0',
-            }}>Get Involved</p>
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-              {[['/pay', 'Donate Now'], ['/donor/dashboard', 'Donor Portal'], ['/#about', 'Field Agents'], ['/#about', 'Contact Us']].map(([href, label]) => (
-                <li key={label}><Link href={href} className="ft-link">{label}</Link></li>
-              ))}
-            </ul>
-          </div>
-
           {/* Contact */}
           <div className="footer-contact-col">
             <p style={{
@@ -141,7 +127,7 @@ export default function Footer() {
               margin: '0 0 0.85rem 0',
             }}>Contact</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-              <a href="mailto:info@daarayn.org" className="ft-link" style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+              <a href="mailto:daaraynorg@gmail.com" className="ft-link" style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
                 <span style={{
                   width: '26px', height: '26px', borderRadius: '6px',
                   background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
@@ -151,19 +137,7 @@ export default function Footer() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
                 </span>
-                info@daarayn.org
-              </a>
-              <a href="tel:+919876543210" className="ft-link" style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
-                <span style={{
-                  width: '26px', height: '26px', borderRadius: '6px',
-                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
-                  <svg width="12" height="12" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="1.8" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-                  </svg>
-                </span>
-                +91-98765-43210
+                daaraynorg@gmail.com
               </a>
             </div>
           </div>
@@ -246,9 +220,7 @@ export default function Footer() {
             © {new Date().getFullYear()} Daarayn Foundation. All rights reserved.
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <Link href="/#about" className="ft-small-link">Privacy Policy</Link>
-            <span style={{ color: 'rgba(255,255,255,0.15)', fontSize: '0.6rem' }}>◆</span>
-            <Link href="/#about" className="ft-small-link">Terms of Service</Link>
+            <Link href="/privacy" className="ft-small-link">Privacy Policy</Link>
           </div>
         </div>
 

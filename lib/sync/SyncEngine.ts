@@ -17,7 +17,8 @@ export interface SyncTask {
 }
 
 export class SyncEngine {
-  public static async executeSyncTask(taskId: string, task: SyncTask) {
+  /** Never throws: the outcome is returned (and audited) so a caller cannot mistake a failed write for a completed one. */
+  public static async executeSyncTask(taskId: string, task: SyncTask): Promise<{ success: boolean; error?: string }> {
     const startTime = Date.now();
     let success = false;
     let errorMessage = "";
@@ -75,7 +76,10 @@ export class SyncEngine {
       const rowValues = headers.map(header => flattenedData[header] || "");
 
       if (task.operation === "CREATE") {
-        await sheetsClient.appendRow(sheetName, rowValues);
+        // Idempotent: replaying a CREATE for an id that is already in the sheet updates that row instead of adding a duplicate.
+        const existing = await sheetsClient.findRowIndex(sheetName, task.entityId);
+        if (existing) await sheetsClient.updateRow(sheetName, existing, rowValues);
+        else await sheetsClient.appendRow(sheetName, rowValues);
       } else if (task.operation === "UPDATE") {
         const rowIndex = await sheetsClient.findRowIndex(sheetName, task.entityId);
         if (rowIndex) {
@@ -107,6 +111,7 @@ export class SyncEngine {
       errorDetails: success ? undefined : errorMessage,
       syncDurationMs: duration,
     });
+    return success ? { success: true } : { success: false, error: errorMessage };
   }
 
   public static async retryFailedTasks() {

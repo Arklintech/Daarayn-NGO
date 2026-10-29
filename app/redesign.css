@@ -635,6 +635,7 @@
 /* CINEMATIC HERO SCENE */
 .cinematic-hero-scene {
   position: relative;
+  background: rgb(3, 10, 6);
   width: 100%;
   max-width: 100%;
   min-height: 100svh;
@@ -669,7 +670,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  background: rgba(2, 6, 13, 0.45);
+  background: rgba(2, 6, 13, 0.12); /* D24: was 0.45; the video was almost invisible */
   z-index: 2;
 }
 
@@ -678,7 +679,8 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(to right, rgba(2, 6, 13, 0.95) 0%, rgba(2, 6, 13, 0.4) 50%, rgba(2, 6, 13, 0.9) 100%), linear-gradient(to bottom, rgba(2, 6, 13, 0.8) 0%, transparent 20%, rgba(2, 6, 13, 0.95) 100%);
+  /* D24: lighter side/top shading so the video shows; text keeps its own shadow; the bottom still fades into the page colour */
+  background: linear-gradient(to right, rgba(2, 6, 13, 0.6) 0%, rgba(2, 6, 13, 0.05) 55%, rgba(2, 6, 13, 0.3) 100%), linear-gradient(to bottom, rgba(2, 6, 13, 0.45) 0%, transparent 15%, transparent 78%, rgb(3, 10, 6) 100%);
   z-index: 3;
 }
 
@@ -709,6 +711,12 @@
   letter-spacing: 1.5px;
   text-transform: uppercase;
   margin-bottom: 24px;
+}
+
+.daarayn-hero-title,
+.daarayn-hero-subtitle,
+.daarayn-hero-eyebrow {
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.65);
 }
 
 .daarayn-hero-title {
@@ -931,7 +939,10 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center center;
+    object-position: 72% center; /* D24: portrait crop keeps the lit part of the frame instead of the dark centre */
+  }
+  .daarayn-hero-bg {
+    background-position: 72% center;
   }
   .daarayn-quick-donation-section {
     position: relative;
@@ -1139,8 +1150,73 @@
     line-height: 1.45;
   }
 
+  /* Mobile only: the three statistic cards sit side by side (tablet and desktop keep their own layout). */
   .trust-cards-grid {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .trust-card { padding: 12px 4px; min-width: 0; border-radius: 10px; }
+  .trust-card svg { width: 22px; height: 22px; }
+  .trust-card-icon { margin-bottom: 6px; }
+  .trust-card-number { font-size: 22px; }
+  .trust-card-label { font-size: 10px; line-height: 1.25; overflow-wrap: anywhere; }
+}
+@media (max-width: 340px) {
+  .trust-cards-grid { gap: 5px; }
+  .trust-card { padding: 10px 2px; }
+  .trust-card svg { width: 18px; height: 18px; }
+  .trust-card-number { font-size: 18px; }
+  .trust-card-label { font-size: 9px; }
+}
+
+/* D22: narrow phones: the two hero actions stack and fill the width instead of overflowing it. */
+@media (max-width: 360px) {
+  .daarayn-hero-actions {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .daarayn-hero-actions > a {
+    flex: 1 1 100%;
+    justify-content: center;
+    text-align: center;
+    padding: 14px 20px;
+    box-sizing: border-box;
+  }
+}
+
+/* D22: at 300 px and below the cause name is truncated to one letter beside the CTA, so the CTA moves to its own row. */
+@media (max-width: 300px) {
+  .daarayn-ribbon-action-row {
+    flex-wrap: wrap;
+    height: auto;
+  }
+  .daarayn-ribbon-cause-wrapper,
+  .daarayn-ribbon-donate-btn {
+    flex: 1 1 100%;
+    height: 38px;
+  }
+}
+
+/* D22: tablet widths (769 to 920 px): the three ribbon groups need about 850 px in one row, so they wrap onto a second row instead of overflowing. */
+@media (min-width: 769px) and (max-width: 920px) {
+  .daarayn-quick-donation-ribbon {
+    height: auto;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 6px;
+    padding: 8px;
+  }
+  .daarayn-ribbon-amount-row,
+  .daarayn-ribbon-presets,
+  .daarayn-ribbon-action-row {
+    height: 40px;
+    min-width: 0;
+  }
+  /* the taller ribbon would otherwise cover the hero eyebrow */
+  .daarayn-hero-content {
+    padding-top: 56px;
   }
 }
 
@@ -1182,3 +1258,5 @@
     display: none;
   }
 }
+
+ 

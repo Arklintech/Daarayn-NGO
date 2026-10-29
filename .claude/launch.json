@@ -1,0 +1,38 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "daarayn-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000
+    },
+    {
+      "name": "daarayn-d3-isolated",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/ADMIN/AppData/Local/Temp/claude/D--Projects-NGO--main/a46d6c6c-7061-407f-9f7e-125c5a195e6b/scratchpad/d3_isolated_dev.js"
+      ],
+      "port": 3100
+    },
+    {
+      "name": "daarayn-d3-failure-sim",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/ADMIN/AppData/Local/Temp/claude/D--Projects-NGO--main/a46d6c6c-7061-407f-9f7e-125c5a195e6b/scratchpad/d3_failure_dev.js"
+      ],
+      "port": 3100
+    },
+    {
+      "name": "daarayn-d26-prod",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "C:/Users/ADMIN/AppData/Local/Temp/claude/D--Projects-NGO--main/a46d6c6c-7061-407f-9f7e-125c5a195e6b/scratchpad/d26_isolated_prod.js"
+      ],
+      "port": 3100
+    }
+  ]
+}

@@ -210,7 +210,7 @@ This is a summary of your records, not a tax receipt.
             <div className="admin-glass border border-white/[0.06] rounded-2xl p-5 relative overflow-hidden flex items-center justify-between">
               <div className="space-y-1">
                 <span className="text-[10px] text-gray-500 uppercase tracking-wider block font-bold">Active Allocations</span>
-                <span className="font-mono text-xl text-white font-bold">{allocations.length} Scopes</span>
+                <span className="font-mono text-xl text-white font-bold">{allocations.length} recorded</span>
               </div>
               <Heart className="w-10 h-10 text-white/10" />
             </div>
@@ -228,13 +228,13 @@ This is a summary of your records, not a tax receipt.
               onClick={() => setActiveSection("allocations")}
               className={`pb-3 px-4 border-b-2 transition ${activeSection === "allocations" ? "border-luxury-gold text-luxury-gold" : "border-transparent text-gray-400 hover:text-white"}`}
             >
-              Split Allocations
+              Allocations
             </button>
             <button 
               onClick={() => setActiveSection("communications")}
               className={`pb-3 px-4 border-b-2 transition ${activeSection === "communications" ? "border-luxury-gold text-luxury-gold" : "border-transparent text-gray-400 hover:text-white"}`}
             >
-              AI Impact Reports Feed
+              Updates
             </button>
           </div>
 
@@ -268,7 +268,7 @@ This is a summary of your records, not a tax receipt.
 
             {activeSection === "allocations" && (
               <div className="admin-glass border border-white/[0.06] rounded-3xl p-6 space-y-4">
-                <h3 className="text-base font-bold text-white font-playfair mb-2">Funding Split Allocations Breakdown</h3>
+                <h3 className="text-base font-bold text-white font-playfair mb-2">Allocations recorded from your contributions</h3>
                 <div className="space-y-3">
                   {allocations.map((alloc) => (
                     <div key={alloc.id} className="p-4 rounded-2xl bg-white/[0.01] border border-white/[0.04] text-xs flex justify-between items-center">
@@ -278,21 +278,22 @@ This is a summary of your records, not a tax receipt.
                           <span className="text-gray-500">• Allocated {alloc.allocationDate}</span>
                         </div>
                         <span className="text-white text-sm font-semibold block">{alloc.targetTitle}</span>
-                        <span className="text-gray-500 block">Complying with 90/10 direct aid metrics</span>
+                        <span className="text-gray-500 block">Recorded by Daarayn from your verified contribution</span>
                       </div>
                       <div className="text-right">
                         <span className="font-mono font-bold text-luxury-gold text-sm block">INR {alloc.allocatedAmount.toLocaleString()}</span>
-                        <span className="text-[10px] text-gray-500">Funded Portion</span>
+                        <span className="text-[10px] text-gray-500">Allocated</span>
                       </div>
                     </div>
                   ))}
+                  {allocations.length === 0 && <p className="text-xs text-gray-500">No allocation has been recorded from your contributions yet. A contribution is allocated only after it has been verified.</p>}
                 </div>
               </div>
             )}
 
             {activeSection === "communications" && (
               <div className="admin-glass border border-white/[0.06] rounded-3xl p-6 space-y-4">
-                <h3 className="text-base font-bold text-white font-playfair mb-2">AI-Generated Factual Impact Updates</h3>
+                <h3 className="text-base font-bold text-white font-playfair mb-2">Updates sent to you</h3>
                 <div className="space-y-4">
                   {donor.communicationHistory?.length > 0 ? (
                     donor.communicationHistory.map((log: any, idx: number) => (
@@ -300,7 +301,7 @@ This is a summary of your records, not a tax receipt.
                         <div className="flex justify-between items-start border-b border-white/[0.04] pb-2.5">
                           <div>
                             <span className="font-semibold text-white block text-sm">{log.subject}</span>
-                            <span className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider font-mono">🤖 Evidence-bound AI Summary</span>
+                            <span className="text-[10px] text-luxury-gold font-bold uppercase tracking-wider font-mono">Message from Daarayn</span>
                           </div>
                           <span className="font-mono text-[9px] text-gray-500">{log.sentDate}</span>
                         </div>

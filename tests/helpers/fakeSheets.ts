@@ -12,10 +12,16 @@ export class FakeSheets {
   tabs = new Map<string, { headers: string[]; rows: string[][] }>();
   failWrites = false;
   jitter = true;
+  /** Real Google Sheets reports the SAME row for overlapping appends (observed live). When true, append calls report a wrong, lower row number. */
+  misreportAppendedRow = false;
+  private reported(actualRow: number): number {
+    return this.misreportAppendedRow ? Math.max(2, actualRow - Math.floor(Math.random() * 4)) : actualRow;
+  }
 
   reset() {
     this.tabs.clear();
     this.failWrites = false;
+    this.misreportAppendedRow = false;
   }
 
   private async tick() {
@@ -83,7 +89,7 @@ export class FakeSheets {
     if (t.headers.length === 0 && expectedHeaders) t.headers = [...expectedHeaders];
     this.growHeaders(t, record);
     t.rows.push(this.toRow(t.headers, record));
-    return t.rows.length + 1;
+    return this.reported(t.rows.length + 1);
   }
   async appendRows(name: string, records: Record<string, any>[], expectedHeaders: string[]) {
     await this.tick();
@@ -93,7 +99,7 @@ export class FakeSheets {
     records.forEach((r) => this.growHeaders(t, r));
     const first = t.rows.length + 2;
     records.forEach((r) => t.rows.push(this.toRow(t.headers, r)));
-    return first;
+    return this.reported(first);
   }
   async batchAppendRows(name: string, records: Record<string, any>[], expectedHeaders: string[]) {
     if (records.length) await this.appendRows(name, records, expectedHeaders);
