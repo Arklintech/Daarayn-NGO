@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { donationService, DonationInputError, ProofStorageError } from "@/lib/services/donationService";
 import { DonationWriteError } from "@/lib/repositories/donationRepository";
 import { checkRateLimit } from "@/lib/security/rate-limiter";
-import { logAuditEvent } from "@/lib/security/audit-logger";
+import { runWithPriority } from "@/lib/google/requestControl";
+import { financialOperationsPaused, FINANCIAL_PAUSED_MESSAGE } from "@/lib/financialActivation";
 
-export async function POST(request: NextRequest) {
+async function POST_handler(request: NextRequest) {
+  // Production stays closed to contributions until financial activation is approved (nothing is read, written or sent).
+  if (financialOperationsPaused()) return NextResponse.json({ error: FINANCIAL_PAUSED_MESSAGE, paused: true }, { status: 503, headers: { "Retry-After": "3600" } });
   // 1. Rate limit check (max 15 donation attempts per IP per minute)
   const rateLimitResult = checkRateLimit(request, { limit: 15, windowMs: 60 * 1000 });
   if (!rateLimitResult.allowed && rateLimitResult.response) {
@@ -76,13 +79,9 @@ export async function POST(request: NextRequest) {
       submissionKey,
     });
 
-    if (!result.duplicate) logAuditEvent({
-      userId: result.donorId,
-      userName: donorName || "Anonymous Donor",
-      action: "DONATION_PROCESSED",
-      targetResource: `Donations/${result.trackingId}`,
-      metadata: { amount: numAmount, cause, upiRef, proofDriveFileId: result.proofDriveFileId },
-    }).catch((err) => console.warn("Audit logging non-fatal error:", err));
+    // The audit record of this donation (SUBMIT_DONATION) is written by the donation service, atomically with the notification and the cause
+    // relationships and awaited. A second, un-awaited DONATION_PROCESSED record used to be written here: it repeated the same facts, cost two
+    // reads and a write per donation, and could be cut off when the function returned.
 
     return NextResponse.json({
       success: true,
@@ -114,3 +113,6 @@ export async function POST(request: NextRequest) {
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60; // Sheets/Drive/SMTP calls can outlast the platform default
+
+/* D29: request priority for the shared Google budget (P0/P1 financial, P3 public catalogue). */
+export const POST = (...args: Parameters<typeof POST_handler>) => runWithPriority("P0", () => POST_handler(...args));

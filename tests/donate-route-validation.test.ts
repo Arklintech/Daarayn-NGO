@@ -36,3 +36,21 @@ describe("POST /api/donate: malformed cause selection", () => {
     expect(await donationRepository.getAll(true)).toHaveLength(1);
   });
 });
+
+// D36: one audit record per donation, written and awaited by the donation service (the route no longer adds a second, un-awaited one).
+describe("POST /api/donate: audit records", () => {
+  it("writes exactly one audit record for a donation, with every fact the removed duplicate carried", async () => {
+    const { fakeSheets } = await import("./helpers/fakeSheets");
+    const res = await submit({ upiRef: "UPI123456", amount: "250" });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as any;
+    await new Promise((r) => setTimeout(r, 50)); // a leftover fire-and-forget write would have landed by now
+    const audit = fakeSheets.records("Audit_Log").filter((a: any) => a.entity_id === body.trackingId);
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({ action: "SUBMIT_DONATION", actor_role: "donor" });
+    const after = JSON.parse(String(audit[0].after_state));
+    expect(after).toMatchObject({ amount: 250, trackingId: body.trackingId, transactionReference: "UPI123456" });
+    expect(after).toHaveProperty("proofDriveFileId");
+    expect(after).toHaveProperty("cause");
+  });
+});

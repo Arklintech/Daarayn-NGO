@@ -9,9 +9,19 @@ import { allocationRepository } from "../repositories/allocationRepository";
 import { auditLogRepository } from "../repositories/auditLogRepository";
 import { donationState } from "../donations/metrics";
 import { validateSplit, DesignationError } from "../donations/designations";
-import { activeAllocatedCents } from "./allocationService";
+import { activeAllocatedCents, withDonationBalanceLock, AllocationError } from "./allocationService";
 
+/** Runs under the allocation lease of the donation: lowering a designation must not interleave with an allocation checked against it. */
 export async function recordDesignation(donationId: string, split: { causeId: string; amount: number }[], actorEmail: string) {
+  try {
+    return await withDonationBalanceLock(donationId, () => recordDesignationLocked(donationId, split, actorEmail));
+  } catch (err) {
+    if (err instanceof AllocationError && err.httpStatus === 503) throw new DesignationError(err.message, 503);
+    throw err;
+  }
+}
+
+async function recordDesignationLocked(donationId: string, split: { causeId: string; amount: number }[], actorEmail: string) {
   const donations = (await donationRepository.getAll(true)).filter((d) => d.id === donationId);
   if (donations.length === 0) throw new DesignationError(`Donation ${donationId} was not found.`, 400);
   if (donations.length > 1) throw new DesignationError(`Donation id ${donationId} is held by more than one row; resolve that first.`, 409);

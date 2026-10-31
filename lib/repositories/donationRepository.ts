@@ -3,6 +3,9 @@ import { Donation } from "../db";
 import { sheetsService, SheetRow } from "../google/sheets";
 import { canonicalStatus, DonationStatus } from "../donations/metrics";
 
+/** Fields the donation request itself owns after the row is created (follow-up state and e-mail outcome); everything else belongs to whoever changed it last. */
+const OPERATIONAL_FIELDS = ["opStatus", "opPending", "confirmationEmailSent", "confirmationEmailSentAt", "confirmationEmailError", "confirmationEmailRetryCount"] as const;
+
 const DONATION_HEADERS = [
   "id",
   "donorId",
@@ -90,7 +93,24 @@ export class DonationRepository extends BaseRepository<Donation> {
       })(),
       opStatus: (["pending", "partial", "complete"].includes(String(row.opStatus)) ? String(row.opStatus) : "") as any,
       opPending: String(row.opPending || ""),
+      submissionRef: row.submissionRef ? String(row.submissionRef) : undefined,
     };
+  }
+
+  /**
+   * A stale queue finaliser can briefly leave a second copy of a donation row. A row is a COPY only when an EARLIER row has the same donation id AND the same non-empty
+   * submission reference; the copy is not read, so no total, report, donor history or allocation can count it twice. Rows without that proof (a duplicate id from
+   * the direct path, a manual edit, two submissions sharing an id) are all kept, so the integrity checks still see every real conflict.
+   */
+  protected canonical(entities: Donation[]): Donation[] {
+    const seen = new Set<string>();
+    return entities.filter((d) => {
+      if (!d.submissionRef) return true;
+      const key = `${d.id}|${d.submissionRef}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   protected mapEntityToRow(donation: Donation): Record<string, any> {
@@ -275,7 +295,14 @@ export class DonationRepository extends BaseRepository<Donation> {
    * or shifted, so the position is stable for the life of the request.
    */
   public async saveAtRow(rowNumber: number, donation: Donation, submissionKey: string): Promise<void> {
-    await sheetsService.updateRowAt(this.sheetName, rowNumber, { ...this.mapEntityToRow(donation), submissionKey });
+    // The row is re-read and ONLY the operational fields this request owns are written. Rewriting the whole row from the in-memory donation
+    // would silently undo a decision an admin made while the follow-up steps were running (D35: a verification reverted to "pending").
+    const { rows } = await sheetsService.getRowsWithNumbers(this.sheetName);
+    const current = rows.find((r) => r.rowNumber === rowNumber && String(r.record.id) === donation.id);
+    if (!current) throw new DonationWriteError(`Donation ${donation.id} is no longer at row ${rowNumber}.`, 404, "NOT_FOUND");
+    const mine = this.mapEntityToRow(donation);
+    const owned = Object.fromEntries(OPERATIONAL_FIELDS.map((k) => [k, mine[k]]));
+    await sheetsService.updateRowAt(this.sheetName, rowNumber, { ...current.record, ...owned, submissionKey });
     this.invalidateCache();
   }
 

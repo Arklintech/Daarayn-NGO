@@ -124,6 +124,8 @@ export interface Donation {
   opStatus?: "pending" | "partial" | "complete" | "";
   /** Comma-separated follow-up steps still outstanding: designations,notification,audit */
   opPending?: string;
+  /** Queued intake: the public submission reference this donation was created from (empty for donations created by the direct path). */
+  submissionRef?: string;
   /** Email confirmation status tracking */
   confirmationEmailSent?: boolean;
   confirmationEmailSentAt?: string;

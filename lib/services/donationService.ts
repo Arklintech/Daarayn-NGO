@@ -5,6 +5,7 @@ import { auditLogRepository } from "../repositories/auditLogRepository";
 import { notificationRepository } from "../repositories/notificationRepository";
 import { donationCauseRepository, designationsForSelection } from "../repositories/donationCauseRepository";
 import { driveService } from "../google/drive";
+import { sheetsService } from "../google/sheets";
 import { realtimeBroadcaster, type PublishResult } from "../realtime/broadcaster";
 import { RealtimeEvent } from "../realtime/events";
 import { sendDonationEmail } from "../email";
@@ -224,54 +225,58 @@ export class DonationService {
     let confirmationEmailSent = false;
     let confirmationEmailError: string | undefined;
 
-    // 4. Cause relationships (one batched write; idempotent, so recovery can repeat it safely)
-    const designationsStep = async () => {
-      try {
-        await donationCauseRepository.createMissing(designationsForSelection({ id: trackingId, amount: numAmount }, selection.causes, nowIso));
-        pending.delete("designations");
-      } catch (err: any) {
-        console.error(`[DonationService] Cause relationships for ${trackingId} failed:`, err.message);
-      }
+    // 4 to 6. Cause relationships, admin notification and audit record: three tabs, ONE atomic request (R1). All three are written after the
+    // donation row is confirmed. Each remains individually recoverable (donationRecovery is idempotent per step), so a failed request leaves
+    // all three pending and a failed designation READ still lets the notification and the audit record through.
+    const wantedDesignations = designationsForSelection({ id: trackingId, amount: numAmount }, selection.causes, nowIso);
+    const notification = {
+      id: `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      recipientType: "Admin" as const,
+      recipientId: "all",
+      type: "DONATION",
+      title: "New Donation Received",
+      message: `Received ₹${numAmount.toLocaleString()} for ${causeTitle} from ${donorNameClean}${input.upiRef ? ` (Ref: ${input.upiRef})` : ""} — awaiting verification`,
+      read: false,
+      relatedEntityId: trackingId,
+      createdAt: nowIso,
     };
-
-    // 5. Admin notification
-    const notificationStep = async () => {
+    const auditEntry = {
+      id: `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      actor_id: donor.id,
+      actor_role: "donor",
+      action: "SUBMIT_DONATION",
+      entity_type: "Donation",
+      entity_id: trackingId,
+      before_state: null,
+      after_state: { amount: numAmount, cause: causeTitle, causes: selection.causes.map((c) => c.causeId), trackingId, proofDriveFileId, transactionReference: input.upiRef || "", submissionKey },
+      timestamp: nowIso,
+      source: "web_donation_gateway",
+    };
+    const recordsStep = async () => {
+      // FIRST-RUN PATH ONLY. This donation row was created by THIS request (duplicate === false), under an id verified unique, so no
+      // relationship rows can exist for it yet: a replay returns before this step, a killed attempt is finished by donationRecovery (which
+      // keeps its own read-then-append), and two instances racing on one submission key end with exactly one winner. The designations are
+      // therefore appended without a pre-read; the post-append duplicate check below (kept) removes identical duplicates and refuses to
+      // call the step complete when rows with different content share an id.
       try {
-        await notificationRepository.append({
-          id: `NOTIF-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          recipientType: "Admin",
-          recipientId: "all",
-          type: "DONATION",
-          title: "New Donation Received",
-          message: `Received ₹${numAmount.toLocaleString()} for ${causeTitle} from ${donorNameClean}${input.upiRef ? ` (Ref: ${input.upiRef})` : ""} — awaiting verification`,
-          read: false,
-          relatedEntityId: trackingId,
-          createdAt: nowIso,
-        });
+        await sheetsService.appendRowsToTabs([
+          donationCauseRepository.prepareRows(wantedDesignations),
+          await notificationRepository.prepareAppend(notification),
+          await auditLogRepository.prepareAppend(auditEntry),
+        ]);
+        notificationRepository.noteAppended(notification);
+        auditLogRepository.noteAppended(auditEntry);
         pending.delete("notification");
-      } catch (err: any) {
-        console.error(`[DonationService] Notification for ${trackingId} failed:`, err.message);
-      }
-    };
-
-    // 6. Audit log
-    const auditStep = async () => {
-      try {
-        await auditLogRepository.append({
-          id: `AUDIT-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
-          actor_id: donor.id,
-          actor_role: "donor",
-          action: "SUBMIT_DONATION",
-          entity_type: "Donation",
-          entity_id: trackingId,
-          before_state: null,
-          after_state: { amount: numAmount, cause: causeTitle, causes: selection.causes.map((c) => c.causeId), trackingId, proofDriveFileId, transactionReference: input.upiRef || "", submissionKey },
-          timestamp: nowIso,
-          source: "web_donation_gateway",
-        });
         pending.delete("audit");
       } catch (err: any) {
-        console.error(`[DonationService] Audit log for ${trackingId} failed:`, err.message);
+        console.error(`[DonationService] Cause relationships, notification and audit for ${trackingId} failed:`, err.message);
+        return;
+      }
+      try {
+        await donationCauseRepository.settleAfterAppend(wantedDesignations);
+        pending.delete("designations");
+      } catch (err: any) {
+        console.error(`[DonationService] Cause relationships for ${trackingId} could not be verified:`, err.message);
       }
     };
 
@@ -308,7 +313,7 @@ export class DonationService {
       donation.confirmationEmailRetryCount = 1;
     };
 
-    const [, , , event] = await Promise.all([designationsStep(), notificationStep(), auditStep(), eventStep(), emailStep()]);
+    const [, event] = await Promise.all([recordsStep(), eventStep(), emailStep()]);
 
     // 9. One final write: e-mail outcome AND the follow-up state. Only now is the operation "complete".
     const pendingSteps = [...pending];

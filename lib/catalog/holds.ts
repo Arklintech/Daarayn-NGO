@@ -21,3 +21,14 @@ export async function readEligibilityFresh(now: Date = serverNow()): Promise<{ c
   const contents = programContentRepository.hydrate(rows[programContentRepository.tabName] || []);
   return { catalog, held: new Set(contents.filter((c) => masjidHoldState(c, now).held).map((c) => c.id)) };
 }
+
+/**
+ * Eligibility inputs (read FRESH, one request) TOGETHER WITH the header row of another worksheet, in the same batched request. No repository is
+ * initialised (init() would list the spreadsheet and read headers); the rows are self-describing and are hydrated as they arrive. Used by the intake fast path.
+ */
+export async function readEligibilityWithHeaders(headerOf: string[], now: Date = serverNow()): Promise<{ catalog: Awaited<ReturnType<typeof causeRepository.getAll>>; held: Set<string>; headers: Record<string, string[]> }> {
+  const { rows, headers } = await sheetsService.batchGetRowsAndHeaders([causeRepository.tabName, programContentRepository.tabName], headerOf);
+  const catalog = causeRepository.hydrate(rows[causeRepository.tabName] || []);
+  const contents = programContentRepository.hydrate(rows[programContentRepository.tabName] || []);
+  return { catalog, held: new Set(contents.filter((c) => masjidHoldState(c, now).held).map((c) => c.id)), headers };
+}

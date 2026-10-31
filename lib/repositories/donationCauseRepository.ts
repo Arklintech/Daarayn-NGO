@@ -1,6 +1,6 @@
 import { auditLogRepository } from "./auditLogRepository";
 import { BaseRepository } from "./baseRepository";
-import { sheetsService } from "../google/sheets";
+import { sheetsService, type TabAppend } from "../google/sheets";
 
 /**
  * Donation_Causes: one row per (donation, cause) relationship. This is the canonical link between ONE donation
@@ -82,6 +82,23 @@ export class DonationCauseRepository extends BaseRepository<DonationCauseEntity>
     return { ...e, designatedAmount: e.designatedAmount === null ? "" : e.designatedAmount };
   }
 
+  /** The rows of `entities` for a multi-tab append (SheetsService.appendRowsToTabs). */
+  public prepareRows(entities: DonationCauseEntity[]): TabAppend {
+    return { sheetName: this.sheetName, records: entities.map((e) => this.mapEntityToRow(e)), expectedHeaders: this.headers };
+  }
+
+  /**
+   * After the rows of `entities` were appended (possibly together with other tabs): the same duplicate check createMissing makes.
+   * THROWS when a relationship id is held by rows that do NOT say the same thing (an integrity incident that is never auto-resolved), so the
+   * caller keeps the designations step pending and visible instead of reporting it complete.
+   */
+  public async settleAfterAppend(entities: DonationCauseEntity[]): Promise<void> {
+    if (entities.length === 0) return;
+    this.invalidateCache();
+    const conflicts = await this.removeLaterDuplicates(entities.map((e) => e.id));
+    if (conflicts > 0) throw new Error(`${conflicts} designation id(s) are held by rows with different content; resolve them in the Donation_Causes sheet.`);
+  }
+
   /**
    * Writes only the relationships that are not already stored (one read, at most one write). Safe to call again after
    * an interruption: existing rows are never duplicated or overwritten.
@@ -105,7 +122,8 @@ export class DonationCauseRepository extends BaseRepository<DonationCauseEntity>
    * for each id present more than once, every row after the EARLIEST is blanked (rows are cleared, never deleted, so row numbers do not
    * shift). Every racer applies the same deterministic rule on real row positions, so they agree and clearing twice is harmless.
    */
-  private async removeLaterDuplicates(ids: string[]): Promise<void> {
+  private async removeLaterDuplicates(ids: string[]): Promise<number> {
+    let conflicts = 0;
     const { rows } = await sheetsService.getRowsWithNumbers(this.sheetName);
     const wanted = new Set(ids);
     const seen = new Map<string, { rowNumber: number; record: Record<string, any> }>();
@@ -126,10 +144,12 @@ export class DonationCauseRepository extends BaseRepository<DonationCauseEntity>
           .append({ id: `AUDIT-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, actor_id: "system", actor_role: "system", action: "REMOVE_DUPLICATE_DESIGNATION", entity_type: "Designation", entity_id: id, before_state: { row: r.rowNumber, kept: first.rowNumber }, after_state: null, timestamp: new Date().toISOString(), source: "designation_dedupe" } as any)
           .catch(() => undefined);
       } else {
+        conflicts++;
         console.error(`[DonationCauseRepository] INTEGRITY INCIDENT: ${id} appears at rows ${first.rowNumber} and ${r.rowNumber} with different content; nothing was changed.`);
       }
     }
     this.invalidateCache();
+    return conflicts;
   }
 
   /** Overwrites existing relationship rows in one request (used when an admin records the split). */

@@ -24,6 +24,7 @@ import { auditLogRepository } from "../repositories/auditLogRepository";
 import { driveService } from "../google/drive";
 import { realtimeBroadcaster } from "../realtime/broadcaster";
 import { donationState } from "../donations/metrics";
+import { withLease, LeaseBusyError, type Lease } from "../google/allocationLease";
 
 export class AllocationError extends Error {
   constructor(message: string, public readonly httpStatus: 400 | 404 | 409 | 503 = 400) {
@@ -52,9 +53,73 @@ export function activeAllocatedCents(allocations: AllocationEntity[], donationId
     .reduce((sum, a) => sum + cents(a.allocatedAmount), 0);
 }
 
+/** True in a production environment until the owner has verified serialised allocation processing there (ALLOCATION_SERIALIZATION_VERIFIED=true). */
+export function allocationsPaused(env: Record<string, string | undefined> = process.env): boolean {
+  const production = (env.GOOGLE_TARGET_ENV || "").trim() === "production" || (env.VERCEL_ENV || "").trim() === "production";
+  return production && (env.ALLOCATION_SERIALIZATION_VERIFIED || "").trim() !== "true";
+}
+
+/**
+ * Compensating action: reverse a row the SYSTEM must not keep (unverifiable, duplicate key, over the cap). The reversal is idempotent, so it is
+ * retried a few times with a short pause; the caller learns whether it finally stuck. A row that could not be reversed stays ACTIVE and is reported
+ * by the reconciliation page (ALLOCATION_EXCEEDS_DESIGNATION); it is never silently left behind.
+ */
+async function reverseBySystem(id: string, reason: string): Promise<boolean> {
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      await allocationRepository.update(id, { status: "reversed", reversedReason: reason, reversedAt: new Date().toISOString(), reversedBy: "system" });
+      return true;
+    } catch (err: any) {
+      console.error(`[Allocation] system reversal of ${id} failed (attempt ${attempt}/3):`, err?.message);
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 150 * attempt));
+    }
+  }
+  console.error(`[Allocation] INTEGRITY INCIDENT: ${id} could not be reversed by the system and is still ACTIVE (${reason}).`);
+  return false;
+}
+
+/**
+ * Runs `fn` while holding the SAME lease that createAllocation takes for this donation. Every command that changes what an allocation is checked
+ * against (the donation's verified state, its designated amounts) must run under it, otherwise it can interleave with an allocation in flight.
+ */
+export async function withDonationBalanceLock<T>(donationId: string, fn: () => Promise<T>): Promise<T> {
+  try {
+    return await withLease(`alloc:${String(donationId).slice(0, 150)}`, () => fn());
+  } catch (err) {
+    if (err instanceof LeaseBusyError) throw new AllocationError(err.message, 503);
+    throw err;
+  }
+}
+
+/** Refuses (409) while the donation has ACTIVE allocations; reads the allocations fresh. */
+export async function assertNoActiveAllocations(donationId: string, what: string): Promise<void> {
+  const all = await allocationRepository.getAll(true);
+  const active = all.filter((a) => a.donationId === donationId && a.status === "active");
+  if (active.length > 0) {
+    throw new AllocationError(`${what} is not allowed while ${active.length} active allocation(s) exist for donation ${donationId}. Reverse them first.`, 409);
+  }
+}
+
+/**
+ * Creates an allocation. Commands that touch the same donation are SERIALISED by a lease (see lib/google/allocationLease.ts): losers wait for the
+ * holder or are told "busy" (retryable), instead of racing and relying on after-the-fact reversal. The lease is mutual exclusion under bounded-delay
+ * assumptions, NOT a transaction: Sheets cannot reject a stale writer, so the worker re-checks its lease just before writing and the post-write
+ * verification below remains as the backstop.
+ */
 export async function createAllocation(input: CreateAllocationInput): Promise<{ allocation: AllocationEntity; duplicate: boolean }> {
   const amount = Number(input.amount);
   if (!Number.isFinite(amount) || amount <= 0) throw new AllocationError("The allocation amount must be greater than zero.");
+  if (allocationsPaused()) throw new AllocationError("Allocations are paused in this environment until serialised processing has been verified (ALLOCATION_SERIALIZATION_VERIFIED).", 503);
+  try {
+    return await withLease(`alloc:${String(input.donationId).slice(0, 150)}`, (lease) => createAllocationLocked(input, lease));
+  } catch (err) {
+    if (err instanceof LeaseBusyError) throw new AllocationError(err.message, 503);
+    throw err;
+  }
+}
+
+async function createAllocationLocked(input: CreateAllocationInput, lease: Lease): Promise<{ allocation: AllocationEntity; duplicate: boolean }> {
+  const amount = Number(input.amount);
   const requestKey = (input.requestKey || "").trim().slice(0, 100);
 
   // The four authoritative inputs are read FRESH in ONE batched Sheets request (not four), then each repository is refreshed from those rows.
@@ -126,6 +191,10 @@ export async function createAllocation(input: CreateAllocationInput): Promise<{ 
     evidenceDriveFileIds: evidenceIds,
     requestKey,
   };
+  // Self-fencing: do not write unless this worker still holds the CURRENT lease with a safe margin left (a worker that stalled past its window must not write).
+  if (!(await lease.stillValid(Number(process.env.ALLOCATION_LEASE_MIN_REMAINING_MS || 20_000)))) {
+    throw new AllocationError("The exclusive processing window for this donation ended before the allocation could be written. Nothing was allocated; please retry.", 503);
+  }
   await allocationRepository.append(allocation);
 
   // Post-write check for concurrent over-allocation (no transactions in Sheets). Rows are appended in order, so only
@@ -139,11 +208,8 @@ export async function createAllocation(input: CreateAllocationInput): Promise<{ 
     // The row is written but the cap could not be checked (for example Google rate-limited the read). Never leave an unchecked
     // financial row active: reverse it as a system action so the retry (same key) starts clean; if even that fails, say so plainly.
     console.error(`[Allocation] ${allocation.id} written but not verifiable:`, err?.message);
-    try {
-      await allocationRepository.update(allocation.id, { status: "reversed", reversedReason: "Could not verify the designated cap after writing (source error); reversed for safety", reversedAt: new Date().toISOString(), reversedBy: "system" });
-    } catch (undoErr: any) {
-      console.error(`[Allocation] ${allocation.id} could not be reversed after a failed verification:`, undoErr?.message);
-      throw new AllocationError(`The allocation ${allocation.id} may have been written but could not be verified or undone. Check the Allocations tab before retrying.`, 503);
+    if (!(await reverseBySystem(allocation.id, "Could not verify the designated cap after writing (source error); reversed for safety"))) {
+      throw new AllocationError(`The allocation ${allocation.id} may have been written but could not be verified or undone. It may still be ACTIVE: check the Allocations tab before retrying.`, 503);
     }
     throw new AllocationError("The allocation could not be verified because the records service was busy, so it was not kept. Please retry.", 503);
   }
@@ -157,19 +223,18 @@ export async function createAllocation(input: CreateAllocationInput): Promise<{ 
   for (const a of after) if (a.requestKey && !systemReversed(a) && !firstByKey.has(a.requestKey)) firstByKey.set(a.requestKey, a);
   const winner = requestKey ? firstByKey.get(requestKey) : undefined;
   if (winner && winner.id !== allocation.id) {
-    await allocationRepository.update(allocation.id, { status: "reversed", reversedReason: "Duplicate of an identical request (same idempotency key); the earlier allocation stands", reversedAt: new Date().toISOString(), reversedBy: "system" });
+    if (!(await reverseBySystem(allocation.id, "Duplicate of an identical request (same idempotency key); the earlier allocation stands"))) {
+      throw new AllocationError(`The allocation ${allocation.id} duplicates an earlier request (${winner.id}) and could not be reversed automatically. It is still ACTIVE: reverse ${allocation.id} from the Allocations page.`, 503);
+    }
     return { allocation: winner, duplicate: true };
   }
   // Rows that are later duplicates of an earlier same-key request never count toward another request's prefix total.
   const prefix = after.slice(0, mineAt + 1).filter((a) => !a.requestKey || firstByKey.get(a.requestKey)?.id === a.id || systemReversed(a));
   const total = activeAllocatedCents(prefix, donation.id, input.causeId);
   if (total > designated) {
-    await allocationRepository.update(allocation.id, {
-      status: "reversed",
-      reversedReason: "Exceeded the designated amount (concurrent allocation detected)",
-      reversedAt: new Date().toISOString(),
-      reversedBy: "system",
-    });
+    if (!(await reverseBySystem(allocation.id, "Exceeded the designated amount (concurrent allocation detected)"))) {
+      throw new AllocationError(`The allocation ${allocation.id} exceeds the designated amount and could NOT be reversed automatically. It is still ACTIVE and over the limit: reverse ${allocation.id} from the Allocations page now (reconciliation also reports it).`, 503);
+    }
     throw new AllocationError("Another allocation was recorded at the same time and the designated amount would be exceeded. Nothing was allocated; please review and retry.", 409);
   }
 

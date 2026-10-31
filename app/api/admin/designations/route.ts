@@ -4,6 +4,7 @@ import { recordDesignation } from "@/lib/services/designationService";
 import { DesignationError } from "@/lib/donations/designations";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60; // the allocation lease wait (up to 25 s) can run inside this request
 
 /** Records the monetary split of one donation across its related causes. Body: { donationId, split: [{causeId, amount}] }. */
 export async function PUT(request: NextRequest) {

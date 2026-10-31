@@ -76,3 +76,49 @@ describe("tab setup cost on a cold instance", () => {
     await expect(svc.ensureSheetExists("T", HEADERS)).resolves.toBeUndefined();
   });
 });
+
+// D36: a cold instance needs the header row of every worksheet its repositories use; they are fetched together, not one request per tab.
+describe("header prefetch on a cold instance", () => {
+  it("one request fetches the headers of every registered existing tab; later tabs cost nothing", async () => {
+    const svc = await service();
+    const { registerSchema } = await import("@/lib/google/schemaRegistry");
+    for (const t of TABS) {
+      fakeApi.tabs.set(t, [HEADERS, ["1", "x", "y"]]);
+      registerSchema(t, HEADERS);
+    }
+    fakeApi.resetCounts();
+    await svc.ensureSheetExists("Tab0", HEADERS); // listing + ONE header request for all twelve
+    for (const t of TABS.slice(1)) await svc.ensureSheetExists(t, HEADERS); // sequential, different ticks: previously one request each
+    expect(fakeApi.counts["spreadsheets.get"]).toBe(1);
+    expect((fakeApi.counts["values.get"] || 0) + (fakeApi.counts["values.batchGet"] || 0)).toBe(1);
+    expect(await svc.getHeaders("Tab7")).toEqual(HEADERS);
+    expect((fakeApi.counts["values.get"] || 0) + (fakeApi.counts["values.batchGet"] || 0)).toBe(1);
+  });
+
+  it("a registered tab that does not exist is not requested and does not break the batch", async () => {
+    const svc = await service();
+    const { registerSchema } = await import("@/lib/google/schemaRegistry");
+    fakeApi.tabs.set("Here", [HEADERS]);
+    registerSchema("Here", HEADERS);
+    registerSchema("NotCreatedYet", HEADERS);
+    fakeApi.resetCounts();
+    await svc.ensureSheetExists("Here", HEADERS);
+    expect(await svc.getHeaders("Here")).toEqual(HEADERS);
+    expect(fakeApi.counts["values.batchGet"] || 0).toBe(0); // only the requested tab exists: single read
+  });
+
+  it("if the combined request fails, only the requested tab is read on its own; the others are fetched later when needed", async () => {
+    const svc = await service();
+    const { registerSchema } = await import("@/lib/google/schemaRegistry");
+    for (const t of ["P", "Q", "R"]) {
+      fakeApi.tabs.set(t, [HEADERS]);
+      registerSchema(t, HEADERS);
+    }
+    fakeApi.failures.push({ when: "read", method: "values.batchGet", error: new Error("Simulated batch failure") });
+    fakeApi.resetCounts();
+    await svc.ensureSheetExists("P", HEADERS);
+    expect(await svc.getHeaders("P")).toEqual(HEADERS);
+    expect(fakeApi.counts["values.get"]).toBe(1); // the fallback: P alone, not Q and R
+    expect(await svc.getHeaders("Q")).toEqual(HEADERS); // Q was never cached, so it is read now, correctly
+  });
+});

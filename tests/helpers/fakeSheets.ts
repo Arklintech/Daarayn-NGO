@@ -101,6 +101,45 @@ export class FakeSheets {
     records.forEach((r) => t.rows.push(this.toRow(t.headers, r)));
     return this.reported(first);
   }
+  /** ONE request: all rows of some tabs plus the header row of others (a missing worksheet fails like Google: "Unable to parse range"). */
+  async batchGetRowsAndHeaders(names: string[], headerOf: string[]) {
+    await this.tick();
+    for (const n of [...names, ...headerOf]) if (!this.tabs.has(n)) throw new Error(`Unable to parse range: '${n}'!A1`);
+    const rows: Record<string, Record<string, any>[]> = {};
+    for (const n of names) rows[n] = this.records(n);
+    const headers: Record<string, string[]> = {};
+    for (const n of headerOf) headers[n] = [...this.tab(n).headers];
+    return { rows, headers };
+  }
+  /** One literal row appended in the order of `headers` (RAW: nothing is parsed). */
+  async appendRowRaw(name: string, record: Record<string, any>, headers: string[]) {
+    await this.tick();
+    this.guardWrite();
+    this.tab(name).rows.push(headers.map((h) => this.str(record[h])));
+  }
+  /** ONE atomic request appending to several tabs: a failure appends nothing anywhere (like spreadsheets.batchUpdate). */
+  async appendRowsToTabs(batches: { sheetName: string; records: Record<string, any>[]; expectedHeaders: string[] }[]) {
+    await this.tick();
+    this.guardWrite();
+    for (const b of batches) {
+      if (b.records.length === 0) continue;
+      const t = this.tab(b.sheetName);
+      if (t.headers.length === 0) t.headers = [...b.expectedHeaders];
+      b.records.forEach((r) => this.growHeaders(t, r));
+      b.records.forEach((r) => t.rows.push(this.toRow(t.headers, r)));
+    }
+  }
+  /** Literal-safe update of NAMED cells of known rows, one atomic request; no other cell is touched. */
+  async updateFieldsLiteral(name: string, updates: { rowNumber: number; fields: Record<string, any> }[]) {
+    await this.tick();
+    this.guardWrite();
+    const t = this.tab(name);
+    for (const u of updates) {
+      this.growHeaders(t, u.fields);
+      const row = (t.rows[u.rowNumber - 2] ??= []);
+      for (const [k, v] of Object.entries(u.fields)) row[t.headers.indexOf(k)] = this.str(v);
+    }
+  }
   async batchAppendRows(name: string, records: Record<string, any>[], expectedHeaders: string[]) {
     if (records.length) await this.appendRows(name, records, expectedHeaders);
   }

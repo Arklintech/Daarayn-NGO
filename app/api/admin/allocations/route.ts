@@ -2,8 +2,11 @@ import { requireAdmin } from "@/lib/server/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { allocationRepository } from "@/lib/repositories/allocationRepository";
 import { createAllocation, reverseAllocation, AllocationError } from "@/lib/services/allocationService";
+import { runWithPriority } from "@/lib/google/requestControl";
 
 export const dynamic = "force-dynamic";
+/** The lease for serialised allocation processing (75 s by default) must outlive the function: Vercel kills it at this limit, so a stale worker cannot outlive its lease. */
+export const maxDuration = 60;
 
 const MAX_EVIDENCE_BYTES = 15 * 1024 * 1024;
 const EVIDENCE_TYPES = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
@@ -23,7 +26,7 @@ export async function GET(request: NextRequest) {
 }
 
 /** Creates an allocation (JSON, or multipart with an optional evidence file). */
-export async function POST(request: NextRequest) {
+async function POST_handler(request: NextRequest) {
   const admin = await requireAdmin(request);
   if (admin instanceof NextResponse) return admin;
   try {
@@ -60,7 +63,7 @@ export async function POST(request: NextRequest) {
 }
 
 /** Reverses an allocation (kept, never deleted). Body: { id, reason }. */
-export async function PATCH(request: NextRequest) {
+async function PATCH_handler(request: NextRequest) {
   const admin = await requireAdmin(request);
   if (admin instanceof NextResponse) return admin;
   try {
@@ -73,3 +76,7 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: false, error: "The allocation could not be reversed." }, { status: 500 });
   }
 }
+
+/* D29: request priority for the shared Google budget (P0/P1 financial, P3 public catalogue). */
+export const POST = (...args: Parameters<typeof POST_handler>) => runWithPriority("P0", () => POST_handler(...args));
+export const PATCH = (...args: Parameters<typeof PATCH_handler>) => runWithPriority("P0", () => PATCH_handler(...args));

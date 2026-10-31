@@ -208,3 +208,81 @@ describe("LIVE controlled quota exhaustion and recovery (D23)", () => {
     }
   }, 280_000);
 });
+
+describe("LIVE competing allocations against one constrained balance (D30, serialised by the coordinator lease)", () => {
+  const survey: string[] = [];
+  it.each([2, 6, 12, 20])("%i simultaneous allocations of 30 against a verified, designated 100: exactly the fitting ones are recorded, the rest refused, no surplus row", async (n) => {
+    if (blocked || !process.env.LIVE_ALLOC) return; // only with LIVE_ALLOC set and a verified test target
+    vi.resetModules();
+    process.env.ALLOCATION_LEASE_WAIT_MS = "280000";
+    const { donationService } = await import("@/lib/services/donationService");
+    const { donationRepository } = await import("@/lib/repositories/donationRepository");
+    const { createAllocation } = await import("@/lib/services/allocationService");
+    const { setLeaseBackend, CoordinatorLeaseBackend } = await import("@/lib/google/allocationLease");
+    if (process.env.LIVE_COORDINATOR_URL) setLeaseBackend(new CoordinatorLeaseBackend(process.env.LIVE_COORDINATOR_URL, process.env.LIVE_COORDINATOR_TOKEN!, 1500));
+    expect((await saveCause(ids.C, "Active")).status).toBe(200);
+    const d = await donationService.processDonation({ donorName: `${RUN} Alloc${n}`, donorContact: `${RUN.toLowerCase()}-alloc${n}@example.invalid`, amount: 100, cause: ids.C, selectedCauses: [{ causeId: ids.C }], screenshotBuffer: Buffer.from("png"), screenshotFilename: "p.png", screenshotMimeType: "image/png", submissionKey: `${RUN}-ALLOC-BASE-${n}` } as any);
+    await donationRepository.updateStatus(d.donationId, "completed");
+    resetGoogleUsage();
+    const t0 = Date.now();
+    const res = await Promise.allSettled(Array.from({ length: n }, (_, i) => createAllocation({ donationId: d.donationId, causeId: ids.C, amount: 30, requestKey: `${RUN}-AL-${n}-${i}`, actorEmail: "live@example.invalid" })));
+    const usage: any = googleUsageSnapshot();
+    const alloc = (await col("Allocations")).filter((a) => a.donationId === d.donationId);
+    const active = alloc.filter((a) => a.status === "active");
+    const sum = active.reduce((s, a) => s + Number(a.allocatedAmount), 0);
+    const ok = res.filter((r) => r.status === "fulfilled").length;
+    const refusedStatuses = [...new Set(res.filter((r) => r.status === "rejected").map((r: any) => r.reason?.httpStatus))].join("/") || "-";
+    const audits = (await col("Audit_Log")).filter((a) => a.action === "CREATE_ALLOCATION" && active.some((x) => x.id === a.entity_id));
+    const line = `live serialised allocation x${n}: ${Math.round((Date.now() - t0) / 1000)} s, admitted ${ok}, refused ${res.length - ok} (statuses ${refusedStatuses}), rows ${alloc.length}, active ${active.length}, active total ${sum} of 100, system-reversed rows ${alloc.filter((a) => a.reversedBy === "system").length}, audit rows for the active allocations ${audits.length}, reads ${usage.byKind.read}, writes ${usage.byKind.write}, retries ${usage.byKind.retries}, 429s ${usage.total.quotaRejections}`;
+    survey.push(line);
+    console.log(line);
+    expect(sum).toBe(Math.min(n, 3) * 30);
+    expect(ok).toBe(Math.min(n, 3));
+    expect(alloc).toHaveLength(active.length); // nothing written and then reversed
+    expect(audits).toHaveLength(active.length);
+  }, 290_000);
+
+  it("a worker that died holding the lease does not block allocations after its lease expires", async (ctx) => {
+    need(ctx);
+    if (!process.env.LIVE_ALLOC) ctx.skip("set LIVE_ALLOC to run");
+    vi.resetModules();
+    const { donationService } = await import("@/lib/services/donationService");
+    const { donationRepository } = await import("@/lib/repositories/donationRepository");
+    const { createAllocation } = await import("@/lib/services/allocationService");
+    const { setLeaseBackend, CoordinatorLeaseBackend } = await import("@/lib/google/allocationLease");
+    const backend = new CoordinatorLeaseBackend(process.env.LIVE_COORDINATOR_URL!, process.env.LIVE_COORDINATOR_TOKEN!, 1500);
+    setLeaseBackend(backend);
+    const d = await donationService.processDonation({ donorName: `${RUN} AllocDead`, donorContact: `${RUN.toLowerCase()}-dead@example.invalid`, amount: 100, cause: ids.C, selectedCauses: [{ causeId: ids.C }], screenshotBuffer: Buffer.from("png"), screenshotFilename: "p.png", screenshotMimeType: "image/png", submissionKey: `${RUN}-ALLOC-DEAD` } as any);
+    await donationRepository.updateStatus(d.donationId, "completed");
+    const dead = await backend.acquire(`alloc:${d.donationId}`, "dead-worker", 3000); // never released
+    expect(dead.ok).toBe(true);
+    const t0 = Date.now();
+    const r = await createAllocation({ donationId: d.donationId, causeId: ids.C, amount: 40, requestKey: `${RUN}-AL-DEAD`, actorEmail: "live@example.invalid" });
+    console.log(`live interrupted-worker recovery: waited ${Math.round((Date.now() - t0) / 1000)} s for the dead worker's lease, then recorded allocation ${r.allocation.id}`);
+    expect(r.duplicate).toBe(false);
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(2000);
+  }, 120_000);
+});
+
+describe("LIVE burst capacity (D29, 2x of six concurrent donations)", () => {
+  it(`${process.env.LIVE_BURST || 12} simultaneous distinct donations at the default wait limit: truthful outcomes, no duplicates`, async (ctx) => {
+    need(ctx);
+    if (!process.env.LIVE_BURST) ctx.skip("set LIVE_BURST to run");
+    const n = Number(process.env.LIVE_BURST);
+    expect((await saveCause(ids.A, "Active")).status).toBe(200);
+    const inst = await Promise.all(Array.from({ length: n }, () => instance())).catch(async () => { const out: any[] = []; for (let i = 0; i < n; i++) out.push(await instance()); return out; });
+    resetGoogleUsage();
+    const t0 = Date.now();
+    const res = await Promise.all(inst.map((call, i) => call(ids.A, 300 + i)));
+    const usage: any = googleUsageSnapshot();
+    const accepted = res.filter((r) => r.status === 200);
+    const refused = res.filter((r) => r.status !== 200);
+    const rows = (await col("Donations")).filter((d) => String(d.donorName).startsWith(RUN) && Number(d.amount) >= 300 && Number(d.amount) < 300 + n);
+    const completed = rows.filter((r) => r.id !== "PENDING");
+    console.log(`burst ${n}: ${Math.round((Date.now() - t0) / 1000)} s, accepted ${accepted.length}, refused ${refused.length} (statuses ${[...new Set(refused.map((r) => r.status))].join("/") || "-"}), rows ${rows.length} (completed ${completed.length}, PENDING ${rows.length - completed.length}), reads ${usage.byKind.read}, writes ${usage.byKind.write}, retries ${usage.byKind.retries}, 429s ${usage.total.quotaRejections}, longest wait ${Math.round(usage.byKind.maxWaitMs / 1000)} s, refusals counted ${usage.byKind.backpressure}, rolling peak reads/60s ${usage.rolling.read.peak} writes/60s ${usage.rolling.write.peak}, shed ${JSON.stringify(usage.shed)}`);
+    expect(usage.total.quotaRejections).toBe(0);
+    expect(new Set(accepted.map((r) => r.body.trackingId)).size).toBe(accepted.length);
+    expect(completed.length).toBe(accepted.length); // no completed row without a success answer, no success answer without a completed row
+    for (const r of refused) expect([503, 409]).toContain(r.status); // refusals are truthful and retryable, never an error that looks final
+  }, 290_000);
+});

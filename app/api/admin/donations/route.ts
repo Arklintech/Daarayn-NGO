@@ -4,11 +4,14 @@ import { donationRepository, DonationWriteError } from "@/lib/repositories/donat
 import { auditLogRepository } from "@/lib/repositories/auditLogRepository";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { RealtimeEvent } from "@/lib/realtime/events";
-import { canonicalStatus, DONATION_STATUSES, type DonationStatus } from "@/lib/donations/metrics";
+import { canonicalStatus, donationState, DONATION_STATUSES, type DonationStatus } from "@/lib/donations/metrics";
+import { withDonationBalanceLock, assertNoActiveAllocations, AllocationError } from "@/lib/services/allocationService";
 import { donationCauseRepository } from "@/lib/repositories/donationCauseRepository";
+import { runWithPriority } from "@/lib/google/requestControl";
+import { financialOperationsPaused } from "@/lib/financialActivation";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30; // Sheets/Drive/SMTP calls can outlast the platform default
+export const maxDuration = 60; // Sheets/Drive/SMTP calls can outlast the platform default; the allocation lease wait (up to 25 s) can run inside a status change
 
 // In-memory cache with 2-minute TTL
 let cachedDonations: any = null;
@@ -79,9 +82,10 @@ export async function GET(request: Request) {
   }
 }
 
-export async function PATCH(req: NextRequest) {
+async function PATCH_handler(req: NextRequest) {
   const adminAuth = await requireAdmin(req);
   if (adminAuth instanceof NextResponse) return adminAuth;
+  if (financialOperationsPaused()) return NextResponse.json({ error: "Donation changes are paused in this environment until financial activation is approved.", paused: true }, { status: 503 });
 
   let body: any;
   try {
@@ -105,8 +109,15 @@ export async function PATCH(req: NextRequest) {
   }
 
   try {
-    // 1. Persist to the authoritative sheet (fails rather than guessing on missing or duplicate ids)
-    const { before, after, changed } = await donationRepository.updateStatus(id, status, expectedStatus);
+    // 1. Persist to the authoritative sheet (fails rather than guessing on missing or duplicate ids).
+    // EVERY status change of one donation runs under the allocation lease of that donation, and the expected-status comparison happens inside it
+    // on a fresh read: two administrators changing the same donation at the same moment are serialised, the second one is told the status has
+    // changed (409) instead of silently overwriting the first. Leaving the verified state is also refused while active allocations exist.
+    const leavesVerified = donationState(status) !== "received";
+    const { before, after, changed } = await withDonationBalanceLock(id, async () => {
+      if (leavesVerified) await assertNoActiveAllocations(id, "Changing the status of this donation");
+      return donationRepository.updateStatus(id, status, expectedStatus);
+    });
 
     if (!changed) {
       return NextResponse.json({ success: true, id, status, previousStatus: canonicalStatus(before.status), changed: false });
@@ -148,7 +159,13 @@ export async function PATCH(req: NextRequest) {
         { status: error.httpStatus }
       );
     }
+    if (error instanceof AllocationError) {
+      return NextResponse.json({ success: false, error: error.message, code: error.httpStatus === 409 ? "ACTIVE_ALLOCATIONS" : "BUSY" }, { status: error.httpStatus, ...(error.httpStatus === 503 ? { headers: { "Retry-After": "5" } } : {}) });
+    }
     console.error("[AdminDonationsAPI] Update error:", error);
     return NextResponse.json({ success: false, error: `The change was not saved: ${error.message}` }, { status: 503 });
   }
 }
+
+/* D29: request priority for the shared Google budget (P0/P1 financial, P3 public catalogue). */
+export const PATCH = (...args: Parameters<typeof PATCH_handler>) => runWithPriority("P1", () => PATCH_handler(...args));

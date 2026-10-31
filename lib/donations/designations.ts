@@ -7,7 +7,7 @@
 import type { DonationCauseEntity } from "../repositories/donationCauseRepository";
 
 export class DesignationError extends Error {
-  constructor(message: string, public readonly httpStatus: 400 | 409 = 400) {
+  constructor(message: string, public readonly httpStatus: 400 | 409 | 503 = 400) {
     super(message);
   }
 }

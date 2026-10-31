@@ -355,7 +355,7 @@ describe("G. allocations and evidence", () => {
 
   // D3-F6: with several simultaneous requests every contender rolled itself back (each saw the combined total), so
   // nobody received funds that fit. The earliest rows must win and only the surplus must lose.
-  it("J2: simultaneous allocations that do not all fit let the earliest rows win; the total never exceeds the designation", async () => {
+  it("J2: simultaneous allocations that do not all fit: the earliest commands win, the loser is refused BEFORE any write (D30 serialisation), the total never exceeds the designation", async () => {
     const w = await world();
     const d = await verifiedDonation(w);
     const results = await Promise.allSettled([
@@ -368,7 +368,8 @@ describe("G. allocations and evidence", () => {
     expect(active.reduce((s, r) => s + Number(r.allocatedAmount), 0)).toBeLessThanOrEqual(1000);
     expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(2);
     expect(active).toHaveLength(2);
-    expect(rows.filter((r) => r.status === "reversed")).toHaveLength(1); // the loser is kept, marked reversed by "system"
+    expect(rows).toHaveLength(2); // D30: serialised by the lease, the loser wrote nothing (previously: a surplus row reversed by "system")
+    expect(rows.filter((r) => r.status === "reversed")).toHaveLength(0);
   });
 
   it("allocation routes are admin-only and validate input", async () => {
@@ -387,13 +388,13 @@ describe("H. interrupted multi-step operations", () => {
   it("a failed follow-up write leaves the donation once, marks it partial, shows it as an integrity exception, and recovery completes it idempotently", async () => {
     const w = await world();
     await donate(w, { donorContact: "warm@example.org", submissionKey: "warm" }); // tabs exist
-    // The donation row succeeds; writing its cause relationships fails permanently.
-    fakeApi.failures.push({ when: "write", method: "values.append", error: permissionError(), match: (a) => String(a?.range).includes("Donation_Causes") });
+    // The donation row succeeds; the ONE atomic request that writes the cause relationships, notification and audit record fails permanently (R1: all three or none).
+    fakeApi.failures.push({ when: "write", method: "spreadsheets.batchUpdate", error: permissionError(), match: (a) => (a?.requests || []).some((r: any) => r.appendCells) });
     const d = await donate(w, { donorContact: "h@example.org", amount: 700, selectedCauses: ["EDU", "FOOD"], submissionKey: "h1" });
-    expect(d).toMatchObject({ success: true, operationStatus: "partial", pendingSteps: ["designations"] });
+    expect(d).toMatchObject({ success: true, operationStatus: "partial", pendingSteps: ["designations", "notification", "audit"] });
 
     const row = fakeApi.records("Donations").find((r) => r.id === d.donationId)!;
-    expect(row).toMatchObject({ opStatus: "partial", opPending: "designations" });
+    expect(row).toMatchObject({ opStatus: "partial", opPending: "designations,notification,audit" });
     expect(fakeApi.records("Donations").filter((r) => r.submissionKey === "h1")).toHaveLength(1);
     expect(fakeApi.records("Donation_Causes").filter((r) => r.donationId === d.donationId)).toHaveLength(0);
 
@@ -406,11 +407,11 @@ describe("H. interrupted multi-step operations", () => {
     const board = await dash(w);
     expect(board.integrity.exceptions.some((e) => e.type === "INCOMPLETE_DONATION" && e.entityId === d.donationId)).toBe(true);
     const report = await (await w.routes.reconciliation.GET(json("/r", "GET"))).json();
-    expect(report.incomplete).toEqual([{ id: d.donationId, status: "partial", outstanding: ["designations"] }]);
+    expect(report.incomplete).toEqual([{ id: d.donationId, status: "partial", outstanding: ["designations", "notification", "audit"] }]);
 
     // recovery repeats ONLY the missing step, is audited, and is safe to run twice
     const rec = await (await w.routes.reconciliation.POST(json("/r", "POST", { donationIds: [d.donationId] }))).json();
-    expect(rec.results[0]).toMatchObject({ recovered: ["designations"], remaining: [] });
+    expect(rec.results[0]).toMatchObject({ recovered: ["designations", "notification", "audit"], remaining: [] });
     expect(fakeApi.records("Donation_Causes").filter((r) => r.donationId === d.donationId).map((r) => r.causeId).sort()).toEqual(["EDU", "FOOD"]);
     expect(fakeApi.records("Donations").find((r) => r.id === d.donationId)).toMatchObject({ opStatus: "complete", opPending: "" });
     await w.routes.reconciliation.POST(json("/r", "POST", { donationIds: [d.donationId] }));

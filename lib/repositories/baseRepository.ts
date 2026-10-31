@@ -1,4 +1,4 @@
-import { sheetsService } from "../google/sheets";
+import { sheetsService, type TabAppend } from "../google/sheets";
 import { registerSchema } from "../google/schemaRegistry";
 
 export abstract class BaseRepository<T extends { id: string }> {
@@ -59,17 +59,26 @@ export abstract class BaseRepository<T extends { id: string }> {
    */
   public hydrate(rows: Record<string, any>[], fetchedAt = Date.now()): T[] {
     this.cache.clear();
-    const entities: T[] = [];
+    const all: T[] = [];
     for (const row of rows) {
       if (!row) continue;
       // Check the mapped id: some tabs key rows by another column (Audit_Log uses event_id).
       const entity = this.mapRowToEntity(row);
       if (!entity.id) continue;
-      this.cache.set(entity.id, entity);
-      entities.push(entity);
+      all.push(entity);
     }
+    const entities = this.canonical(all);
+    for (const entity of entities) this.cache.set(entity.id, entity);
     this.cacheLoaded = true;
     this.lastFetchTime = fetchedAt;
+    return entities;
+  }
+
+  /**
+   * The rows the application is allowed to READ, in sheet order. The default keeps every row. A repository overrides this only for a copy it can PROVE is a
+   * copy (see DonationRepository): a rule that merged rows on weaker evidence could hide a real conflict.
+   */
+  protected canonical(entities: T[]): T[] {
     return entities;
   }
 
@@ -133,6 +142,17 @@ export abstract class BaseRepository<T extends { id: string }> {
    * Appends a NEW record with a unique id (notification, audit entry, ...). Unlike save() it does not first read the
    * tab to check whether the id exists, which saves a Sheets read per record on hot paths.
    */
+  /** The row `append` would write, so several tabs can be appended in ONE request (SheetsService.appendRowsToTabs). Writes nothing. */
+  public async prepareAppend(entity: T): Promise<TabAppend> {
+    await this.init();
+    return { sheetName: this.sheetName, records: [this.mapEntityToRow(entity)], expectedHeaders: this.headers };
+  }
+
+  /** After a multi-tab append that included `entity` succeeded: the same cache update `append` makes. */
+  public noteAppended(entity: T): void {
+    this.cache.set(entity.id, entity);
+  }
+
   public async append(entity: T): Promise<T> {
     await this.init();
     await sheetsService.appendRow(this.sheetName, this.mapEntityToRow(entity), this.headers);
