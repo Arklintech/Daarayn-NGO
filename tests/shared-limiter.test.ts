@@ -173,9 +173,9 @@ describe("D21: coordinator failure policy", () => {
     const tight = { GOOGLE_SHEETS_MAX_WAIT_MS: "150" };
     Object.assign(process.env, tight);
     (globalThis as any).__daaraynRetrySleep = async () => undefined;
-    await acquireSlot("read");
-    await acquireSlot("read");
-    await expect(acquireSlot("read")).rejects.toMatchObject({ code: "GOOGLE_BACKPRESSURE" });
+    await acquireSlot("read", process.env, "P0");
+    await acquireSlot("read", process.env, "P0");
+    await expect(acquireSlot("read", process.env, "P0")).rejects.toMatchObject({ code: "GOOGLE_BACKPRESSURE" });
     expect(limiterConfig().maxWaitMs).toBe(150);
   });
 });
@@ -256,7 +256,7 @@ describe("D22: production never silently falls back to a process-local limiter",
     setLimiterBackend(new MemoryLimiterBackend());
     const s = limiterStatus({ GOOGLE_TARGET_ENV: "production" });
     expect(s).toMatchObject({ mode: "process-local", production: true, ready: false });
-    expect(s.reason).toContain("GOOGLE_LIMITER_REDIS_REST_URL");
+    expect(s.reason).toContain("GOOGLE_LIMITER_URL");
     expect(limiterStatus({ VERCEL_ENV: "production" }).ready).toBe(false);
   });
 
@@ -311,5 +311,43 @@ describe("D25: the project-level budget is shared by every service identity", ()
     process.env.GOOGLE_SHEETS_PROJECT_READS_PER_MINUTE = String(RATE);
     await a.penalize("read", 4000, Date.now());
     expect((await b.reserve("read", projectCfg, Date.now())) as number).toBeGreaterThanOrEqual(3500);
+  });
+});
+
+describe("D30: one endpoint contract (preferred names and legacy aliases)", () => {
+  it("GOOGLE_LIMITER_URL / GOOGLE_LIMITER_TOKEN select the shared backend; the older REDIS_REST names still do", () => {
+    expect(createBackendFromEnv({ GOOGLE_LIMITER_URL: "https://c.invalid", GOOGLE_LIMITER_TOKEN: "t" }).mode).toBe("shared");
+    expect(createBackendFromEnv({ GOOGLE_LIMITER_REDIS_REST_URL: "https://c.invalid", GOOGLE_LIMITER_REDIS_REST_TOKEN: "t" }).mode).toBe("shared");
+    expect(createBackendFromEnv({ GOOGLE_LIMITER_URL: "https://c.invalid" }).mode).toBe("process-local"); // a URL without a token is never half-configured
+    const b: any = createBackendFromEnv({ GOOGLE_LIMITER_URL: "https://new.invalid", GOOGLE_LIMITER_TOKEN: "t", GOOGLE_LIMITER_REDIS_REST_URL: "https://old.invalid", GOOGLE_LIMITER_REDIS_REST_TOKEN: "o" });
+    expect(b.o.url).toBe("https://new.invalid"); // the preferred name wins
+  });
+});
+
+describe("D30: artificial network latency to the coordinator", () => {
+  it("added latency below the timeout only slows each reservation; above it the request is refused unsent", async () => {
+    redis.mode.delayMs = 250;
+    const slow = client("fail_closed", { timeoutMs: 800 });
+    const t0 = Date.now();
+    await expect(slow.reserve("read", cfg, Date.now())).resolves.toBe(0);
+    expect(Date.now() - t0).toBeGreaterThanOrEqual(240);
+    redis.mode.delayMs = 1200;
+    await expect(client("fail_closed", { timeoutMs: 500 }).reserve("read", cfg, Date.now())).rejects.toBeInstanceOf(LimiterUnavailableError);
+  });
+});
+
+describe("D31: conflicting backend configuration fails closed", () => {
+  it("both the raw Redis URL and the HTTPS coordinator configured: not ready, with an explicit reason, and requests are refused unsent", async () => {
+    const env = { GOOGLE_LIMITER_REDIS_URL: "redis://x.invalid:6379", GOOGLE_LIMITER_URL: "https://c.invalid", GOOGLE_LIMITER_TOKEN: "t" };
+    setLimiterBackend(createBackendFromEnv(env));
+    const s = limiterStatus(env);
+    expect(s.ready).toBe(false);
+    expect(s.conflict).toBe(true);
+    expect(s.reason).toContain("GOOGLE_LIMITER_REDIS_URL");
+    await expect(acquireSlot("read", { ...process.env, ...env })).rejects.toMatchObject({ code: "GOOGLE_LIMITER_NOT_CONFIGURED" });
+  });
+  it("only one backend configured is not a conflict", () => {
+    expect(limiterStatus({ GOOGLE_LIMITER_URL: "https://c.invalid", GOOGLE_LIMITER_TOKEN: "t" }).conflict).toBeUndefined();
+    expect(limiterStatus({ GOOGLE_LIMITER_REDIS_URL: "redis://x.invalid" }).conflict).toBeUndefined();
   });
 });

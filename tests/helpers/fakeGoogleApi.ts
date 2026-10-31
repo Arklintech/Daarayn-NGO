@@ -24,6 +24,8 @@ export const permissionError = () => new ApiError(403, "The caller does not have
 export const notFoundError = () => new ApiError(404, "Requested entity was not found.");
 export const badRequestError = () => new ApiError(400, "Invalid values in request");
 
+/** USER_ENTERED: a leading apostrophe makes the cell literal text and is not stored. */
+const unq = (c: unknown) => String(c ?? "").replace(/^'/, "");
 const colToIndex = (col: string) => col.split("").reduce((n, c) => n * 26 + (c.charCodeAt(0) - 64), 0) - 1;
 
 /** "'Tab'!A5:F204" | "'Tab'!1:1" | "'Tab'!A:ZZ" | "'Tab'!A7" -> { tab, startRow, endRow|null, startCol } */
@@ -43,6 +45,12 @@ function parseRange(range: string) {
 
 export class FakeGoogleApi {
   tabs = new Map<string, string[][]>(); // row 0 = header row (sheet row 1)
+  /** Numeric sheet ids (what appendCells addresses a tab by). */
+  private tabIds = new Map<string, number>();
+  private idFor(title: string) {
+    if (!this.tabIds.has(title)) this.tabIds.set(title, this.tabIds.size + 1);
+    return this.tabIds.get(title)!;
+  }
   counts: ApiCounts = this.blankCounts();
   /** Errors thrown (in order) by the next matching API calls: { when: "write"|"read"|"any", error } */
   failures: { when: "write" | "read" | "any"; error: any; method?: string; /** only fail calls whose request args match (e.g. a given tab) */ match?: (args: any) => boolean }[] = [];
@@ -57,6 +65,7 @@ export class FakeGoogleApi {
   }
   reset() {
     this.tabs.clear();
+    this.tabIds.clear();
     this.failures = [];
     this.resetCounts();
   }
@@ -71,7 +80,7 @@ export class FakeGoogleApi {
   }
   private tab(name: string) {
     const t = this.tabs.get(name);
-    if (!t) throw notFoundError();
+    if (!t) throw new ApiError(400, `Unable to parse range: '${name}'!A1`);
     return t;
   }
   private slice(range: string) {
@@ -94,7 +103,7 @@ export class FakeGoogleApi {
       const idx = r.startRow - 1 + k;
       while (rows.length <= idx) rows.push([]);
       const row = rows[idx];
-      v.forEach((cell, c) => (row[r.startCol + c] = String(cell ?? "")));
+      v.forEach((cell, c) => (row[r.startCol + c] = unq(cell)));
     });
   }
 
@@ -106,18 +115,56 @@ export class FakeGoogleApi {
       spreadsheets: {
         async get() {
           await self.hit("spreadsheets.get", "read");
-          return { data: { sheets: [...self.tabs.keys()].map((title) => ({ properties: { title } })) } };
+          return { data: { sheets: [...self.tabs.keys()].map((title) => ({ properties: { title, sheetId: self.idFor(title) } })) } };
         },
         async batchUpdate({ requestBody }: any) {
-          await self.hit("spreadsheets.batchUpdate", "write");
-          for (const req of requestBody.requests || []) {
+          await self.hit("spreadsheets.batchUpdate", "write", { requests: requestBody.requests });
+          const requests = requestBody.requests || [];
+          const replies: any[] = [];
+          // appendCells is validated as a whole first: like Google's batchUpdate, either every request applies or none does.
+          const target = (id: number) => {
+            const title = [...self.tabIds.entries()].find(([, v]) => v === id)?.[0];
+            if (!title || !self.tabs.has(title)) throw badRequestError();
+            return title;
+          };
+          for (const req of requests) {
+            if (req.appendCells) target(req.appendCells.sheetId);
+            if (req.updateCells) target(req.updateCells.start.sheetId);
+          }
+          for (const req of requests) {
             if (req.addSheet) {
               const title = req.addSheet.properties.title;
               if (self.tabs.has(title)) throw new ApiError(400, `Invalid requests[0].addSheet: A sheet with the name "${title}" already exists. Please enter another name.`);
               self.tabs.set(title, []);
-            }
+              replies.push({ addSheet: { properties: { title, sheetId: self.idFor(title) } } });
+            } else if (req.updateCells) {
+              const rowsArr = self.tabs.get(target(req.updateCells.start.sheetId))!;
+              const col0 = req.updateCells.start.columnIndex || 0;
+              (req.updateCells.rows || []).forEach((row: any, k: number) => {
+                const idx = req.updateCells.start.rowIndex + k;
+                while (rowsArr.length <= idx) rowsArr.push([]);
+                (row.values || []).forEach((c: any, j: number) => {
+                  const v = c?.userEnteredValue;
+                  rowsArr[idx][col0 + j] = !v ? "" : v.stringValue !== undefined ? String(v.stringValue) : v.numberValue !== undefined ? String(v.numberValue) : v.boolValue !== undefined ? (v.boolValue ? "TRUE" : "FALSE") : "";
+                });
+              });
+              replies.push({});
+            } else if (req.appendCells) {
+              const rows = self.tabs.get(target(req.appendCells.sheetId))!;
+              for (const row of req.appendCells.rows || []) {
+                rows.push((row.values || []).map((c: any) => {
+                  const v = c?.userEnteredValue;
+                  if (!v) return "";
+                  if (v.stringValue !== undefined) return String(v.stringValue);
+                  if (v.numberValue !== undefined) return String(v.numberValue);
+                  if (v.boolValue !== undefined) return v.boolValue ? "TRUE" : "FALSE";
+                  return "";
+                }));
+              }
+              replies.push({});
+            } else replies.push({});
           }
-          return { data: {} };
+          return { data: { replies } };
         },
         values: {
           async get({ range }: any) {
@@ -128,12 +175,12 @@ export class FakeGoogleApi {
             await self.hit("values.batchGet", "read");
             return { data: { valueRanges: ranges.map((r: string) => ({ values: self.slice(r) })) } };
           },
-          async append({ range, requestBody }: any) {
+          async append({ range, requestBody, valueInputOption }: any) {
             await self.hit("values.append", "write", { range });
             const { tab } = parseRange(range);
             const rows = self.tab(tab);
             const first = rows.length + 1;
-            requestBody.values.forEach((v: any[]) => rows.push(v.map((c) => String(c ?? ""))));
+            requestBody.values.forEach((v: any[]) => rows.push(v.map((c) => (valueInputOption === "RAW" ? String(c ?? "") : unq(c)))));
             const last = rows.length;
             return { data: { updates: { updatedRange: `'${tab}'!A${first}:Z${last}` } } };
           },

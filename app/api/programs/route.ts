@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublicPrograms } from "@/lib/catalog/programs";
+import { runWithPriority } from "@/lib/google/requestControl";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30; // Sheets reads can outlast the platform default
@@ -9,7 +10,7 @@ export const maxDuration = 30; // Sheets reads can outlast the platform default
  * Funding progress counts verified donations explicitly designated to the program's cause. No fallback content: when the
  * catalog cannot be read this answers 503.
  */
-export async function GET(request: NextRequest) {
+async function GET_handler(request: NextRequest) {
   try {
     const params = new URL(request.url).searchParams;
     const id = params.get("id");
@@ -25,3 +26,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "The programs could not be read from Google Sheets." }, { status: 503, headers: { "Cache-Control": "no-store" } });
   }
 }
+
+/* D29: request priority for the shared Google budget (P0/P1 financial, P3 public catalogue). */
+export const GET = (...args: Parameters<typeof GET_handler>) => runWithPriority("P3", () => GET_handler(...args));

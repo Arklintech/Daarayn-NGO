@@ -7,6 +7,7 @@ import { saveCause, CatalogError } from "@/lib/catalog/causes";
 import { getPublicCatalog, invalidatePublicCatalog, loadFunding, toCatalogItem, type CatalogItem } from "@/lib/catalog/public";
 import { realtimeBroadcaster } from "@/lib/realtime/broadcaster";
 import { RealtimeEvent } from "@/lib/realtime/events";
+import { runWithPriority } from "@/lib/google/requestControl";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30; // Sheets/Drive/SMTP calls can outlast the platform default
@@ -16,7 +17,7 @@ export const maxDuration = 30; // Sheets/Drive/SMTP calls can outlast the platfo
  * (Active or Urgent) in a public-safe shape. An authenticated admin receives every cause with its lifecycle
  * status. There is no seeding and no hardcoded fallback: if the catalog cannot be read, the error is reported.
  */
-export async function GET(request: NextRequest) {
+async function GET_handler(request: NextRequest) {
   const params = new URL(request.url).searchParams;
   // ?scope=public always returns the public view, even to a signed-in administrator: the donation form and ribbon must never offer
   // a Draft, Completed or Inactive entry just because the visitor happens to be an admin.
@@ -73,3 +74,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Failed to persist cause." }, { status: 500 });
   }
 }
+
+/* D29: request priority for the shared Google budget (P0/P1 financial, P3 public catalogue). */
+export const GET = (...args: Parameters<typeof GET_handler>) => runWithPriority("P3", () => GET_handler(...args));

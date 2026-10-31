@@ -76,6 +76,8 @@ async function measure<T>(name: string, fn: () => Promise<T>): Promise<T> {
     failed += c.failures;
   }
   rows.push(`${name.padEnd(36)} reads=${String(reads).padStart(2)} writes=${String(writes).padStart(2)} total=${String(snap.total.calls).padStart(2)} retried/failed=${failed} 429=${snap.total.quotaRejections}`);
+  // D36: which request labels make up the count (labels and numbers only)
+  rows.push("    " + Object.entries(snap.byLabel).map(([l, c]) => `${l.replace(/^Sheets /, "")} x${c.calls}`).join("; "));
   return out;
 }
 

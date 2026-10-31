@@ -1,0 +1,35 @@
+# Replace limiter.example.org with the hostname the OWNER controls (a subdomain of the Daarayn domain). Its DNS A record must point at the VM's
+# external address BEFORE Caddy starts, otherwise certificate issuance fails. Caddy obtains and renews the TLS certificate automatically.
+limiter.example.org {
+	# Only the paths the application and the monitors use are proxied; everything else is refused here.
+	@allowed path /health /ready /metrics /
+	handle @allowed {
+		request_body {
+			max_size 8KB
+		}
+		reverse_proxy 127.0.0.1:8787 {
+			header_up X-Forwarded-Proto https
+		}
+	}
+	handle {
+		respond "not found" 404
+	}
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000"
+		Cache-Control "no-store"
+	}
+	log {
+		output file /data/access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+		# the Authorization header is never written to the log
+		format filter {
+			wrap json
+			fields {
+				request>headers>Authorization delete
+			}
+		}
+	}
+}

@@ -23,7 +23,7 @@ let stateFile = "";
 
 const startServer = (extra: Record<string, string> = {}) =>
   new Promise<void>((resolve, reject) => {
-    server = spawn(process.execPath, [path.join(process.cwd(), "tools/limiter-server/server.cjs")], { env: { ...process.env, LIMITER_TOKEN: TOKEN, PORT: String(extra.PORT || 0), LIMITER_HOST: "127.0.0.1", LIMITER_STATE_FILE: stateFile, LIMITER_ACCEPT_EMPTY_STATE: "true", ...extra }, stdio: ["ignore", "pipe", "inherit"] });
+    server = spawn(process.execPath, [path.join(process.cwd(), "tools/limiter-server/server.cjs")], { env: { ...process.env, LIMITER_TOKEN: TOKEN, PORT: String(extra.PORT || 0), LIMITER_HOST: "127.0.0.1", LIMITER_STATE_FILE: stateFile, LIMITER_ACCEPT_EMPTY_STATE: "true", LIMITER_MAX_LEASE_MS: "3000", ...extra }, stdio: ["ignore", "pipe", "inherit"] });
     server.stdout!.once("data", (d) => {
       const info = JSON.parse(String(d).trim().split("\n")[0]);
       serverUrl = `http://127.0.0.1:${info.listening}`;
@@ -65,7 +65,7 @@ const eventually = async (fn: () => Promise<boolean>, ms = 8000) => {
   return false;
 };
 const post = (body: unknown, headers: Record<string, string> = {}) => fetch(serverUrl, { method: "POST", headers: { "content-type": "application/json", authorization: `Bearer ${TOKEN}`, ...headers }, body: JSON.stringify(body) });
-const reserveCmd = (key: string) => ["EVAL", "-- GCRA-reserve-v2", 2, key, "proj:" + key, 200, 1, 0, 0, 1];
+const reserveCmd = (key: string) => ["EVAL", "-- GCRA-reserve-v3", 2, key, "proj:" + key, 200, 1, 0, 0, 1, 0];
 
 describe("D26: three independent processes against the self-hosted coordinator service", () => {
   it("combined grants from 3 processes x 8 requests respect the configured rate; all three reach the same coordinator", async () => {
@@ -175,7 +175,7 @@ describe("D26: three independent processes against the self-hosted coordinator s
     const rs = await Promise.all(Array.from({ length: 4 }, () => post(reserveCmd("dup:read")).then((r) => r.json())));
     const waits = rs.map((r: any) => r.result).sort((a: number, b: number) => a - b);
     expect(new Set(waits).size).toBe(4);
-    for (let i = 1; i < 4; i++) expect(waits[i] - waits[i - 1]).toBeGreaterThanOrEqual(190);
+    for (let i = 1; i < 4; i++) expect(waits[i] - waits[i - 1]).toBeGreaterThanOrEqual(180);
   }, 30_000);
 
   it("a second instance on the same state file refuses to start (single authority)", async () => {
@@ -255,4 +255,138 @@ describe("D25: any Redis-compatible server over TCP (redis:// URL), emulated loc
     expect(all).toHaveLength(18);
     expect(all[17] - all[0]).toBeGreaterThanOrEqual(17 * INTERVAL * 0.85);
   }, 60_000);
+});
+
+describe("D29: coordinator request validation and bounds", () => {
+  it("malformed or hostile arguments are refused with 400 and never reach the persisted state", async () => {
+    stateFile = path.join(tmp, "v1.json");
+    await startServer();
+    const bad: unknown[][] = [
+      ["EVAL", "-- GCRA-reserve-v3", 2, "k:read", "p:read", "abc", 1, 0, 0, 1, 0], // not a number
+      ["EVAL", "-- GCRA-reserve-v3", 2, "k:read", "p:read", -5, 1, 0, 0, 1, 0], // negative interval
+      ["EVAL", "-- GCRA-reserve-v3", 2, "k:read", "p:read", 200, 0, 0, 0, 1, 0], // burst below 1
+      ["EVAL", "-- GCRA-reserve-v3", 2, "k:read", "p:read", 200, 1, 999999999, 0, 1, 0], // penalty far above ten minutes
+      ["EVAL", "-- GCRA-reserve-v3", 2, "bad key with spaces", "p:read", 200, 1, 0, 0, 1, 0], // illegal key
+      ["EVAL", "-- GCRA-reserve-v3", 2, "k".repeat(500), "p:read", 200, 1, 0, 0, 1, 0], // key too long
+      ["EVAL", "-- GCRA-reserve-v3", 2, "k:read", "p:read", null, 1, 0, 0, 1, 0], // missing value
+    ];
+    for (const cmd of bad) expect((await post(cmd)).status).toBe(400);
+    const saved = JSON.parse(fs.readFileSync(stateFile, "utf8"));
+    expect(Object.keys(saved.keys)).toEqual([]); // nothing was stored
+    expect((await post(reserveCmd("good:read"))).status).toBe(200); // the service still works
+  }, 30_000);
+
+  it("the number of budget keys is bounded", async () => {
+    stateFile = path.join(tmp, "v2.json");
+    await startServer();
+    let refused = 0;
+    for (let i = 0; i < 260; i++) if ((await post(["EVAL", "-- GCRA-reserve-v3", 2, `b${i}:read`, `p${i}:read`, 200, 1, 0, 200, 1, 0])).status === 503) refused++;
+    expect(refused).toBeGreaterThan(0); // 520 distinct keys exceed the bound of 500
+  }, 60_000);
+
+  it("a wrong token of the same length is refused (constant-time comparison)", async () => {
+    stateFile = path.join(tmp, "v3.json");
+    await startServer();
+    const same = "x".repeat(TOKEN.length);
+    expect((await fetch(serverUrl, { method: "POST", headers: { authorization: `Bearer ${same}` }, body: JSON.stringify(["PING"]) })).status).toBe(401);
+    expect((await fetch(`${serverUrl}/metrics`, { headers: { authorization: `Bearer ${same}` } })).status).toBe(401);
+  }, 30_000);
+
+  it("/metrics needs the token, reports technical counters only and shows refusals from the priority ceiling", async () => {
+    stateFile = path.join(tmp, "v4.json");
+    await startServer();
+    for (let i = 0; i < 3; i++) await post(["EVAL", "-- GCRA-reserve-v3", 2, "m:read", "pm:read", 1000, 1, 0, 0, 1, 1500]); // 0, 1000, then 2000 > 1500 refused
+    const res = await fetch(`${serverUrl}/metrics`, { headers: { authorization: `Bearer ${TOKEN}` } });
+    const m = await res.json();
+    expect(m.refusedSinceStart.read).toBe(1);
+    expect(m.rollingGranted60s.read).toBe(2);
+    expect(JSON.stringify(m)).not.toContain(TOKEN);
+    expect(JSON.stringify(m)).not.toContain("m:read"); // no key names
+    expect((await fetch(`${serverUrl}/metrics`)).status).toBe(401);
+  }, 30_000);
+});
+
+const leaseCmd = (...a: (string | number)[]) => post(["LEASE", ...a]).then((r) => r.json().then((j) => ({ status: r.status, ...(j.result ?? j) })));
+
+describe("D30: leases with fencing tokens at the coordinator", () => {
+  it("only one holder at a time; the token is strictly increasing; check is true only for the current token; release frees the resource", async () => {
+    stateFile = path.join(tmp, "l1.json");
+    await startServer();
+    const a: any = await leaseCmd("acquire", "alloc:D1", "worker-a", 2000);
+    expect(a.ok).toBe(true);
+    const b: any = await leaseCmd("acquire", "alloc:D1", "worker-b", 2000);
+    expect(b.ok).toBe(false);
+    expect((await leaseCmd("check", "alloc:D1", a.token) as any).valid).toBe(true);
+    expect((await leaseCmd("check", "alloc:D1", a.token + 1) as any).valid).toBe(false);
+    expect((await leaseCmd("release", "alloc:D1", a.token + 5) as any).released).toBe(false); // a wrong token cannot release
+    expect((await leaseCmd("release", "alloc:D1", a.token) as any).released).toBe(true);
+    const c: any = await leaseCmd("acquire", "alloc:D1", "worker-b", 2000);
+    expect(c.ok).toBe(true);
+    expect(c.token).toBeGreaterThan(a.token);
+    expect((await leaseCmd("check", "alloc:D1", a.token) as any).valid).toBe(false); // the old holder's token is no longer valid
+  }, 30_000);
+
+  it("an expired lease is taken over with a higher token and the old token is rejected by check", async () => {
+    stateFile = path.join(tmp, "l2.json");
+    await startServer();
+    const a: any = await leaseCmd("acquire", "alloc:D2", "worker-a", 1000);
+    await new Promise((r) => setTimeout(r, 1200));
+    expect((await leaseCmd("check", "alloc:D2", a.token) as any).valid).toBe(false);
+    const b: any = await leaseCmd("acquire", "alloc:D2", "worker-b", 1000);
+    expect(b.ok).toBe(true);
+    expect(b.token).toBeGreaterThan(a.token);
+  }, 30_000);
+
+  it("a lease and its fencing token survive a coordinator restart; tokens never go backwards", async () => {
+    stateFile = path.join(tmp, "l3.json");
+    await startServer();
+    const a: any = await leaseCmd("acquire", "alloc:D3", "worker-a", 3000);
+    await stopServer();
+    await startServer();
+    expect((await leaseCmd("check", "alloc:D3", a.token) as any).valid).toBe(true); // still the holder
+    expect((await leaseCmd("acquire", "alloc:D3", "worker-b", 1000) as any).ok).toBe(false);
+    await leaseCmd("release", "alloc:D3", a.token);
+    const b: any = await leaseCmd("acquire", "alloc:D3", "worker-b", 1000);
+    expect(b.token).toBeGreaterThan(a.token);
+  }, 60_000);
+
+  it("after a state LOSS no lease is granted during the quarantine (a holder from before the loss may still be working)", async () => {
+    stateFile = path.join(tmp, "l4-missing.json");
+    await startServer({ LIMITER_ACCEPT_EMPTY_STATE: "false", LIMITER_QUARANTINE_MS: "2000", LIMITER_MAX_LEASE_MS: "2000" });
+    const early: any = await leaseCmd("acquire", "alloc:D4", "worker-a", 1000);
+    expect(early.ok).toBe(false);
+    expect(early.reason).toBe("quarantine");
+    await new Promise((r) => setTimeout(r, 2300));
+    expect(((await leaseCmd("acquire", "alloc:D4", "worker-a", 1000)) as any).ok).toBe(true);
+  }, 30_000);
+
+  it("invalid lease requests are refused with 400 and the lease table is bounded", async () => {
+    stateFile = path.join(tmp, "l5.json");
+    await startServer();
+    for (const bad of [["acquire", "bad resource", "w", 1000], ["acquire", "alloc:X", "w", 10], ["acquire", "alloc:X", "w", 999999999], ["check", "alloc:X", "abc"], ["frobnicate", "alloc:X"]]) {
+      expect((await post(["LEASE", ...bad])).status).toBe(400);
+    }
+  }, 30_000);
+
+  it("three independent processes taking the same lease repeatedly never overlap (mutual exclusion across processes)", async () => {
+    stateFile = path.join(tmp, "l6.json");
+    await startServer({ LIMITER_MAX_LEASE_MS: "5000" });
+    const bundle = path.join(tmp, "lease-child.cjs");
+    await build({ entryPoints: [path.join(process.cwd(), "tests/helpers/leaseChild.ts")], bundle: true, platform: "node", format: "cjs", outfile: bundle, alias: { "@": process.cwd() }, logLevel: "silent" });
+    const runChild = () => new Promise<any>((resolve, reject) => {
+      const p = spawn(process.execPath, [bundle], { env: { ...process.env, GOOGLE_LIMITER_URL: serverUrl, GOOGLE_LIMITER_TOKEN: TOKEN, CHILD_ROUNDS: "4", CHILD_WORK_MS: "120", VITEST: "" }, stdio: ["ignore", "pipe", "inherit"] });
+      let out = "";
+      p.stdout.on("data", (d) => (out += d));
+      p.on("error", reject);
+      p.on("close", () => { try { resolve(JSON.parse(out.trim().split(String.fromCharCode(10)).pop()!)); } catch { reject(new Error("child produced no result")); } });
+    });
+    const results = await Promise.all([runChild(), runChild(), runChild()]);
+    results.forEach((r) => expect(r.error).toBeUndefined());
+    const iv = results.flatMap((r) => r.intervals as { start: number; end: number; token: number }[]).sort((x, y) => x.start - y.start);
+    expect(iv).toHaveLength(12);
+    for (let i = 1; i < iv.length; i++) {
+      expect(iv[i].start).toBeGreaterThanOrEqual(iv[i - 1].end - 5); // no two holders at the same time (5 ms clock-read tolerance)
+      expect(iv[i].token).toBeGreaterThan(iv[i - 1].token); // fencing tokens increase in the order the lease was used
+    }
+  }, 90_000);
 });

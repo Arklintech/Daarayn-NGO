@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { fakeSheets } from "./helpers/fakeSheets";
 import { resetWorld } from "./helpers/mocks";
 import { withGoogleRetry, setRetrySleep } from "@/lib/google/retry";
-import { MemoryLimiterBackend, setLimiterBackend, getLimiterBackend, GoogleBackpressureError, type LimiterBackend, type LimiterConfig, type RequestKind } from "@/lib/google/requestControl";
+import { runWithPriority, MemoryLimiterBackend, setLimiterBackend, getLimiterBackend, GoogleBackpressureError, type LimiterBackend, type LimiterConfig, type RequestKind } from "@/lib/google/requestControl";
 import { googleUsageSnapshot, resetGoogleUsage } from "@/lib/google/usage";
 
 const err = (code: number, extra: any = {}) => Object.assign(new Error(extra.message || `http ${code}`), { code, ...extra });
@@ -118,9 +118,9 @@ describe("shared request-rate control", () => {
   it("a request that would wait longer than the maximum gets a retryable 'busy' error and is NOT sent", async () => {
     process.env.GOOGLE_SHEETS_MAX_WAIT_MS = "15000";
     const fn = vi.fn(async () => 1);
-    await withGoogleRetry(fn, { kind: "read" });
-    await withGoogleRetry(fn, { kind: "read" }); // waits 10 s: allowed
-    const e: any = await withGoogleRetry(fn, { kind: "read" }).catch((x) => x); // would wait 20 s: refused
+    await runWithPriority("P0", () => withGoogleRetry(fn, { kind: "read" }));
+    await runWithPriority("P0", () => withGoogleRetry(fn, { kind: "read" })); // waits 10 s: allowed
+    const e: any = await runWithPriority("P0", () => withGoogleRetry(fn, { kind: "read" })).catch((x) => x); // would wait 20 s: refused
     expect(e).toBeInstanceOf(GoogleBackpressureError);
     expect(e.retryable).toBe(true);
     expect(fn).toHaveBeenCalledTimes(2);

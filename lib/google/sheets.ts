@@ -1,6 +1,7 @@
 import { getSheetsClient, GOOGLE_SHEET_ID, googleAuthProblem } from "./client";
 import { withGoogleRetry } from "./retry";
 import { assertSpreadsheetId } from "./config";
+import { registeredSchemas } from "./schemaRegistry";
 
 // Shared by every route bundle of this process. Identical reads are coalesced only when the shared request STARTED after the last write finished,
 // so a caller that has just written (and now reads to verify its row) can never be handed a snapshot older than its own write.
@@ -13,7 +14,34 @@ export interface SheetRow {
   record: Record<string, any>;
 }
 
-/** "'Donations'!A17:O17" → 17 */
+/** Rows to append to one tab as part of a multi-tab append (see SheetsService.appendRowsToTabs). */
+export interface TabAppend {
+  sheetName: string;
+  records: Record<string, any>[];
+  expectedHeaders: string[];
+}
+
+/**
+ * One cell for `spreadsheets.batchUpdate` appendCells, from the same string `toRowValues` would send to `values.append` (USER_ENTERED).
+ * Plain numbers and true/false are typed exactly as USER_ENTERED types them (verified live on the approved test spreadsheet, see
+ * tests/live/r1-appendcells.live.test.ts). Everything else is kept as LITERAL TEXT: USER_ENTERED would also turn dates, fractions,
+ * percentages, scientific notation, leading-zero or "+" numbers and "=..." text into numbers or formulas, which is a data-fidelity and
+ * formula-injection hazard, not behaviour to copy.
+ */
+export function toUserEnteredCell(value: string): Record<string, any> {
+  if (value === "") return {};
+  if (/^-?(0|[1-9]\d{0,14})(\.\d{1,14})?$/.test(value)) return { userEnteredValue: { numberValue: Number(value) } };
+  if (/^(true|false)$/i.test(value)) return { userEnteredValue: { boolValue: value.toLowerCase() === "true" } };
+  return { userEnteredValue: { stringValue: value } };
+}
+
+const FORMULA_START = /^[=+\-@\t\r]/;
+const PLAIN_NUMBER = /^-?(0|[1-9]\d*)(\.\d+)?$/;
+/** Makes a string safe against formula injection on a USER_ENTERED write; leaves plain numbers and everything else as it is. */
+export function neutraliseFormula(value: string): string {
+  return FORMULA_START.test(value) && !PLAIN_NUMBER.test(value) ? `'${value}` : value;
+}
+
 function rowNumberFromRange(range: string | null | undefined): number {
   const match = /![A-Z]+(\d+)/.exec(range || "");
   if (!match) throw new Error(`Google Sheets did not report where the row was written (${range}).`);
@@ -33,6 +61,8 @@ export class SheetsService {
   private headersCache = new Map<string, string[]>();
   /** Tab titles seen in the last spreadsheet listing, so verifying several tabs costs one request, not one each. */
   private knownTabs: Set<string> | null = null;
+  /** Numeric sheet ids from the same listing (appendCells addresses a tab by id). */
+  private tabIds = new Map<string, number>();
   /** The in-flight tab listing, shared by every caller that starts while it is running (one request, not one each). */
   private tabsLoading: Promise<Set<string>> | null = null;
   /** Header reads requested in the same tick, sent as ONE batched request. */
@@ -97,12 +127,14 @@ export class SheetsService {
 
       if (!sheetExists) {
         try {
-          await this.call("add tab", () =>
+          const added = await this.call("add tab", () =>
             this.sheets.spreadsheets.batchUpdate({
               spreadsheetId: this.spreadsheetId,
               requestBody: { requests: [{ addSheet: { properties: { title: sheetName } } }] },
             })
           );
+          const newId = added?.data?.replies?.[0]?.addSheet?.properties?.sheetId;
+          if (newId != null) this.tabIds.set(sheetName, newId);
         } catch (err: any) {
           // Another instance created the tab between our check and our request: that is fine.
           if (!/already exists/i.test(String(err?.message))) throw err;
@@ -126,7 +158,10 @@ export class SheetsService {
   private loadKnownTabs(): Promise<Set<string>> {
     if (!this.tabsLoading) {
       this.tabsLoading = this.call("get spreadsheet", () => this.sheets.spreadsheets.get({ spreadsheetId: this.spreadsheetId }))
-        .then((meta) => new Set((meta.data.sheets || []).map((t) => String(t.properties?.title))))
+        .then((meta) => {
+          for (const t of meta.data.sheets || []) if (t.properties?.sheetId != null) this.tabIds.set(String(t.properties.title), t.properties.sheetId);
+          return new Set((meta.data.sheets || []).map((t) => String(t.properties?.title)));
+        })
         .finally(() => {
           this.tabsLoading = null;
         });
@@ -142,8 +177,13 @@ export class SheetsService {
   private async flushHeaderQueue(): Promise<void> {
     const queued = this.headerQueue;
     this.headerQueue = new Map();
-    const names = [...queued.keys()];
-    const settle = (name: string, fn: (w: { resolve: (h: string[]) => void; reject: (e: Error) => void }) => void) => queued.get(name)!.forEach(fn);
+    const requested = [...queued.keys()];
+    // A cold instance is going to need the header row of most worksheets it knows (one donation touches five). They ride in the SAME batched
+    // request instead of five single reads. Only tabs that the last listing showed to exist and that are not cached yet; nobody waits on them,
+    // and a failure of the batch falls back to the requested tabs only. Headers are cached per instance exactly as before.
+    const extra = this.knownTabs ? [...registeredSchemas().keys()].filter((t) => this.knownTabs!.has(t) && !this.headersCache.has(t) && !queued.has(t)) : [];
+    const names = [...requested, ...extra];
+    const settle = (name: string, fn: (w: { resolve: (h: string[]) => void; reject: (e: Error) => void }) => void) => queued.get(name)?.forEach(fn);
     const single = async (name: string) => {
       try {
         const res = await this.call("get headers", () => this.sheets.spreadsheets.values.get({ spreadsheetId: this.spreadsheetId, range: `'${name}'!1:1` }));
@@ -165,7 +205,7 @@ export class SheetsService {
         settle(name, (w) => w.resolve(headers));
       });
     } catch {
-      await Promise.all(names.map(single));
+      await Promise.all(requested.map(single));
     }
   }
 
@@ -272,13 +312,69 @@ export class SheetsService {
     }
   }
 
-  private toRowValues(headers: string[], record: Record<string, any>): string[] {
+  /**
+   * ONE request that reads several tabs (all rows) AND the header row of other tabs (for a contract check). Throws on failure.
+   * Used by the intake fast path: eligibility and the intake worksheet header contract arrive together, so no tab listing and no separate
+   * header read is needed on a cold instance. The error text of a missing worksheet is kept so the caller can tell "not provisioned" from "unreachable".
+   */
+  public async batchGetRowsAndHeaders(sheetNames: string[], headerOf: string[]): Promise<{ rows: Record<string, Record<string, any>[]>; headers: Record<string, string[]> }> {
+    try {
+      const res = await this.call("batch read", () =>
+        this.sheets.spreadsheets.values.batchGet({
+          spreadsheetId: this.spreadsheetId,
+          ranges: [...sheetNames.map((n) => `'${n}'!A:ZZ`), ...headerOf.map((n) => `'${n}'!1:1`)],
+        })
+      );
+      const rows: Record<string, Record<string, any>[]> = {};
+      sheetNames.forEach((name, i) => {
+        rows[name] = this.parseValues(res.data.valueRanges?.[i]?.values).rows.map((r) => r.record);
+      });
+      const headers: Record<string, string[]> = {};
+      headerOf.forEach((name, i) => {
+        headers[name] = this.parseHeaderRow(res.data.valueRanges?.[sheetNames.length + i]?.values as any);
+      });
+      return { rows, headers };
+    } catch (err: any) {
+      throw new Error(`Could not read ${[...sheetNames, ...headerOf].join(", ")} from Google Sheets: ${err.message}`);
+    }
+  }
+
+  /**
+   * Appends ONE row as literal text (valueInputOption RAW: nothing is parsed, nothing is evaluated as a formula), in the order of `headers`, which the caller
+   * has validated in the same request that read the data. Needs no tab listing and no header read. Retried on quota errors only, like every append.
+   */
+  public async appendRowRaw(sheetName: string, record: Record<string, any>, headers: string[]): Promise<void> {
+    await this.call(
+      `append row ${sheetName}`,
+      () =>
+        this.sheets.spreadsheets.values.append({
+          spreadsheetId: this.spreadsheetId,
+          range: `'${sheetName}'!A:A`,
+          valueInputOption: "RAW",
+          insertDataOption: "INSERT_ROWS",
+          requestBody: { values: [this.rawRowValues(headers, record)] },
+        }),
+      true
+    );
+  }
+
+  /** The strings of one record in header order, exactly as given (no formula protection). */
+  private rawRowValues(headers: string[], record: Record<string, any>): string[] {
     return headers.map((h) => {
       const val = record[h];
       if (val === undefined || val === null) return "";
       if (typeof val === "object") return JSON.stringify(val);
       return String(val);
     });
+  }
+
+  /**
+   * Values for the USER_ENTERED write paths (values.append / values.update). Text that Sheets would evaluate as a FORMULA ("=...", and the
+   * "+", "-", "@" prefixes plus TAB/CR that spreadsheet software also treats as formula starters) is written with a leading apostrophe, which
+   * Sheets stores as literal text and strips on read (verified live on the approved test spreadsheet). Plain numbers are untouched.
+   */
+  private toRowValues(headers: string[], record: Record<string, any>): string[] {
+    return this.rawRowValues(headers, record).map(neutraliseFormula);
   }
 
   /** Adds any keys of `record` missing from the header row and returns the headers. */
@@ -391,6 +487,61 @@ export class SheetsService {
         },
       })
     );
+  }
+
+  /** Numeric id of a tab; one listing request only when this instance has not seen the tab yet. */
+  private async sheetIdFor(sheetName: string): Promise<number> {
+    if (!this.tabIds.has(sheetName)) {
+      this.knownTabs = null;
+      this.knownTabs = await this.loadKnownTabs();
+    }
+    const id = this.tabIds.get(sheetName);
+    if (id == null) throw new Error(`Worksheet ${sheetName} was not found in the spreadsheet.`);
+    return id;
+  }
+
+  /**
+   * Appends rows to SEVERAL tabs in ONE request (spreadsheets.batchUpdate with appendCells; Google counts a batch as one request and applies
+   * it atomically: every tab receives its rows or none does). Sheet existence and headers are handled exactly as in appendRows. Retried on
+   * quota errors only, like every append: after an ambiguous failure the caller's own idempotency decides. Cell typing: see toUserEnteredCell.
+   */
+  public async appendRowsToTabs(batches: TabAppend[]): Promise<void> {
+    const live = batches.filter((b) => b.records.length > 0);
+    if (live.length === 0) return;
+    const prepared: { rows: Record<string, any>[]; sheetId: number }[] = [];
+    for (const b of live) {
+      await this.ensureSheetExists(b.sheetName, b.expectedHeaders);
+      const headers = await this.ensureHeadersFor(b.sheetName, Object.assign({}, ...b.records), b.expectedHeaders);
+      prepared.push({ sheetId: await this.sheetIdFor(b.sheetName), rows: b.records.map((r) => ({ values: this.rawRowValues(headers, r).map(toUserEnteredCell) })) });
+    }
+    await this.call(
+      "append rows (batch)",
+      () =>
+        this.sheets.spreadsheets.batchUpdate({
+          spreadsheetId: this.spreadsheetId,
+          requestBody: { requests: prepared.map((p) => ({ appendCells: { sheetId: p.sheetId, rows: p.rows, fields: "userEnteredValue" } })) },
+        }),
+      true
+    );
+  }
+
+  /**
+   * Writes ONLY the named cells of known rows, in ONE request, with LITERAL-safe values (spreadsheets.batchUpdate updateCells: numbers and
+   * booleans typed, all other text literal, never a formula). No other cell of the row is touched, so a writer can never overwrite a field
+   * it does not own (a status an administrator changed meanwhile). Writing the same value twice is harmless, so it retries on any transient error.
+   */
+  public async updateFieldsLiteral(sheetName: string, updates: { rowNumber: number; fields: Record<string, any> }[]): Promise<void> {
+    const live = updates.filter((u) => Object.keys(u.fields).length > 0);
+    if (live.length === 0) return;
+    const headers = await this.ensureHeadersFor(sheetName, Object.assign({}, ...live.map((u) => u.fields)));
+    const sheetId = await this.sheetIdFor(sheetName);
+    const cell = (v: any) => toUserEnteredCell(v === undefined || v === null ? "" : typeof v === "object" ? JSON.stringify(v) : String(v));
+    const requests = live.flatMap((u) =>
+      Object.entries(u.fields).map(([name, value]) => ({
+        updateCells: { start: { sheetId, rowIndex: u.rowNumber - 1, columnIndex: headers.indexOf(name) }, rows: [{ values: [cell(value)] }], fields: "userEnteredValue" },
+      }))
+    );
+    await this.call("update rows (batch)", () => this.sheets.spreadsheets.batchUpdate({ spreadsheetId: this.spreadsheetId, requestBody: { requests } }));
   }
 
   public async batchAppendRows(sheetName: string, records: Record<string, any>[], expectedHeaders: string[]): Promise<void> {

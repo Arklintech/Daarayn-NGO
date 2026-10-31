@@ -1,0 +1,39 @@
+# Coordinator + Caddy on ONE Compute Engine VM. Copy this folder to /opt/daarayn-limiter on the VM.
+# The state disk must be mounted at /var/lib/daarayn-limiter BEFORE `docker compose up` (see install-vm.sh).
+services:
+  limiter:
+    image: daarayn-limiter:local          # docker build -f tools/limiter-server/Dockerfile -t daarayn-limiter:local .
+    container_name: limiter
+    restart: unless-stopped               # automatic restart after a crash or a VM reboot
+    env_file: ./limiter.env               # LIMITER_TOKEN lives here (root-only file, never in the image or in Git)
+    environment:
+      PORT: "8787"
+      LIMITER_HOST: "0.0.0.0"             # inside the container; the port is published on 127.0.0.1 only (below)
+      LIMITER_STATE_FILE: /data/limiter-state.json
+      LIMITER_REQUIRE_HTTPS: "true"       # Caddy sends X-Forwarded-Proto: https
+      LIMITER_QUARANTINE_MS: "75000"
+      LIMITER_MAX_LEASE_MS: "75000"
+      # LIMITER_ACCEPT_EMPTY_STATE is deliberately NOT set. Set it to "true" ONLY for the very first start on a brand-new empty disk, then remove it.
+    ports:
+      - "127.0.0.1:8787:8787"             # never reachable from the internet
+    volumes:
+      - /var/lib/daarayn-limiter:/data    # the dedicated persistent disk
+    read_only: true                       # the image filesystem is read-only; only /data is writable
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8787/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 3
+  caddy:
+    image: caddy:2
+    container_name: caddy
+    restart: unless-stopped
+    network_mode: host                    # reaches the coordinator on 127.0.0.1:8787 and listens on 80/443
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+volumes:
+  caddy_data:

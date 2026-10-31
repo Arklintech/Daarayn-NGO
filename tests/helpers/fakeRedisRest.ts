@@ -44,11 +44,11 @@ export async function startFakeRedisRest(token = "test-token"): Promise<FakeRedi
       const cmd = JSON.parse(raw);
       let result: unknown = null;
       if (cmd[0] === "EVAL" && cmd[1] === RESERVE_LUA) {
-        const [, , , key, pkey, intervalRaw, burstRaw, penaltyRaw, pint, pburst] = cmd;
+        const [, , , key, pkey, intervalRaw, burstRaw, penaltyRaw, pint, pburst, maxw] = cmd;
         const now = Date.now();
         const before = Math.max(keys.get(key) ?? 0, now);
-        result = evalReserve(keys, [key, pkey], [intervalRaw, burstRaw, penaltyRaw, pint, pburst], now);
-        if (Number(penaltyRaw) <= 0) (grants.get(key) ?? grants.set(key, []).get(key)!).push(now + Math.max(0, before - now - (Number(burstRaw) - 1) * Number(intervalRaw)));
+        result = evalReserve(keys, [key, pkey], [intervalRaw, burstRaw, penaltyRaw, pint, pburst, maxw], now);
+        if (Number(penaltyRaw) <= 0 && Number(result) >= 0) (grants.get(key) ?? grants.set(key, []).get(key)!).push(now + Math.max(0, before - now - (Number(burstRaw) - 1) * Number(intervalRaw)));
       } else {
         res.writeHead(400);
         return res.end(JSON.stringify({ error: "unsupported command" }));

@@ -53,8 +53,8 @@ export async function startFakeResp(password = "resp-secret"): Promise<FakeResp>
         if (!authed) { sock.write("-NOAUTH Authentication required\r\n"); continue; }
         if (c[0] === "EVAL" && c[1] === RESERVE_LUA) {
           state.calls++;
-          const [, , , k1, k2, interval, burst, penalty, pint, pburst] = c;
-          sock.write(`:${evalReserve(store, [k1, k2], [interval, burst, penalty, pint, pburst], Date.now())}\r\n`);
+          const [, , , k1, k2, interval, burst, penalty, pint, pburst, maxw] = c;
+          sock.write(`:${evalReserve(store, [k1, k2], [interval, burst, penalty, pint, pburst, maxw], Date.now())}\r\n`);
         } else sock.write("-ERR unknown command\r\n");
       }
     });
