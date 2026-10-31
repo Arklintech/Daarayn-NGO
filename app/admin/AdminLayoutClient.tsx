@@ -17,6 +17,7 @@ import {
   X, 
   User as UserIcon,
   ShieldCheck,
+  Inbox,
   Mail,
   MapPin,
   Bell,
@@ -224,6 +225,7 @@ export default function AdminLayoutClient({ children }: { children: React.ReactN
         { name: "Designations", href: "/admin/designations", icon: HeartHandshake },
         { name: "Allocations", href: "/admin/allocations", icon: BadgeIndianRupee },
         { name: "Reconciliation", href: "/admin/reconciliation", icon: ShieldCheck },
+        { name: "Intake Queue", href: "/admin/queue", icon: Inbox },
       ]
     },
     {

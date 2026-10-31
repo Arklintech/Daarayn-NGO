@@ -1,0 +1,20 @@
+{
+  "functions": {
+    "app/api/queues/intake-finaliser/route.ts": {
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "daarayn-intake",
+          "retryAfterSeconds": 30,
+          "maxDeliveries": 8
+        }
+      ]
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/internal/intake/reconcile",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

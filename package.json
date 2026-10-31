@@ -19,6 +19,7 @@
     "@sentry/nextjs": "^10.66.0",
     "@types/nodemailer": "^8.0.1",
     "@vercel/functions": "^3.7.5",
+    "@vercel/queue": "^0.10.0",
     "compression": "^1.8.1",
     "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
