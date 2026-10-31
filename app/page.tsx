@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import fs from 'fs';
+import path from 'path';
 import './redesign.css';
 import GlobalHeader from '../components/GlobalHeader';
 import HeroSection from '../components/HeroSection';
@@ -52,14 +54,19 @@ const jsonLd = {
 };
 
 export default function Home() {
+  // A 4K master is used when it is present in public/ (none is in the repository today).
+  const has4k = fs.existsSync(path.join(process.cwd(), 'public', 'hero-video-4k.mp4'));
   return (
     <main className="main-home-container">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <GlobalHeader showRibbon={true} />
-      <HeroSection />
+      {/* The wrapper lets the hero video extend BEHIND the navbar and the quick-donation ribbon on phones (see .hero-with-header in redesign.css) */}
+      <div className="hero-with-header">
+        <GlobalHeader showRibbon={true} />
+        <HeroSection has4k={has4k} />
+      </div>
       <HomePrograms />
       <LegacySections />
       <Footer />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Stats = { casesCompleted: number; masjidProjects: number; studentsSponsored: number | null };
 const REFRESH_MS = 60_000;
@@ -35,13 +35,35 @@ const show = (state: { status: string; stats?: Stats }, pick: (s: Stats) => numb
   return v === null || v === undefined ? '—' : String(v);
 };
 
-export default function HeroSection() {
+/**
+ * The hero video source. The 2.4 MB "fast" file (about 1.3 Mbit/s) looks soft and blocky, so the full-quality 1080p master is the default; the small file
+ * is used only when the visitor asks to save data or is on a slow connection. A 4K file (public/hero-video-4k.mp4) is used on large or high-density screens
+ * when it exists in the project. No 4K master exists in the repository today: the 1080p master is the highest quality available.
+ */
+function pickHeroSource(has4k: boolean): string {
+  const conn = (navigator as unknown as { connection?: { saveData?: boolean; effectiveType?: string } }).connection;
+  const slow = Boolean(conn?.saveData) || /^(slow-2g|2g|3g)$/.test(conn?.effectiveType || '');
+  if (slow) return '/hero-video-fast.mp4';
+  const pixels = Math.max(window.screen.width, window.screen.height) * (window.devicePixelRatio || 1);
+  return has4k && pixels >= 2560 ? '/hero-video-4k.mp4' : '/background%20video.mp4';
+}
+
+export default function HeroSection({ has4k = false }: { has4k?: boolean }) {
   const stats = useStats();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    v.src = pickHeroSource(has4k);
+    v.load();
+    void v.play().catch(() => undefined); // autoplay can be refused (battery saver); the poster stays visible then
+  }, [has4k]);
   return (
     <section className="cinematic-hero-scene">
       {/* Background layer */}
       <div className="daarayn-hero-bg">
         <video
+          ref={videoRef}
           autoPlay
           loop
           muted
@@ -49,11 +71,7 @@ export default function HeroSection() {
           preload="auto"
           poster="/hero-poster.jpg"
           className="daarayn-hero-video"
-        >
-          <source src="/hero-video-fast.mp4" type="video/mp4" />
-          <source src="/background video.mp4" type="video/mp4" />
-          Your browser does not support the video tag.
-        </video>
+        />
         <div className="daarayn-hero-overlay-dark"></div>
         <div className="daarayn-hero-overlay-gradient"></div>
       </div>
