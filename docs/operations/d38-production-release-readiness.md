@@ -31,7 +31,9 @@ Final run, 2026-11-01, on the uncommitted working tree:
 | `npx next build` | exit 0; new routes `/admin/queue`, `/api/intake/{accept,status}`, `/api/internal/intake/reconcile`, `/api/ops/queue-status`, `/api/queues/intake-finaliser` present |
 | LIVE boundary (62 s window, real Google, approved test sheet, local coordinator, not Vercel) | 90 reads, 0 x 429, 0 retries, max 45 dispatched in any 60 s, burst 1 in 1.3 s, burst 2 held 62.2 s |
 
-Load-sensitive tests: `tests/concurrent-entities.test.ts` (D18) and `tests/limiter-server.test.ts` (D26, a 175 ms versus 180 ms tolerance) each failed once in an earlier full run under load and passed repeatedly in isolation (6 of 6, 3 of 3); they passed in the final full run. They are timing tolerances, not regressions, and are named here so a recurrence is recognised.
+Known flaky tests (named so a recurrence is recognised):
+- `tests/concurrent-entities.test.ts` (D18, "two instances saving DIFFERENT content for the same new id"): **pre-existing, not a D29-D38 regression.** The fake Sheets adds `Math.random() * 4` ms jitter, and when the second instance's lookup finishes after the first instance's append it updates the row instead of creating one. Measured in isolation, 25 runs each: **3 failures on this tree, 4 on the pre-D29 commit `7e1068e`**. It failed once in one full run of the committed tree and passed in the next (74 files, 754 tests). Earlier statements of "6 of 6 passed" were a small sample and are withdrawn. A deterministic seed for the fake's jitter would fix it; not changed here.
+- `tests/limiter-server.test.ts` (D26, a 175 ms versus 180 ms tolerance): failed once in an earlier full run under load, passed in isolation (3 of 3) and in the final full runs.
 
 ## 4. Remaining findings, re-verified against the code (not trusted from reports)
 
