@@ -1,8 +1,15 @@
 import { google } from "googleapis";
 import fs from "fs";
 import path from "path";
+import { acquireSlot } from "../lib/google/requestControl";
 
-const SPREADSHEET_ID = "1sg2XC0qT7JaXLEVk2u53rzY3UQXPvT5EiEgXYcs7D_U";
+// D29: no hard-coded spreadsheet. The target must be chosen explicitly (a test spreadsheet unless you really mean to read production), and every Sheets request is
+// charged to the shared read budget like the application's own requests.
+const SPREADSHEET_ID = (process.env.INSPECT_SPREADSHEET_ID || "").trim();
+if (!SPREADSHEET_ID) {
+  console.error("Set INSPECT_SPREADSHEET_ID to the spreadsheet to inspect (read only).");
+  process.exit(1);
+}
 const DRIVE_ROOT_ID = "1H2eGXS6YRTbUJpSeeMposoAZ2rOeaDwO";
 
 const jsonPath = path.join(process.cwd(), "daaraynorg-9165c-c14dff5b2d5c.json");
@@ -27,6 +34,7 @@ const drive = google.drive({ version: "v3", auth });
 async function inspect() {
   console.log("=== INSPECTING LIVE GOOGLE SPREADSHEET ===");
   try {
+    await acquireSlot("read");
     const meta = await sheets.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
     console.log("Spreadsheet Title:", meta.data.properties?.title);
     const sheetTabs = meta.data.sheets || [];
@@ -34,6 +42,7 @@ async function inspect() {
 
     for (const tab of sheetTabs) {
       const title = tab.properties?.title || "";
+      await acquireSlot("read");
       const res = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: `'${title}'!A:ZZ`
