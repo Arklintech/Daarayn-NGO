@@ -1,0 +1,124 @@
+{
+  "environment": "in-memory fake Sheets, random 0-4 ms per call; latencies are relative only",
+  "generatedAt": "2026-10-31T11:57:37.479Z",
+  "results": {
+    "oneDonationSpecificCause": {
+      "reads": 9,
+      "writes": 7,
+      "byMethod": {
+        "ensureSheetExists:Causes": 1,
+        "ensureSheetExists:Program_Content": 1,
+        "batchGetRows:Causes+Program_Content": 1,
+        "ensureSheetExists:Donors": 1,
+        "getRowsWithNumbers:Donors": 2,
+        "appendRow:Donors": 1,
+        "ensureSheetExists:Donations": 1,
+        "getRowsWithNumbers:Donations": 4,
+        "appendRow:Donations": 1,
+        "updateRowAt:Donations": 2,
+        "ensureSheetExists:Donation_Causes": 1,
+        "ensureSheetExists:Notifications": 1,
+        "ensureSheetExists:Audit_Log": 1,
+        "getRowsWithNumbers:Donation_Causes": 2,
+        "appendRow:Notifications": 1,
+        "appendRow:Audit_Log": 1,
+        "appendRows:Donation_Causes": 1
+      }
+    },
+    "oneDonationGeneral": {
+      "reads": 7,
+      "writes": 6,
+      "byMethod": {
+        "ensureSheetExists:Causes": 1,
+        "getAllRows:Causes": 1,
+        "ensureSheetExists:Donors": 1,
+        "getRowsWithNumbers:Donors": 2,
+        "appendRow:Donors": 1,
+        "ensureSheetExists:Donations": 1,
+        "getRowsWithNumbers:Donations": 4,
+        "appendRow:Donations": 1,
+        "updateRowAt:Donations": 2,
+        "ensureSheetExists:Notifications": 1,
+        "ensureSheetExists:Audit_Log": 1,
+        "appendRow:Notifications": 1,
+        "appendRow:Audit_Log": 1
+      }
+    },
+    "duplicateRetry": {
+      "reads": 3,
+      "writes": 0,
+      "byMethod": {
+        "ensureSheetExists:Causes": 1,
+        "ensureSheetExists:Program_Content": 1,
+        "batchGetRows:Causes+Program_Content": 1,
+        "ensureSheetExists:Donors": 1,
+        "getRowsWithNumbers:Donors": 1,
+        "ensureSheetExists:Donations": 1,
+        "getRowsWithNumbers:Donations": 1
+      }
+    },
+    "oneAllocation": {
+      "reads": 2,
+      "writes": 2,
+      "byMethod": {
+        "ensureSheetExists:Donations": 1,
+        "ensureSheetExists:Donation_Causes": 1,
+        "ensureSheetExists:Allocations": 3,
+        "ensureSheetExists:Causes": 1,
+        "batchGetRows:Donations+Donation_Causes+Allocations+Causes": 1,
+        "appendRow:Allocations": 1,
+        "getAllRows:Allocations": 1,
+        "ensureSheetExists:Audit_Log": 1,
+        "appendRow:Audit_Log": 1
+      }
+    },
+    "concurrent12": {
+      "submitted": 12,
+      "succeeded": 12,
+      "failed": 0,
+      "rows": 12,
+      "duplicateIds": 0,
+      "pendingPlaceholders": 0,
+      "wallMs": 298,
+      "throughputPerSec": 40.3,
+      "p50ms": 283,
+      "p95ms": 298,
+      "p99ms": 298,
+      "totalReads": 108,
+      "totalWrites": 84,
+      "requestsPerDonation": 16
+    },
+    "concurrent20": {
+      "submitted": 20,
+      "succeeded": 20,
+      "failed": 0,
+      "rows": 20,
+      "duplicateIds": 0,
+      "pendingPlaceholders": 0,
+      "wallMs": 363,
+      "throughputPerSec": 55.1,
+      "p50ms": 252,
+      "p95ms": 330,
+      "p99ms": 362,
+      "totalReads": 184,
+      "totalWrites": 142,
+      "requestsPerDonation": 16.3
+    },
+    "concurrent30": {
+      "submitted": 30,
+      "succeeded": 30,
+      "failed": 0,
+      "rows": 30,
+      "duplicateIds": 0,
+      "pendingPlaceholders": 0,
+      "wallMs": 285,
+      "throughputPerSec": 105.3,
+      "p50ms": 283,
+      "p95ms": 284,
+      "p99ms": 285,
+      "totalReads": 270,
+      "totalWrites": 210,
+      "requestsPerDonation": 16
+    }
+  }
+}

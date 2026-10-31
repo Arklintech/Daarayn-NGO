@@ -374,3 +374,102 @@ Release recommendation: **NO-GO for public launch; GO for continued controlled t
 | 7 | Production migration rehearsal, domain/HTTPS, OAuth, policy decisions | NOT RUN / owner action | |
 | 8 | Deployment | NOT DONE (gates not satisfied) | |
 | 9 | Release decision | READY AFTER SPECIFIED EXTERNAL SETUP | |
+
+
+## UPDATE 2026-10-30 (D29): reliability governance and capacity (evidence: docs/audit/D29_*.md)
+
+| # | Update | Status now | Remaining |
+|---|---|---|---|
+| 1 | CI guard: no Sheets call outside the limiter; maintenance script fixed | PASS | |
+| 2 | Priority P0 to P3, atomic refusal, rolling 60 s measurement, alert rules, quota-health route | PASS (offline); alerts NOT CONFIGURED | configure and test alerts |
+| 3 | Coordinator validation, key bound, constant-time auth, metrics | PASS WITH LIMITATION (21 process tests, not hosted) | hosting |
+| 4 | Live 12-donation burst: 12/12, 0 429, longest wait 15 s | PASS (test sheet, local coordinator) | 5x burst NOT RUN |
+| 5 | Allocation contention: offline 20 trials and live 6 x 30 against 100, no violation | PASS WITH LIMITATION (not a lock) | single-writer design if a guarantee is required |
+| 6 | Hosted coordinator, Vercel connection, independent Vercel instances, real quotas | NOT VERIFIED | owner |
+| 7 | Gates: 573 offline tests, tsc 0, eslint 0, build 0, bundle scan clean | PASS | |
+| 8 | Release decision | READY AFTER SPECIFIED EXTERNAL SETUP | |
+
+
+## UPDATE 2026-10-30 (D30): coordinator contract, serialised allocations, load tests (evidence: docs/audit/D30_*.md)
+
+| # | Update | Status now | Remaining |
+|---|---|---|---|
+| 1 | Backend contract resolved; `GOOGLE_LIMITER_URL`/`GOOGLE_LIMITER_TOKEN` (aliases kept); same key prefix for all environments sharing the Google project | PASS | |
+| 2 | Allocation serialised per donation (coordinator lease, increasing token, self-fencing, production pause) | PASS WITH LIMITATION (offline and live on the test sheet with a local coordinator; not a transaction; not on Vercel) | verify on Preview, then set `ALLOCATION_SERIALIZATION_VERIFIED` |
+| 3 | Allocation tests 2/6/12/20, duplicates, worker death, stalled worker, restart | PASS | |
+| 4 | Donation bursts 20 and 30: 19 admitted, rest refused retryably, 0 429, no duplicates | PASS (local coordinator) | hosted/Vercel repeat |
+| 5 | Monitoring endpoint `/api/ops/quota-status`, priority starvation and latency tests | PASS (offline) | alerts NOT CONFIGURED, nothing received |
+| 6 | Coordinator hosted; Preview configured; independent Vercel invocations | NOT VERIFIED | owner access |
+| 7 | Gates: 597 offline tests, tsc 0, eslint 0, build 0, scan clean | PASS | |
+| 8 | Release decision | READY AFTER SPECIFIED EXTERNAL SETUP | |
+
+
+## UPDATE 2026-10-30 (D31/D32): infrastructure inspection and production restriction (evidence: docs/audit/D31_*.md, D32_*.md)
+
+| # | Update | Status now | Remaining |
+|---|---|---|---|
+| 1 | Coordinator hosting, DNS/TLS, Preview deployment and configuration | NOT DONE (no cloud/Vercel access, no DNS) | owner access, cost approval, hostname |
+| 2 | Three instances of the real build share one budget; fail closed; recovery; quarantine; conflict refused | PASS (across processes, local) | independent Vercel invocations NOT VERIFIED |
+| 3 | Production starts restricted: donations, donation changes, allocations paused until approved | PASS (tests) | production configuration NOT VERIFIED |
+| 4 | Alerts configured and delivered | NOT DONE | recipient, access |
+| 5 | Onboarding validator and schema plan | PASS (tests) | real data later |
+| 6 | Production deployment | NOT DONE | all gates |
+| 7 | Gates: 612 tests, tsc 0, eslint 0, build 0, scan clean | PASS | |
+| 8 | Release decision | READY AFTER SPECIFIED EXTERNAL SETUP | |
+
+## D35 addendum (2026-10-31): financial control gaps closed, performance audit
+| Item | Status | Evidence |
+|---|---|---|
+| A donation with active allocations cannot leave the verified state (HTTP 409, serialised under the allocation lease) | Implemented, Tested locally (not on Vercel) | `tests/financial-bypass-probe.test.ts` (failed before the fix, passes after) |
+| Donation completion write no longer overwrites an admin decision (`saveAtRow` writes only operational fields; +1 read per donation) | Implemented, Tested locally | same file, F8 test (failed before, passes after) |
+| Designation changes run under the allocation lease | Implemented (closure by construction; race not reproduced pre-fix in 15 trials) | `docs/architecture/financial-consistency-review.md` |
+| Request cost per operation measured (control) | Tested locally on the fake: specific-cause donation 9 reads + 7 writes, allocation 2 + 2 | `docs/testing/evidence-d35/request-baseline.json` |
+| 12/20/30 concurrent donations at the configured Google budget | FAILS by arithmetic, not run live | `docs/architecture/performance-reliability-audit.md` section 4 |
+| Apps Script | Not integrated; decision: proof of concept required (coordination host only), Design C not recommended | `docs/architecture/apps-script-architecture-decision.md` |
+| Release verdict | NOT READY | `docs/operations/production-readiness-gaps.md` |
+Offline suite: 62 files, 623 tests passing; tsc 0 errors. Nothing deployed, nothing committed, no live traffic generated.
+
+## D35 R1-R3 addendum (2026-10-31)
+| Item | Status | Evidence |
+|---|---|---|
+| R1: designations, notification and audit written in one atomic `appendCells` request | Implemented, Tested locally; cell typing proven on the approved test spreadsheet only | `tests/donation-batched-followups.test.ts`, `tests/live/r1-appendcells.live.test.ts` |
+| R2 (merge id-algorithm reads), R3 (single donor read) | NOT implemented: each would weaken idempotency or donor-identity guarantees | `docs/testing/r1-r3-request-reduction-report.md` sections 3 and 4 |
+| Specific-cause donation | 9 reads + 5 writes (was 9 + 7); reads, the binding quota, unchanged | `request-baseline.final.json` |
+| 12/20/30 concurrent donations within 60 s | Not achievable at 45 or 60 reads per minute (max about 5 and 7); not tested live | report section 7 |
+| Gates | tsc 0; 63 files / 629 tests; lint 0 errors; build exit 0 | same report |
+Verdict remains NOT READY (no deployed acceptance, no live quota or concurrency test).
+
+## D36 addendum (2026-10-31)
+| Item | Status | Evidence |
+|---|---|---|
+| First-run designation pre-read removed (narrow state: donation row created by this request); post-append check kept and now refuses to complete on conflicting rows | Implemented, Tested locally (9 case tests) | `tests/designation-first-run.test.ts` |
+| Duplicate un-awaited `DONATION_PROCESSED` audit write removed from the donate route | Implemented, Tested locally | `tests/donate-route-validation.test.ts` |
+| Header rows of all known tabs fetched in one request on a cold instance | Implemented, Tested locally | `tests/sheets-startup.test.ts` |
+| Every donation status change serialised under the allocation lease; two administrators: exactly one wins | Implemented, Tested locally (12 of 12 trials; unguarded primitive failed 19 of 20) | `tests/financial-d36-findings.test.ts` |
+| Failed compensating reversal: 3 attempts, explicit 503, detected by the integrity report | Implemented, Tested locally | same file |
+| Real Google request counts per operation (approved test spreadsheet) | Tested live (not Vercel): new donor 9 R + 5 W, returning 7 + 4 | `docs/testing/d36-performance-benchmark.md` |
+| Real Google burst N=6 / N=12 (shared local coordinator, 45/45) | Tested live (not Vercel): integrity OK, 0 quota rejections, 68 s / 142 s, **0 of 18 within 60 s** | `docs/testing/d36-live-acceptance-results.md` |
+| Actual project quota | NOT VERIFIED (service account may not read it) | `docs/architecture/d36-google-sheets-capacity-plan.md` |
+| Apps Script | Not integrated. Design A selected; B rejected; C deferred (verdict DEFER) | `docs/architecture/d36-final-architecture-decision.md` |
+| Storage-level stale-writer prevention | UNPROVEN, cannot be proven under Google Sheets | `docs/architecture/d36-financial-consistency-review.md` |
+| Vercel Preview acceptance | NOT DONE (no access) | `docs/testing/d36-live-acceptance-results.md` |
+Verdict: NOT READY (`docs/operations/d36-production-readiness.md`). Nothing deployed, committed or pushed; no production data touched.
+- Queued donation intake with explicit states (RECEIVED -> ASSIGNED -> COMPLETE): PROPOSED only (no code, no measurement); not needed if the quota request is granted at the size requested; needs owner decisions on donor-facing semantics and the Vercel plan. See `docs/architecture/d36-queued-intake-design-proposal.md`.
+
+## D37 addendum (2026-10-31): queued intake and finaliser, isolated
+- Isolated library `lib/intake/` (nothing in the active donation path imports it): durable literal-safe intake row, single-writer finaliser with deterministic ids, donor-facing status and queue metrics. Tested FAKE (35 queue tests, crash at 15 stage points, stale worker with and without a lease, N = 6/12/20/30) and LIVE on the approved test sheet (N = 1, 12, 30, duplicates, 2 crashes, stalled worker): 0 duplicates, 0 quota rejections. See `docs/architecture/d37-queued-intake-and-finaliser.md`.
+- Live finding: acknowledgement inside 60 s holds up to about 16 simultaneous COLD instances (12: 46.8 s; 30: 158.7 s before a one-read fix); finalisation of 30 took 24.3 s. Cold versus warm instances on Vercel is unknown.
+- Formula injection (F9) closed for all write paths (leading apostrophe on `= + - @ TAB CR`; literal cells on the new paths). Tested.
+- Worker/trigger: none selected (neither Vercel nor Apps Script can be demonstrated here). Recommendation: administrator-driven plus a daily cron on any plan; a per-minute cron needs Pro.
+- **GO/NO-GO: NO-GO for production; GO for controlled Preview testing after the external dependencies.** Not activated, not wired, not deployed or committed.
+
+## D38 addendum (2026-11-01): cold intake, window limiter, Vercel Queues trigger, status surfaces
+| Item | Status | Evidence |
+|---|---|---|
+| Cold intake 1 read + 1 write (eligibility + header contract in one batchGet, RAW append, fail-closed schema version) | Implemented, Tested FAKE; LIVE on the approved test sheet (N=30: ack 3.5 s with window limiter, 36.7 s with GCRA, 0 x 429, integrity clean) | `tests/intake-cold-start.test.ts`, `docs/testing/d38-cold-warm-performance-benchmark.md` |
+| Sliding-window limiter (`GOOGLE_LIMITER_ALGORITHM=window`, default window 62 s, default algorithm unchanged) | Implemented, Tested FAKE + real local coordinator process; LIVE 90 reads, 0 x 429, 0 retries, max 45 dispatched in any 60 s | `tests/limiter-window*.test.ts`, `docs/architecture/d38-burst-aware-quota-decision.md` |
+| Vercel Queues as wake-up trigger (coalescing, handoff, reconcile, app-level dead letter) | Implemented, Tested FAKE only; **not run on Vercel** | `tests/intake-queue-worker.test.ts`, `docs/architecture/d38-vercel-queues-architecture.md` |
+| Canonical-record rule for duplicate donation rows | Implemented, Tested FAKE | `tests/donation-canonical.test.ts` |
+| `/donate/status`, `/admin/queue`, `/api/ops/queue-status` | Implemented, Tested FAKE (routes) | `tests/intake-routes.test.ts` |
+| Real quota values, hosted coordinator, Vercel Preview acceptance, alert delivery | NOT VERIFIED / NOT DONE | `docs/operations/d38-production-release-readiness.md` |
+Verdict: READY FOR CONTROLLED PREVIEW TESTING (owner dependencies listed there). Not production ready. Nothing deployed, committed or pushed; direct donation path unchanged and default; allocations stay paused.

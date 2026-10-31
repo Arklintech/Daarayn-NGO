@@ -1,0 +1,15 @@
+--- coordinator UP
+a http 200 instance 6f58c03e28db granted 1 refused None waitedMs 0
+b http 200 instance 92949f2bfc8a granted 1 refused None waitedMs 0
+--- coordinator STOPPED (fail closed expected)
+a http 503 instance 6f58c03e28db granted 0 refused GOOGLE_LIMITER_UNAVAILABLE waitedMs 0
+b http 503 instance 92949f2bfc8a granted 0 refused GOOGLE_LIMITER_UNAVAILABLE waitedMs 0
+--- coordinator RESTARTED, same state, after the 5 s cool-down
+a http 200 instance 6f58c03e28db granted 1 refused None waitedMs 0
+b http 200 instance 92949f2bfc8a granted 1 refused None waitedMs 0
+--- coordinator KILLED -9 then restarted
+a http 200 instance 6f58c03e28db granted 1 refused None waitedMs 0
+b http 200 instance 92949f2bfc8a granted 1 refused None waitedMs 0
+--- coordinator state file DELETED, restarted WITHOUT accept-empty (quarantine expected; budget tiny wait limit)
+ready: 503 (503 = quarantined)
+a http 503 instance 6f58c03e28db granted 0 refused GOOGLE_BACKPRESSURE waitedMs 0

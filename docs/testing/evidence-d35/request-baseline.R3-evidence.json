@@ -1,0 +1,141 @@
+{
+  "environment": "in-memory fake Sheets, random 0-4 ms per call; latencies are relative only",
+  "generatedAt": "2026-10-31T12:15:27.907Z",
+  "results": {
+    "oneDonationSpecificCause": {
+      "reads": 9,
+      "writes": 5,
+      "byMethod": {
+        "ensureSheetExists:Causes": 1,
+        "ensureSheetExists:Program_Content": 1,
+        "batchGetRows:Causes+Program_Content": 1,
+        "ensureSheetExists:Donors": 1,
+        "getRowsWithNumbers:Donors": 2,
+        "appendRow:Donors": 1,
+        "ensureSheetExists:Donations": 1,
+        "getRowsWithNumbers:Donations": 4,
+        "appendRow:Donations": 1,
+        "updateRowAt:Donations": 2,
+        "ensureSheetExists:Donation_Causes": 1,
+        "getRowsWithNumbers:Donation_Causes": 2,
+        "ensureSheetExists:Notifications": 1,
+        "ensureSheetExists:Audit_Log": 1,
+        "appendRowsToTabs:[object Object]+[object Object]+[object Object]": 1
+      }
+    },
+    "oneDonationGeneral": {
+      "reads": 7,
+      "writes": 5,
+      "byMethod": {
+        "ensureSheetExists:Causes": 1,
+        "getAllRows:Causes": 1,
+        "ensureSheetExists:Donors": 1,
+        "getRowsWithNumbers:Donors": 2,
+        "appendRow:Donors": 1,
+        "ensureSheetExists:Donations": 1,
+        "getRowsWithNumbers:Donations": 4,
+        "appendRow:Donations": 1,
+        "updateRowAt:Donations": 2,
+        "ensureSheetExists:Notifications": 1,
+        "ensureSheetExists:Audit_Log": 1,
+        "appendRowsToTabs:[object Object]+[object Object]+[object Object]": 1
+      }
+    },
+    "oneDonationReturningDonor": {
+      "reads": 8,
+      "writes": 4,
+      "byMethod": {
+        "ensureSheetExists:Causes": 1,
+        "ensureSheetExists:Program_Content": 1,
+        "batchGetRows:Causes+Program_Content": 1,
+        "ensureSheetExists:Donors": 1,
+        "getRowsWithNumbers:Donors": 1,
+        "ensureSheetExists:Donations": 1,
+        "getRowsWithNumbers:Donations": 4,
+        "appendRow:Donations": 1,
+        "updateRowAt:Donations": 2,
+        "ensureSheetExists:Donation_Causes": 1,
+        "getRowsWithNumbers:Donation_Causes": 2,
+        "ensureSheetExists:Notifications": 1,
+        "ensureSheetExists:Audit_Log": 1,
+        "appendRowsToTabs:[object Object]+[object Object]+[object Object]": 1
+      }
+    },
+    "duplicateRetry": {
+      "reads": 3,
+      "writes": 0,
+      "byMethod": {
+        "ensureSheetExists:Causes": 1,
+        "ensureSheetExists:Program_Content": 1,
+        "batchGetRows:Causes+Program_Content": 1,
+        "ensureSheetExists:Donors": 1,
+        "getRowsWithNumbers:Donors": 1,
+        "ensureSheetExists:Donations": 1,
+        "getRowsWithNumbers:Donations": 1
+      }
+    },
+    "oneAllocation": {
+      "reads": 2,
+      "writes": 2,
+      "byMethod": {
+        "ensureSheetExists:Donations": 1,
+        "ensureSheetExists:Donation_Causes": 1,
+        "ensureSheetExists:Allocations": 3,
+        "ensureSheetExists:Causes": 1,
+        "batchGetRows:Donations+Donation_Causes+Allocations+Causes": 1,
+        "appendRow:Allocations": 1,
+        "getAllRows:Allocations": 1,
+        "ensureSheetExists:Audit_Log": 1,
+        "appendRow:Audit_Log": 1
+      }
+    },
+    "concurrent12": {
+      "submitted": 12,
+      "succeeded": 12,
+      "failed": 0,
+      "rows": 12,
+      "duplicateIds": 0,
+      "pendingPlaceholders": 0,
+      "wallMs": 414,
+      "throughputPerSec": 29,
+      "p50ms": 294,
+      "p95ms": 413,
+      "p99ms": 413,
+      "totalReads": 112,
+      "totalWrites": 62,
+      "requestsPerDonation": 14.5
+    },
+    "concurrent20": {
+      "submitted": 20,
+      "succeeded": 20,
+      "failed": 0,
+      "rows": 20,
+      "duplicateIds": 0,
+      "pendingPlaceholders": 0,
+      "wallMs": 797,
+      "throughputPerSec": 25.1,
+      "p50ms": 294,
+      "p95ms": 708,
+      "p99ms": 797,
+      "totalReads": 220,
+      "totalWrites": 120,
+      "requestsPerDonation": 17
+    },
+    "concurrent30": {
+      "submitted": 30,
+      "succeeded": 30,
+      "failed": 0,
+      "rows": 30,
+      "duplicateIds": 0,
+      "pendingPlaceholders": 0,
+      "wallMs": 1048,
+      "throughputPerSec": 28.6,
+      "p50ms": 244,
+      "p95ms": 846,
+      "p99ms": 1047,
+      "totalReads": 342,
+      "totalWrites": 186,
+      "requestsPerDonation": 17.6
+    }
+  }
+}

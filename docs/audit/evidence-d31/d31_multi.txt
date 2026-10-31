@@ -1,0 +1,78 @@
+app 3201: 000
+app 3202: 000
+app 3203: 000
+=== A. shared budget across three instances of the real build (24 critical reads, 60/min = 1 slot per second)
+{
+  "bases": 3,
+  "calls": 24,
+  "sharedBudget": {
+    "answered": 24,
+    "refused": 0,
+    "distinctInstances": 3,
+    "instancesById": {
+      "13cb1f5f3eff": 8,
+      "120b28a95c8d": 8,
+      "fc181caf9269": 8
+    },
+    "regions": [],
+    "deployments": [],
+    "limiterModes": [
+      "shared"
+    ],
+    "allReady": true,
+    "elapsedMs": 25073,
+    "maxWaitedMs": 24917,
+    "completionSpanMs": 22964,
+    "coordinatorRollingGranted60s": {
+      "read": 41,
+      "write": 0
+    }
+  },
+  "readWriteSeparate": {
+    "reads": 6,
+    "writes": 6
+  },
+  "priority": {
+    "p3Admitted": 5,
+    "p3Refused": 43,
+    "p0Admitted": 6,
+    "p0Refused": 0
+  },
+  "metricsAfter": {
+    "uptimeMs": 73586,
+    "storageOk": true,
+    "quarantined": false,
+    "rollingGranted60s": {
+      "read": 58,
+      "write": 6
+    },
+    "queueDepthMs": {
+      "read": 987,
+      "write": 0
+    },
+    "refusedSinceStart": {
+      "read": 50,
+      "write": 0
+    },
+    "penaltiesSinceStart": 0,
+    "storageFailuresSinceStart": 0,
+    "activeLeases": 0,
+    "leaseGrantsSinceStart": 0
+  }
+}
+=== B. wrong operator token / missing token
+wrong: 401  none: 401
+=== C. coordinator STOPPED: each instance must fail closed (503)
+down 3201: {"instance":"13cb1f5f3eff","bootedAt":"2026-10-30T12:13:08.167Z","servedByThisInstance":31,"region":null,"deployment":null,"limiterMode":"shared","limiterReady":true,"kind":"read","priority":"P0","requested":1,"granted":
+down 3202: {"instance":"120b28a95c8d","bootedAt":"2026-10-30T12:13:08.244Z","servedByThisInstance":31,"region":null,"deployment":null,"limiterMode":"shared","limiterReady":true,"kind":"read","priority":"P0","requested":1,"granted":
+down 3203: {"instance":"fc181caf9269","bootedAt":"2026-10-30T12:13:08.169Z","servedByThisInstance":31,"region":null,"deployment":null,"limiterMode":"shared","limiterReady":true,"kind":"read","priority":"P0","requested":1,"granted":
+=== D. coordinator restarted with intact state: continues, no burst
+up 3201: {"instance":"13cb1f5f3eff","bootedAt":"2026-10-30T12:13:08.167Z","servedByThisInstance":32,"region":null,"deployment":null,"limiterMode":"shared","limiterReady":true,"kind":"read","priority":"P0","requested":1,"granted":
+up 3202: {"instance":"120b28a95c8d","bootedAt":"2026-10-30T12:13:08.244Z","servedByThisInstance":32,"region":null,"deployment":null,"limiterMode":"shared","limiterReady":true,"kind":"read","priority":"P0","requested":1,"granted":
+up 3203: {"instance":"fc181caf9269","bootedAt":"2026-10-30T12:13:08.169Z","servedByThisInstance":32,"region":null,"deployment":null,"limiterMode":"shared","limiterReady":true,"kind":"read","priority":"P0","requested":1,"granted":
+=== E. coordinator killed hard and restarted: still continues
+after-kill 3201: {"instance":"13cb1f5f3eff","bootedAt":"2026-10-30T12:13:08.167Z","servedByThisInstance":33,"region":null,"deployment":null,"limiterMode":"shared","limiterReady":true,"kind":"read","priority":"P0","requested":1,"granted":
+after-kill 3202: {"instance":"120b28a95c8d","bootedAt":"2026-10-30T12:13:08.244Z","servedByThisInstance":33,"region":null,"deployment":null,"limiterMode":"shared","limiterReady":true,"kind":"read","priority":"P0","requested":1,"granted":
+=== F. both Redis URL and HTTPS coordinator configured on one instance: refused
+conflict: {"instance":"b4f02bcf370a","bootedAt":"2026-10-30T12:14:27.451Z","servedByThisInstance":1,"region":null,"deployment":null,"limiterMode":"shared","limiterReady":false,"kind":"read","priority":"P0","requested":1,"granted":0,"refused":"GOOGLE_
+{"uptimeMs":15384,"storageOk":true,"quarantined":false,"rollingGranted60s":{"read":2,"write":0},"queueDepthMs":{"read":0,"write":0},"refusedSinceStart":{"read":0,"write":0},"penaltiesSinceStart":0,"storageFailuresSinceStart":0,"activeLeases":0,"leaseGrantsSinceStart":0}

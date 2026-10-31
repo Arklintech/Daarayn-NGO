@@ -1,0 +1,4 @@
+burst 12: 134 s, accepted 12, refused 0 (statuses -), rows 12 (completed 12, PENDING 0), reads 100, writes 82, retries 0, 429s 0, longest wait 15 s, refusals counted 0, rolling peak reads/60s 46 writes/60s 49, shed {}
+ ✓ tests/live/concurrent-donations.live.test.ts (5 tests | 4 skipped) 141742ms
+   ✓ LIVE burst capacity (D29, 2x of six concurrent donations) > 12 simultaneous distinct donations at the default wait limit: truthful outcomes, no duplicates  140900ms
+      Tests  1 passed | 4 skipped (5)

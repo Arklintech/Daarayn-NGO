@@ -1,0 +1,8 @@
+ ✓ tests/live/final-acceptance.live.test.ts (6 tests) 114566ms
+   ✓ LIVE final code on the approved test spreadsheet > creates three causes (Draft is not donatable, Active is)  41810ms
+   ✓ LIVE final code on the approved test spreadsheet > single-cause donation: pending until verified; allocation refused while pending  19186ms
+   ✓ LIVE final code on the approved test spreadsheet > verification, valid allocation, idempotent replay, concurrency cap, over-allocation, reversal  14183ms
+   ✓ LIVE final code on the approved test spreadsheet > a cause that becomes Completed refuses new donations; an unknown id is refused; neither writes a donation  8806ms
+   ✓ LIVE final code on the approved test spreadsheet > multi-cause donation: designations stay UNRESOLVED (no invented split); explicit split reconciles to the donation; invalid splits refused  25697ms
+   ✓ LIVE final code on the approved test spreadsheet > independent recount from the stored records equals what the application reports  3368ms
+      Tests  6 passed (6)

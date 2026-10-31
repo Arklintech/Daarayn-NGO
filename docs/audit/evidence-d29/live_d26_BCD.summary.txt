@@ -1,0 +1,12 @@
+six-donation metrics: 70 s, reads 50, writes 41, retries 0, 429s 0, limiter waited 280 s in total, longest single wait 10 s, backpressure refusals 0, statuses 200/200/200/200/200/200
+concurrent donations: 6 accepted, 6 rows, 6 distinct ids, 1 donor row(s)
+identical-key concurrency: statuses 200,200,200,200,200 | rows 1 | designations 1 | distinct ids returned 1
+exhaustion A (reads): status 503, backpressure refusals 3, reads sent 1, writes sent 0
+exhaustion B (writes): status 503, backpressure refusals 1, writes sent 1, rows left 1 (ids: PENDING)
+recovery C: first replay status 409 (placeholder too fresh to adopt, retryable)
+recovery C: status 200, id DA92618, rows 1, designations 1, reads 19, writes 5, 429s 0
+ ✓ tests/live/concurrent-donations.live.test.ts (3 tests) 154794ms
+   ✓ LIVE concurrent donations from separate instances > 6 simultaneous donations by ONE new donor via 6 instances: 6 distinct ids, one donor, no overwritten or PENDING rows  78501ms
+   ✓ LIVE the SAME logical donation submitted concurrently from separate instances > 5 simultaneous requests with ONE submission key: one donation row, one designation, everyone receives the same Donation ID  38856ms
+   ✓ LIVE controlled quota exhaustion and recovery (D23) > a refused read stores nothing; a refused write mid-flow leaves no false success; replaying the SAME key afterwards yields exactly one completed donation  36702ms
+      Tests  3 passed (3)

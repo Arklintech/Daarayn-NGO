@@ -1,0 +1,12 @@
+live serialised allocation x2: 8 s, admitted 2, refused 0 (statuses -), rows 2, active 2, active total 60 of 100, system-reversed rows 0, audit rows for the active allocations 2, reads 5, writes 4, retries 0, 429s 0
+live serialised allocation x6: 16 s, admitted 3, refused 3 (statuses 409), rows 3, active 3, active total 90 of 100, system-reversed rows 0, audit rows for the active allocations 3, reads 10, writes 6, retries 0, 429s 0
+live serialised allocation x12: 29 s, admitted 3, refused 9 (statuses 409), rows 3, active 3, active total 90 of 100, system-reversed rows 0, audit rows for the active allocations 3, reads 16, writes 6, retries 0, 429s 0
+live serialised allocation x20: 45 s, admitted 3, refused 17 (statuses 409), rows 3, active 3, active total 90 of 100, system-reversed rows 0, audit rows for the active allocations 3, reads 24, writes 6, retries 0, 429s 0
+live interrupted-worker recovery: waited 5 s for the dead worker's lease, then recorded allocation ALLOC-MVUWN5C9-NZJD
+ ✓ tests/live/concurrent-donations.live.test.ts (9 tests | 4 skipped) 214845ms
+   ✓ LIVE competing allocations against one constrained balance (D30, serialised by the coordinator lease) > 2 simultaneous allocations of 30 against a verified, designated 100: exactly the fitting ones are recorded, the rest refused, no surplus row  30508ms
+   ✓ LIVE competing allocations against one constrained balance (D30, serialised by the coordinator lease) > 6 simultaneous allocations of 30 against a verified, designated 100: exactly the fitting ones are recorded, the rest refused, no surplus row  43007ms
+   ✓ LIVE competing allocations against one constrained balance (D30, serialised by the coordinator lease) > 12 simultaneous allocations of 30 against a verified, designated 100: exactly the fitting ones are recorded, the rest refused, no surplus row  53762ms
+   ✓ LIVE competing allocations against one constrained balance (D30, serialised by the coordinator lease) > 20 simultaneous allocations of 30 against a verified, designated 100: exactly the fitting ones are recorded, the rest refused, no surplus row  67628ms
+   ✓ LIVE competing allocations against one constrained balance (D30, serialised by the coordinator lease) > a worker that died holding the lease does not block allocations after its lease expires  18299ms
+      Tests  5 passed | 4 skipped (9)

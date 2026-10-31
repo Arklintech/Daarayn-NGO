@@ -1350,3 +1350,47 @@ Done: reviewed the 242 changed paths (credential files are gitignored and untrac
 Not done and why: no Vercel CLI or account access exists on this machine, so no environment variable was read or set, no coordinator URL/token was configured, and nothing was promoted to production (production would need a merge to `main` or a promotion, which is deliberately withheld: the release gates are not met).
 Smoke test of the preview (read-only GETs): `/` 200 (page renders, no Masjid/Hifz projects listed), `/masjid-projects` 200, `/api/public/stats` 200 with zero counts, `/api/programs` 200 returning five legacy seed programs, but `/api/causes`, `/api/admin/programs` and `/api/admin/diagnostics/google-readiness` answer HTTP 500 (an unhandled error page rather than the expected 401/503 JSON). Cause could not be determined without the Vercel runtime logs or environment settings; the most likely explanations are missing or different server-side environment variables on the Preview target (Google credentials, Firebase Admin) and the production spreadsheet lacking the worksheets this release needs (already a recorded blocker). The shared-limiter mode of the deployment could not be checked because the readiness endpoint cannot be reached without an administrator session on that deployment.
 Status: deployment of the BUILD is verified (it compiles and serves pages on Vercel); the DEPLOYED INTEGRATION (Sheets-backed routes, limiter, readiness) is NOT verified and currently returns 500 on several routes. Production remains NOT deployed. Required next: owner (or access for me) to read the Preview environment variables and runtime logs of `daarayn-ngo`, host the coordinator, set the two limiter variables for the target environment, then re-run the smoke test and the live suites.
+
+
+---
+
+# ADDENDUM D29 — Google Sheets reliability, priorities, governance, capacity (2026-10-30)
+Full report: `docs/audit/D29_GOOGLE_SHEETS_RELIABILITY_REPORT.md` (also `D29_PERMANENT_RELIABILITY_PLAN.md`, `D29_CAPACITY_AND_LOAD_TEST_REPORT.md`, `D29_FAILURE_MODE_AND_RECOVERY_MATRIX.md`, runbooks in `docs/ops/D29_*`, evidence in `docs/audit/evidence-d29/`). Uncommitted; nothing deployed.
+Implemented: request priority P0 to P3 with atomic admit-or-refuse; rolling 60 s measurement; coordinator `/metrics`, validation, bounds and constant-time auth; quota alert evaluator and admin route; CI guard against Sheets calls outside the limiter; the maintenance script that bypassed the limiter fixed.
+Tests: offline 55 files / 573 PASS; tsc 0; eslint 0; build 0; bundle scan clean. Live (test sheet, local coordinator): 12 simultaneous donations 12/12, 0 429, longest wait 15 s; allocation contention 6 x 30 against 100 gave total 90 (3 admitted, 3 refused).
+NOT VERIFIED: hosted coordinator, Vercel connection, independent Vercel instances, real Google quotas, alert configuration, 5x burst, transactional allocation guarantee (optimistic protocol only; single-writer design not built).
+**Status: READY AFTER SPECIFIED EXTERNAL SETUP** (not certified as permanently hardened).
+
+
+---
+
+# ADDENDUM D30 — Architecture resolved, serialised allocations, load and failure tests (2026-10-30)
+Reports: `docs/audit/D30_PRODUCTION_INFRASTRUCTURE_REPORT.md`, `D30_ALLOCATION_CONCURRENCY_REPORT.md`, `D30_CROSS_INSTANCE_ACCEPTANCE_REPORT.md`, `D30_CAPACITY_AND_FAILURE_TEST_REPORT.md`; runbooks `docs/ops/D30_FINAL_DEPLOYMENT_RUNBOOK.md`, `D30_MONITORING_AND_INCIDENT_RUNBOOK.md`; evidence `docs/audit/evidence-d30/`. Uncommitted; nothing deployed or provisioned.
+Architecture: the "Redis REST" adapter and the "HTTP coordinator" are the same thing: Vercel posts commands to the Daarayn coordinator (one VM, own disk); no Redis in the selected design. Variables renamed to `GOOGLE_LIMITER_URL` / `GOOGLE_LIMITER_TOKEN` (old names kept as aliases). Correction to D29: Production and Preview must share the same key prefix while they share the Google project.
+Allocation: per-donation lease with a strictly increasing token held by the coordinator, self-fencing before the write, production pause until `ALLOCATION_SERIALIZATION_VERIFIED=true`. Offline 2/6/12/20 competitors and live (test sheet, local coordinator) 2/6/12/20: no violation, no surplus row, audit consistent, 0 429; dead-worker and stale-worker cases pass. NOT a transaction; storage-level fencing is not possible with Sheets.
+Load (local coordinator, test sheet): 20 simultaneous donations 19 accepted, 1 retryable refusal; 30 simultaneous 19 accepted, 11 retryable refusals, identical quota consumption (162 reads, 132 writes), 0 429, 0 duplicates, 0 placeholders.
+New: `/api/ops/quota-status` for an external monitor (200/503 at 70/80/90 percent), priority-starvation and latency tests, coordinator leases (6 process tests).
+Gates: 57 files / 597 tests PASS; tsc 0; eslint 0; build exit 0 (a first attempt exited 1 while other network activity ran, the repeat passed); bundle scan clean (public Firebase key only).
+NOT VERIFIED / NOT DONE: hosting, Vercel Preview configuration, independent Vercel invocations, real Google quotas, alert configuration and delivery, production migration, domain, OAuth, owner policies.
+**Status: READY AFTER SPECIFIED EXTERNAL SETUP.**
+
+
+---
+
+# ADDENDUM D31 / D32 — Infrastructure inspection, real-build multi-instance run, production restriction (2026-10-30)
+Reports: `docs/audit/D31_*.md` (6), `docs/audit/D32_*.md` (4), runbooks `docs/ops/D31_*.md` (4) and `D32_*.md` (3), deploy files `tools/limiter-server/deploy/`, evidence `docs/audit/evidence-d31/`. Uncommitted; nothing provisioned, deployed or published.
+Blocked by missing access: no gcloud, Vercel CLI, Docker or logins; the OIDC token in `.env.local` is expired and is not a deploy credential; `daaraynorg.com` has no DNS. So: coordinator NOT hosted, Preview NOT deployed with the current code, independent Vercel invocations NOT VERIFIED, alerts NOT CONFIGURED, Production NOT deployed.
+Done: backend conflict guard; Preview-only probe route and acceptance driver; global 429 alert; financial activation switch (production starts with donations, donation changes and allocations paused); onboarding validator; VM deployment files; three instances of the real production build against a local coordinator (one budget, priority protected, fail closed on stop, recovery after restart and SIGKILL, quarantine after state loss).
+Findings: Google Fonts fetch makes `next build` fail intermittently (retry works; self-hosting fonts recommended); Production and Preview must share one key prefix.
+Gates: 60 files / 612 tests PASS; tsc 0; eslint 0; build exit 0; bundle scan clean.
+**Status: READY AFTER SPECIFIED EXTERNAL SETUP.**
+
+
+## 163. Addendum D33 (2026-10-30): hero video behind the mobile navbar
+Finding (owner report, confirmed): on phones the navbar and the quick-donation ribbon sit above the hero scene in the normal flow, so the video started below them and a black band showed behind the navbar. Fix (CSS and one wrapper, no logic change): `app/page.tsx` wraps `GlobalHeader` and `HeroSection` in `.hero-with-header`; at 768 px and below the wrapper is the positioning context of the video layer, so the video covers the header area as well; lighter shading, `object-position` 36 % (the cloud and day/night part of the frame) and a small brightness lift on the video; the navbar and ribbon stay above it. Desktop is unchanged. Evidence: `docs/audit/evidence-d33/` (280, 320, 375, 430, 820, 1440 px; 0 console errors, no horizontal overflow); the video is clearly visible behind the navbar, the ribbon and the headline at 375 and 430 px. Visual judgement by inspection, not a contrast measurement; the video content varies over its loop.
+
+## D34 (hero video clarity)
+The hero video looked blurred because the 2.4 MB low-bitrate file was served first. The 1080p high-bitrate master is now the default; the small file is used only for save-data or 2G/3G connections. No 4K source exists in the repository: `public/hero-video-4k.mp4` is used automatically on screens of 2560 px or wider if the owner supplies one (suggested 3840x2160 H.264/H.265 at about 8 to 12 Mbps, keeping the 1080p master). The 33 MB master is heavy on mobile data. Desktop at 1440 px was checked visually (evidence-d34/home-1440.png); the 375 px capture was taken but its sharpness was not separately assessed.
+
+## D35 (performance and reliability audit)
+See `docs/architecture/` and `docs/testing/`, `docs/operations/production-readiness-gaps.md`. Two financial-control defects were reproduced by failing tests and fixed (status change with active allocations; completion write overwriting an admin verification); designation changes now share the allocation lease. Verdict: NOT READY.

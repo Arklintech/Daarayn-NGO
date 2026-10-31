@@ -1,0 +1,191 @@
+{
+  "category": "FAKE (in-memory sheets; relative latency only)",
+  "generatedAt": "2026-10-31T19:34:45.754Z",
+  "results": {
+    "n1": {
+      "submitted": 1,
+      "accepted": 1,
+      "queueDepthAfterIntake": 1,
+      "intake": {
+        "reads": 0,
+        "writes": 0,
+        "readsPerSubmission": 0,
+        "writesPerSubmission": 0,
+        "wallMs": 51,
+        "p50ms": 51,
+        "p95ms": 51,
+        "p99ms": 51
+      },
+      "finaliser": {
+        "passes": 1,
+        "reads": 7,
+        "writes": 6,
+        "wallMs": 243,
+        "readsPerDonation": 7,
+        "writesPerDonation": 6,
+        "retryRate": 0
+      },
+      "financialCompletion": {
+        "p50ms": 212,
+        "p95ms": 212,
+        "p99ms": 212
+      },
+      "totalPerDonation": {
+        "reads": 7,
+        "writes": 6
+      },
+      "integrity": {
+        "donations": 1,
+        "duplicateIds": 0
+      }
+    },
+    "n6": {
+      "submitted": 6,
+      "accepted": 6,
+      "queueDepthAfterIntake": 6,
+      "intake": {
+        "reads": 0,
+        "writes": 0,
+        "readsPerSubmission": 0,
+        "writesPerSubmission": 0,
+        "wallMs": 51,
+        "p50ms": 36,
+        "p95ms": 51,
+        "p99ms": 51
+      },
+      "finaliser": {
+        "passes": 1,
+        "reads": 7,
+        "writes": 6,
+        "wallMs": 331,
+        "readsPerDonation": 1.17,
+        "writesPerDonation": 1,
+        "retryRate": 0
+      },
+      "financialCompletion": {
+        "p50ms": 314,
+        "p95ms": 330,
+        "p99ms": 330
+      },
+      "totalPerDonation": {
+        "reads": 1.17,
+        "writes": 1
+      },
+      "integrity": {
+        "donations": 6,
+        "duplicateIds": 0
+      }
+    },
+    "n12": {
+      "submitted": 12,
+      "accepted": 12,
+      "queueDepthAfterIntake": 12,
+      "intake": {
+        "reads": 0,
+        "writes": 0,
+        "readsPerSubmission": 0,
+        "writesPerSubmission": 0,
+        "wallMs": 46,
+        "p50ms": 45,
+        "p95ms": 46,
+        "p99ms": 46
+      },
+      "finaliser": {
+        "passes": 1,
+        "reads": 7,
+        "writes": 6,
+        "wallMs": 397,
+        "readsPerDonation": 0.58,
+        "writesPerDonation": 0.5,
+        "retryRate": 0
+      },
+      "financialCompletion": {
+        "p50ms": 367,
+        "p95ms": 368,
+        "p99ms": 368
+      },
+      "totalPerDonation": {
+        "reads": 0.58,
+        "writes": 0.5
+      },
+      "integrity": {
+        "donations": 12,
+        "duplicateIds": 0
+      }
+    },
+    "n20": {
+      "submitted": 20,
+      "accepted": 20,
+      "queueDepthAfterIntake": 20,
+      "intake": {
+        "reads": 0,
+        "writes": 0,
+        "readsPerSubmission": 0,
+        "writesPerSubmission": 0,
+        "wallMs": 50,
+        "p50ms": 49,
+        "p95ms": 50,
+        "p99ms": 50
+      },
+      "finaliser": {
+        "passes": 1,
+        "reads": 7,
+        "writes": 6,
+        "wallMs": 502,
+        "readsPerDonation": 0.35,
+        "writesPerDonation": 0.3,
+        "retryRate": 0
+      },
+      "financialCompletion": {
+        "p50ms": 494,
+        "p95ms": 495,
+        "p99ms": 495
+      },
+      "totalPerDonation": {
+        "reads": 0.35,
+        "writes": 0.3
+      },
+      "integrity": {
+        "donations": 20,
+        "duplicateIds": 0
+      }
+    },
+    "n30": {
+      "submitted": 30,
+      "accepted": 30,
+      "queueDepthAfterIntake": 30,
+      "intake": {
+        "reads": 0,
+        "writes": 0,
+        "readsPerSubmission": 0,
+        "writesPerSubmission": 0,
+        "wallMs": 42,
+        "p50ms": 41,
+        "p95ms": 42,
+        "p99ms": 42
+      },
+      "finaliser": {
+        "passes": 2,
+        "reads": 13,
+        "writes": 12,
+        "wallMs": 688,
+        "readsPerDonation": 0.43,
+        "writesPerDonation": 0.4,
+        "retryRate": 0
+      },
+      "financialCompletion": {
+        "p50ms": 462,
+        "p95ms": 666,
+        "p99ms": 666
+      },
+      "totalPerDonation": {
+        "reads": 0.43,
+        "writes": 0.4
+      },
+      "integrity": {
+        "donations": 30,
+        "duplicateIds": 0
+      }
+    }
+  }
+}

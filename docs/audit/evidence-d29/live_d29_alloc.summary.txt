@@ -1,0 +1,4 @@
+live allocation contention: 14 s, successes 3, refusals 3, rows 3, active 3, active total 90 of 100, reads 10, writes 6, retries 0, 429s 0
+ ✓ tests/live/concurrent-donations.live.test.ts (5 tests | 4 skipped) 42502ms
+   ✓ LIVE competing allocations against one constrained balance (D29) > 6 simultaneous allocations of 30 against a verified, designated 100: the active total never exceeds 100  39699ms
+      Tests  1 passed | 4 skipped (5)
