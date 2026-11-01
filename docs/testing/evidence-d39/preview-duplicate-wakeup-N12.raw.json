@@ -1,0 +1,87 @@
+{
+  "category": "PREVIEW (consumer on Vercel; rows seeded from this machine because the public accept route is blocked by Drive)",
+  "n": 12,
+  "run": "ZZ_D39_mvy5ge7g",
+  "seed": {
+    "wallSec": 10.6,
+    "latP50": 3.405,
+    "latP95": 10.613,
+    "latP99": 10.613
+  },
+  "finalStates": {
+    "COMPLETE": 12
+  },
+  "firstCompleteAfterSeedEndSec": 90.5,
+  "allCompleteAfterSeedEndSec": 90.5,
+  "allCompleteAfterSeedStartSec": 101.1,
+  "reconcileCalls": 3,
+  "events": [
+    {
+      "tSec": 73.3,
+      "reconcile": 200,
+      "body": {
+        "pending": 12,
+        "stale": 12,
+        "needsReview": 0,
+        "oldestPendingAgeSec": 80,
+        "redispatched": true
+      }
+    },
+    {
+      "tSec": 73.3,
+      "reconcile": 200,
+      "body": {
+        "pending": 12,
+        "stale": 12,
+        "needsReview": 0,
+        "oldestPendingAgeSec": 80,
+        "redispatched": true
+      }
+    },
+    {
+      "tSec": 73.3,
+      "reconcile": 200,
+      "body": {
+        "pending": 12,
+        "stale": 12,
+        "needsReview": 0,
+        "oldestPendingAgeSec": 78,
+        "redispatched": true
+      }
+    }
+  ],
+  "integrity": {
+    "donationRows": 12,
+    "distinctRefs": 12,
+    "distinctDonationIds": 12,
+    "donationIdsUniqueInWholeSheet": true,
+    "donorRows": 12,
+    "distinctDonorIds": 12,
+    "distinctDonorEmails": 12,
+    "intakeRowsForRefs": 12,
+    "completeWithoutDonationRow": 0,
+    "pendingPlaceholdersThisRun": 0
+  },
+  "queueStatusBefore": {
+    "status": "ok",
+    "threshold": {
+      "maxAgeSec": 900
+    },
+    "depth": 0,
+    "oldestPendingAgeSec": 0,
+    "stale": 0,
+    "needsReview": 0,
+    "retryTotal": 6
+  },
+  "queueStatusAfter": {
+    "status": "ok",
+    "threshold": {
+      "maxAgeSec": 900
+    },
+    "depth": 0,
+    "oldestPendingAgeSec": 0,
+    "stale": 0,
+    "needsReview": 0,
+    "retryTotal": 6
+  }
+}

@@ -1,0 +1,26 @@
+D38 Preview acceptance: 1 simultaneous submissions to daarayn-jlfynvlix-arklintech.vercel.app
+ACK: wall 2.3 s | accepted 0/1 | status codes {"503":1} | latency s P50 0.00 P95 0.00 P99 0.00 max 0.00 | within 60 s: 0/1 | wake-ups published: 0
+REPLAY: 0 replays, same reference returned: true
+DRAIN: queue empty 18 s after the first submission (last reading: 0)
+SPOT-CHECK: 0/0 COMPLETE ([])
+{
+  "category": "PREVIEW (acceptance driver, outside view only)",
+  "n": 1,
+  "accepted": 0,
+  "statusCodes": {
+    "503": 1
+  },
+  "ackWallSeconds": 2.3,
+  "ackP50": 0,
+  "ackP95": 0,
+  "ackP99": 0,
+  "within60s": 0,
+  "replaySameReference": true,
+  "drained": true,
+  "drainSeconds": 18,
+  "spotComplete": "0/0",
+  "firstErrors": [
+    "Your payment proof could not be stored right now. Please try again in a few minutes."
+  ],
+  "note": "Collect Sheets reads/writes per operation, Google 429s and queue operations from the deployment (see header comment)."
+}
