@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createOAuthClient, oauthConfigProblem, saveRefreshToken, verifyStateCookie, STATE_COOKIE, DRIVE_OAUTH_SCOPES } from "@/lib/google/driveOAuth";
+import { createOAuthClient, oauthConfigProblem, saveRefreshToken, verifyStateCookie, STATE_COOKIE, driveOAuthScopes } from "@/lib/google/driveOAuth";
 import { google } from "googleapis";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
     const { tokens } = await client.getToken(code);
     if (!tokens.refresh_token) return back(request, "no_refresh_token");
     const granted = (tokens.scope || "").split(" ");
-    if (!DRIVE_OAUTH_SCOPES.every((s) => granted.includes(s))) return back(request, "missing_scope");
+    // The scopes of the ACTIVE mode (drive.file in file mode, drive otherwise): validating against the full scope always made file mode unable to connect.
+    if (!driveOAuthScopes().every((s) => granted.includes(s))) return back(request, "missing_scope");
 
     // Confirm the token works and record which account was connected (logged without the token).
     client.setCredentials(tokens);
