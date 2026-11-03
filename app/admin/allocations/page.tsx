@@ -4,6 +4,7 @@ import React, { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRealtimeRefresh } from "@/lib/realtime/useRealtime";
 import { DONATION_DATA_EVENTS } from "@/lib/realtime/events";
+import AdminSelect from "@/components/admin/AdminSelect";
 
 interface Relation {
   causeId: string;
@@ -152,27 +153,32 @@ export default function AllocationsPage() {
 
       <form onSubmit={create} className="rounded-2xl p-5 admin-glass border border-white/[0.06] grid grid-cols-1 md:grid-cols-2 gap-4" aria-label="Create allocation">
         <h2 className="md:col-span-2 text-sm font-semibold text-white">New allocation</h2>
-        <label className="space-y-1 text-gray-300">
-          <span>Verified donation</span>
-          <select value={donationId} onChange={(e) => { setDonationId(e.target.value); setCauseId(""); }} className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white" required>
-            <option value="">Select…</option>
-            {sources.map((d) => (
-              <option key={d.id} value={d.id}>{d.id} · {d.donor} · {inr(d.amount)}</option>
-            ))}
-          </select>
-        </label>
-        <label className="space-y-1 text-gray-300">
-          <span>Cause (from its recorded designation)</span>
-          <select value={causeId} onChange={(e) => setCauseId(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white" required disabled={!source}>
-            <option value="">Select…</option>
-            {(source?.causes || []).filter((c) => c.designationStatus === "designated").map((c) => (
-              <option key={c.causeId} value={c.causeId}>{c.title} · designated {inr(c.designatedAmount || 0)}</option>
-            ))}
-          </select>
+        <div className="space-y-1.5 text-gray-300">
+          <span className="block">Verified donation</span>
+          <AdminSelect
+            ariaLabel="Verified donation"
+            value={donationId}
+            onChange={(v) => { setDonationId(v); setCauseId(""); }}
+            placeholder="Select a verified donation"
+            emptyText="No verified donations are available yet."
+            options={sources.map((d) => ({ value: d.id, label: `${d.id} · ${d.donor}`, meta: inr(d.amount) }))}
+          />
+        </div>
+        <div className="space-y-1.5 text-gray-300">
+          <span className="block">Cause (from its recorded designation)</span>
+          <AdminSelect
+            ariaLabel="Cause from its recorded designation"
+            value={causeId}
+            onChange={setCauseId}
+            disabled={!source}
+            placeholder={source ? "Select a cause" : "Choose a donation first"}
+            emptyText="This donation has no designated cause yet."
+            options={(source?.causes || []).filter((c) => c.designationStatus === "designated").map((c) => ({ value: c.causeId, label: c.title, meta: inr(c.designatedAmount || 0) }))}
+          />
           {source && source.causes.some((c) => c.designationStatus === "unresolved") && (
             <span className="block text-amber-300">Some causes are unresolved. <Link href="/admin/designations" className="underline">Record the split first</Link>.</span>
           )}
-        </label>
+        </div>
         <label className="space-y-1 text-gray-300">
           <span>Amount {relation ? `(up to ${inr(remaining)})` : ""}</span>
           <input type="number" min="0.01" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-white" required />
