@@ -7,7 +7,11 @@
  * To approve another test resource, change this file in a reviewed commit.
  */
 export const APPROVED_TEST_SHEET_IDS: ReadonlySet<string> = new Set(["1sGVsMEQDI1WmjWdUTQ0eKOzZC34Ri9CLsf4uUUceGzM"]);
-export const APPROVED_TEST_FOLDER_IDS: ReadonlySet<string> = new Set(["1x9GnIWZ6GA-VjbH9KPCyKV8eupv6qllD"]);
+export const APPROVED_TEST_FOLDER_IDS: ReadonlySet<string> = new Set([
+  "1x9GnIWZ6GA-VjbH9KPCyKV8eupv6qllD",
+  // D40: the Preview test root folder, created by the application (drive.file mode, dedicated test OAuth client) through POST /api/admin/google-drive/create-root.
+  "1LQs5xGUmtTjlrJmDri2DxzMCHWKhI99H",
+]);
 
 const runtimeSheets = new Set<string>();
 const runtimeFolders = new Set<string>();
